@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Chat Widget Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* RESET & BASE STYLES */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background-color: #f8f9fa; 
+      color: #333; 
+      line-height: 1.6;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    /* HEADER */
+    header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 20px 0; 
+      border-bottom: 2px solid #eaeaea; 
+      margin-bottom: 30px; 
+    }
+    
+    header h1 { font-size: 1.5rem; color: #1a1a1a; }
+
+    /* NOTIFICATION STYLES */
+    .header-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px; /* Adjusted gap for more buttons */
+    }
+
+    .notification-wrapper {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .bell-icon {
+      font-size: 22px;
+      color: #333;
+      transition: 0.3s;
+    }
+
+    .bell-icon:hover { color: #d4af37; }
+
+    .notif-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ff4d4d;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: bold;
+      border: 2px solid #fff;
+      display: none;
+    }
+
+    .notif-panel {
+      position: absolute;
+      top: 40px;
+      right: 0;
+      width: 320px;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      display: none;
+      flex-direction: column;
+      z-index: 10000;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .notif-panel.show { display: flex; }
+
+    .notif-header {
+      padding: 15px;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+
+    .notif-content {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .notif-entry {
+      padding: 15px;
+      border-bottom: 1px solid #f9f9f9;
+      font-size: 13px;
+    }
+
+    .notif-entry:hover { background: #fdfaf0; }
+
+    .notif-entry strong { color: #d4af37; display: block; margin-bottom: 2px; }
+
+    /* CARDS & SECTIONS */
+    section { 
+      margin-bottom: 30px; 
+      padding: 25px; 
+      border-radius: 12px; 
+      background: #ffffff; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+      border: 1px solid #eee;
+    }
+
+    h2 { margin-bottom: 20px; color: #d4af37; font-size: 1.25rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+    h4 { margin-bottom: 10px; color: #1a1a1a; }
+
+    .hidden { display: none !important; }
+    
+    /* GRID SYSTEM */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+    /* BUTTONS */
+    button { 
+      cursor: pointer; 
+      border: none; 
+      border-radius: 6px; 
+      font-weight: 600; 
+      padding: 10px 20px; 
+      transition: 0.3s;
+      background: #d4af37; 
+      color: #fff;
+    }
+    button:hover { background: #b8962e; transform: translateY(-1px); }
+    
+    #logoutBtn { background: #333; }
+    #logoutBtn:hover { background: #000; }
+
+    .nav-link-btn {
+      background: transparent;
+      color: #d4af37;
+      border: 1px solid #d4af37;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.3s;
+    }
+    .nav-link-btn:hover { background: #fdfaf0; color: #b8962e; }
+
+    /* --- NEW SMART HUB BUTTON CSS --- */
+    .nav-smart-hub-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+      color: #fff !important;
+      padding: 10px 16px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.8rem;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-smart-hub-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    }
+
+    .btn-badge {
+      background: #fff;
+      color: #d4af37;
+      font-size: 0.6rem;
+      padding: 1px 5px;
+      border-radius: 10px;
+      font-weight: 900;
+      animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    /* DASHBOARD ELEMENTS */
+    .step-card { border-left: 4px solid #d4af37; padding: 15px; margin-bottom: 15px; background: #fafafa; border-radius: 0 8px 8px 0; }
+    
+    code { background: #eee; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #c7254e; }
+    
+    ul { list-style: none; }
+    li { 
+      padding: 15px; 
+      border-bottom: 1px solid #f1f1f1; 
+      font-size: 0.95rem; 
+      flex-shrink: 0; 
+    }
+    li:last-child { border-bottom: none; }
+
+    /* ================= FIXED SCROLLABLE LISTS ================= */
+    #leadsList, #chatsList, #ticketsList, #userLinksList {
+      display: flex !important;
+      flex-direction: column;
+      height: 320px !important;     
+      overflow-y: scroll !important;  /* Forced scroll for visibility */
+      overflow-x: hidden;
+      padding: 0;
+      margin: 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    /* CUSTOM SCROLLBAR */
+    #leadsList::-webkit-scrollbar, 
+    #chatsList::-webkit-scrollbar, 
+    #ticketsList::-webkit-scrollbar, 
+    #userLinksList::-webkit-scrollbar {
+      width: 12px;
+      display: block !important;
+    }
+
+    #leadsList::-webkit-scrollbar-track, 
+    #chatsList::-webkit-scrollbar-track, 
+    #ticketsList::-webkit-scrollbar-track, 
+    #userLinksList::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-left: 1px solid #eee;
+      border-radius: 0 8px 8px 0;
+    }
+
+    #leadsList::-webkit-scrollbar-thumb, 
+    #chatsList::-webkit-scrollbar-thumb, 
+    #ticketsList::-webkit-scrollbar-thumb, 
+    #userLinksList::-webkit-scrollbar-thumb {
+      background-color: #d4af37; 
+      border-radius: 20px; 
+      border: 3px solid #f1f1f1; 
+    }
+
+    #leadsList::-webkit-scrollbar-thumb:hover, 
+    #chatsList::-webkit-scrollbar-thumb:hover {
+      background-color: #b8962e;
+    }
+
+    /* SUPPORT FORM */
+    .support-form input, .support-form textarea { 
+      width: 100%; 
+      margin-bottom: 15px; 
+      padding: 12px; 
+      border: 1px solid #ddd; 
+      border-radius: 8px;
+      font-family: inherit;
+    }
+
+    .legal-box { 
+      font-size: 0.85em; 
+      color: #666; 
+      background: #fdfdfd; 
+      padding: 15px; 
+      border: 1px solid #f0f0f0;
+      border-radius: 8px; 
+      max-height: 150px; 
+      overflow-y: auto; 
+    }
+
+    .plan-card {
+      text-align: center;
+      padding: 20px;
+      border: 2px solid #f0f0f0;
+      border-radius: 12px;
+    }
+
+    /* PROFILE SECTION STYLES */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .profile-avatar-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #d4af37;
+      background: #eee;
+    }
+    .avatar-edit-label {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #d4af37;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      border: 2px solid white;
+    }
+    .profile-details input {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-top: 5px;
+      width: 100%;
+    }
+
+    /* DELETE ACCOUNT STYLING */
+    .delete-btn {
+      background: #ff4d4d;
+      margin-top: 15px;
+      font-size: 0.8rem;
+    }
+    .delete-btn:hover { background: #cc0000; }
+
+    /* SMART TOOLS CUSTOM STYLE */
+    .flex-row-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    footer { text-align: center; margin-top: 50px; padding: 20px; color: #888; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>AI Chat Widget</h1>
+    <div class="header-right-actions">
+        <a href="about.html" class="nav-link-btn">About Us</a>
+        
+        <a href="smart-tools.html" class="nav-smart-hub-btn">
+          <span>🚀</span>
+          <span>Smart Business Hub</span>
+          <span class="btn-badge">NEW</span>
+        </a>
+
+        <div class="notification-wrapper" id="notif-bell-container">
+          <span class="bell-icon">🔔</span>
+          <span class="notif-badge" id="notif-badge">0</span>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-header">
+              <span>Notifications</span>
+              <button id="notif-close-btn" style="padding: 2px 5px; font-size: 12px; background: #eee; color: #333;">Close</button>
+            </div>
+            <div class="notif-content" id="notif-content-list">
+              <div class="notif-entry"><strong>Welcome</strong> Your dashboard is now active.</div>
+            </div>
+          </div>
+        </div>
+
+        <span id="verifyWarning" style="color:red; font-weight:bold; margin-right:20px;" class="hidden">⚠️ Verify Email</span>
+        <button class="nav-link-btn" onclick="window.location.href='dashboard.html'">Go to Admin Panel</button>
+        <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <section id="smart-tools-section">
+    <h2>🚀 Smart Business Tools (Problem Solvers)</h2>
+    <div class="grid">
+      <div class="support-form">
+        <h4>📅 Appointment Booking</h4>
+        <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">The AI will share this link automatically when visitors ask to book a meeting.</p>
+        <input type="text" id="bookingUrlInput" placeholder="https://calendly.com/your-business">
+        
+        <div class="flex-row-between">
+          <span><strong>Enable Sentiment Alerts</strong><br><small>Get emails when customers are angry</small></span>
+          <input type="checkbox" id="sentimentToggle" style="width:25px; height:25px;">
+        </div>
+        
+        <button id="saveSmartToolsBtn" style="width: 100%; margin-top: 15px;">Save Smart Settings</button>
+      </div>
+      <div>
+        <h4>How it works</h4>
+        <ul class="step-card" style="border-left: 4px solid #1a1a1a;">
+          <li><strong>Proactive Booking:</strong> If a user says "I want to visit" or "schedule," AI gives the link.</li>
+          <li><strong>Crisis Control:</strong> If the AI detects words like "refund" or "scam," it flags the chat and emails you immediately.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="profile-section">
+    <h2>User Profile & Settings</h2>
+    <div class="grid">
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-avatar-container">
+            <img src="https://via.placeholder.com/100" id="profileImg" class="profile-avatar" alt="Business Logo">
+            <label for="avatarUpload" class="avatar-edit-label">✎</label>
+            <input type="file" id="avatarUpload" class="hidden" accept="image/*">
+          </div>
+          <div class="profile-details">
+            <h3 id="displayBusinessName">Business Name</h3>
+            <p id="displayEmail" style="color: #777; font-size: 0.9rem;">email@example.com</p>
+          </div>
+        </div>
+        <div class="support-form" style="border-top: 1px solid #f0f0f0; padding-top: 15px;">
+          <h4>Update Business Info</h4>
+          <label style="font-size: 0.8rem; font-weight: 600;">Business Name</label>
+          <input type="text" id="editBusinessName" placeholder="Enter new business name">
+          
+          <label style="font-size: 0.8rem; font-weight: 600; margin-top: 10px; display: block;">Change Password</label>
+          <input type="password" id="newPassword" placeholder="Enter new password (optional)">
+          
+          <button id="updateProfileBtn">Save Changes</button>
+        </div>
+      </div>
+      
+      <div class="settings-card">
+        <h4>Account Management</h4>
+        <ul style="margin-top: 10px; margin-bottom: 20px;">
+          <li style="display: flex; justify-content: space-between; align-items: center;">
+            <strong>Privacy Mode (Incognito)</strong>
+            <input type="checkbox" id="privacyToggle" style="width: 20px; height: 20px;">
+          </li>
+          <li><strong>Status:</strong> <span style="color: green;">Active</span></li>
+          <li><strong>Account ID:</strong> <small id="accountId">Loading...</small></li>
+          <li><strong>Data Export:</strong> <a href="#" style="color: #d4af37; text-decoration: none;">Request JSON Export</a></li>
+        </ul>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 15px;">
+          <h4 style="color: #cc0000;">Danger Zone</h4>
+          <p style="font-size: 0.8rem; color: #666;">Once you delete your account, there is no going back. Please be certain.</p>
+          <button id="deleteAccountBtn" class="delete-btn">Delete My Account Permanently</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="links-management">
+    <h2>🔗 External Links</h2>
+    <div class="grid">
+      <div class="support-form">
+        <h4>Add Custom Link</h4>
+        <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Add links for your widget (e.g., Website, Socials).</p>
+        <input type="text" id="linkName" placeholder="Link Label (e.g. Visit Website)">
+        <input type="url" id="linkValue" placeholder="https://yourlink.com">
+        <button id="saveLinkBtn" style="width: 100%;">Add Link</button>
+      </div>
+      <div>
+        <h4>Saved Links</h4>
+        <ul id="userLinksList">
+          <li style="color: #aaa; text-align: center;">No links added.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-info">
+    <h2>Welcome, <span id="businessName">Loading...</span></h2>
+    <div class="grid">
+        <div>
+            <p><strong>Current Plan:</strong> <span id="currentPlan" style="color:#d4af37; font-weight:bold;">Free</span></p>
+            <p><strong>Messages:</strong> <span id="messagesUsed">0</span> / <span id="messagesLimit">50</span></p>
+        </div>
+        <div>
+            <p><strong>Leads Captured:</strong> <span id="leadsUsed">0</span> / <span id="leadsLimit">10</span></p>
+            <p><strong>Widget Key:</strong> <code id="widgetKeyDisplay">Loading...</code></p>
+        </div>
+    </div>
+  </section>
+
+  <section class="guidance">
+    <h2>🚀 Getting Started</h2>
+    <div id="guidanceSteps">
+        <div class="step-card">
+            <h4>1. Add Knowledge</h4>
+            <p>Go to the <strong>Admin Panel</strong> to tell the AI about your business, pricing, and services.</p>
+        </div>
+        <div class="step-card">
+            <h4>2. Install the Widget</h4>
+            <p>Copy your Widget Key and paste the script tag into your website's HTML header or footer.</p>
+        </div>
+        <div class="step-card">
+            <h4>3. Collect Leads</h4>
+            <p>The AI will automatically capture visitor emails. View them in the "Leads" section below.</p>
+        </div>
+    </div>
+  </section>
+
+  <div class="grid">
+      <section class="leads">
+        <h2>Your Leads</h2>
+        <ul id="leadsList"></ul>
+      </section>
+
+      <section class="chats">
+        <h2>Recent Conversations</h2>
+        <ul id="chatsList"></ul>
+      </section>
+  </div>
+
+  <section class="support">
+    <h2>🛠️ Customer Support</h2>
+    <div class="grid">
+        <div class="support-form">
+            <p style="margin-bottom:10px;">Need help? Open a support ticket.</p>
+            <input type="text" id="ticketSubject" placeholder="Subject (e.g. Billing Issue)">
+            <textarea id="ticketMessage" rows="4" placeholder="Describe your issue in detail..."></textarea>
+            <button id="submitTicketBtn" style="width:100%;">Submit Ticket</button>
+        </div>
+        <div>
+            <h4>Ticket Status</h4>
+            <ul id="ticketsList"></ul>
+        </div>
+    </div>
+  </section>
+
+  <section class="plans">
+    <h2>Scale Your Business</h2>
+    <div class="grid" id="planCards"></div>
+  </section>
+
+  <section class="legal">
+    <h2>Legal & Privacy</h2>
+    <div class="grid">
+        <div>
+            <h4>Terms of Service</h4>
+            <div id="termsContent" class="legal-box">Loading terms...</div>
+        </div>
+        <div>
+            <h4>Privacy Policy</h4>
+            <div id="privacyContent" class="legal-box">Loading privacy policy...</div>
+        </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2026 AI SaaS Platform. All Rights Reserved.</p>
+  </footer>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+// --- SECURITY PROTECTION: REDIRECT IF NO TOKEN ---
+if (!localStorage.getItem("token")) {
+    window.location.href = "login.html";
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const API_BASE = "http://localhost:5000/api";
+  const token = localStorage.getItem("token");
+
+  if (!token) return;
+
+  const socket = io("http://localhost:5000");
+
+  /* ================= NOTIFICATION LOGIC ================= */
+  const notifBell = document.getElementById("notif-bell-container");
+  const notifPanel = document.getElementById("notif-panel");
+  const notifBadge = document.getElementById("notif-badge");
+  const notifList = document.getElementById("notif-content-list");
+  const notifClose = document.getElementById("notif-close-btn");
+
+  notifBell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    notifPanel.classList.toggle("show");
+    notifBadge.style.display = "none";
+    notifBadge.innerText = "0";
+  });
+
+  notifClose.addEventListener("click", (e) => {
+    e.stopPropagation();
+    notifPanel.classList.remove("show");
+  });
+
+  document.addEventListener("click", () => {
+    notifPanel.classList.remove("show");
+  });
+
+  window.addNotification = function(title, msg) {
+    const entry = document.createElement("div");
+    entry.className = "notif-entry";
+    entry.innerHTML = `<strong>${title}</strong> ${msg}`;
+    notifList.prepend(entry);
+    
+    let count = parseInt(notifBadge.innerText) + 1;
+    notifBadge.innerText = count;
+    notifBadge.style.display = "block";
+  };
+
+  socket.on("newLead", (data) => {
+    window.addNotification("🚀 New Lead!", `${data.name} just signed up via the widget.`);
+    const list = document.getElementById("leadsList");
+    if (list.innerText.includes("No leads captured")) list.innerHTML = "";
+    const newLeadHtml = `<li><strong>${data.name}</strong><br><span style="color:#666">${data.email}</span><br><small style="color:#aaa">Just now</small></li>`;
+    list.insertAdjacentHTML('afterbegin', newLeadHtml);
+    const leadsUsed = document.getElementById("leadsUsed");
+    leadsUsed.textContent = parseInt(leadsUsed.textContent || 0) + 1;
+  });
+
+  /* ================= SMART TOOLS LOGIC ================= */
+  document.getElementById("saveSmartToolsBtn").addEventListener("click", async () => {
+      const bookingUrl = document.getElementById("bookingUrlInput").value;
+      const sentimentEnabled = document.getElementById("sentimentToggle").checked ? 1 : 0;
+
+      try {
+          const res = await fetch(`${API_BASE}/admin/users/update-smart-settings`, {
+              method: "PUT",
+              headers: { 
+                  "Content-Type": "application/json", 
+                  "Authorization": `Bearer ${token}` 
+              },
+              body: JSON.stringify({ 
+                  booking_url: bookingUrl,
+                  sentiment_alerts: sentimentEnabled 
+              })
+          });
+          
+          if(res.ok) {
+              alert("Smart Tools updated! Your AI is now more powerful.");
+          } else {
+              alert("Failed to update settings.");
+          }
+      } catch (err) {
+          console.error("Smart Tools Error:", err);
+      }
+  });
+
+  /* ================= FETCH DASHBOARD DATA ================= */
+  async function loadDashboard() {
+    try {
+      const res = await fetch(`${API_BASE}/dashboard/full`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (res.status === 401) {
+          localStorage.clear();
+          window.location.href = "login.html";
+          return;
+      }
+
+      const data = await res.json();
+
+      if (data.id) {
+          socket.emit("join", data.id);
+      }
+
+      const bName = data.business_name || "Business Owner";
+      document.getElementById("businessName").textContent = bName;
+      document.getElementById("displayBusinessName").textContent = bName;
+      document.getElementById("editBusinessName").value = bName;
+      document.getElementById("displayEmail").textContent = data.email || "No Email Found";
+      document.getElementById("accountId").textContent = data.id || "N/A";
+      
+      document.getElementById("currentPlan").textContent = (data.plan || "free").toUpperCase();
+      document.getElementById("messagesUsed").textContent = data.messages_used || 0;
+      document.getElementById("messagesLimit").textContent = data.messages_limit || 0;
+      document.getElementById("leadsUsed").textContent = data.leads_used || 0;
+      document.getElementById("leadsLimit").textContent = data.leads_limit || 0;
+      document.getElementById("widgetKeyDisplay").textContent = data.widget_key || "No Key Found";
+
+      // Load existing Smart Settings into inputs
+      document.getElementById("bookingUrlInput").value = data.booking_url || "";
+      document.getElementById("sentimentToggle").checked = data.sentiment_alerts === 1;
+
+      if(data.profile_pic) {
+          document.getElementById("profileImg").src = data.profile_pic;
+      }
+
+      if (data.is_verified === 0) {
+        document.getElementById("verifyWarning").classList.remove("hidden");
+      }
+
+      renderLeads(data.leads || []);
+      renderChats(data.chats || []);
+      renderPlans(data.plan || "free");
+    } catch (err) {
+      console.error("Dashboard Load Error:", err);
+    }
+  }
+
+  /* ================= PROFILE UPDATES ================= */
+  document.getElementById("updateProfileBtn").addEventListener("click", async () => {
+      const newName = document.getElementById("editBusinessName").value;
+      const newPass = document.getElementById("newPassword").value;
+      
+      if(!newName) return alert("Business name cannot be empty");
+
+      try {
+          const res = await fetch(`${API_BASE}/admin/users/update-profile`, {
+              method: "PUT",
+              headers: { 
+                  "Content-Type": "application/json", 
+                  "Authorization": `Bearer ${token}` 
+              },
+              body: JSON.stringify({ 
+                  business_name: newName,
+                  password: newPass 
+              })
+          });
+          
+          if(res.ok) {
+              alert("Profile updated successfully!");
+              document.getElementById("newPassword").value = "";
+              loadDashboard();
+          }
+      } catch (err) {
+          console.error("Update Error:", err);
+      }
+  });
+
+  /* ================= ADD LINK LOGIC ================= */
+  document.getElementById("saveLinkBtn").addEventListener("click", () => {
+      const name = document.getElementById("linkName").value;
+      const val = document.getElementById("linkValue").value;
+      if(!name || !val) return alert("Please enter both link name and URL");
+      
+      const list = document.getElementById("userLinksList");
+      if(list.innerText.includes("No links added")) list.innerHTML = "";
+      
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${val}" target="_blank" style="color: #d4af37; font-weight: 600;">${name}</a> <br><small style="color:#888">${val}</small>`;
+      list.appendChild(li);
+      
+      document.getElementById("linkName").value = "";
+      document.getElementById("linkValue").value = "";
+      alert("Link added!");
+  });
+
+  /* ================= ACCOUNT DELETION ================= */
+  document.getElementById("deleteAccountBtn").addEventListener("click", async () => {
+      const confirmDelete = confirm("CRITICAL: Are you sure you want to delete your account?");
+      if (confirmDelete) {
+          const secondConfirm = prompt("To confirm, please type 'DELETE' in the box below:");
+          if (secondConfirm === "DELETE") {
+              try {
+                  const res = await fetch(`${API_BASE}/admin/users/delete-account`, {
+                      method: "DELETE",
+                      headers: { "Authorization": `Bearer ${token}` }
+                  });
+                  if (res.ok) {
+                      alert("Account successfully deleted.");
+                      localStorage.clear();
+                      window.location.href = "login.html";
+                  }
+              } catch (err) {
+                  console.error("Delete Error:", err);
+              }
+          }
+      }
+  });
+
+  document.getElementById("avatarUpload").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+              document.getElementById("profileImg").src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+      }
+  });
+
+  function renderLeads(leads) {
+    const list = document.getElementById("leadsList");
+    list.innerHTML = leads.length ? "" : "<li style='text-align:center;'>No leads captured yet.</li>";
+    leads.forEach(l => {
+      list.innerHTML += `<li><strong>${l.name}</strong><br><span style="color:#666">${l.email}</span><br><small style="color:#aaa">${new Date(l.created_at).toLocaleDateString()}</small></li>`;
+    });
+  }
+
+  function renderChats(chats) {
+    const list = document.getElementById("chatsList");
+    list.innerHTML = chats.length ? "" : "<li style='text-align:center;'>No conversations yet.</li>";
+    chats.forEach(c => {
+      list.innerHTML += `<li>Visitor: <strong>${c.client_name || 'Guest'}</strong> <br> <small style="color:#aaa">Last active: ${c.created_at ? new Date(c.created_at).toLocaleTimeString() : 'Unknown'}</small></li>`;
+    });
+  }
+
+  /* ================= SUPPORT TICKETS ================= */
+  document.getElementById("submitTicketBtn").addEventListener("click", async () => {
+    const subject = document.getElementById("ticketSubject").value;
+    const message = document.getElementById("ticketMessage").value;
+    if(!subject || !message) return alert("Please fill in both fields");
+    const res = await fetch(`${API_BASE}/support/ticket`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ subject, message })
+    });
+    if (res.ok) {
+      alert("Ticket submitted successfully!");
+      document.getElementById("ticketSubject").value = "";
+      document.getElementById("ticketMessage").value = "";
+      loadTickets();
+    }
+  });
+
+  async function loadTickets() {
+    try {
+        const res = await fetch(`${API_BASE}/support/my-tickets`, {
+        headers: { "Authorization": `Bearer ${token}` }
+        });
+        const tickets = await res.json();
+        const list = document.getElementById("ticketsList");
+        list.innerHTML = tickets.length ? "" : "<li style='text-align:center;'>No tickets opened.</li>";
+        tickets.forEach(t => {
+        list.innerHTML += `<li><span style="color:#d4af37">[${t.status.toUpperCase()}]</span> ${t.subject}</li>`;
+        });
+    } catch (e) {}
+  }
+
+  /* ================= LEGAL CONTENT ================= */
+  async function loadLegal() {
+    try {
+        const res = await fetch(`${API_BASE}/content/legal`);
+        const data = await res.json();
+        document.getElementById("termsContent").textContent = data.terms || "Standard Terms of Service apply.";
+        document.getElementById("privacyContent").textContent = data.privacy || "Your data is protected under GDPR.";
+    } catch(e) {}
+  }
+
+  /* ================= LOGOUT ================= */
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "login.html";
+  });
+
+  /* ================= PLANS ================= */
+  function renderPlans(currentPlan) {
+    const ALL_PLANS = [
+      { name: "basic", price: "₦10,000" },
+      { name: "pro", price: "₦25,000" },
+      { name: "agency", price: "₦80,000" }
+    ];
+    const container = document.getElementById("planCards");
+    container.innerHTML = "";
+    ALL_PLANS.forEach(p => {
+      if (p.name.toLowerCase() === currentPlan.toLowerCase()) return;
+      const card = document.createElement("div");
+      card.className = "plan-card";
+      card.innerHTML = `<h3>${p.name.toUpperCase()}</h3><p style="font-size:1.2rem; font-weight:bold; margin:10px 0;">${p.price}/mo</p><button style="width:100%">Upgrade</button>`;
+      card.querySelector("button").onclick = () => upgrade(p.name);
+      container.appendChild(card);
+    });
+  }
+
+  async function upgrade(planName) {
+    const res = await fetch(`${API_BASE}/subscription/create-checkout-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ plan: planName })
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+  }
+
+  loadDashboard();
+  loadTickets();
+  loadLegal();
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,203 @@
+/* widget.css - Premium Floating AI Chat Widget for Businesses */
+
+:root {
+  --primary: #d4af37; /* Customizable business brand color */
+  --primary-dark: #b8962e;
+  --bg-window: #141414;
+  --bg-messages: #0f0f0f;
+  --text-light: #f0f0f0;
+  --text-muted: #bbbbbb;
+  --border: #333333;
+}
+
+#ai-chat-widget {
+  position: fixed;
+  z-index: 999999;
+}
+
+/* Floating Bubble (business loves the subtle glow) */
+.widget-bubble {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 68px;
+  height: 68px;
+  background: var(--primary);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.widget-bubble:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 40px rgba(212,175,55,0.45);
+}
+
+/* Chat Window (smooth, premium feel) */
+.widget-window {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  width: 380px;
+  height: 520px;
+  background: var(--bg-window);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7);
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.widget-window.open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Header (customizable title & avatar for business branding) */
+.widget-header {
+  background: var(--primary);
+  color: #000;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.widget-header .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  margin-right: 12px;
+}
+
+.widget-header .close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #000;
+}
+
+/* Messages (business-friendly, clean chat) */
+.widget-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: var(--bg-messages);
+}
+
+.message {
+  margin-bottom: 16px;
+  max-width: 82%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.message.user {
+  background: var(--primary);
+  color: #000;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.message.bot {
+  background: #222;
+  color: var(--text-light);
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+}
+
+/* Typing indicator (makes it feel live and responsive) */
+.typing {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  background: #666;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Input (simple, business-like) */
+.widget-input {
+  display: flex;
+  padding: 16px;
+  background: #1a1a1a;
+  border-top: 1px solid var(--border);
+}
+
+.widget-input input {
+  flex: 1;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 24px;
+  background: #222;
+  color: white;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.widget-input button {
+  margin-left: 12px;
+  padding: 12px 24px;
+  background: var(--primary);
+  color: #000;
+  border: none;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Position options (customizable for business site layout) */
+[data-position="bottom-left"] .widget-bubble,
+[data-position="bottom-left"] .widget-window {
+  right: auto;
+  left: 24px;
+}
+
+/* Mobile responsive (businesses need this for phone users) */
+@media (max-width: 480px) {
+  .widget-window {
+    width: 100%;
+    height: 100vh;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    border-radius: 0;
+  }
+  .widget-bubble {
+    bottom: 16px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+}

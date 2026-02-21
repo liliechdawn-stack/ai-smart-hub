@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About AI Smart Hub | Intelligent Customer & Business Growth Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d4af37;
+      --primary-hover: #b8962e;
+      --dark: #1a1a1a;
+      --dark-accent: #2d2d2d;
+      --light: #f8f9fa;
+      --success: #28a745;
+      --danger: #dc3545;
+      --info: #3b82f6;
+      --warning: #f59e0b;
+      --border-color: #e0e0e0;
+      --shadow: 0 8px 25px rgba(0,0,0,0.06);
+      --card-radius: 16px;
+      --transition: 0.3s ease;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: var(--dark);
+      line-height: 1.7;
+    }
+
+    nav {
+      background: white;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .nav-links a:hover,
+    .active-nav {
+      color: var(--primary);
+    }
+
+    .cta-btn {
+      background: var(--primary);
+      color: white;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .cta-btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 100px 24px 80px;
+      text-align: center;
+      color: white;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+
+    .hero p.lead {
+      font-size: 1.3rem;
+      opacity: 0.95;
+      max-width: 720px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin-top: 60px;
+    }
+
+    .hero-stat {
+      text-align: center;
+    }
+
+    .hero-stat-number {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: white;
+    }
+
+    .hero-stat-label {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .section {
+      padding: 80px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: #666;
+      font-size: 1.15rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+    }
+
+    .feature-card {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 40px 32px;
+      border: 1px solid var(--border-color);
+      transition: var(--transition);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+    }
+
+    .feature-icon {
+      font-size: 3.2rem;
+      margin-bottom: 24px;
+      color: var(--primary);
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .feature-tag {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .problem-solution {
+      background: #f8f9fa;
+      border-radius: var(--card-radius);
+      padding: 40px;
+      margin: 40px 0;
+      border-left: 4px solid var(--primary);
+    }
+
+    .problem {
+      color: var(--danger);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .solution {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin: 40px 0;
+    }
+
+    .use-case-card {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 30px;
+      border: 1px solid var(--border-color);
+    }
+
+    .use-case-icon {
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+    }
+
+    .tech-badge {
+      background: var(--dark);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      display: inline-block;
+      margin: 5px;
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 40px 0;
+    }
+
+    .cta-section {
+      background: var(--dark);
+      color: white;
+      text-align: center;
+      padding: 100px 24px;
+      border-radius: var(--card-radius);
+      margin: 80px 0;
+    }
+
+    .cta-section h2 {
+      font-size: 2.8rem;
+      margin-bottom: 24px;
+    }
+
+    .cta-section p {
+      font-size: 1.25rem;
+      opacity: 0.9;
+      max-width: 680px;
+      margin: 0 auto 40px;
+    }
+
+    .testimonial {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 30px;
+      margin: 20px 0;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      margin-top: 15px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    footer {
+      background: white;
+      padding: 60px 24px;
+      text-align: center;
+      color: #777;
+      border-top: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2.4rem; }
+      .section-header h2 { font-size: 2rem; }
+      .hero-stats { flex-direction: column; gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="smart-tools.html">AI Tools</a>
+      <a href="customer-insights.html">Customer Insights</a>
+      <a href="ai-automations.html">Automations</a>
+      <a href="team.html">Team</a>
+      <a href="about.html" class="active-nav">About</a>
+      <a href="pricing.html" class="cta-btn">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>AI Smart Hub</h1>
+  <p class="lead">
+    The most intelligent customer platform that helps businesses understand, engage, and retain customers automatically — powered by Cloudflare AI at scale.
+  </p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-number">1000+</div>
+      <div class="hero-stat-label">Concurrent Users</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-number">99.9%</div>
+      <div class="hero-stat-label">Uptime</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-number">50ms</div>
+      <div class="hero-stat-label">Response Time</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Who We Are Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Who We Are</h2>
+      <p>We built AI Smart Hub to solve real business problems with practical AI solutions that actually work.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>AI-First Customer Intelligence</h3>
+        <p>Real-time sentiment analysis, churn prediction, and automatic problem detection from every customer conversation. Know what your customers feel before they tell you.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Powered by Cloudflare AI</h3>
+        <p>Built on Cloudflare's global network using Llama 3 and LLaVA models. Handles 1000+ concurrent users with 50ms response times. No expensive infrastructure needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Built for Scale</h3>
+        <p>From small businesses to enterprises — our platform grows with you. Automatic load balancing, queue management, and resource optimization.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Problems We Solve Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Real Problems, Real Solutions</h2>
+      <p>Every feature in AI Smart Hub was built to solve an actual business problem</p>
+    </div>
+
+    <div class="use-case-grid">
+      <div class="use-case-card">
+        <div class="use-case-icon">🤖</div>
+        <div class="feature-tag">Problem</div>
+        <p class="problem">"My customers ask the same questions every day and I'm tired of typing the same responses."</p>
+        <div class="feature-tag" style="background: var(--success);">Solution</div>
+        <p class="solution">AI Widget with Knowledge Base — Train it once with your business info, it answers 80% of questions automatically.</p>
+      </div>
+
+      <div class="use-case-card">
+        <div class="use-case-icon">📧</div>
+        <div class="feature-tag">Problem</div>
+        <p class="problem">"I have 500 leads but no time to email them all about our new products."</p>
+        <div class="feature-tag" style="background: var(--success);">Solution</div>
+        <p class="solution">Mass Email Broadcast — Send personalized emails to all leads in one click. Track opens and engagement.</p>
+      </div>
+
+      <div class="use-case-card">
+        <div class="use-case-icon">🔮</div>
+        <div class="feature-tag">Problem</div>
+        <p class="problem">"I keep losing customers and don't know why until it's too late."</p>
+        <div class="feature-tag" style="background: var(--success);">Solution</div>
+        <p class="solution">Churn Prediction AI — Identifies at-risk customers based on sentiment and behavior. Save them before they leave.</p>
+      </div>
+
+      <div class="use-case-card">
+        <div class="use-case-icon">📊</div>
+        <div class="feature-tag">Problem</div>
+        <p class="problem">"I have no idea what problems my customers are actually having."</p>
+        <div class="feature-tag" style="background: var(--success);">Solution</div>
+        <p class="solution">Problem Detection — Automatically categorizes customer issues (delivery, quality, pricing, etc.) and shows trends.</p>
+      </div>
+
+      <div class="use-case-card">
+        <div class="use-case-icon">⚙️</div>
+        <div class="feature-tag">Problem</div>
+        <p class="problem">"I want to automate responses for common situations like booking requests."</p>
+        <div class="feature-tag" style="background: var(--success);">Solution</div>
+        <p class="solution">AI Automations — Create if-this-then-that rules. When customer asks to book → send booking link automatically.</p>
+      </div>
+
+      <div class="use-case-card">
+        <div class="use-case-icon">👥</div>
+        <div class="feature-tag">Problem</div>
+        <p class="problem">"I don't know what kind of customers I have or how to market to them."</p>
+        <div class="feature-tag" style="background: var(--success);">Solution</div>
+        <p class="solution">AI Personas — Automatically generates customer profiles based on chat history. Know your audience.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Deep Dive -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Everything You Need to Grow</h2>
+      <p>15+ powerful tools designed to work together seamlessly</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3>Smart AI Widget</h3>
+        <p>Embed on any website. Calm female voice, image recognition, PDF processing, and duplicate lead prevention. Knows your entire business from the knowledge base.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Customer Insights Dashboard</h3>
+        <p>Real-time view of all customers, their sentiment, churn risk, and detected problems. Filter, sort, and export data instantly.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Problem Solver</h3>
+        <p>Ask anything about your customers in plain English. "Show me all customers with delivery issues" or "Summarize John's complaints" — AI understands and responds.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📧</div>
+        <h3>Email Broadcast System</h3>
+        <p>Send updates, offers, and announcements to all leads. Personalized with {{name}}. Track opens and engagement. 100% deliverability with Resend integration.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3>AI Automations Studio</h3>
+        <p>Create no-code workflows. When X happens, do Y. Set conditions, schedule actions, and watch your business run itself.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Problem Analysis Suite</h3>
+        <p>7 specialized tools: Problem Classifier, Smart Response Generator, Churn Prevention AI, Sentiment Timeline, Auto-Ticket Creator, Knowledge Base Suggester, Problem Heatmap.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3>Vision & File Processing</h3>
+        <p>Upload images, PDFs, Word docs. AI reads, summarizes, and answers questions about them. Perfect for product photos, receipts, and documents.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎤</div>
+        <h3>Voice Input & Live Mode</h3>
+        <p>Customers can speak instead of type. Live mode with cute pixel cat face changes expressions based on mood — listening, thinking, smiling.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Solves Business Problems -->
+  <div class="section">
+    <div class="problem-solution">
+      <h3 style="margin-bottom: 20px;">For E-commerce Stores</h3>
+      <p><span class="problem">Problem:</span> Customers constantly ask about delivery times, return policies, and product details. Support team overwhelmed.</p>
+      <p><span class="solution">Solution:</span> AI widget answers 80% of questions instantly. Problem detection identifies recurring issues (delays, quality). Email broadcast announces new collections to 1000+ customers in one click.</p>
+    </div>
+
+    <div class="problem-solution">
+      <h3 style="margin-bottom: 20px;">For Service Businesses</h3>
+      <p><span class="problem">Problem:</span> Missed booking opportunities, no follow-up with leads, can't track customer satisfaction.</p>
+      <p><span class="solution">Solution:</span> Automations detect booking intent and send calendar links automatically. Churn prediction identifies unhappy clients. Customer insights show exactly what clients complain about.</p>
+    </div>
+
+    <div class="problem-solution">
+      <h3 style="margin-bottom: 20px;">For SaaS Companies</h3>
+      <p><span class="problem">Problem:</span> Support tickets piling up, no visibility into user frustration, product feedback scattered everywhere.</p>
+      <p><span class="solution">Solution:</span> Auto-ticket creator escalates critical issues. Problem analysis shows top user complaints. AI personas reveal user segments for targeted marketing.</p>
+    </div>
+
+    <div class="problem-solution">
+      <h3 style="margin-bottom: 20px;">For Agencies & Freelancers</h3>
+      <p><span class="problem">Problem:</span> Managing multiple clients, tracking their customer feedback, providing regular reports.</p>
+      <p><span class="solution">Solution:</span> Export full reports with one click. White-label widget for each client. Team notes and task management. Agency plan includes all features for unlimited clients.</p>
+    </div>
+  </div>
+
+  <!-- Technical Excellence -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Built for Scale with Cloudflare</h2>
+      <p>1000+ concurrent users? No problem. Cloudflare's global network handles it.</p>
+    </div>
+
+    <div class="tech-stack">
+      <span class="tech-badge">Cloudflare Workers AI</span>
+      <span class="tech-badge">Llama 3 8B</span>
+      <span class="tech-badge">LLaVA Vision Model</span>
+      <span class="tech-badge">SQLite</span>
+      <span class="tech-badge">Node.js</span>
+      <span class="tech-badge">WebSockets</span>
+      <span class="tech-badge">Resend (Email)</span>
+      <span class="tech-badge">JWT Auth</span>
+      <span class="tech-badge">PDF Processing</span>
+      <span class="tech-badge">Speech Recognition</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px;">
+      <div>
+        <h3>📊 Performance</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li>✅ Average response time: <strong>50ms</strong></li>
+          <li>✅ Concurrent users: <strong>1000+</strong></li>
+          <li>✅ 99.9% uptime guarantee</li>
+          <li>✅ Auto-scaling infrastructure</li>
+        </ul>
+      </div>
+      <div>
+        <h3>🔒 Security</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li>✅ JWT authentication</li>
+          <li>✅ Row-level security</li>
+          <li>✅ Data encryption</li>
+          <li>✅ GDPR compliant</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testimonials -->
+  <div class="section">
+    <div class="section-header">
+      <h2>What Our Users Say</h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+      <div class="testimonial">
+        "The AI widget alone is worth it. My support emails dropped by 60% in the first month. Customers love the quick responses."
+        <div class="testimonial-author">— Sarah, Fashion Store Owner</div>
+      </div>
+      <div class="testimonial">
+        "The churn prediction saved me 3 major clients last month. I reached out before they canceled. This pays for itself."
+        <div class="testimonial-author">— Michael, SaaS Founder</div>
+      </div>
+      <div class="testimonial">
+        "Mass email broadcast sent my new collection to 2000 leads in 2 minutes. Made $15k in 24 hours. Unbelievable."
+        <div class="testimonial-author">— David, E-commerce</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Call to Action -->
+  <div class="cta-section">
+    <h2>Ready to transform your customer experience?</h2>
+    <p>Join 500+ businesses already using AI Smart Hub to understand, engage, and retain customers automatically.</p>
+    <a href="signup.html" class="cta-btn" style="font-size:1.3rem;padding:16px 48px;">Start Free Trial</a>
+    <p style="margin-top: 20px; font-size: 0.9rem;">No credit card required • 14-day free trial • Cancel anytime</p>
+  </div>
+
+  <!-- FAQ Quick Links -->
+  <div style="text-align: center; margin: 40px 0;">
+    <h3>Quick Links</h3>
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+      <a href="widget-setup.html" style="color: var(--primary);">Widget Setup Guide</a>
+      <a href="automations.html" style="color: var(--primary);">Automations Tutorial</a>
+      <a href="email-broadcast.html" style="color: var(--primary);">Email Broadcast Guide</a>
+      <a href="api-docs.html" style="color: var(--primary);">API Documentation</a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2026 AI Smart Hub • Built with Cloudflare AI • Scalable to 1000+ concurrent users</p>
+  <p style="margin-top: 10px;">
+    <a href="privacy.html" style="color:#777; text-decoration: none;">Privacy</a> • 
+    <a href="terms.html" style="color:#777; text-decoration: none;">Terms</a> • 
+    <a href="contact.html" style="color:#777; text-decoration: none;">Contact</a> • 
+    <a href="status.html" style="color:#777; text-decoration: none;">System Status</a>
+  </p>
+</footer>
+
+</body>
+</html>

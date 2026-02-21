@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Automations Tutorial | AI Smart Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d4af37;
+      --primary-hover: #b8962e;
+      --dark: #1a1a1a;
+      --light: #f8f9fa;
+      --success: #28a745;
+      --info: #3b82f6;
+      --border-color: #e0e0e0;
+      --shadow: 0 8px 25px rgba(0,0,0,0.06);
+      --card-radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    nav {
+      background: white;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: 0.3s ease;
+      margin-left: 28px;
+    }
+
+    .nav-links a:hover { color: var(--primary); }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .automation-example {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 30px;
+      margin: 30px 0;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+    }
+
+    .trigger-box {
+      background: #e8f0fe;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 15px 0;
+      border-left: 4px solid var(--info);
+    }
+
+    .action-box {
+      background: #e6f7e6;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 15px 0;
+      border-left: 4px solid var(--success);
+    }
+
+    .condition-box {
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px 5px;
+    }
+
+    .btn-secondary {
+      background: var(--light);
+      color: var(--dark);
+      border: 1px solid var(--border-color);
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px 5px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px;
+      color: #777;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="about.html">About</a>
+      <a href="pricing.html">Pricing</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>⚙️ AI Automations Tutorial</h1>
+  <p style="font-size: 1.2rem; margin-bottom: 40px;">Build powerful no-code workflows that run 24/7</p>
+
+  <div class="automation-example">
+    <h2>📅 Example 1: Auto-Booking Assistant</h2>
+    <div class="trigger-box">
+      <strong>🔔 TRIGGER:</strong> Customer asks "Can I book an appointment?" or "Schedule a call"
+    </div>
+    <div class="condition-box">
+      <strong>⚡ CONDITION:</strong> Message contains words like "book", "schedule", "appointment", "meeting"
+    </div>
+    <div class="action-box">
+      <strong>✅ ACTION:</strong> Send booking link + Tag as "Hot Lead" + Notify team
+    </div>
+    <p style="margin-top: 15px;">💡 Result: Never miss a booking opportunity again!</p>
+  </div>
+
+  <div class="automation-example">
+    <h2>⚠️ Example 2: Crisis Detection</h2>
+    <div class="trigger-box">
+      <strong>🔔 TRIGGER:</strong> Customer expresses anger or frustration
+    </div>
+    <div class="condition-box">
+      <strong>⚡ CONDITION:</strong> Sentiment analysis detects "negative" or "angry" tone
+    </div>
+    <div class="action-box">
+      <strong>✅ ACTION:</strong> Send emergency alert to support team + Create high-priority ticket
+    </div>
+    <p style="margin-top: 15px;">💡 Result: Resolve angry customers before they leave bad reviews!</p>
+  </div>
+
+  <div class="automation-example">
+    <h2>💰 Example 3: Abandoned Cart Recovery</h2>
+    <div class="trigger-box">
+      <strong>🔔 TRIGGER:</strong> Customer asks about pricing then leaves
+    </div>
+    <div class="condition-box">
+      <strong>⚡ CONDITION:</strong> No response for 30 minutes after price discussion
+    </div>
+    <div class="action-box">
+      <strong>✅ ACTION:</strong> Send automated follow-up with discount code
+    </div>
+    <p style="margin-top: 15px;">💡 Result: Recover 30% of lost sales automatically!</p>
+  </div>
+
+  <div class="automation-example">
+    <h2>⭐ Example 4: Review Collector</h2>
+    <div class="trigger-box">
+      <strong>🔔 TRIGGER:</strong> Customer says "thank you" or "great service"
+    </div>
+    <div class="condition-box">
+      <strong>⚡ CONDITION:</strong> Positive sentiment detected
+    </div>
+    <div class="action-box">
+      <strong>✅ ACTION:</strong> Send Google review link + NPS survey
+    </div>
+    <p style="margin-top: 15px;">💡 Result: 5x more reviews from happy customers!</p>
+  </div>
+
+  <h2 style="margin: 40px 0 20px;">🚀 Ready to create your first automation?</h2>
+  <div style="text-align: center;">
+    <a href="ai-automations.html" class="btn-primary">Go to Automations Dashboard</a>
+    <a href="automations-template.html" class="btn-secondary">Browse Templates</a>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 AI Smart Hub • Need help? <a href="contact.html" style="color: var(--primary);">Contact Support</a></p>
+</footer>
+
+</body>
+</html>

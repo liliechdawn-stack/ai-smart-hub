@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - AI Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-main: #0b0b0b;
+      --bg-card: #141414;
+      --text-primary: #f0f0f0;
+      --text-secondary: #aaaaaa;
+      --gold: #d4af37;
+      --gold-dark: #b8962e;
+      --border: #2a2a2a;
+      --danger: #ff4d4d;
+      --success: #2ecc71;
+      --info: #8ab4f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+
+    .admin-dashboard {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    aside.sidebar {
+      width: 240px;
+      background: #0f0f0f;
+      padding: 32px 20px;
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    aside.sidebar h2 {
+      color: var(--gold);
+      margin-bottom: 32px;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+    }
+
+    aside.sidebar nav a {
+      display: block;
+      color: var(--text-secondary);
+      text-decoration: none;
+      margin: 14px 0;
+      font-weight: 500;
+      transition: 0.2s;
+      cursor: pointer;
+    }
+
+    aside.sidebar nav a.active,
+    aside.sidebar nav a:hover {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    /* SaaS Update: Stats Bar */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .stat-card h4 { margin: 0; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; }
+    .stat-card p { margin: 10px 0 0; font-size: 1.5rem; font-weight: 700; color: var(--gold); }
+
+    .logout-btn {
+      margin-top: 30px;
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      border: 2px solid var(--danger);
+      color: var(--danger);
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    main.main {
+      flex: 1;
+      padding: 40px;
+    }
+
+    .header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .search-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      width: 300px;
+      outline: none;
+    }
+
+    .refresh-btn {
+      background: var(--gold);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th {
+      background: #1a1a1a;
+      color: var(--gold);
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+    }
+
+    select, input.table-input {
+      background: #222;
+      border: 1px solid var(--border);
+      color: white;
+      padding: 6px;
+      border-radius: 4px;
+      width: 110px;
+    }
+
+    .btn-save {
+      background: var(--success);
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .btn-delete {
+      background: var(--danger);
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      margin-left: 8px;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+    .status-verified { background: rgba(46, 204, 113, 0.2); color: var(--success); }
+    .status-pending { background: rgba(212, 175, 55, 0.2); color: var(--gold); }
+
+    .loading {
+      padding: 40px;
+      text-align: center;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+
+<body>
+
+<div class="admin-dashboard">
+
+  <aside class="sidebar">
+    <h2>AI ADMIN</h2>
+    <nav>
+      <a id="navUsers" class="active">Manage Users</a>
+      <a id="navActivities">Global Logs</a>
+    </nav>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </aside>
+
+  <main class="main">
+
+    <div class="admin-stats-grid">
+        <div class="stat-card">
+            <h4>Total Businesses</h4>
+            <p id="stat-total-users">0</p>
+        </div>
+        <div class="stat-card">
+            <h4>Total AI Interactions</h4>
+            <p id="stat-total-messages">0</p>
+        </div>
+        <div class="stat-card">
+            <h4>Active Agencies</h4>
+            <p id="stat-total-agencies">0</p>
+        </div>
+    </div>
+
+    <section id="usersSection">
+      <div class="header-flex">
+        <h1>User Management</h1>
+        <div>
+          <input type="text" id="userSearch" class="search-box" placeholder="Search by business or email...">
+          <button class="refresh-btn" id="refreshUsersBtn">Refresh Data</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Business & Email</th>
+            <th>Plan & Verification</th>
+            <th>Msgs Used</th>
+            <th>Leads Used</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+      <div id="usersLoading" class="loading">Fetching secure data...</div>
+    </section>
+
+    <section id="activitiesSection" class="hidden">
+      <div class="header-flex">
+        <h1>Global Activity Logs</h1>
+        <button class="refresh-btn" id="refreshActivitiesBtn">Refresh Logs</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Inquiry</th>
+            <th>AI Response</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="activitiesTableBody"></tbody>
+      </table>
+      <div id="activitiesLoading" class="loading">Fetching logs...</div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const API_URL = "http://localhost:5000/api";
+const token = localStorage.getItem("token");
+
+// Auth Guard
+if (!token) location.href = "login.html";
+
+function parseJwt(token) {
+  try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
+}
+
+const admin = parseJwt(token);
+// Strict admin check
+if (!admin || admin.email !== "ericchung992@gmail.com") {
+  alert("Unauthorized Access");
+  location.href = "dashboard.html";
+}
+
+let allUsers = [];
+
+const usersSection = document.getElementById("usersSection");
+const activitiesSection = document.getElementById("activitiesSection");
+const usersTableBody = document.getElementById("usersTableBody");
+const activitiesTableBody = document.getElementById("activitiesTableBody");
+const usersLoading = document.getElementById("usersLoading");
+
+// Navigation logic
+document.getElementById("navUsers").onclick = (e) => toggleTab(e.target, usersSection);
+document.getElementById("navActivities").onclick = (e) => toggleTab(e.target, activitiesSection);
+
+function toggleTab(link, section) {
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+  link.classList.add('active');
+  section.classList.remove('hidden');
+  if (section === usersSection) loadUsers(); else loadActivities();
+}
+
+// Load Users from Backend
+async function loadUsers() {
+  usersLoading.classList.remove("hidden");
+  usersTableBody.innerHTML = "";
+  try {
+    const res = await fetch(`${API_URL}/admin/users`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    allUsers = await res.json();
+    updateStats(allUsers);
+    renderUserTable(allUsers);
+  } catch (e) {
+    console.error(e);
+    alert("Error loading users");
+  }
+  usersLoading.classList.add("hidden");
+}
+
+function updateStats(users) {
+    document.getElementById("stat-total-users").textContent = users.length;
+    let msgs = 0;
+    let agencies = 0;
+    users.forEach(u => {
+        msgs += (u.messages_used || 0);
+        if(u.plan === 'agency') agencies++;
+    });
+    document.getElementById("stat-total-messages").textContent = msgs.toLocaleString();
+    document.getElementById("stat-total-agencies").textContent = agencies;
+}
+
+function renderUserTable(users) {
+  usersTableBody.innerHTML = "";
+  users.forEach(u => {
+    const tr = document.createElement("tr");
+    
+    // Standardizing business name display (FIX APPLIED)
+    const displayName = u.business_name || u.name || "Unnamed Business";
+    const isVerified = u.is_verified === 1;
+    
+    tr.innerHTML = `
+      <td>
+        <div style="font-weight:600; color:var(--gold)">${displayName}</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary)">${u.email}</div>
+      </td>
+      <td>
+        <select id="plan-${u.id}" style="margin-bottom: 5px; display: block;">
+          <option value="free" ${u.plan === 'free' ? 'selected' : ''}>Free</option>
+          <option value="basic" ${u.plan === 'basic' ? 'selected' : ''}>Basic</option>
+          <option value="pro" ${u.plan === 'pro' ? 'selected' : ''}>Pro</option>
+          <option value="agency" ${u.plan === 'agency' ? 'selected' : ''}>Agency</option>
+        </select>
+        <span class="status-badge ${isVerified ? 'status-verified' : 'status-pending'}">
+            ${isVerified ? 'VERIFIED' : 'PENDING'}
+        </span>
+        <select id="verify-${u.id}" style="width: 80px; font-size: 10px; padding: 2px;">
+            <option value="1" ${isVerified ? 'selected' : ''}>Verify</option>
+            <option value="0" ${!isVerified ? 'selected' : ''}>Unverify</option>
+        </select>
+      </td>
+      <td><input type="number" class="table-input" id="msg-${u.id}" value="${u.messages_used || 0}"></td>
+      <td><input type="number" class="table-input" id="lead-${u.id}" value="${u.leads_used || 0}"></td>
+      <td>
+        <button class="btn-save" onclick="updateUser('${u.id}')">Update</button>
+        <button class="btn-delete" onclick="deleteUser('${u.id}')">Delete</button>
+      </td>
+    `;
+    usersTableBody.appendChild(tr);
+  });
+}
+
+// Admin Update Function
+async function updateUser(userId) {
+  const plan = document.getElementById(`plan-${userId}`).value;
+  const is_verified = parseInt(document.getElementById(`verify-${userId}`).value);
+  const messages_used = parseInt(document.getElementById(`msg-${userId}`).value);
+  const leads_used = parseInt(document.getElementById(`lead-${userId}`).value);
+
+  try {
+    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify({ plan, is_verified, messages_used, leads_used })
+    });
+
+    if (res.ok) {
+      alert("User updated successfully");
+      loadUsers();
+    } else {
+      alert("Update failed");
+    }
+  } catch (e) {
+    alert("Network error during update");
+  }
+}
+
+// Admin Delete Function
+async function deleteUser(userId) {
+  if (!confirm("⚠️ PERMANENT ACTION: Delete this business and all its chat logs/leads?")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      alert("Account Deleted");
+      loadUsers();
+    }
+  } catch (e) {
+    alert("Deletion failed");
+  }
+}
+
+// Search filter
+document.getElementById("userSearch").oninput = (e) => {
+  const term = e.target.value.toLowerCase();
+  const filtered = allUsers.filter(u => 
+    u.email.toLowerCase().includes(term) || 
+    (u.business_name && u.business_name.toLowerCase().includes(term)) ||
+    (u.name && u.name.toLowerCase().includes(term))
+  );
+  renderUserTable(filtered);
+};
+
+// Global Logs Logic
+async function loadActivities() {
+  const activitiesLoading = document.getElementById("activitiesLoading");
+  activitiesLoading.classList.remove("hidden");
+  activitiesTableBody.innerHTML = "";
+  try {
+    const res = await fetch(`${API_URL}/admin/activities`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const acts = await res.json();
+    acts.forEach(a => {
+      activitiesTableBody.innerHTML += `
+        <tr>
+          <td>${a.client_name || "Visitor"}</td>
+          <td>${a.message}</td>
+          <td>${a.response}</td>
+          <td>${new Date(a.created_at).toLocaleString()}</td>
+        </tr>`;
+    });
+  } catch {
+    alert("Error loading activities");
+  }
+  activitiesLoading.classList.add("hidden");
+}
+
+// Utilities
+document.getElementById("logoutBtn").onclick = () => {
+  localStorage.clear();
+  location.href = "login.html";
+};
+
+document.getElementById("refreshUsersBtn").onclick = loadUsers;
+document.getElementById("refreshActivitiesBtn").onclick = loadActivities;
+
+// Start
+loadUsers();
+</script>
+
+</body>
+</html>

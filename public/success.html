@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful | AI Assistant</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8f9fa; }
+        .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 400px; }
+        .icon { font-size: 50px; color: #2ecc71; margin-bottom: 20px; }
+        h1 { color: #202124; margin-bottom: 10px; }
+        p { color: #5f6368; line-height: 1.6; }
+        .btn { display: inline-block; margin-top: 25px; padding: 12px 30px; background: #4285f4; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">Check of Success</div>
+        <h1>Payment Received!</h1>
+        <p>Your account is being upgraded. It may take a minute for your new limits to reflect in your dashboard.</p>
+        <a href="dashboard.html" class="btn">Go to Dashboard</a>
+    </div>
+
+    <script>
+        // Optional: Force a refresh of user data in local storage if needed
+        setTimeout(() => {
+            window.location.href = "dashboard.html";
+        }, 5000); // Auto-redirect after 5 seconds
+    </script>
+</body>
+</html>

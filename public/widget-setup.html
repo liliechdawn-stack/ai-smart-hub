@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Widget Setup Guide | AI Smart Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d4af37;
+      --primary-hover: #b8962e;
+      --dark: #1a1a1a;
+      --light: #f8f9fa;
+      --success: #28a745;
+      --border-color: #e0e0e0;
+      --shadow: 0 8px 25px rgba(0,0,0,0.06);
+      --card-radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    nav {
+      background: white;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: 0.3s ease;
+    }
+
+    .nav-links a:hover { color: var(--primary); }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: var(--dark);
+    }
+
+    .step-card {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 30px;
+      margin-bottom: 30px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+    }
+
+    .step-number {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 40px;
+      font-weight: 700;
+      margin-right: 15px;
+    }
+
+    .step-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .code-block {
+      background: var(--dark);
+      color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: monospace;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+
+    .tip-box {
+      background: #fff9e6;
+      border-left: 4px solid var(--primary);
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px;
+      color: #777;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="about.html">About</a>
+      <a href="pricing.html">Pricing</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>🤖 AI Widget Setup Guide</h1>
+  <p style="font-size: 1.2rem; margin-bottom: 40px;">Get your AI widget up and running in 5 simple steps</p>
+
+  <div class="step-card">
+    <span class="step-number">1</span>
+    <span class="step-title">Get Your Widget Key</span>
+    <p>Log in to your dashboard and navigate to <strong>Settings → Widget</strong>. Copy your unique widget key.</p>
+    <div class="tip-box">
+      💡 Your widget key is like a password - keep it secure! It connects your widget to your business data.
+    </div>
+  </div>
+
+  <div class="step-card">
+    <span class="step-number">2</span>
+    <span class="step-title">Add the Widget Code</span>
+    <p>Place this code just before the closing <code>&lt;/body&gt;</code> tag on your website:</p>
+    <div class="code-block">
+      &lt;!-- AI Smart Hub Widget --&gt;<br>
+      &lt;div id="ai-chat-widget" data-key="YOUR_WIDGET_KEY_HERE"&gt;&lt;/div&gt;<br>
+      &lt;script src="https://yourdomain.com/widget.js"&gt;&lt;/script&gt;
+    </div>
+  </div>
+
+  <div class="step-card">
+    <span class="step-number">3</span>
+    <span class="step-title">Customize Appearance</span>
+    <p>You can customize the widget by adding data attributes:</p>
+    <div class="code-block">
+      &lt;div id="ai-chat-widget"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;data-key="YOUR_WIDGET_KEY"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;data-primary-color="#d4af37"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;data-position="bottom-right"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;data-welcome="Hi! How can I help you today?"&gt;<br>
+      &lt;/div&gt;
+    </div>
+  </div>
+
+  <div class="step-card">
+    <span class="step-number">4</span>
+    <span class="step-title">Configure Your Knowledge Base</span>
+    <p>In your dashboard, go to <strong>Smart Tools → AI Knowledge Base</strong>. Add information about:</p>
+    <ul style="margin-left: 20px;">
+      <li>Your products/services and prices</li>
+      <li>Shipping and return policies</li>
+      <li>Business hours and contact info</li>
+      <li>FAQ and common questions</li>
+    </ul>
+    <div class="tip-box">
+      ⚡ The more you add to your knowledge base, the smarter your AI becomes!
+    </div>
+  </div>
+
+  <div class="step-card">
+    <span class="step-number">5</span>
+    <span class="step-title">Test Your Widget</span>
+    <p>Visit your website and click the widget bubble. You should see your welcome message. Try asking:</p>
+    <ul style="margin-left: 20px;">
+      <li>"What are your hours?"</li>
+      <li>"Do you have [product name]?"</li>
+      <li>"How much is shipping?"</li>
+    </ul>
+  </div>
+
+  <div style="text-align: center; margin-top: 40px;">
+    <a href="dashboard.html" class="btn-primary">Go to Dashboard to Get Your Key →</a>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 AI Smart Hub • Need help? <a href="contact.html" style="color: var(--primary);">Contact Support</a></p>
+</footer>
+
+</body>
+</html>

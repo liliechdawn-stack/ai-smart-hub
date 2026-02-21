@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - AI Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #0b0b0b;
+      --bg-card: #141414;
+      --text-primary: #f0f0f0;
+      --text-secondary: #aaaaaa;
+      --gold: #d4af37;
+      --gold-dark: #b8962e;
+      --border: #2a2a2a;
+      --danger: #ff4d4d;
+      --success: #2ecc71;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body,
+    html {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+
+    .dashboard {
+      display: none;
+      flex-direction: row;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: #0f0f0f;
+      border-right: 1px solid var(--border);
+      padding: 32px 20px;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      color: var(--gold);
+      margin-bottom: 32px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    nav a {
+      display: block;
+      padding: 14px 0;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    nav a:hover,
+    nav a.active {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .main {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    h2,
+    h3 {
+      color: white;
+      margin-bottom: 1.2rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #000;
+      padding: 12px 24px;
+    }
+
+    .btn-gold:hover {
+      background: var(--gold-dark);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+    }
+
+    .btn-danger:hover {
+      background: #cc0000;
+    }
+
+    /* Verification Banner Styling */
+    #verification-banner {
+      background: #332b00;
+      border: 1px solid var(--gold);
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 360px;
+      transition: all 0.3s ease;
+    }
+
+    .plan-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 40px rgba(212, 175, 55, 0.15);
+    }
+
+    .plan-card.current {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2);
+    }
+
+    #planCards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: center;
+      margin: 40px 0;
+    }
+
+    .chat-bubble {
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th,
+    td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #111;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: white;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .analytics {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin: 32px 0;
+    }
+
+    .chart-container {
+      background: var(--bg-card);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .lead-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .widget-key-section {
+      margin-top: 60px;
+      background: var(--bg-card);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .key-display {
+      background: #000;
+      color: #0f0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      word-break: break-all;
+      margin: 16px 0;
+    }
+
+    .widget-code-box {
+      background: #000;
+      color: #0f0;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      position: relative;
+      margin: 16px 0;
+    }
+
+    .copy-btn,
+    .regenerate-btn {
+      background: var(--gold);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 12px;
+    }
+
+    .copy-btn:hover,
+    .regenerate-btn:hover {
+      background: var(--gold-dark);
+    }
+
+    /* Modal Styling for Chat History */
+    #chatModal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      width: 90%; max-width: 600px;
+      max-height: 80vh;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+    .modal-header {
+      padding: 20px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #modalChatBody {
+      padding: 20px; overflow-y: auto; flex: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="dashboard">
+
+    <aside class="sidebar">
+      <h2>AI PLATFORM</h2>
+      <nav>
+        <a href="index.html" style="color: var(--gold); border-bottom: 1px solid var(--border); margin-bottom: 10px;">🏠 Back to Home</a>
+        <a id="navAnalytics" class="active">Analytics</a>
+        <a id="navLeads">Leads</a>
+        <a id="navChats">Chats</a>
+        <a id="navSettings">Settings</a>
+        <a id="navWidget">AI Widget</a>
+      </nav>
+
+      <div style="margin-top: 40px; font-size: 0.95rem; color: var(--text-secondary);">
+        <p>Business: <strong id="businessName" style="color:white;">Business</strong></p>
+        <p>Plan: <strong id="currentPlan" style="color:var(--gold);">free</strong></p>
+        <p>Messages Left: <strong id="messagesUsed">0</strong></p>
+        <p>Leads Left: <strong id="leadsUsed">0</strong></p>
+      </div>
+
+      <button id="logoutBtn" class="btn-gold" style="margin-top: 40px; width:100%;">Logout</button>
+      <button id="adminBtn" class="hidden"
+        style="margin-top: 12px; width:100%; background:transparent; border:2px solid var(--gold); color:var(--gold);">Admin Panel</button>
+    </aside>
+
+    <main class="main">
+
+      <div id="verification-banner" class="hidden">
+        <span style="color: var(--gold);">⚠️ Your business email is not verified. Some features may be limited.</span>
+        <button onclick="window.location.href='verification.html'" class="btn-gold" style="padding: 8px 16px; font-size: 0.8rem;">Verify Now</button>
+      </div>
+
+      <section id="analyticsSection">
+        <h2>Business Overview</h2>
+        <div class="analytics">
+          <div class="card" style="flex: 1; min-width: 200px;">
+            <h3 id="totalChats" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+            <p>Total Chats</p>
+          </div>
+          <div class="card" style="flex: 1; min-width: 200px;">
+            <h3 id="totalLeads" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+            <p>Total Leads</p>
+          </div>
+          <div class="card" style="flex: 1; min-width: 200px;">
+            <h3 id="messagesRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+            <p>Messages Left</p>
+          </div>
+          <div class="card" style="flex: 1; min-width: 200px;">
+            <h3 id="leadsRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+            <p>Leads Left</p>
+          </div>
+        </div>
+
+        <h3>Rise & Fall Trend</h3>
+        <div class="chart-container">
+          <canvas id="riseFallChart" height="260"></canvas>
+        </div>
+      </section>
+
+      <section id="leadsSection" class="hidden">
+        <h2>Leads</h2>
+        <div style="margin: 24px 0; display: flex; flex-wrap: wrap; gap: 12px;">
+          <input id="leadName" placeholder="Name" style="flex: 1; min-width: 180px;" />
+          <input id="leadEmail" placeholder="Email" style="flex: 1; min-width: 220px;" />
+          <input id="leadPhone" placeholder="Phone (optional)" style="flex: 1; min-width: 160px;" />
+          <button id="addLeadBtn" class="btn-gold">Add Lead</button>
+        </div>
+
+        <h3>Lead List</h3>
+        <table id="leadsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Date Added</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="chatSection" class="hidden">
+        <h2>Chat Conversations</h2>
+        <table id="chatTable" style="margin-bottom: 32px;">
+          <thead>
+            <tr>
+              <th>Client / Session</th>
+              <th>Messages</th>
+              <th>Last Message</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
+          <h3>Internal AI Tester</h3>
+          <input id="clientName" placeholder="Client Name" />
+          <textarea id="aiMessage" placeholder="Type your message to test your AI..." rows="3"></textarea>
+          <button id="sendBtn" class="btn-gold">Send</button>
+
+          <div id="chatResponses" style="margin-top: 24px; max-height: 340px; overflow-y: auto;"></div>
+        </div>
+      </section>
+
+      <section id="settingsSection" class="hidden">
+        <h2>Subscription Plans</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 32px;">
+          Upgrade your plan to unlock more messages, advanced features and business growth.
+        </p>
+
+        <div id="planCards"></div>
+
+        <div class="widget-key-section">
+          <h2>My AI Widget API Key</h2>
+          <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            Use this unique key to embed the AI chat widget on your website.
+          </p>
+
+          <div class="key-display">
+            <strong>Your Key:</strong> <span id="widgetKey">Loading...</span>
+            <button class="regenerate-btn" id="regenerateKeyBtn">Regenerate Key</button>
+          </div>
+
+          <div class="widget-code-box">
+            <button class="copy-btn" id="copyEmbedBtn">Copy Code</button>
+            <pre id="embedCode"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="widgetSection" class="hidden">
+        <h2>AI Chat Widget Configuration</h2>
+        
+        <div style="background: var(--bg-card); padding: 28px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 32px;">
+          <h3>Train Your AI (Knowledge Base)</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            Input details about your business (pricing, FAQ, services) so the AI can answer accurately.
+          </p>
+          <textarea id="knowledge-input" placeholder="Example: Our office is located in Lagos. We offer web design starting at $500. We are closed on Sundays..." style="min-height: 150px;"></textarea>
+          <button id="saveKnowledgeBtn" class="btn-gold">Update AI Knowledge</button>
+        </div>
+
+        <div style="background: var(--bg-card); padding: 28px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 32px;">
+          <h3>Installation Code</h3>
+          <pre id="widgetSectionCode" style="background: #000; color: #0f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin-top: 16px; font-family: monospace;">Loading code...</pre>
+          <button class="btn-gold" id="copyWidgetTabBtn" style="margin-top:15px">Copy Code</button>
+        </div>
+
+        <h3>Widget Preview</h3>
+        <div style="height: 300px; border: 2px dashed #444; border-radius: 16px; position: relative; background: #111; display: flex; align-items: center; justify-content: center;">
+             <p style="color: #444;">Widget Live Preview Area</p>
+          <div style="position: absolute; bottom: 20px; right: 20px; background: var(--gold); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 10px 30px rgba(212,175,55,0.4);">
+            💬
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="chatModal" class="hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle" style="margin:0;">Conversation</h3>
+        <button id="closeModal" style="background:transparent; color:white; font-size:24px;">&times;</button>
+      </div>
+      <div id="modalChatBody"></div>
+    </div>
+  </div>
+
+
+<script>
+    const API_URL = "http://localhost:5000/api";
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        alert("Please login first");
+        window.location.href = "login.html";
+    }
+
+    const GOLD_COLOR = '#d4af37';
+    const GOLD_BG = 'rgba(212, 175, 55, 0.15)';
+    // Gemini-inspired styles for the widget attributes
+    const GEMINI_GRADIENT = 'linear-gradient(135deg, #4285f4, #9b72cb, #d96570)';
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const sections = {
+            analytics: document.getElementById("analyticsSection"),
+            leads: document.getElementById("leadsSection"),
+            chats: document.getElementById("chatSection"),
+            settings: document.getElementById("settingsSection"),
+            widget: document.getElementById("widgetSection")
+        };
+
+        const navLinks = {
+            navAnalytics: sections.analytics,
+            navLeads: sections.leads,
+            navChats: sections.chats,
+            navSettings: sections.settings,
+            navWidget: sections.widget
+        };
+
+        Object.keys(navLinks).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.onclick = function () {
+                    Object.values(sections).forEach(function (s) {
+                        if (s) s.classList.add("hidden");
+                    });
+                    Object.keys(navLinks).forEach(function (k) {
+                        var link = document.getElementById(k);
+                        if (link) link.classList.remove("active");
+                    });
+
+                    const sectionToShow = navLinks[id];
+                    if (sectionToShow) sectionToShow.classList.remove("hidden");
+                    
+                    el.classList.add("active");
+
+                    if (id === "navSettings" || id === "navWidget") {
+                        loadWidgetKey();
+                    }
+                    if (id === "navSettings") {
+                        renderPlanCards(currentPlanSpan ? currentPlanSpan.textContent.trim() : "free");
+                        // Populate business name input in settings if it exists
+                        const bNameInput = document.getElementById("settingsBusinessName");
+                        if(bNameInput) bNameInput.value = businessNameSpan.textContent;
+                    }
+                };
+            }
+        });
+
+        var businessNameSpan = document.getElementById("businessName");
+        var currentPlanSpan = document.getElementById("currentPlan");
+        var messagesUsedSpan = document.getElementById("messagesUsed");
+        var leadsUsedSpan = document.getElementById("leadsUsed");
+        var totalChatsSpan = document.getElementById("totalChats");
+        var messagesRemainingSpan = document.getElementById("messagesRemaining");
+        var leadsRemainingSpan = document.getElementById("leadsRemaining");
+        var verificationBanner = document.getElementById("verification-banner");
+
+        var chatTableBody = document.querySelector("#chatTable tbody");
+        var chatResponses = document.getElementById("chatResponses");
+        var leadsTableBody = document.querySelector("#leadsTable tbody");
+
+        var logoutBtn = document.getElementById("logoutBtn");
+        var adminBtn = document.getElementById("adminBtn");
+
+        var ALL_PLANS = [
+            { name: "basic", id: "basic", price: "₦10,000 / month", messages: "500 AI messages", leads: "Unlimited leads", features: ["Email support", "Remove branding"] },
+            { name: "pro", id: "pro", price: "₦25,000 / month", messages: "3,000 AI messages", leads: "Unlimited leads", features: ["Priority AI", "Custom prompts", "Analytics export"] },
+            { name: "agency", id: "agency", price: "₦80,000 / month", messages: "10 businesses", leads: "Unlimited leads", features: ["White-label widget", "API access"] }
+        ];
+
+        function renderPlanCards(currentPlan) {
+            var container = document.getElementById("planCards");
+            if (!container) return;
+
+            container.innerHTML = "";
+
+            ALL_PLANS.forEach(function (plan) {
+                var isCurrent = currentPlan.toLowerCase() === plan.name.toLowerCase();
+
+                var card = document.createElement("div");
+                card.className = "plan-card" + (isCurrent ? " current" : "");
+
+                card.innerHTML =
+                    '<h3 style="margin:0 0 16px; font-size:1.8rem; color:white;">' + plan.name.toUpperCase() + '</h3>' +
+                    '<div style="font-size:2.4rem; font-weight:700; color:' + GOLD_COLOR + '; margin:12px 0;">' + plan.price + '</div>' +
+                    '<ul style="list-style:none; padding:0; margin:20px 0 32px 0; font-size:1.05rem;">' +
+                    '<li style="margin:10px 0;">✓ ' + plan.messages + '</li>' +
+                    '<li style="margin:10px 0;">✓ ' + plan.leads + '</li>' +
+                    plan.features.map(function (f) { return '<li style="margin:10px 0;">✓ ' + f + '</li>'; }).join("") +
+                    '</ul>' +
+                    '<button class="subscribePlanBtn ' + (isCurrent ? "" : "btn-gold") + '" ' +
+                    'data-plan="' + plan.id + '" ' +
+                    (isCurrent ? "disabled" : "") +
+                    ' style="width:100%; padding:14px; font-size:1.1rem;">' +
+                    (isCurrent ? "Current Plan" : "Upgrade Now") +
+                    '</button>';
+
+                container.appendChild(card);
+            });
+
+            document.querySelectorAll(".subscribePlanBtn:not([disabled])").forEach(function (btn) {
+                btn.addEventListener("click", async function () {
+                    var planId = btn.dataset.plan;
+                    try {
+                        var res = await fetch(API_URL + "/subscription/create-checkout-session", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": "Bearer " + token
+                            },
+                            body: JSON.stringify({ plan: planId, email: localStorage.getItem("email") || "unknown@email.com" })
+                        });
+
+                        var data = await res.json();
+                        if (data.url) {
+                            window.location.href = data.url;
+                        } else {
+                            alert(data.error || "Failed to create checkout session");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert("Connection error - please try again");
+                    }
+                });
+            });
+        }
+
+        var riseFallChart;
+        function renderRiseFallChart(dataPoints) {
+            var canvas = document.getElementById("riseFallChart");
+            if (!canvas) return;
+            var ctx = canvas.getContext("2d");
+
+            var labels = dataPoints.map(function (d) { return new Date(d.date).toLocaleDateString(); });
+            var values = dataPoints.map(function (d) { return d.value; });
+
+            if (riseFallChart) riseFallChart.destroy();
+
+            riseFallChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Business Growth",
+                        data: values,
+                        borderColor: GOLD_COLOR,
+                        backgroundColor: GOLD_BG,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: GOLD_COLOR,
+                        pointBorderColor: "#000",
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: "#222" }, ticks: { color: "#aaaaaa" } },
+                        x: { grid: { color: "#222" }, ticks: { color: "#aaaaaa" } }
+                    }
+                }
+            });
+        }
+
+        async function loadDashboard() {
+            try {
+                var res = await fetch(API_URL + "/dashboard/full", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                if (!res.ok) throw new Error("Failed to load dashboard");
+
+                var data = await res.json();
+
+                // --- START ADMIN BYPASS UPDATE ---
+                const isAdmin = (data.email && data.email.toLowerCase() === "ericchung992@gmail.com");
+                
+                if (verificationBanner) {
+                    if (isAdmin || data.is_verified === 1) {
+                        verificationBanner.classList.add("hidden");
+                    } else {
+                        verificationBanner.classList.remove("hidden");
+                    }
+                }
+                // --- END ADMIN BYPASS UPDATE ---
+
+                // AGGRESSIVE FIX: Check multiple possible keys from the API response
+                const bName = data.business_name || data.businessName || data.name || "My Business";
+                businessNameSpan.textContent = bName;
+                
+                currentPlanSpan.textContent = data.plan || "free";
+                messagesUsedSpan.textContent = data.messages_used || 0;
+                leadsUsedSpan.textContent = data.leads_used || 0;
+
+                totalChatsSpan.textContent = data.chats ? data.chats.length : 0;
+                messagesRemainingSpan.textContent = Math.max(0, (data.messages_limit || 0) - (data.messages_used || 0));
+                leadsRemainingSpan.textContent = Math.max(0, (data.leads_limit || 0) - (data.leads_used || 0));
+
+                if (isAdmin) {
+                    adminBtn.classList.remove("hidden");
+                    adminBtn.onclick = function () { window.location.href = "admin.html"; };
+                }
+
+                renderChats(data.chats || []);
+                renderLeads(data.leads || []);
+                renderRiseFallChart(data.riseFall || []);
+                
+                // Fix: Refresh widget code after business name is loaded
+                loadWidgetKey();
+
+            } catch (err) {
+                console.error("Dashboard load error:", err);
+            }
+        }
+
+        // --- NEW SAAS UPDATE: UPDATE BUSINESS NAME MANUALLY ---
+        const updateNameBtn = document.getElementById("updateBusinessNameBtn");
+        if(updateNameBtn) {
+            updateNameBtn.onclick = async function() {
+                const newName = document.getElementById("settingsBusinessName").value.trim();
+                if(!newName) return alert("Please enter a name");
+                try {
+                    const res = await fetch(API_URL + "/user/update-name", {
+                        method: "PUT",
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token 
+                        },
+                        body: JSON.stringify({ business_name: newName })
+                    });
+                    if(res.ok) {
+                        alert("Business name updated!");
+                        loadDashboard();
+                    }
+                } catch (e) { alert("Error updating name"); }
+            }
+        }
+
+        function renderChats(chats) {
+            if (!chatTableBody) return;
+            chatTableBody.innerHTML = "";
+
+            const threads = {};
+            chats.forEach(c => {
+              const session = c.session_id || 'manual';
+              if(!threads[session]) {
+                threads[session] = {
+                  client: c.client_name || "Guest",
+                  count: 0,
+                  last: c.created_at,
+                  messages: []
+                };
+              }
+              threads[session].count++;
+              threads[session].messages.push(c);
+            });
+
+            Object.keys(threads).forEach(sid => {
+                const t = threads[sid];
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td>
+                    <td>${t.count} messages</td>
+                    <td>${new Date(t.last).toLocaleString()}</td>
+                    <td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>
+                `;
+                
+                tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages);
+                chatTableBody.appendChild(tr);
+            });
+        }
+
+        function openChatModal(client, messages) {
+          const modal = document.getElementById("chatModal");
+          const body = document.getElementById("modalChatBody");
+          document.getElementById("modalTitle").textContent = "Chat with " + client;
+          
+          body.innerHTML = "";
+          // Sort messages by date
+          messages.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+          messages.forEach(m => {
+            // FIX: Robust date parsing to avoid "Invalid Date"
+            let msgDate = "Recently";
+            if (m.created_at) {
+                const d = new Date(m.created_at);
+                if (!isNaN(d.getTime())) msgDate = d.toLocaleString();
+            }
+
+            // FIX: Handle "undefined" by providing fallbacks for message and response
+            const userMsg = m.message || m.message_text || "<i>No message content</i>";
+            const aiResp = m.response || m.content || "<i>No AI response recorded</i>";
+
+            body.innerHTML += `
+              <div style="margin-bottom:20px; padding:15px; border-radius:12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="color:${GOLD_COLOR}; font-weight:bold; font-size:12px;">GUEST</span>
+                    <span style="color:#666; font-size:10px;">${msgDate}</span>
+                </div>
+                <div style="margin-bottom:15px; color:#fff; line-height:1.5;">${userMsg}</div>
+                <div style="padding-top:10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color:#8ab4f8; font-weight:bold; font-size:12px; display:block; margin-bottom:5px;">AI ASSISTANT (Cloudflare)</span>
+                    <div style="color:#ccc; font-style:italic; line-height:1.5;">${aiResp}</div>
+                </div>
+              </div>
+            `;
+          });
+
+          modal.classList.remove("hidden");
+        }
+
+        document.getElementById("closeModal").onclick = () => {
+          document.getElementById("chatModal").classList.add("hidden");
+        };
+
+        function renderLeads(leads) {
+            if (!leadsTableBody) return;
+            leadsTableBody.innerHTML = "";
+
+            leads.forEach(function (l) {
+                var tr = document.createElement("tr");
+                tr.innerHTML =
+                    "<td>" + l.name + "</td>" +
+                    "<td>" + l.email + "</td>" +
+                    "<td>" + (l.phone || "-") + "</td>" +
+                    "<td>" + new Date(l.created_at).toLocaleString() + "</td>" +
+                    '<td class="lead-actions">' +
+                    '<button class="btn-danger delete-lead-btn" data-id="' + l.id + '">Delete</button>' +
+                    "</td>";
+                leadsTableBody.appendChild(tr);
+            });
+
+            document.querySelectorAll(".delete-lead-btn").forEach(function (btn) {
+                btn.onclick = async function () {
+                    if (!confirm("Are you sure you want to delete this lead?")) return;
+
+                    var leadId = btn.dataset.id;
+                    try {
+                        var res = await fetch(API_URL + "/leads/" + leadId, {
+                            method: "DELETE",
+                            headers: { "Authorization": "Bearer " + token }
+                        });
+
+                        var data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Failed to delete");
+
+                        alert("Lead deleted successfully");
+                        loadDashboard();
+                    } catch (err) {
+                        alert("Could not delete lead: " + err.message);
+                    }
+                };
+            });
+        }
+
+        document.getElementById("saveKnowledgeBtn").onclick = async function() {
+          const content = document.getElementById("knowledge-input").value.trim();
+          if(!content) return alert("Please enter business info.");
+
+          try {
+            const res = await fetch(API_URL + "/knowledge/add", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ content })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert("AI Knowledge Updated!");
+                document.getElementById("knowledge-input").value = "";
+            }
+          } catch (e) { alert("Error saving knowledge"); }
+        }
+
+        document.getElementById("sendBtn").addEventListener("click", async function () {
+            var msg = document.getElementById("aiMessage").value.trim();
+            var name = document.getElementById("clientName").value.trim();
+
+            if (!msg || !name) {
+                alert("Please fill client name and message");
+                return;
+            }
+
+            try {
+                var res = await fetch(API_URL + "/widget/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ message: msg, client_name: name })
+                });
+
+                var data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed");
+
+                var bubble = document.createElement("div");
+                bubble.className = "chat-bubble";
+                bubble.style.background = "rgba(255,255,255,0.05)";
+                bubble.style.borderRadius = "12px";
+                bubble.style.padding = "15px";
+                bubble.style.marginBottom = "10px";
+                bubble.innerHTML = `<div style="color:${GOLD_COLOR}; font-weight:bold; margin-bottom:5px;">You</div><div>${msg}</div><div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;"><span style="color:#8ab4f8; font-weight:bold;">AI:</span> ${data.response}</div>`;
+                chatResponses.prepend(bubble);
+
+                document.getElementById("aiMessage").value = "";
+                document.getElementById("clientName").value = "";
+                loadDashboard();
+            } catch (err) {
+                alert(err.message || "Could not send message");
+            }
+        });
+
+        document.getElementById("addLeadBtn").addEventListener("click", async function () {
+            var name = document.getElementById("leadName").value.trim();
+            var email = document.getElementById("leadEmail").value.trim();
+            var phone = document.getElementById("leadPhone").value.trim();
+
+            if (!name || !email) {
+                alert("Name and email are required");
+                return;
+            }
+
+            try {
+                var res = await fetch(API_URL + "/leads", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ name: name, email: email, phone: phone })
+                });
+
+                var data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed");
+
+                alert("Lead added successfully!");
+                document.getElementById("leadName").value = "";
+                document.getElementById("leadEmail").value = "";
+                document.getElementById("leadPhone").value = "";
+                loadDashboard();
+            } catch (err) {
+                alert(err.message || "Could not add lead");
+            }
+        });
+
+        logoutBtn.onclick = function () {
+            localStorage.clear();
+            window.location.href = "login.html";
+        };
+
+        async function loadWidgetKey() {
+            var keySpan = document.getElementById("widgetKey");
+            var codePre = document.getElementById("embedCode");
+            var widgetTabPre = document.getElementById("widgetSectionCode");
+            
+            var bName = businessNameSpan.textContent || "Business";
+
+            if (!keySpan || !codePre) return;
+
+            try {
+                var res = await fetch(API_URL + "/widget/key", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                if (!res.ok) throw new Error(await res.text());
+
+                var data = await res.json();
+                var key = data.key;
+
+                keySpan.textContent = key;
+
+                const baseUrl = "http://localhost:5000"; 
+                
+                var embedCode = `<script>
+  (function() {
+    const key = "${key}";
+    const baseUrl = "${baseUrl}";
+    const script = document.createElement("script");
+    script.src = baseUrl + "/widget.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    const widgetDiv = document.createElement("div");
+    widgetDiv.id = "ai-chat-widget";
+    widgetDiv.setAttribute("data-key", key);
+    widgetDiv.setAttribute("data-primary-color", "${GOLD_COLOR}");
+    widgetDiv.setAttribute("data-variant", "gemini-clean");
+    widgetDiv.setAttribute("data-position", "bottom-right");
+    widgetDiv.setAttribute("data-welcome", "Hi! I'm your AI assistant. How can I help?");
+    widgetDiv.setAttribute("data-title", "${bName} AI");
+    
+    // Live Voice Features
+    widgetDiv.setAttribute("data-voice-enabled", "true");
+    widgetDiv.setAttribute("data-voice-gender", "female");
+    widgetDiv.setAttribute("data-voice-mutable", "true");
+
+    document.body.appendChild(widgetDiv);
+  })();
+<\/script>`;
+
+                codePre.textContent = embedCode;
+                if (widgetTabPre) widgetTabPre.textContent = embedCode;
+
+                const copyAction = (code) => {
+                    navigator.clipboard.writeText(code).then(function () {
+                        alert("Widget code copied to clipboard!");
+                    }).catch(function () {
+                        alert("Copy failed - select and copy manually");
+                    });
+                };
+
+                document.getElementById("copyEmbedBtn").onclick = () => copyAction(embedCode);
+                
+                const tabCopyBtn = document.getElementById("copyWidgetTabBtn");
+                if (tabCopyBtn) {
+                    tabCopyBtn.onclick = () => copyAction(embedCode);
+                }
+
+                document.getElementById("regenerateKeyBtn").onclick = async function () {
+                    if (!confirm("Generate new API key? Old key will stop working.")) return;
+
+                    try {
+                        var res = await fetch(API_URL + "/widget/regenerate-key", {
+                            method: "POST",
+                            headers: { "Authorization": "Bearer " + token }
+                        });
+
+                        if (!res.ok) throw new Error(await res.text());
+                        var data = await res.json();
+                        alert("New API key generated!");
+                        loadWidgetKey();
+                    } catch (err) {
+                        alert("Error regenerating key: " + err.message);
+                    }
+                };
+
+            } catch (err) {
+                keySpan.textContent = "Error loading key";
+                console.error("Widget key error:", err);
+            }
+        }
+
+        document.querySelector(".dashboard").style.display = "flex";
+        loadDashboard();
+    });
+</script>
+</body>
+</html>

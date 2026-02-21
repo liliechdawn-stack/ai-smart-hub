@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Business Login / Signup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    .hidden { display: none !important; }
+    .verify-box { border: 1px solid var(--gold); padding: 30px; border-radius: 16px; text-align: center; background: #111; }
+    .resend-link { color: var(--gold); cursor: pointer; font-size: 0.9rem; text-decoration: underline; margin-top: 10px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center; color: var(--light-gold);">AI Platform</h1>
+
+    <div id="authContainer">
+      <form id="loginForm">
+        <h2>Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email" required />
+        <input type="password" id="loginPassword" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+
+      <div style="text-align: center; margin: 20px 0;">OR</div>
+
+      <form id="signupForm">
+        <h2>Sign Up</h2>
+        <input type="text" id="businessName" placeholder="Business Name" required />
+        <input type="email" id="signupEmail" placeholder="Email" required />
+        <input type="password" id="signupPassword" placeholder="Password" required />
+        <button type="submit">Sign Up</button>
+      </form>
+    </div>
+
+    <div id="verifyContainer" class="hidden">
+      <div class="verify-box">
+        <h2 style="color: var(--gold);">Verify Your Email</h2>
+        <p>We've sent a 6-digit code to your email. Please enter it below to activate your account.</p>
+        <input type="text" id="verifyCode" placeholder="Enter 6-Digit Code" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 10px; margin: 20px 0;" />
+        <button id="confirmVerifyBtn" style="width: 100%;">Verify Account</button>
+        <span class="resend-link" id="resendBtn">Didn't get a code? Resend</span>
+        <button onclick="location.reload()" style="background: transparent; color: #888; margin-top: 15px;">Back to Login</button>
+      </div>
+    </div>
+
+    <button id="subscribeBtn" style="display:none;">Subscribe to Plan</button>
+  </div>
+
+<script>
+    const API_URL = "http://localhost:5000/api";
+
+    // =================== UI HELPERS ===================
+    function showVerifyUI() {
+        document.getElementById("authContainer").classList.add("hidden");
+        document.getElementById("verifyContainer").classList.remove("hidden");
+    }
+
+    function saveAuth(token, apiKey, plan, name, email) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("apiKey", apiKey || "");
+        localStorage.setItem("plan", plan || "free");
+        // FIX: Ensure we store the email for the dashboard subscription logic
+        localStorage.setItem("email", email);
+        // FIX: Ensure we store the business name accurately
+        localStorage.setItem("businessName", name || "Business");
+    }
+
+    // =================== LOGIN ===================
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (res.status === 403) {
+                alert("Account not verified. Please check your email.");
+                showVerifyUI();
+            } else if (res.ok) {
+                // AGGRESSIVE FIX: Check both 'name' and 'business_name' from server response
+                const displayName = data.business_name || data.name || "Business";
+                saveAuth(data.token, data.apiKey, data.plan, displayName, email);
+                window.location.href = "dashboard.html";
+            } else {
+                alert(data.error || "Login failed");
+            }
+        } catch (err) { 
+            console.error(err);
+            alert("Server error"); 
+        }
+    });
+
+    // =================== SIGNUP ===================
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("businessName").value;
+        const email = document.getElementById("signupEmail").value;
+        const password = document.getElementById("signupPassword").value;
+
+        try {
+            const res = await fetch(`${API_URL}/auth/signup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password })
+            });
+            if (res.ok) {
+                alert("Signup initiated! Please verify your email.");
+                showVerifyUI();
+            } else {
+                const data = await res.json();
+                alert(data.error || "Signup failed");
+            }
+        } catch { alert("Server error during signup"); }
+    });
+
+    // =================== VERIFY CODE ===================
+    document.getElementById("confirmVerifyBtn").addEventListener("click", async () => {
+        const code = document.getElementById("verifyCode").value;
+        if (code.length < 6) return alert("Enter the full 6-digit code");
+
+        try {
+            const res = await fetch(`${API_URL}/auth/verify/${code}`); 
+            
+            if (res.ok) {
+                alert("Verification successful! You can now login.");
+                location.reload(); 
+            } else {
+                alert("Invalid or expired code.");
+            }
+        } catch { alert("Error verifying code"); }
+    });
+</script>
+</body>
+</html>

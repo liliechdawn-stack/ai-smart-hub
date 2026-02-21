@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Widget Debug Test</title>
+  <link rel="stylesheet" href="widget.css">
+  <style>
+    body {
+      background: #0f0f0f;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      min-height: 200vh;
+    }
+    h1 { color: #d4af37; }
+  </style>
+</head>
+<body>
+
+  <h1>Widget Debug Page</h1>
+  <p>Scroll around — look in the bottom-right corner for a <strong>gold circle with 💬</strong></p>
+  <p>If nothing appears, press F12 (or right-click → Inspect) → Console tab and tell me what it says (red errors?)</p>
+  <p style="margin-top: 800px;">More scroll space to test fixed position...</p>
+
+  <!-- Widget trigger - MUST be present -->
+  <div id="ai-chat-widget"
+       data-key="test"
+       data-primary-color="#d4af37"
+       data-position="bottom-right"
+       data-welcome="Hi! Debug mode active 💬"
+       data-title="Test Assistant"
+       data-avatar="https://via.placeholder.com/48?text=AI">
+  </div>
+
+  <script src="widget.js" defer></script>
+
+  <!-- Debug message to confirm script loaded -->
+  <script>
+    console.log("Page loaded. Waiting for widget.js...");
+    setTimeout(() => {
+      console.log("Checking if bubble exists:", document.querySelector('.widget-bubble'));
+    }, 2000);
+  </script>
+</body>
+</html>

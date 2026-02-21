@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Business Hub | AI Intelligence Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       CORE DESIGN TOKENS
+       ========================================
+    */
+    :root {
+      --primary: #d4af37;
+      --primary-hover: #b8962e;
+      --dark: #1a1a1a;
+      --dark-accent: #2d2d2d;
+      --light: #f8f9fa;
+      --success: #28a745;
+      --danger: #dc3545;
+      --border-color: #eee;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+      --card-radius: 16px;
+      --transition: 0.3s ease;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: #f4f7f6; 
+      color: var(--dark); 
+      line-height: 1.6; 
+      overflow-x: hidden;
+    }
+
+    /* ========================================
+       NAVIGATION BAR
+       ========================================
+    */
+    nav {
+      background: #fff;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+    
+    .nav-container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 0 20px; 
+    }
+    
+    .nav-logo { 
+      font-weight: 700; 
+      font-size: 1.2rem; 
+      color: var(--dark); 
+      text-decoration: none; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+    
+    .nav-links { 
+      display: flex; 
+      gap: 20px; 
+      align-items: center; 
+    }
+    
+    .nav-links a { 
+      text-decoration: none; 
+      color: #666; 
+      font-size: 0.9rem; 
+      font-weight: 500; 
+      transition: var(--transition); 
+    }
+    
+    .nav-links a:hover { 
+      color: var(--primary); 
+    }
+    
+    .active-nav { 
+      color: var(--primary) !important; 
+      border-bottom: 2px solid var(--primary); 
+    }
+    
+    .back-btn { 
+      background: var(--dark); 
+      color: #fff !important; 
+      padding: 8px 18px; 
+      border-radius: 8px; 
+      font-weight: 600;
+    }
+
+    /* ========================================
+       PLAN LOCKING & UPGRADE SYSTEM
+       ========================================
+    */
+    .locked-card { 
+      position: relative; 
+      overflow: hidden; 
+      border-color: #ddd !important; 
+    }
+    
+    .lock-overlay {
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9); 
+      backdrop-filter: blur(5px);
+      z-index: 10; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center; 
+      padding: 20px;
+    }
+    
+    .lock-overlay span { 
+      font-size: 2.5rem; 
+      margin-bottom: 10px; 
+    }
+    
+    .lock-overlay p { 
+      font-weight: 700; 
+      color: var(--dark); 
+      margin-bottom: 15px; 
+      font-size: 0.95rem; 
+    }
+    
+    .preview-box {
+      background: white; 
+      padding: 15px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06); 
+      margin-bottom: 20px; 
+      font-size: 0.85rem; 
+      text-align: left; 
+      width: 90%; 
+      border: 1px solid #efefef;
+      line-height: 1.5;
+    }
+
+    .upgrade-btn { 
+      background: var(--dark); 
+      color: white; 
+      border: none; 
+      padding: 12px 28px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 700; 
+      font-size: 0.9rem;
+      transition: var(--transition);
+      pointer-events: auto !important;
+    }
+    
+    .upgrade-btn:hover { 
+      background: var(--primary); 
+      transform: translateY(-2px);
+    }
+
+    /* ========================================
+       LIVE STATUS INDICATORS
+       ========================================
+    */
+    .op-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--success);
+      font-weight: 700;
+      margin-left: 10px;
+      text-transform: uppercase;
+    }
+    
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse-green 2s infinite;
+    }
+    
+    @keyframes pulse-green {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+
+    /* ========================================
+       LAYOUT COMPONENTS
+       ========================================
+    */
+    .section-header { 
+      max-width: 1200px; 
+      margin: 50px auto 25px; 
+      padding: 0 20px;
+      display: flex; 
+      align-items: center; 
+      gap: 15px;
+    }
+    
+    .section-header h2 { 
+      font-size: 1.6rem; 
+      font-weight: 700;
+      letter-spacing: -0.5px; 
+    }
+    
+    .section-line { 
+      flex-grow: 1; 
+      height: 1px; 
+      background: #ddd; 
+    }
+
+    .hero { 
+      background: white; 
+      padding: 70px 20px; 
+      text-align: center; 
+      border-bottom: 1px solid var(--border-color); 
+      margin-bottom: 30px; 
+    }
+    
+    .hero h1 { 
+      font-size: 2.8rem; 
+      margin-bottom: 12px; 
+      letter-spacing: -1.5px; 
+      font-weight: 800;
+    }
+    
+    .hero p { 
+      color: #666; 
+      max-width: 650px; 
+      margin: 0 auto; 
+      font-size: 1.1rem;
+    }
+
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      padding: 0 20px 80px; 
+    }
+
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); 
+      gap: 30px; 
+    }
+
+    .tool-card {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 35px;
+      border: 1px solid var(--border-color);
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    
+    .tool-card:hover:not(.locked-card) { 
+      transform: translateY(-8px); 
+      box-shadow: var(--shadow); 
+      border-color: var(--primary); 
+    }
+
+    .wide-card { 
+      grid-column: 1 / -1; 
+      display: flex; 
+      flex-direction: row; 
+      gap: 45px; 
+      align-items: flex-start; 
+    }
+    
+    @media (max-width: 900px) { 
+      .wide-card { flex-direction: column; } 
+    }
+
+    .icon-box {
+      width: 55px; 
+      height: 55px; 
+      background: #fff9e6; 
+      color: var(--primary);
+      border-radius: 14px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 26px; 
+      margin-bottom: 25px;
+    }
+
+    h3 { 
+      margin-bottom: 12px; 
+      font-size: 1.35rem; 
+      font-weight: 700;
+    }
+    
+    .tool-description { 
+      color: #6c757d; 
+      font-size: 0.95rem; 
+      margin-bottom: 25px; 
+      line-height: 1.5;
+    }
+
+    /* ========================================
+       FORMS & INTERACTION
+       ========================================
+    */
+    .input-group { margin-bottom: 22px; }
+    
+    label { 
+      display: block; 
+      font-size: 0.85rem; 
+      font-weight: 700; 
+      margin-bottom: 10px; 
+      color: var(--dark); 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    input, select, textarea { 
+      width: 100%; 
+      padding: 14px; 
+      border: 1px solid #ddd; 
+      border-radius: 10px; 
+      font-family: inherit; 
+      font-size: 1rem; 
+      background: #fafafa;
+      transition: var(--transition);
+    }
+    
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+    }
+    
+    textarea { resize: vertical; min-height: 120px; }
+
+    .btn-save {
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      padding: 15px;
+      border-radius: 10px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      width: 100%; 
+      font-size: 1rem;
+      transition: var(--transition);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .btn-save:hover:not(:disabled) { 
+      background: var(--primary-hover); 
+      transform: translateY(-2px); 
+      box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+    }
+    
+    .btn-save:disabled { 
+      background: #cbd5e0; 
+      cursor: not-allowed; 
+      transform: none;
+    }
+
+    /* ========================================
+       DATA TABLES
+       ========================================
+    */
+    .data-table-container { 
+      background: white; 
+      border-radius: 14px; 
+      border: 1px solid var(--border-color); 
+      overflow: hidden; 
+      margin-top: 15px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    
+    th { 
+      background: #f8f9fa; 
+      padding: 18px; 
+      font-size: 0.75rem; 
+      text-transform: uppercase; 
+      color: #888; 
+      border-bottom: 1px solid var(--border-color); 
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    
+    td { 
+      padding: 18px; 
+      font-size: 0.95rem; 
+      border-bottom: 1px solid var(--border-color); 
+    }
+    
+    .role-tag { 
+      padding: 5px 12px; 
+      border-radius: 6px; 
+      font-size: 0.75rem; 
+      font-weight: 700; 
+    }
+    
+    .tag-admin { background: #fff3e0; color: #ef6c00; }
+    .tag-staff { background: #e8f5e9; color: #2e7d32; }
+
+    /* ========================================
+       UTILITY CLASSES
+       ========================================
+    */
+    .switch-group { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: #f8f9fa; 
+      padding: 16px; 
+      border-radius: 10px; 
+      margin-bottom: 20px; 
+      border: 1px solid #eee;
+    }
+    
+    .switch { 
+      position: relative; 
+      display: inline-block; 
+      width: 48px; 
+      height: 26px; 
+    }
+    
+    .switch input { opacity: 0; width: 0; height: 0; }
+    
+    .slider { 
+      position: absolute; 
+      cursor: pointer; 
+      top: 0; left: 0; right: 0; bottom: 0; 
+      background-color: #cbd5e0; 
+      transition: .4s; 
+      border-radius: 34px; 
+    }
+    
+    .slider:before { 
+      position: absolute; 
+      content: ""; 
+      height: 20px; width: 20px; 
+      left: 3px; bottom: 3px; 
+      background-color: white; 
+      transition: .4s; 
+      border-radius: 50%; 
+    }
+    
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    .status-badge { 
+      font-size: 0.7rem; 
+      padding: 5px 10px; 
+      border-radius: 5px; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      margin-left: 10px; 
+    }
+    
+    .badge-pro { background: #e3f2fd; color: #0d47a1; }
+    .badge-enterprise { background: #f3e5f5; color: #7b1fa2; }
+    .badge-active { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
+
+    footer { 
+      text-align: center; 
+      padding: 60px 20px; 
+      color: #999; 
+      font-size: 0.95rem; 
+      border-top: 1px solid var(--border-color); 
+      background: white;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="ai-automations.html">AI Automations</a>
+      <a href="#ai-brain-section">AI Brain</a>
+      <a href="#org-section">Team</a>
+      <a href="customer-insights.html" class="nav-link" style="
+  text-decoration: none;
+  color: #555;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+">Customer Insights</a>
+      <a href="index.html" class="back-btn">Exit Center</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>AI Intelligence Center</h1>
+  <p>Your centralized dashboard for configuring high-performance AI tools and knowledge bases.</p>
+  <div id="plan-indicator" style="margin-top:20px; font-weight:800; color:var(--primary); font-size: 0.9rem; letter-spacing: 1px;">
+    ACCOUNT STATUS: <span id="currentPlanName" style="background: #fff9e6; padding: 5px 15px; border-radius: 20px; border: 1px solid var(--primary);">DETECTING...</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-header" id="ai-brain-section">
+    <h2>🧠 AI Knowledge Base</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="grid">
+    <div class="tool-card wide-card" id="card-brain">
+      <div style="flex: 1.2;">
+        <div class="icon-box">📖</div>
+        <h3>System Prompt & Identity <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+        <p class="tool-description">Define the core personality and operational constraints of your AI agent. This prompt governs every interaction.</p>
+        <div class="input-group">
+          <label>Global System Instructions</label>
+          <textarea id="aiInstructions" rows="10" placeholder="Example: You are a professional support agent for 'Elite Cars'. Your tone is luxury and helpful. Never mention competitors..."></textarea>
+        </div>
+      </div>
+      <div style="flex: 0.8; background: #fafafa; padding: 25px; border-radius: 14px; border: 1px dashed #ddd;">
+        <h3>Execution Settings</h3>
+        <div class="input-group" style="margin-top: 20px;">
+          <label>Creativity (Temperature)</label>
+          <select id="aiTemp">
+            <option value="0.1">Strict & Technical</option>
+            <option value="0.4">Helpful & Direct</option>
+            <option value="0.7" selected>Balanced & Conversational</option>
+            <option value="1.0">Creative & Marketing Focused</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Default Language</label>
+          <select id="aiLang">
+            <option value="auto">Auto-Detect Multi-language</option>
+            <option value="en">Force English</option>
+            <option value="es">Force Spanish</option>
+            <option value="fr">Force French</option>
+          </select>
+        </div>
+        <button class="btn-save" id="save-brain" onclick="saveSmartTool('brain')">Deploy Knowledge Update</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2>🚀 Enterprise Intelligence</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="grid">
+    <div class="tool-card locked-card" id="card-apollo">
+      <div class="lock-overlay" id="overlay-enrichment">
+        <div class="preview-box">
+          <p><strong>B2B Enrichment Sample:</strong></p>
+          <p style="color:var(--success)">✓ Found: john.doe@company.com</p>
+          <p>✓ Role: VP of Engineering</p>
+          <p>✓ Revenue: $50M - $100M</p>
+        </div>
+        <p>Unlock Apollo Lead Intelligence</p>
+        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade Account</button>
+      </div>
+      <div>
+        <div class="icon-box">🔍</div>
+        <h3>Apollo Lead Scraper <span class="status-badge badge-enterprise">Enterprise</span></h3>
+        <p class="tool-description">Connect your Apollo API key to automatically enrich every chat lead with professional data.</p>
+        <div class="input-group">
+            <label>Apollo API Key</label>
+            <input type="password" id="apolloKey" placeholder="sk_xxxxxxxxxxxxxxxx">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSmartTool('apollo')">Connect Apollo API</button>
+    </div>
+
+    <div class="tool-card locked-card" id="card-followup">
+      <div class="lock-overlay" id="overlay-followup">
+        <div class="preview-box">
+          <p><strong>Auto-Automation:</strong></p>
+          <p>1. User provides email</p>
+          <p>2. User goes idle for 5m</p>
+          <p style="color:var(--success)">3. AI sends custom follow-up</p>
+        </div>
+        <p>Unlock Smart Follow-ups</p>
+        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Pro</button>
+      </div>
+      <div>
+        <div class="icon-box">📧</div>
+        <h3>AI Email Nurture <span class="status-badge badge-pro">Pro</span></h3>
+        <p class="tool-description">Automatically sends context-aware follow-up emails if a lead drops off before booking.</p>
+        <div class="switch-group">
+            <span>Enable Auto-Nurture</span>
+            <label class="switch">
+              <input type="checkbox" id="followupToggle">
+              <span class="slider"></span>
+            </label>
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSmartTool('followup')">Activate Automation</button>
+    </div>
+
+    <div class="tool-card locked-card" id="card-vision">
+        <div class="lock-overlay" id="overlay-vision">
+          <div class="preview-box">
+            <p><strong>Vision Processing:</strong></p>
+            <p style="color:var(--success)">[Image] Invoice_Scan_01.png</p>
+            <p><strong>AI Analysis:</strong> <em>"Found Invoice #402. Total: $45.00. Dated: 05/12/26."</em></p>
+          </div>
+          <p>Unlock Multimodal Vision AI</p>
+          <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade Account</button>
+        </div>
+        <div>
+          <div class="icon-box">👁️</div>
+          <h3>AI Vision Hub <span class="status-badge badge-enterprise">Enterprise</span></h3>
+          <p class="tool-description">Enable GPT-4 Vision capabilities allowing your AI to read screenshots, PDFs, and photos.</p>
+          <div class="switch-group">
+            <span>Allow Image Uploads</span>
+            <label class="switch">
+              <input type="checkbox" id="visionToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveSmartTool('vision')">Update Vision Settings</button>
+      </div>
+  </div>
+
+  <div class="section-header">
+    <h2>🛠️ Operational Tools</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="grid">
+    <div class="tool-card" id="card-booking">
+      <div>
+        <div class="icon-box">📅</div>
+        <h3>Appointment Logic <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+        <p class="tool-description">Direct the AI to identify booking intent and present your scheduling link at the perfect moment.</p>
+        <div class="input-group">
+          <label>Primary Booking Link</label>
+          <input type="text" id="bookingUrl" placeholder="https://calendly.com/your-business/meeting">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSmartTool('booking')">Sync Booking Logic</button>
+    </div>
+
+    <div class="tool-card locked-card" id="card-sentiment">
+      <div class="lock-overlay" id="overlay-sentiment">
+        <span>🚨</span>
+        <p>Enterprise Crisis Monitoring</p>
+        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade</button>
+      </div>
+      <div>
+        <div class="icon-box">🛡️</div>
+        <h3>Crisis Guard <span class="status-badge badge-pro">Enterprise</span></h3>
+        <p class="tool-description">Real-time sentiment analysis. If a user gets angry, the AI alerts your team immediately.</p>
+        <div class="switch-group">
+          <span>Alert on Negative Tone</span>
+          <label class="switch">
+            <input type="checkbox" id="sentimentToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="input-group">
+          <label>Emergency Contact Email</label>
+          <input type="email" id="alertEmail" placeholder="ops@yourcompany.com">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSmartTool('sentiment')">Save Security Rules</button>
+    </div>
+
+    <div class="tool-card locked-card" id="card-webhook">
+      <div class="lock-overlay" id="overlay-webhook">
+        <span>🔗</span>
+        <p>Pro Data Connectivity</p>
+        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade</button>
+      </div>
+      <div>
+        <div class="icon-box">⚡</div>
+        <h3>CRM Sync (Webhooks) <span class="status-badge badge-pro">Pro</span></h3>
+        <p class="tool-description">Push lead data directly to Zapier, HighLevel, or HubSpot via standard POST webhooks.</p>
+        <div class="input-group">
+          <label>Destination Webhook URL</label>
+          <input type="text" id="webhookUrl" placeholder="https://hooks.zapier.com/v1/...">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSmartTool('webhook')">Save Webhook</button>
+    </div>
+  </div>
+
+  <div class="section-header" id="org-section">
+    <h2>🏢 Organization & Team</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="grid">
+    <div class="tool-card wide-card">
+      <div style="width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+          <div>
+            <h3>Staff Permissions <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+            <p class="tool-description" style="margin-bottom: 0;">Manage who can access the AI logs and dashboard settings.</p>
+          </div>
+          <button class="btn-save" style="width: auto; padding: 12px 25px; background: var(--dark);" onclick="openInviteModal()">+ Add Team Member</button>
+        </div>
+
+        <div class="data-table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Email Address</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="teamTableBody">
+              <tr>
+                <td><strong>Current User</strong></td>
+                <td>admin@business.io</td>
+                <td><span class="role-tag tag-admin">Owner</span></td>
+                <td><span style="color: var(--success); font-weight: 700;">● Online</span></td>
+                <td>-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top: 30px;">
+    <div class="tool-card" id="card-handover">
+      <div>
+        <div class="icon-box">🎧</div>
+        <h3>Live Handover</h3>
+        <p class="tool-description">Define when the AI should step back and hand the conversation to a human agent.</p>
+        <div class="input-group">
+          <label>Trigger Condition</label>
+          <select id="handoverTrigger">
+            <option value="human">"Ask for representative"</option>
+            <option value="fail">AI fails 3 times</option>
+            <option value="complex">High-value lead detected</option>
+            <option value="manual">Always Manual</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSmartTool('handover')">Set Handover Rules</button>
+    </div>
+
+    <div class="tool-card" id="card-analytics">
+      <div>
+        <div class="icon-box">📈</div>
+        <h3>Reporting Hub</h3>
+        <p class="tool-description">Download comprehensive AI performance reports and lead quality analysis in bulk.</p>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+            <p style="font-size: 0.8rem; color: #666;">Monthly AI Accuracy: <strong>98.2%</strong></p>
+            <p style="font-size: 0.8rem; color: #666;">Leads Captured: <strong>1,402</strong></p>
+        </div>
+      </div>
+      <button class="btn-save" style="background: #333;" onclick="exportBusinessData()">Download PDF Report</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 AI Smart Business Hub | Advanced Agent Control Panel</p>
+</footer>
+
+<script src="smart-logic.js">
+/**
+ * SMART TOOLS PAGE - FINAL FIXED VERSION (ALL TOGGLES & BUTTONS PERSIST)
+ * Restores toggles + "● LIVE" buttons after refresh
+ * Debug logs included to verify
+ * Updated for Cloudflare AI backend integration
+ */
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("[SMART-TOOLS] Page Initialized");
+
+    // Wait for smart-logic.js and DOM to be fully ready
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    // Load settings from server + restore toggles/buttons
+    await loadAndRestoreUI();
+
+    // Optional second pass after 1 second (handles any rare timing issues)
+    setTimeout(loadAndRestoreUI, 1000);
+});
+
+/* -------------------------------
+   LOAD SETTINGS + RESTORE UI
+--------------------------------*/
+async function loadAndRestoreUI() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.warn("[LOAD] No token found");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/smart-hub/settings', {
+            headers: { 'Authorization': `Bearer ${token}` },
+            cache: 'no-store'
+        });
+
+        if (!res.ok) throw new Error(`Load failed: ${res.status}`);
+
+        const data = await res.json() || {}; // ← safe fallback if empty
+        console.log("[LOAD] Settings from Cloudflare-powered backend:", data);
+
+        // Fill text/select inputs
+        const mappings = {
+            ai_instructions: 'aiInstructions',
+            ai_temp: 'aiTemp',
+            ai_lang: 'aiLang',
+            booking_url: 'bookingUrl',
+            alert_email: 'alertEmail',
+            webhook_url: 'webhookUrl',
+            apollo_key: 'apolloKey',
+            vision_sensitivity: 'visionSens',
+            vision_area: 'visionArea'
+        };
+
+        for (const [dbKey, htmlId] of Object.entries(mappings)) {
+            const el = document.getElementById(htmlId);
+            if (el && data[dbKey] !== undefined && data[dbKey] !== null) {
+                el.value = data[dbKey];
+            }
+        }
+
+        // Restore ALL toggles
+        const toggleMap = {
+            sentimentToggle: data.sentiment_active === 1,
+            visionToggle: data.vision_active === 1,
+            followupToggle: data.followup_active === 1,
+            apolloToggle: data.apollo_active === 1,
+            analyticsToggle: data.analytics_active === 1
+        };
+
+        for (const [id, shouldBeOn] of Object.entries(toggleMap)) {
+            const toggle = document.getElementById(id);
+            if (toggle) {
+                toggle.checked = shouldBeOn;
+                console.log(`[RESTORE] ${id} → ${shouldBeOn ? 'ON' : 'OFF'} (DB: ${data[id.replace('Toggle','_active')]})`);
+            } else {
+                console.warn(`[RESTORE] Toggle missing in HTML: ${id}`);
+            }
+        }
+
+        // Restore LIVE buttons for all tools that are active
+        const activeTools = Object.keys(toggleMap).filter(id => toggleMap[id]).map(id => id.replace('Toggle', ''));
+        activeTools.forEach(type => markToolInUse(type));
+
+    } catch (err) {
+        console.warn("[LOAD] Failed to load settings from backend:", err);
+    }
+}
+
+/* -------------------------------
+   SAVE SETTINGS
+--------------------------------*/
+async function saveSmartTool(type, event) {
+    const btn = event.currentTarget || event.target;
+    if (!btn) return;
+
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `⏳ Saving...`;
+
+    try {
+        await saveSmartTool(type); // from smart-logic.js
+        markToolInUse(type);       // set LIVE + badge
+        btn.innerHTML = `✅ Saved`;
+        btn.style.backgroundColor = "#28a745";
+    } catch (err) {
+        console.error("[SAVE ERROR]", err);
+        btn.innerHTML = `❌ Error`;
+    }
+
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+        btn.style.backgroundColor = "";
+    }, 2000);
+}
+
+/* -------------------------------
+   MARK TOOL AS ACTIVE (BUTTON + BADGE)
+--------------------------------*/
+function markToolInUse(type) {
+    const card = document.getElementById(`card-${type}`);
+    if (!card) {
+        console.warn(`[MARK] Card missing: card-${type}`);
+        return;
+    }
+
+    // Update small badge (if present)
+    const badge = card.querySelector('.status-badge');
+    if (badge) {
+        badge.innerText = "ACTIVE";
+        badge.className = "status-badge badge-inuse";
+    }
+
+    // Update the save/activate button to "● LIVE"
+    const btn = card.querySelector('.btn-save') || card.querySelector('button');
+    if (btn) {
+        btn.innerText = "● LIVE";
+        btn.classList.add('btn-live-status');
+        btn.disabled = false;
+        console.log(`[LIVE] ${type} button → ● LIVE`);
+    } else {
+        console.warn(`[LIVE] No button found in card-${type}`);
+    }
+}
+</script>
+</body>
+</html>

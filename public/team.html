@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team Collaboration | AI Smart Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d4af37;
+      --primary-hover: #b8962e;
+      --dark: #1a1a1a;
+      --dark-accent: #2d2d2d;
+      --light: #f8f9fa;
+      --border-color: #e0e0e0;
+      --shadow: 0 8px 25px rgba(0,0,0,0.06);
+      --card-radius: 16px;
+      --transition: 0.3s ease;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: var(--dark);
+      line-height: 1.7;
+    }
+
+    nav {
+      background: white;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .nav-links a:hover,
+    .active-nav {
+      color: var(--primary);
+    }
+
+    .hero {
+      background: white;
+      padding: 100px 24px 80px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+
+    .hero p.lead {
+      font-size: 1.3rem;
+      color: #555;
+      max-width: 720px;
+      margin: 0 auto 40px;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .section {
+      padding: 80px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: #666;
+      font-size: 1.15rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+
+    .team-card {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 40px 32px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .team-card:hover {
+      transform: translateY(-8px);
+    }
+
+    .team-avatar {
+      width: 120px;
+      height: 120px;
+      background: var(--light);
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+    }
+
+    .team-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .team-role {
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .feature-list {
+      list-style: none;
+      text-align: left;
+      margin-top: 24px;
+    }
+
+    .feature-list li {
+      margin-bottom: 12px;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .feature-list li:before {
+      content: "✓";
+      color: var(--success);
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    footer {
+      background: white;
+      padding: 60px 24px;
+      text-align: center;
+      color: #777;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="smart-tools.html">AI Tools</a>
+      <a href="customer-insights.html">Customer Insights</a>
+      <a href="team.html" class="active-nav">Team</a>
+      <a href="about.html">About</a>
+      <a href="pricing.html" class="cta-btn">Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Team Collaboration</h1>
+  <p class="lead">
+    Invite your support agents, marketers, and managers — work together in real-time with shared notes, tasks, and customer insights.
+  </p>
+</div>
+
+<div class="container">
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Built for Teams of All Sizes</h2>
+      <p>Whether you have 2 people or 20, AI Smart Hub makes teamwork effortless.</p>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">👩‍💼</div>
+        <h3>Support Agents</h3>
+        <div class="team-role">Customer Success</div>
+        <ul class="feature-list">
+          <li>See full customer history & sentiment</li>
+          <li>Receive real-time negative alerts</li>
+          <li>Use AI-generated reply suggestions</li>
+          <li>Add internal notes visible only to team</li>
+        </ul>
+      </div>
+
+      <div class="team-card">
+        <div class="team-avatar">📊</div>
+        <h3>Managers & Owners</h3>
+        <div class="team-role">Oversight & Analytics</div>
+        <ul class="feature-list">
+          <li>View team performance & response times</li>
+          <li>Monitor overall churn risk & trends</li>
+          <li>Export reports for meetings</li>
+          <li>Set alerts for high-risk customers</li>
+        </ul>
+      </div>
+
+      <div class="team-card">
+        <div class="team-avatar">🤝</div>
+        <h3>Marketing & Sales</h3>
+        <div class="team-role">Lead & Insight Team</div>
+        <ul class="feature-list">
+          <li>Access warm leads from widget</li>
+          <li>Analyze customer pain points</li>
+          <li>Create targeted follow-up campaigns</li>
+          <li>Share personas & resolution templates</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Coming Soon: Full Team Features</h2>
+      <p>We're actively building more powerful collaboration tools:</p>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <h3>Roles & Permissions</h3>
+        <p>Admin, Manager, Agent, Viewer roles coming soon.</p>
+      </div>
+      <div class="team-card">
+        <h3>Internal Chat</h3>
+        <p>Discuss customers privately without leaving the platform.</p>
+      </div>
+      <div class="team-card">
+        <h3>Task Assignments</h3>
+        <p>Assign follow-ups directly from customer profiles.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2026 AI Smart Hub • <a href="about.html" style="color:#777;">About</a> • <a href="privacy.html" style="color:#777;">Privacy</a> • <a href="terms.html" style="color:#777;">Terms</a></p>
+</footer>
+
+</body>
+</html>

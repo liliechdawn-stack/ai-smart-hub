@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Documentation | AI Smart Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d4af37;
+      --primary-hover: #b8962e;
+      --dark: #1a1a1a;
+      --light: #f8f9fa;
+      --border-color: #e0e0e0;
+      --shadow: 0 8px 25px rgba(0,0,0,0.06);
+      --card-radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    nav {
+      background: white;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: 0.3s ease;
+      margin-left: 28px;
+    }
+
+    .nav-links a:hover { color: var(--primary); }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .endpoint {
+      background: white;
+      border-radius: var(--card-radius);
+      margin-bottom: 30px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .endpoint-header {
+      background: var(--dark);
+      color: white;
+      padding: 20px;
+      font-family: monospace;
+      font-size: 1.1rem;
+    }
+
+    .endpoint-method {
+      background: var(--primary);
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-right: 15px;
+    }
+
+    .endpoint-body {
+      padding: 30px;
+    }
+
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: monospace;
+      overflow-x: auto;
+      margin: 15px 0;
+    }
+
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .param-table th {
+      text-align: left;
+      background: var(--light);
+      padding: 12px;
+    }
+
+    .param-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .badge {
+      background: var(--primary);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px;
+      color: #777;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="about.html">About</a>
+      <a href="pricing.html">Pricing</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>🔌 API Documentation</h1>
+  <p style="font-size: 1.2rem; margin-bottom: 40px;">Integrate AI Smart Hub with your existing tools</p>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="endpoint-method">POST</span> /api/public/leads
+    </div>
+    <div class="endpoint-body">
+      <p>Capture a new lead from your website or app</p>
+      
+      <h3>Headers</h3>
+      <div class="code-block">
+        Content-Type: application/json
+      </div>
+
+      <h3>Request Body</h3>
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td>name</td><td>string</td><td>✅</td><td>Customer's full name</td></tr>
+        <tr><td>email</td><td>string</td><td>✅</td><td>Customer's email address</td></tr>
+        <tr><td>phone</td><td>string</td><td>❌</td><td>Phone number (optional)</td></tr>
+        <tr><td>widget_key</td><td>string</td><td>✅</td><td>Your unique widget key</td></tr>
+      </table>
+
+      <h3>Example Request</h3>
+      <div class="code-block">
+        {<br>
+        &nbsp;&nbsp;"name": "John Doe",<br>
+        &nbsp;&nbsp;"email": "john@example.com",<br>
+        &nbsp;&nbsp;"phone": "+1234567890",<br>
+        &nbsp;&nbsp;"widget_key": "your-widget-key-here"<br>
+        }
+      </div>
+
+      <h3>Example Response</h3>
+      <div class="code-block">
+        {<br>
+        &nbsp;&nbsp;"success": true,<br>
+        &nbsp;&nbsp;"message": "Lead captured!"<br>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="endpoint-method">POST</span> /api/public/chat
+    </div>
+    <div class="endpoint-body">
+      <p>Send a message to the AI widget and get a response</p>
+
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td>message</td><td>string</td><td>✅</td><td>User's message</td></tr>
+        <tr><td>widget_key</td><td>string</td><td>✅</td><td>Your widget key</td></tr>
+        <tr><td>client_name</td><td>string</td><td>❌</td><td>User's name</td></tr>
+        <tr><td>session_id</td><td>string</td><td>❌</td><td>Existing session ID</td></tr>
+        <tr><td>image_data</td><td>string</td><td>❌</td><td>Base64 encoded image</td></tr>
+      </table>
+
+      <h3>Example Response</h3>
+      <div class="code-block">
+        {<br>
+        &nbsp;&nbsp;"success": true,<br>
+        &nbsp;&nbsp;"reply": "I'd be happy to help with that...",<br>
+        &nbsp;&nbsp;"session_id": "pub_1234567890"<br>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="endpoint-method">GET</span> /api/public/widget-config/{key}
+    </div>
+    <div class="endpoint-body">
+      <p>Get widget configuration (colors, welcome message, etc.)</p>
+
+      <h3>Example Response</h3>
+      <div class="code-block">
+        {<br>
+        &nbsp;&nbsp;"business_name": "Your Store",<br>
+        &nbsp;&nbsp;"widget_color": "#d4af37",<br>
+        &nbsp;&nbsp;"welcome_message": "Hi! How can I help?"<br>
+        }
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin: 40px 0 20px;">🔐 Authentication</h2>
+  <p>For authenticated endpoints, include your JWT token:</p>
+  <div class="code-block">
+    Authorization: Bearer your-jwt-token-here
+  </div>
+
+  <h2 style="margin: 40px 0 20px;">📡 Webhooks</h2>
+  <p>Configure webhooks in your dashboard to receive real-time notifications:</p>
+  <ul style="margin-left: 20px;">
+    <li><strong>new_lead</strong> - When a new lead is captured</li>
+    <li><strong>negative_sentiment</strong> - When a customer expresses frustration</li>
+    <li><strong>booking_intent</strong> - When someone wants to book</li>
+  </ul>
+
+  <div style="background: var(--light); padding: 30px; border-radius: var(--card-radius); margin-top: 40px;">
+    <h3>🚀 Need help with integration?</h3>
+    <p>Contact our developer support team at <strong>api@aismarthub.com</strong></p>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 AI Smart Hub • API Version 1.0.0</p>
+</footer>
+
+</body>
+</html>
