@@ -1,7 +1,7 @@
 // customer-insights.js - REAL SaaS version (FIXED: Multi-endpoint plan detection + robust unlocking)
 // Fully wired to /api/customer-insights/ backend endpoints + dashboard.js sync
 
-const BACKEND_URL = "http://localhost:5000";  // <-- Critical fix for port mismatch
+const BACKEND_URL = window.BACKEND_URL;;  // <-- Critical fix for port mismatch
 const AI_CHAT_ENDPOINT = `${BACKEND_URL}/api/customer-insights/ai-chat`;
 
 // Global state

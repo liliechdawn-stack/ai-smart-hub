@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+const API_URL = window.BACKEND_URL;;
 
 // ================= AUTH =================
 const token = localStorage.getItem("token");

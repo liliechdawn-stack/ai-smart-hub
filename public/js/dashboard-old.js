@@ -1,5 +1,5 @@
 // dashboard.js - Updated for Enrichment Data, Session-based Chat Threads, Voice Controls, and Support
-const API_URL = "http://localhost:5000/api";
+const API_URL = window.BACKEND_URL;;
 const token = localStorage.getItem("token");
 
 if (!token) {

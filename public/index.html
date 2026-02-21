@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="js/master-fix.js"></script>
   <meta charset="UTF-8" />
   <title>AI Chat Widget Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -566,12 +567,12 @@ if (!localStorage.getItem("token")) {
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  const BACKEND_URL = "https://ai-smart-hub.onrender.com";
+  const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
   const token = localStorage.getItem("token");
 
   if (!token) return;
 
-  const socket = io("http://localhost:5000");
+  const socket = io("https://ai-smart-hub.onrender.com");
 
   /* ================= NOTIFICATION LOGIC ================= */
   const notifBell = document.getElementById("notif-bell-container");

@@ -1,3 +1,7 @@
+// Ensure BACKEND_URL is available
+if (typeof window.BACKEND_URL === 'undefined') {
+    console.error('❌ BACKEND_URL not defined! Make sure master-fix.js is loaded first.');
+}
 /**
  * Smart Business Hub - AI Logic Controller (REAL SAAS - FULLY FIXED)
  * Unlocks tools for ANY Pro / Enterprise / Agency subscriber
@@ -6,7 +10,7 @@
  * FIX: Restores ALL toggles (Vision, Followup, Apollo) + correct button selector
  */
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://ai-smart-hub.onrender.com";
 
 let CURRENT_USER_PLAN = 'free';
 let CURRENT_USER_TOKEN = localStorage.getItem('token');

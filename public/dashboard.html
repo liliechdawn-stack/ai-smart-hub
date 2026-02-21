@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="js/master-fix.js"></script>
   <meta charset="UTF-8" />
   <title>Dashboard - AI Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -478,7 +479,10 @@
 
 
 <script>
-    const BACKEND_URL = "https://ai-smart-hub.onrender.com";
+    // ===== PRODUCTION BACKEND URL =====
+    const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+    const API_URL = BACKEND_URL; // Alias for compatibility
+    
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -492,6 +496,8 @@
     const GEMINI_GRADIENT = 'linear-gradient(135deg, #4285f4, #9b72cb, #d96570)';
 
     document.addEventListener("DOMContentLoaded", function () {
+        console.log("[DASHBOARD] Initializing with backend:", BACKEND_URL);
+        
         const sections = {
             analytics: document.getElementById("analyticsSection"),
             leads: document.getElementById("leadsSection"),
@@ -594,13 +600,13 @@
                 btn.addEventListener("click", async function () {
                     var planId = btn.dataset.plan;
                     try {
-                        var res = await fetch(API_URL + "/subscription/create-checkout-session", {
+                        var res = await fetch(`${BACKEND_URL}/api/subscription/create-checkout-session`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
                                 "Authorization": "Bearer " + token
                             },
-                            body: JSON.stringify({ plan: planId, email: localStorage.getItem("email") || "unknown@email.com" })
+                            body: JSON.stringify({ plan: planId })
                         });
 
                         var data = await res.json();
@@ -659,13 +665,14 @@
 
         async function loadDashboard() {
             try {
-                var res = await fetch(API_URL + "/dashboard/full", {
+                var res = await fetch(`${BACKEND_URL}/api/dashboard/full`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
 
                 if (!res.ok) throw new Error("Failed to load dashboard");
 
                 var data = await res.json();
+                console.log("[DASHBOARD] Data loaded:", data);
 
                 // --- START ADMIN BYPASS UPDATE ---
                 const isAdmin = (data.email && data.email.toLowerCase() === "ericchung992@gmail.com");
@@ -715,7 +722,7 @@
                 const newName = document.getElementById("settingsBusinessName").value.trim();
                 if(!newName) return alert("Please enter a name");
                 try {
-                    const res = await fetch(API_URL + "/user/update-name", {
+                    const res = await fetch(`${BACKEND_URL}/api/admin/users/update-profile`, {
                         method: "PUT",
                         headers: { 
                             "Content-Type": "application/json",
@@ -726,8 +733,14 @@
                     if(res.ok) {
                         alert("Business name updated!");
                         loadDashboard();
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || "Error updating name");
                     }
-                } catch (e) { alert("Error updating name"); }
+                } catch (e) { 
+                    console.error(e);
+                    alert("Error updating name"); 
+                }
             }
         }
 
@@ -831,7 +844,7 @@
 
                     var leadId = btn.dataset.id;
                     try {
-                        var res = await fetch(API_URL + "/leads/" + leadId, {
+                        var res = await fetch(`${BACKEND_URL}/api/leads/${leadId}`, {
                             method: "DELETE",
                             headers: { "Authorization": "Bearer " + token }
                         });
@@ -848,115 +861,131 @@
             });
         }
 
-        document.getElementById("saveKnowledgeBtn").onclick = async function() {
-          const content = document.getElementById("knowledge-input").value.trim();
-          if(!content) return alert("Please enter business info.");
+        const saveKnowledgeBtn = document.getElementById("saveKnowledgeBtn");
+        if(saveKnowledgeBtn) {
+            saveKnowledgeBtn.onclick = async function() {
+              const content = document.getElementById("knowledge-input").value.trim();
+              if(!content) return alert("Please enter business info.");
 
-          try {
-            const res = await fetch(API_URL + "/knowledge/add", {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({ content })
-            });
-            const data = await res.json();
-            if(data.success) {
-                alert("AI Knowledge Updated!");
-                document.getElementById("knowledge-input").value = "";
+              try {
+                const res = await fetch(`${BACKEND_URL}/api/knowledge/add`, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert("AI Knowledge Updated!");
+                    document.getElementById("knowledge-input").value = "";
+                } else {
+                    alert(data.error || "Error saving knowledge");
+                }
+              } catch (e) { 
+                  console.error(e);
+                  alert("Error saving knowledge"); 
+              }
             }
-          } catch (e) { alert("Error saving knowledge"); }
         }
 
-        document.getElementById("sendBtn").addEventListener("click", async function () {
-            var msg = document.getElementById("aiMessage").value.trim();
-            var name = document.getElementById("clientName").value.trim();
+        const sendBtn = document.getElementById("sendBtn");
+        if(sendBtn) {
+            sendBtn.addEventListener("click", async function () {
+                var msg = document.getElementById("aiMessage").value.trim();
+                var name = document.getElementById("clientName").value.trim();
 
-            if (!msg || !name) {
-                alert("Please fill client name and message");
-                return;
-            }
+                if (!msg || !name) {
+                    alert("Please fill client name and message");
+                    return;
+                }
 
-            try {
-                var res = await fetch(API_URL + "/widget/chat", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token
-                    },
-                    body: JSON.stringify({ message: msg, client_name: name })
-                });
+                try {
+                    var res = await fetch(`${BACKEND_URL}/api/widget/chat`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token
+                        },
+                        body: JSON.stringify({ message: msg, client_name: name })
+                    });
 
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || "Failed");
+                    var data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed");
 
-                var bubble = document.createElement("div");
-                bubble.className = "chat-bubble";
-                bubble.style.background = "rgba(255,255,255,0.05)";
-                bubble.style.borderRadius = "12px";
-                bubble.style.padding = "15px";
-                bubble.style.marginBottom = "10px";
-                bubble.innerHTML = `<div style="color:${GOLD_COLOR}; font-weight:bold; margin-bottom:5px;">You</div><div>${msg}</div><div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;"><span style="color:#8ab4f8; font-weight:bold;">AI:</span> ${data.response}</div>`;
-                chatResponses.prepend(bubble);
+                    var bubble = document.createElement("div");
+                    bubble.className = "chat-bubble";
+                    bubble.style.background = "rgba(255,255,255,0.05)";
+                    bubble.style.borderRadius = "12px";
+                    bubble.style.padding = "15px";
+                    bubble.style.marginBottom = "10px";
+                    bubble.innerHTML = `<div style="color:${GOLD_COLOR}; font-weight:bold; margin-bottom:5px;">You</div><div>${msg}</div><div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;"><span style="color:#8ab4f8; font-weight:bold;">AI:</span> ${data.reply || data.response || "No response"}</div>`;
+                    chatResponses.prepend(bubble);
 
-                document.getElementById("aiMessage").value = "";
-                document.getElementById("clientName").value = "";
-                loadDashboard();
-            } catch (err) {
-                alert(err.message || "Could not send message");
-            }
-        });
+                    document.getElementById("aiMessage").value = "";
+                    document.getElementById("clientName").value = "";
+                    loadDashboard();
+                } catch (err) {
+                    alert(err.message || "Could not send message");
+                }
+            });
+        }
 
-        document.getElementById("addLeadBtn").addEventListener("click", async function () {
-            var name = document.getElementById("leadName").value.trim();
-            var email = document.getElementById("leadEmail").value.trim();
-            var phone = document.getElementById("leadPhone").value.trim();
+        const addLeadBtn = document.getElementById("addLeadBtn");
+        if(addLeadBtn) {
+            addLeadBtn.addEventListener("click", async function () {
+                var name = document.getElementById("leadName").value.trim();
+                var email = document.getElementById("leadEmail").value.trim();
+                var phone = document.getElementById("leadPhone").value.trim();
 
-            if (!name || !email) {
-                alert("Name and email are required");
-                return;
-            }
+                if (!name || !email) {
+                    alert("Name and email are required");
+                    return;
+                }
 
-            try {
-                var res = await fetch(API_URL + "/leads", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token
-                    },
-                    body: JSON.stringify({ name: name, email: email, phone: phone })
-                });
+                try {
+                    var res = await fetch(`${BACKEND_URL}/api/leads`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token
+                        },
+                        body: JSON.stringify({ name: name, email: email, phone: phone })
+                    });
 
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || "Failed");
+                    var data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed");
 
-                alert("Lead added successfully!");
-                document.getElementById("leadName").value = "";
-                document.getElementById("leadEmail").value = "";
-                document.getElementById("leadPhone").value = "";
-                loadDashboard();
-            } catch (err) {
-                alert(err.message || "Could not add lead");
-            }
-        });
+                    alert("Lead added successfully!");
+                    document.getElementById("leadName").value = "";
+                    document.getElementById("leadEmail").value = "";
+                    document.getElementById("leadPhone").value = "";
+                    loadDashboard();
+                } catch (err) {
+                    alert(err.message || "Could not add lead");
+                }
+            });
+        }
 
-        logoutBtn.onclick = function () {
-            localStorage.clear();
-            window.location.href = "login.html";
-        };
+        if(logoutBtn) {
+            logoutBtn.onclick = function () {
+                localStorage.clear();
+                window.location.href = "login.html";
+            };
+        }
 
         async function loadWidgetKey() {
             var keySpan = document.getElementById("widgetKey");
             var codePre = document.getElementById("embedCode");
             var widgetTabPre = document.getElementById("widgetSectionCode");
             
-            var bName = businessNameSpan.textContent || "Business";
+            var bName = businessNameSpan ? businessNameSpan.textContent || "Business" : "Business";
 
             if (!keySpan || !codePre) return;
 
             try {
-                var res = await fetch(API_URL + "/widget/key", {
+                var res = await fetch(`${BACKEND_URL}/api/widget/key`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
 
@@ -967,7 +996,7 @@
 
                 keySpan.textContent = key;
 
-                const baseUrl = "http://localhost:5000"; 
+                const baseUrl = BACKEND_URL; 
                 
                 var embedCode = `<script>
   (function() {
@@ -1007,33 +1036,39 @@
                     });
                 };
 
-                document.getElementById("copyEmbedBtn").onclick = () => copyAction(embedCode);
+                const copyEmbedBtn = document.getElementById("copyEmbedBtn");
+                if(copyEmbedBtn) {
+                    copyEmbedBtn.onclick = () => copyAction(embedCode);
+                }
                 
                 const tabCopyBtn = document.getElementById("copyWidgetTabBtn");
                 if (tabCopyBtn) {
                     tabCopyBtn.onclick = () => copyAction(embedCode);
                 }
 
-                document.getElementById("regenerateKeyBtn").onclick = async function () {
-                    if (!confirm("Generate new API key? Old key will stop working.")) return;
+                const regenerateKeyBtn = document.getElementById("regenerateKeyBtn");
+                if(regenerateKeyBtn) {
+                    regenerateKeyBtn.onclick = async function () {
+                        if (!confirm("Generate new API key? Old key will stop working.")) return;
 
-                    try {
-                        var res = await fetch(API_URL + "/widget/regenerate-key", {
-                            method: "POST",
-                            headers: { "Authorization": "Bearer " + token }
-                        });
+                        try {
+                            var res = await fetch(`${BACKEND_URL}/api/widget/regenerate-key`, {
+                                method: "POST",
+                                headers: { "Authorization": "Bearer " + token }
+                            });
 
-                        if (!res.ok) throw new Error(await res.text());
-                        var data = await res.json();
-                        alert("New API key generated!");
-                        loadWidgetKey();
-                    } catch (err) {
-                        alert("Error regenerating key: " + err.message);
-                    }
-                };
+                            if (!res.ok) throw new Error(await res.text());
+                            var data = await res.json();
+                            alert("New API key generated!");
+                            loadWidgetKey();
+                        } catch (err) {
+                            alert("Error regenerating key: " + err.message);
+                        }
+                    };
+                }
 
             } catch (err) {
-                keySpan.textContent = "Error loading key";
+                if(keySpan) keySpan.textContent = "Error loading key";
                 console.error("Widget key error:", err);
             }
         }

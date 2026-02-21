@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="js/master-fix.js"></script>
+    <title>Test Page</title>
+</head>
+<body>
+    <h1>Test Page</h1>
+    <div id="status">Testing connection...</div>
+    
+    <script>
+        const BACKEND_URL = "https://ai-smart-hub.onrender.com";
+        
+        async function testConnection() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/healthz`);
+                const data = await res.json();
+                document.getElementById('status').innerHTML = 
+                    `✅ Connected to backend!<br>Status: ${data.status}<br>Time: ${data.timestamp}`;
+            } catch (err) {
+                document.getElementById('status').innerHTML = `❌ Connection failed: ${err.message}`;
+            }
+        }
+        
+        testConnection();
+    </script>
+</body>
+</html>

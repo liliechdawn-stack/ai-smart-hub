@@ -1,3 +1,7 @@
+// Ensure BACKEND_URL is available
+if (typeof window.BACKEND_URL === 'undefined') {
+    console.error('❌ BACKEND_URL not defined! Make sure master-fix.js is loaded first.');
+}
 // customer-insights.js - Full SaaS-ready logic (Cloudflare AI powered)
 // Wired to middleman: /api/customer-insights/...
 
