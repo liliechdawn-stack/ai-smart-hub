@@ -7,50 +7,171 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --gold: #d4af37;
+      --light-gold: #f5e7b2;
+      --dark: #1a1a1a;
+      --error: #dc3545;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 450px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      text-align: center;
+      color: var(--gold);
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+    
+    h2 {
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+    
+    input {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.1);
+    }
+    
+    button {
+      width: 100%;
+      padding: 15px;
+      background: var(--gold);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 10px 0;
+    }
+    
+    button:hover {
+      background: #b8962e;
+      transform: translateY(-2px);
+    }
+    
     .hidden { display: none !important; }
-    .verify-box { border: 1px solid var(--gold); padding: 30px; border-radius: 16px; text-align: center; background: #111; }
-    .resend-link { color: var(--gold); cursor: pointer; font-size: 0.9rem; text-decoration: underline; margin-top: 10px; display: block; }
+    
+    .verify-box {
+      border: 2px solid var(--gold);
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      background: #f8f9fa;
+    }
+    
+    .resend-link {
+      color: var(--gold);
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: underline;
+      margin-top: 10px;
+      display: block;
+    }
+    
+    #verifyCode {
+      text-align: center;
+      font-size: 24px;
+      letter-spacing: 10px;
+      font-weight: 600;
+    }
+    
+    .or-divider {
+      text-align: center;
+      margin: 20px 0;
+      color: #666;
+      position: relative;
+    }
+    
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 45%;
+      height: 1px;
+      background: #e0e0e0;
+    }
+    
+    .or-divider::before { left: 0; }
+    .or-divider::after { right: 0; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 style="text-align: center; color: var(--light-gold);">AI Platform</h1>
+    <h1>✨ AI Smart Hub</h1>
 
     <div id="authContainer">
+      <!-- Login Form -->
       <form id="loginForm">
-        <h2>Login</h2>
+        <h2>Welcome Back</h2>
         <input type="email" id="loginEmail" placeholder="Email" required />
         <input type="password" id="loginPassword" placeholder="Password" required />
-        <button type="submit">Login</button>
+        <button type="submit">Login to Dashboard</button>
       </form>
 
-      <div style="text-align: center; margin: 20px 0;">OR</div>
+      <div class="or-divider">OR</div>
 
+      <!-- Signup Form -->
       <form id="signupForm">
-        <h2>Sign Up</h2>
+        <h2>Create Account</h2>
         <input type="text" id="businessName" placeholder="Business Name" required />
         <input type="email" id="signupEmail" placeholder="Email" required />
         <input type="password" id="signupPassword" placeholder="Password" required />
-        <button type="submit">Sign Up</button>
+        <button type="submit">Sign Up Free</button>
       </form>
     </div>
 
+    <!-- Verification Container -->
     <div id="verifyContainer" class="hidden">
       <div class="verify-box">
-        <h2 style="color: var(--gold);">Verify Your Email</h2>
+        <h2 style="color: var(--gold);">✅ Verify Your Email</h2>
         <p>We've sent a 6-digit code to your email. Please enter it below to activate your account.</p>
-        <input type="text" id="verifyCode" placeholder="Enter 6-Digit Code" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 10px; margin: 20px 0;" />
-        <button id="confirmVerifyBtn" style="width: 100%;">Verify Account</button>
+        <input type="text" id="verifyCode" placeholder="000000" maxlength="6" />
+        <button id="confirmVerifyBtn">Verify Account</button>
         <span class="resend-link" id="resendBtn">Didn't get a code? Resend</span>
-        <button onclick="location.reload()" style="background: transparent; color: #888; margin-top: 15px;">Back to Login</button>
+        <button onclick="location.reload()" style="background: transparent; color: #666; margin-top: 15px;">← Back to Login</button>
       </div>
     </div>
-
-    <button id="subscribeBtn" style="display:none;">Subscribe to Plan</button>
   </div>
 
 <script>
+    // ===== PRODUCTION BACKEND URL =====
     const BACKEND_URL = "https://ai-smart-hub.onrender.com";
+
+    console.log("[LOGIN] Using backend:", BACKEND_URL);
 
     // =================== UI HELPERS ===================
     function showVerifyUI() {
@@ -58,85 +179,115 @@
         document.getElementById("verifyContainer").classList.remove("hidden");
     }
 
-    function saveAuth(token, apiKey, plan, name, email) {
+    function saveAuth(token, plan, name, email) {
         localStorage.setItem("token", token);
-        localStorage.setItem("apiKey", apiKey || "");
         localStorage.setItem("plan", plan || "free");
-        // FIX: Ensure we store the email for the dashboard subscription logic
         localStorage.setItem("email", email);
-        // FIX: Ensure we store the business name accurately
         localStorage.setItem("businessName", name || "Business");
+        console.log("[LOGIN] Auth saved for:", email);
     }
 
     // =================== LOGIN ===================
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
         e.preventDefault();
+        
         const email = document.getElementById("loginEmail").value;
         const password = document.getElementById("loginPassword").value;
 
+        console.log("[LOGIN] Attempting login for:", email);
+
         try {
-            const res = await fetch(`${API_URL}/auth/login`, {
+            const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password })
             });
+            
             const data = await res.json();
+            console.log("[LOGIN] Response:", data);
 
             if (res.status === 403) {
                 alert("Account not verified. Please check your email.");
                 showVerifyUI();
             } else if (res.ok) {
-                // AGGRESSIVE FIX: Check both 'name' and 'business_name' from server response
                 const displayName = data.business_name || data.name || "Business";
-                saveAuth(data.token, data.apiKey, data.plan, displayName, email);
+                saveAuth(data.token, data.plan, displayName, email);
                 window.location.href = "dashboard.html";
             } else {
                 alert(data.error || "Login failed");
             }
         } catch (err) { 
-            console.error(err);
-            alert("Server error"); 
+            console.error("[LOGIN] Error:", err);
+            alert("Server error - please try again later"); 
         }
     });
 
     // =================== SIGNUP ===================
     document.getElementById("signupForm").addEventListener("submit", async (e) => {
         e.preventDefault();
+        
         const name = document.getElementById("businessName").value;
         const email = document.getElementById("signupEmail").value;
         const password = document.getElementById("signupPassword").value;
 
+        console.log("[SIGNUP] Attempting signup for:", email);
+
         try {
-            const res = await fetch(`${API_URL}/auth/signup`, {
+            const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, password })
+                body: JSON.stringify({ 
+                    business_name: name,
+                    email: email, 
+                    password: password 
+                })
             });
+            
+            const data = await res.json();
+            console.log("[SIGNUP] Response:", data);
+
             if (res.ok) {
-                alert("Signup initiated! Please verify your email.");
+                alert("✅ Signup successful! Please check your email for verification code.");
                 showVerifyUI();
             } else {
-                const data = await res.json();
                 alert(data.error || "Signup failed");
             }
-        } catch { alert("Server error during signup"); }
+        } catch (err) { 
+            console.error("[SIGNUP] Error:", err);
+            alert("Server error during signup - please try again"); 
+        }
     });
 
     // =================== VERIFY CODE ===================
     document.getElementById("confirmVerifyBtn").addEventListener("click", async () => {
-        const code = document.getElementById("verifyCode").value;
-        if (code.length < 6) return alert("Enter the full 6-digit code");
+        const code = document.getElementById("verifyCode").value.trim();
+        
+        if (code.length !== 6) {
+            alert("Please enter the full 6-digit code");
+            return;
+        }
+
+        console.log("[VERIFY] Verifying code:", code);
 
         try {
-            const res = await fetch(`${API_URL}/auth/verify/${code}`); 
+            const res = await fetch(`${BACKEND_URL}/api/auth/verify/${code}`); 
             
             if (res.ok) {
-                alert("Verification successful! You can now login.");
+                alert("✅ Verification successful! You can now login.");
                 location.reload(); 
             } else {
-                alert("Invalid or expired code.");
+                const text = await res.text();
+                alert("Invalid or expired code: " + text);
             }
-        } catch { alert("Error verifying code"); }
+        } catch (err) { 
+            console.error("[VERIFY] Error:", err);
+            alert("Error verifying code"); 
+        }
+    });
+
+    // =================== RESEND CODE ===================
+    document.getElementById("resendBtn").addEventListener("click", async () => {
+        alert("Resend functionality coming soon. Please check your email or try signing up again.");
     });
 </script>
 </body>
