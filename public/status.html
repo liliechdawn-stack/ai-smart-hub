@@ -476,13 +476,13 @@
 
 <!-- Toast Notification -->
 <div id="toast" class="toast"></div>
-
 <script>
 // ================================================
 // PRODUCTION-READY STATUS PAGE
 // ================================================
 
-const BACKEND_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://api.aismarthub.com';
+// ===== PRODUCTION BACKEND URL =====
+const BACKEND_URL = "https://ai-smart-hub.onrender.com";
 let refreshInterval;
 
 // ===== SHOW TOAST NOTIFICATION =====
@@ -687,6 +687,8 @@ async function subscribeStatus() {
 
 // ===== INITIALIZE =====
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log("[STATUS] Page initialized with backend:", BACKEND_URL);
+  
   // Load initial status
   await refreshStatus(false);
   

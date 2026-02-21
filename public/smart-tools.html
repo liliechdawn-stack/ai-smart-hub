@@ -796,8 +796,12 @@
  * Updated for Cloudflare AI backend integration
  */
 
+// ===== PRODUCTION BACKEND URL =====
+const BACKEND_URL = "https://ai-smart-hub.onrender.com";
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("[SMART-TOOLS] Page Initialized");
+    console.log("[SMART-TOOLS] Using backend:", BACKEND_URL);
 
     // Wait for smart-logic.js and DOM to be fully ready
     await new Promise(resolve => setTimeout(resolve, 1200));
@@ -820,7 +824,7 @@ async function loadAndRestoreUI() {
     }
 
     try {
-        const res = await fetch('/api/smart-hub/settings', {
+        const res = await fetch(`${BACKEND_URL}/api/smart-hub/settings`, {
             headers: { 'Authorization': `Bearer ${token}` },
             cache: 'no-store'
         });

@@ -451,6 +451,9 @@
 </footer>
 
 <script>
+// ===== PRODUCTION BACKEND URL =====
+const BACKEND_URL = "https://ai-smart-hub.onrender.com";
+
 document.getElementById('contactForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
@@ -487,8 +490,7 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
   submitSpinner.style.display = 'inline';
   
   try {
-    // Get the backend URL (use localhost for development, or your actual domain in production)
-    const BACKEND_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://your-api-domain.com';
+    console.log("[CONTACT] Sending to backend:", BACKEND_URL);
     
     // Send to your backend API
     const response = await fetch(`${BACKEND_URL}/api/contact/send`, {
@@ -511,16 +513,18 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
       // Scroll to success message
       successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
       
+      console.log("[CONTACT] Message sent successfully");
+      
       // Optional: Send a copy to user if checked
       if (formData.copyMe) {
-        console.log('Sending copy to user:', formData.email);
+        console.log('[CONTACT] Sending copy to user:', formData.email);
       }
     } else {
       throw new Error(data.error || 'Failed to send message');
     }
     
   } catch (err) {
-    console.error('Contact form error:', err);
+    console.error('[CONTACT] Error:', err);
     errorMsg.textContent = err.message || 'Failed to send message. Please try again.';
     errorMsg.style.display = 'block';
   } finally {
