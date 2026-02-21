@@ -10,7 +10,7 @@
 
   const scriptTag = document.currentScript;
   const scriptUrl = scriptTag ? new URL(scriptTag.src) : null;
-  const SERVER_URL = scriptUrl ? scriptUrl.origin : "http://localhost:5000";
+  const SERVER_URL = 'https://ai-smart-hub.onrender.com';
   const WIDGET_KEY = marker.dataset.key || "";
 
   if (!WIDGET_KEY) {

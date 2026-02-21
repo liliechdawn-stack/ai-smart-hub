@@ -1,7 +1,7 @@
 // ----------------------
 // Variables & URLs
 // ----------------------
-const API_URL = "http://localhost:5000/api";
+const API_URL = 'https://ai-smart-hub.onrender.com';
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 const subscribeBtn = document.getElementById("subscribeBtn");

@@ -1,6 +1,6 @@
 // subscription.js - Subscription Management with Dynamic Plan Cards
 const planCardsContainer = document.getElementById("planCards");
-const API_URL = "http://localhost:5000/api";
+const API_URL = 'https://ai-smart-hub.onrender.com';
 const token = localStorage.getItem("token");
 const userEmail = localStorage.getItem("email") || "customer@email.com";
 

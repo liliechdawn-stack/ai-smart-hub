@@ -13,7 +13,7 @@ async function testGemini() {
     };
 
     try {
-        const response = await fetch("http://localhost:5000/api/public/chat", {
+        const response = await fetch("https://ai-smart-hub.onrender.com/api/public/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(testPayload)
