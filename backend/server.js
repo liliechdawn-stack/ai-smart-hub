@@ -121,10 +121,14 @@ async function extractTextFromFile(fileData, fileName, mimeType) {
 // ================= STATIC FILES =================
 app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 
+// ================= SERVE STATIC HTML FILES =================
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
 // ================= ROUTES =================
 app.use('/api/smart-hub', require('./smart-hub'));
 
-// Health check endpoint for Render (ADD THIS)
+// Health check endpoint for Render
 app.get('/healthz', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
