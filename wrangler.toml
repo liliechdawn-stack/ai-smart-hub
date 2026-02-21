@@ -1,0 +1,21 @@
+name = "ai-smart-hub"
+main = "backend/server.js"
+compatibility_date = "2024-01-01"
+
+# Environment variables for production
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# You'll set these as secrets (not in this file)
+# To set secrets after deployment:
+# wrangler secret put JWT_SECRET
+# wrangler secret put CLOUDFLARE_AI_API_TOKEN
+# wrangler secret put CLOUDFLARE_ACCOUNT_ID
+# wrangler secret put RESEND_API_KEY
+# wrangler secret put FROM_EMAIL
+
+# If using D1 database (recommended for production)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "ai-smart-hub-db"
+# database_id = "your-database-id"

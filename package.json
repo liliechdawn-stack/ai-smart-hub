@@ -1,0 +1,43 @@
+{
+  "name": "ai-smart-hub",
+  "version": "1.0.0",
+  "description": "AI Smart Hub - Complete SaaS Platform with AI Widget, Customer Insights, Automations & Email Broadcast",
+  "type": "commonjs",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "node backend/migrate.js",
+    "check-db": "node backend/check_tables.js",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler preview"
+  },
+  "keywords": ["ai", "saas", "chatbot", "automation", "cloudflare", "widget"],
+  "author": "AI Smart Hub",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.4",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "mammoth": "^1.11.0",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^7.0.13",
+    "pdf-parse": "^2.4.5",
+    "resend": "^6.9.2",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "wrangler": "^3.22.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
