@@ -1,27 +1,41 @@
+// smart-logic.js - Smart Business Hub - AI Logic Controller (FIXED)
+// Unlocks tools for ANY Pro / Enterprise / Agency subscriber
+// Saves & loads settings to/from real backend
+// LIVE button stays "● LIVE" after activation (persists on refresh)
+
 // Ensure BACKEND_URL is available
 if (typeof window.BACKEND_URL === 'undefined') {
     console.error('❌ BACKEND_URL not defined! Make sure master-fix.js is loaded first.');
+    window.BACKEND_URL = 'https://ai-smart-hub.onrender.com';
 }
-/**
- * Smart Business Hub - AI Logic Controller (REAL SAAS - FULLY FIXED)
- * Unlocks tools for ANY Pro / Enterprise / Agency subscriber
- * Saves & loads settings to/from real backend
- * LIVE button stays "● LIVE" after activation (persists on refresh)
- * FIX: Restores ALL toggles (Vision, Followup, Apollo) + correct button selector
- */
 
-const API_BASE = "https://ai-smart-hub.onrender.com";
+const API_BASE = window.BACKEND_URL;
 
-let CURRENT_USER_PLAN = 'free';
+let CURRENT_USER_PLAN = localStorage.getItem('currentPlan') || 'free';
 let CURRENT_USER_TOKEN = localStorage.getItem('token');
 
 // 1. Load on page ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Smart Hub Logic Initialized - Fetching real plan...");
-    injectLiveStatusCSS(); // ✅ Adds the professional green glow styles
+    injectLiveStatusCSS();
     loadUserPlanAndUnlock();
-    wireSmartToolActivateButtons(); 
+    wireSmartToolActivateButtons();
+    updateUserEmail();
 });
+
+// Update user email in team table
+function updateUserEmail() {
+    const token = localStorage.getItem('token');
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const emailEl = document.getElementById('userEmail');
+            if (emailEl) {
+                emailEl.textContent = payload.email || 'admin@business.io';
+            }
+        } catch (e) {}
+    }
+}
 
 /**
  * ✅ Injects professional CSS for the "LIVE" status
@@ -64,6 +78,7 @@ async function loadUserPlanAndUnlock() {
         console.log("[PLAN] User data from server:", userData);
 
         CURRENT_USER_PLAN = (userData.plan || 'free').toLowerCase().trim();
+        localStorage.setItem('currentPlan', CURRENT_USER_PLAN);
 
         const planDisplay = document.getElementById('currentPlanName');
         if (planDisplay) {
@@ -81,7 +96,7 @@ async function loadUserPlanAndUnlock() {
     } catch (err) {
         console.error("[PLAN] Failed to load user plan:", err);
         // Fallback to localStorage if backend is down
-        const backupPlan = localStorage.getItem('userPlan');
+        const backupPlan = localStorage.getItem('currentPlan');
         if (backupPlan) {
             CURRENT_USER_PLAN = backupPlan.toLowerCase().trim();
             unlockPremiumFeatures(CURRENT_USER_PLAN);
@@ -240,7 +255,7 @@ async function runSmartTool(toolType, btn) {
         // SUCCESS: Make button LIVE permanently
         btn.innerText = "● LIVE";
         btn.classList.add('btn-live-status');
-        btn.disabled = false; // allow re-click if needed
+        btn.disabled = false;
 
         if (result && result.output) {
             alert("Tool executed successfully:\n\n" + result.output);
@@ -262,12 +277,12 @@ async function runSmartTool(toolType, btn) {
 }
 
 // 4. Save function - After save, re-run to activate LIVE
-async function saveSmartTool(toolType) {
+async function saveSmartTool(toolType, event) {
     const token = localStorage.getItem('token');
     if (!token) return alert("Please log in to save changes.");
 
-    const btn = event?.target || document.activeElement;
-    const originalText = btn.innerText;
+    const btn = event?.currentTarget || event?.target || document.activeElement;
+    const originalText = btn?.innerText || '';
 
     let data = {};
 
@@ -282,6 +297,7 @@ async function saveSmartTool(toolType) {
                 break;
             case 'booking':
                 data = { url: document.getElementById('bookingUrl')?.value || '' };
+                console.log("[SAVE] Booking URL:", data.url);
                 break;
             case 'sentiment':
                 data = { 
@@ -296,6 +312,7 @@ async function saveSmartTool(toolType) {
                 data = { url: document.getElementById('webhookUrl')?.value || '' };
                 break;
             case 'enrichment':
+            case 'apollo':
                 data = { 
                     apolloKey: document.getElementById('apolloKey')?.value || '',
                     autoSync: document.getElementById('syncToggle')?.checked || false 
@@ -307,11 +324,17 @@ async function saveSmartTool(toolType) {
                     area: document.getElementById('visionArea')?.value || 'all'
                 };
                 break;
+            case 'followup':
+                data = { enabled: document.getElementById('followupToggle')?.checked || false };
+                break;
         }
 
         console.log(`[SAVE] Sending for ${toolType}:`, data);
 
-        btn.innerText = "Saving...";
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+        }
 
         const endpoint = `${API_BASE}/api/smart-hub/save`;
         console.log("[SMART-LOGIC] Calling backend:", endpoint);
@@ -325,34 +348,42 @@ async function saveSmartTool(toolType) {
             body: JSON.stringify({ toolType, data })
         });
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
             console.log(`[SAVE] Success for ${toolType}`);
-            btn.innerText = "✓ Saved";
-            btn.style.background = "#28a745";
+            if (btn) {
+                btn.innerText = "✓ Saved";
+                btn.style.background = "#28a745";
+            }
             localStorage.setItem(`ai_settings_${toolType}`, JSON.stringify(data));
             
             // Re-run tool to activate LIVE status
-            runSmartTool(toolType, btn);
+            setTimeout(() => {
+                runSmartTool(toolType, btn);
+            }, 500);
         } else {
-            const errorMsg = await response.text();
+            const errorMsg = result.error || "Server rejected update";
             console.error(`[SAVE] Failed for ${toolType}:`, errorMsg);
-            throw new Error(errorMsg || "Server rejected update");
+            throw new Error(errorMsg);
         }
     } catch (err) {
         console.error("[SAVE] Error:", err.message);
-        btn.innerText = "❌ Error";
-        btn.style.background = "#e74c3c";
+        if (btn) {
+            btn.innerText = "❌ Error";
+            btn.style.background = "#e74c3c";
+        }
         alert("Could not save: " + err.message);
     }
 
     setTimeout(() => {
-        // After save animation, if tool is active, keep LIVE
-        if (btn.innerText === "✓ Saved" || btn.innerText === "Saving...") {
+        if (btn && btn.innerText === "✓ Saved") {
             btn.innerText = "● LIVE";
             btn.classList.add('btn-live-status');
             btn.style.background = "";
+            btn.disabled = false;
         }
-    }, 2500);
+    }, 2000);
 }
 
 // 5. Load saved settings from server + RE-APPLY LIVE status permanently
@@ -366,7 +397,7 @@ async function loadSavedSettingsFromServer() {
 
         const response = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` },
-            cache: 'no-store' // prevent browser cache
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error("Load failed");
@@ -375,63 +406,44 @@ async function loadSavedSettingsFromServer() {
         console.log("[LOAD] Settings loaded from server:", data);
 
         // Fill form fields
-        if (data.ai_instructions && document.getElementById('aiInstructions')) {
-            document.getElementById('aiInstructions').value = data.ai_instructions;
-        }
-        if (data.ai_temp && document.getElementById('aiTemp')) {
-            document.getElementById('aiTemp').value = data.ai_temp;
-        }
-        if (data.ai_lang && document.getElementById('aiLang')) {
-            document.getElementById('aiLang').value = data.ai_lang;
-        }
-        if (data.booking_url && document.getElementById('bookingUrl')) {
-            document.getElementById('bookingUrl').value = data.booking_url;
-        }
-        if (document.getElementById('alertEmail')) {
-            document.getElementById('alertEmail').value = data.alert_email;
-        }
-        if (document.getElementById('handoverTrigger')) {
-            document.getElementById('handoverTrigger').value = data.handover_trigger;
-        }
-        if (document.getElementById('webhookUrl')) {
-            document.getElementById('webhookUrl').value = data.webhook_url;
-        }
-        if (document.getElementById('apolloKey')) {
-            document.getElementById('apolloKey').value = data.apollo_key;
-        }
-        if (document.getElementById('syncToggle')) {
-            document.getElementById('syncToggle').checked = data.auto_sync === 1;
-        }
-        if (document.getElementById('visionSens')) {
-            document.getElementById('visionSens').value = data.vision_sensitivity;
-        }
-        if (document.getElementById('visionArea')) {
-            document.getElementById('visionArea').value = data.vision_area;
+        const mappings = {
+            ai_instructions: 'aiInstructions',
+            ai_temp: 'aiTemp',
+            ai_lang: 'aiLang',
+            booking_url: 'bookingUrl',
+            alert_email: 'alertEmail',
+            handover_trigger: 'handoverTrigger',
+            webhook_url: 'webhookUrl',
+            apollo_key: 'apolloKey',
+            vision_sensitivity: 'visionSens',
+            vision_area: 'visionArea'
+        };
+
+        for (const [dbKey, htmlId] of Object.entries(mappings)) {
+            const el = document.getElementById(htmlId);
+            if (el && data[dbKey] !== undefined && data[dbKey] !== null) {
+                el.value = data[dbKey];
+            }
         }
 
-        // FIX: Restore ALL toggles (this fixes Apollo, Followup, Vision resetting)
-        if (document.getElementById('sentimentToggle')) {
-            document.getElementById('sentimentToggle').checked = data.sentiment_active === 1;
-            console.log("[RESTORE] sentimentToggle →", data.sentiment_active === 1);
-        }
-        if (document.getElementById('visionToggle')) {
-            document.getElementById('visionToggle').checked = data.vision_active === 1;
-            console.log("[RESTORE] visionToggle →", data.vision_active === 1);
-        }
-        if (document.getElementById('followupToggle')) {
-            document.getElementById('followupToggle').checked = data.followup_active === 1;
-            console.log("[RESTORE] followupToggle →", data.followup_active === 1);
-        }
-        if (document.getElementById('apolloToggle')) {
-            document.getElementById('apolloToggle').checked = data.apollo_active === 1;
-            console.log("[RESTORE] apolloToggle →", data.apollo_active === 1);
-        }
-        if (document.getElementById('analyticsToggle')) {
-            document.getElementById('analyticsToggle').checked = data.analytics_active === 1;
-            console.log("[RESTORE] analyticsToggle →", data.analytics_active === 1);
+        // Restore ALL toggles
+        const toggleMap = {
+            sentimentToggle: data.sentiment_active === 1,
+            visionToggle: data.vision_active === 1,
+            followupToggle: data.followup_active === 1,
+            apolloToggle: data.apollo_active === 1,
+            syncToggle: data.auto_sync === 1
+        };
+
+        for (const [id, shouldBeOn] of Object.entries(toggleMap)) {
+            const toggle = document.getElementById(id);
+            if (toggle) {
+                toggle.checked = shouldBeOn;
+                console.log(`[RESTORE] ${id} → ${shouldBeOn ? 'ON' : 'OFF'}`);
+            }
         }
 
-        // FIX: Re-apply LIVE button status using correct selector (.btn-save)
+        // Re-apply LIVE button status
         const activeMap = {
             brain: { active: data.brain_active === 1, cardId: 'card-brain' },
             booking: { active: data.booking_active === 1, cardId: 'card-booking' },
@@ -440,21 +452,19 @@ async function loadSavedSettingsFromServer() {
             webhook: { active: data.webhook_active === 1, cardId: 'card-webhook' },
             enrichment: { active: data.apollo_active === 1, cardId: 'card-apollo' },
             vision: { active: data.vision_active === 1, cardId: 'card-vision' },
-            followup: { active: data.followup_active === 1, cardId: 'card-followup' } // added for Followup
+            followup: { active: data.followup_active === 1, cardId: 'card-followup' }
         };
 
         Object.entries(activeMap).forEach(([tool, { active, cardId }]) => {
             if (active) {
                 const card = document.getElementById(cardId);
                 if (card) {
-                    const btn = card.querySelector('.btn-save') || card.querySelector('button');
+                    const btn = card.querySelector('.btn-save');
                     if (btn) {
                         console.log(`[LIVE] Re-applying LIVE for ${tool}`);
                         btn.innerText = "● LIVE";
                         btn.classList.add('btn-live-status');
                         btn.disabled = false;
-                    } else {
-                        console.warn(`[LIVE] No .btn-save found in ${cardId}`);
                     }
                 }
             }
@@ -489,7 +499,7 @@ function loadSavedSettingsFromLocal() {
     });
 }
 
-// 6. Team Management - UNCHANGED
+// 6. Team Management
 function openInviteModal() {
     const email = prompt("Enter the email address of the team member:");
     if (email && email.includes('@')) {
@@ -507,7 +517,7 @@ function openInviteModal() {
     }
 }
 
-// 7. Data Export - UNCHANGED
+// 7. Data Export
 function exportBusinessData() {
     const btn = event.target;
     btn.innerText = "Exporting...";
@@ -522,3 +532,8 @@ function exportBusinessData() {
         btn.innerText = "Download Report";
     }, 1000);
 }
+
+// Make functions globally available
+window.saveSmartTool = saveSmartTool;
+window.openInviteModal = openInviteModal;
+window.exportBusinessData = exportBusinessData;
