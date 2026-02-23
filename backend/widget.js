@@ -1,4 +1,4 @@
-// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - NO SYNTAX ERRORS)
+// widget.js - Professional SaaS AI Chat Widget (FIXED BOOKING URL)
 // Features: Vision AI, Apollo Enrichment, Smart Follow-ups, Live Chat, Pixel Face
 (function () {
   if (document.getElementById("ai-widget-container")) return;
@@ -60,6 +60,9 @@
       if (res.ok) {
         smartSettings = await res.json();
         console.log("[WIDGET] Smart Hub settings loaded:", smartSettings);
+        console.log("[WIDGET] Booking URL from settings:", smartSettings.booking_url);
+      } else {
+        console.warn("[WIDGET] Failed to load smart settings");
       }
     } catch (err) {
       console.warn("[WIDGET] Smart Hub settings load failed", err);
@@ -124,7 +127,7 @@
       title: businessName
     };
 
-    // Professional styles with black and white pixel face - FIXED CSS SYNTAX
+    // Professional styles with black and white pixel face
     const style = document.createElement('style');
     style.textContent = `
       #ai-widget-container { 
@@ -1133,8 +1136,12 @@
         .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit;text-decoration:underline;">$1</a>')
         .replace(/(^|\s)(www\.[^\s]+)/g, (m, s, url) => `${s}<a href="https://${url}" target="_blank" style="color:inherit;text-decoration:underline;">${url}</a>`);
 
-      if (smartSettings?.booking_url && /book|appointment|schedule|meeting|calendly/i.test(text)) {
-        linkedText += `<br><br>📅 <a href="${smartSettings.booking_url}" target="_blank" style="color:#1a73e8; font-weight:500;">Book appointment</a>`;
+      // FIXED: Check for booking keywords and add booking link
+      if (smartSettings?.booking_url) {
+        const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo|cancel|reschedule/i;
+        if (bookingKeywords.test(text)) {
+          linkedText += `<br><br>📅 <a href="${smartSettings.booking_url}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book an appointment</a>`;
+        }
       }
 
       div.innerHTML = `<div>${linkedText}</div>`;
