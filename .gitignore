@@ -31,7 +31,6 @@ coverage/
 .nyc_output/
 
 # Dependency directories
-node_modules/
 jspm_packages/
 
 # TypeScript cache
@@ -49,12 +48,6 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-.env.test
-.env.production
-.env.local
-
 # parcel-bundler cache
 .cache
 .parcel-cache
@@ -66,13 +59,6 @@ out
 # Nuxt.js build output
 .nuxt
 dist
-
-# Gatsby files
-.cache/
-public/
-
-# Vuepress build output
-.vuepress/dist
 
 # Serverless directories
 .serverless/
