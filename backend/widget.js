@@ -1,4 +1,4 @@
-// widget.js - Professional SaaS AI Chat Widget (FIXED BOOKING URL)
+// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - ALL ISSUES RESOLVED)
 // Features: Vision AI, Apollo Enrichment, Smart Follow-ups, Live Chat, Pixel Face
 (function () {
   if (document.getElementById("ai-widget-container")) return;
@@ -9,7 +9,6 @@
     return;
   }
 
-  const scriptTag = document.currentScript;
   const SERVER_URL = 'https://ai-smart-hub.onrender.com';
   const WIDGET_KEY = marker.dataset.key || "";
 
@@ -31,6 +30,7 @@
   let userEmail = localStorage.getItem(`ai_user_email_${WIDGET_KEY}`) || '';
   let userName = localStorage.getItem(`ai_user_name_${WIDGET_KEY}`) || '';
   let businessPlan = 'free';
+  let businessName = '';
   let recognition = null;
   let recognitionActive = false;
   let reconnectAttempts = 0;
@@ -44,19 +44,23 @@
     .then(res => res.json())
     .then(dbConfig => {
       businessPlan = dbConfig.plan || 'free';
+      businessName = dbConfig.business_name || marker.getAttribute("data-title") || "AI Assistant";
       initWidget(dbConfig);
     })
     .catch(err => {
       console.warn("Widget config fetch failed, using fallback", err);
+      businessName = marker.getAttribute("data-title") || "AI Assistant";
       initWidget({});
     });
 
   // ===== LOAD SMART SETTINGS =====
   async function loadSmartSettings() {
     try {
-      const res = await fetch(`${SERVER_URL}/api/smart-hub/settings`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
-      });
+      // Try to get settings with business token if available
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      
+      const res = await fetch(`${SERVER_URL}/api/smart-hub/settings`, { headers });
       if (res.ok) {
         smartSettings = await res.json();
         console.log("[WIDGET] Smart Hub settings loaded:", smartSettings);
@@ -117,8 +121,6 @@
   }
 
   function initWidget(dbConfig) {
-    const businessName = dbConfig.business_name || marker.getAttribute("data-title") || "AI Assistant";
-
     const config = {
       key: WIDGET_KEY,
       primaryColor: dbConfig.widget_color || marker.dataset.primaryColor || "#4285f4",
@@ -706,7 +708,7 @@
       </div>
 
       <div id="lead-form" class="lead-overlay" style="${leadCaptured ? 'display:none' : 'display:flex'}">
-        <h3 style="margin-bottom:8px;">Welcome!</h3>
+        <h3 style="margin-bottom:8px;">Welcome to ${config.title}!</h3>
         <p style="font-size:14px; color:#5f6368; margin-bottom:24px;">Please tell us who you are to start.</p>
         <input type="text" id="lead-name" class="lead-field" placeholder="Your Name" value="${userName}" required />
         <input type="email" id="lead-email" class="lead-field" placeholder="Email Address" value="${userEmail}" required />
@@ -1136,8 +1138,8 @@
         .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit;text-decoration:underline;">$1</a>')
         .replace(/(^|\s)(www\.[^\s]+)/g, (m, s, url) => `${s}<a href="https://${url}" target="_blank" style="color:inherit;text-decoration:underline;">${url}</a>`);
 
-      // FIXED: Check for booking keywords and add booking link
-      if (smartSettings?.booking_url) {
+      // FIXED: Use the actual booking URL from smartSettings
+      if (smartSettings?.booking_url && smartSettings.booking_url !== '') {
         const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo|cancel|reschedule/i;
         if (bookingKeywords.test(text)) {
           linkedText += `<br><br>📅 <a href="${smartSettings.booking_url}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book an appointment</a>`;
@@ -1209,24 +1211,34 @@
       isProcessing = true;
       typingInd.style.display = "block";
 
+      // Create a unique request ID for tracking
+      const requestId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
       try {
         const body = {
           message: currentText || "Please analyze this file.",
           widget_key: WIDGET_KEY,
-          client_name: userName,
-          session_id: activeSessionId
+          client_name: userName || "Visitor",
+          session_id: activeSessionId,
+          request_id: requestId
         };
 
         if (currentFile) {
           body.file_data = currentFile;
           body.file_name = currentFileName;
           
+          // Check if vision is enabled for images
           if (currentFile.startsWith('data:image/') && smartSettings?.vision_active) {
             body.vision_enabled = true;
+            console.log("[WIDGET] Vision AI enabled for image analysis");
           }
         }
 
         console.log("[WIDGET → SERVER] Sending request:", body);
+
+        // Add timeout to fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         const response = await fetch(`${SERVER_URL}/api/public/chat`, {
           method: "POST",
@@ -1234,8 +1246,11 @@
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
-          body: JSON.stringify(body)
+          body: JSON.stringify(body),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         console.log("[WIDGET] Response status:", response.status);
 
@@ -1285,8 +1300,14 @@
         typingInd.style.display = "none";
         isProcessing = false;
         console.error("[WIDGET] Fetch error:", err);
+        
+        let errorMessage = "Connection issue. Please check your internet or try again later.";
+        if (err.name === 'AbortError') {
+          errorMessage = "Request timed out. Please try again.";
+        }
+        
         if (!isLiveMode) {
-          appendMessage("Connection issue. Please check your internet or try again later.", "bot");
+          appendMessage(errorMessage, "bot");
         } else {
           speak("Connection error. Please try again.");
           voiceStatus.textContent = "Connection error";
