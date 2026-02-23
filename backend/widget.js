@@ -1,4 +1,5 @@
-// widget.js - Professional SaaS AI Chat Widget (Cloudflare Vision + Voice-Only Live Mode + Premium Black & White Pixel Face)
+// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - NO SYNTAX ERRORS)
+// Features: Vision AI, Apollo Enrichment, Smart Follow-ups, Live Chat, Pixel Face
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -9,7 +10,6 @@
   }
 
   const scriptTag = document.currentScript;
-  const scriptUrl = scriptTag ? new URL(scriptTag.src) : null;
   const SERVER_URL = 'https://ai-smart-hub.onrender.com';
   const WIDGET_KEY = marker.dataset.key || "";
 
@@ -18,29 +18,40 @@
     return;
   }
 
+  // ===== STATE MANAGEMENT =====
   let leadCaptured = localStorage.getItem(`ai_lead_captured_${WIDGET_KEY}`) === "true";
   let isMuted = localStorage.getItem(`ai_widget_muted`) === "true";
   let activeSessionId = localStorage.getItem(`ai_widget_session_${WIDGET_KEY}`) || null;
   let smartSettings = null;
   let isLiveMode = false;
   let customBgColor = localStorage.getItem(`ai_widget_bg_color_${WIDGET_KEY}`) || "#1a1a1a";
-  let autoSpeakEnabled = true; // Auto-speak responses in live mode
-
   let isProcessing = false;
   let pendingFileData = null;
   let pendingFileName = '';
+  let userEmail = localStorage.getItem(`ai_user_email_${WIDGET_KEY}`) || '';
+  let userName = localStorage.getItem(`ai_user_name_${WIDGET_KEY}`) || '';
+  let businessPlan = 'free';
+  let recognition = null;
+  let recognitionActive = false;
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 3;
 
-  // Track captured emails to prevent duplicates
+  // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
 
+  // ===== FETCH WIDGET CONFIG =====
   fetch(`${SERVER_URL}/api/public/widget-config/${WIDGET_KEY}`)
     .then(res => res.json())
-    .then(dbConfig => initWidget(dbConfig))
+    .then(dbConfig => {
+      businessPlan = dbConfig.plan || 'free';
+      initWidget(dbConfig);
+    })
     .catch(err => {
       console.warn("Widget config fetch failed, using fallback", err);
       initWidget({});
     });
 
+  // ===== LOAD SMART SETTINGS =====
   async function loadSmartSettings() {
     try {
       const res = await fetch(`${SERVER_URL}/api/smart-hub/settings`, {
@@ -48,10 +59,57 @@
       });
       if (res.ok) {
         smartSettings = await res.json();
-        console.log("[WIDGET] Smart Hub settings loaded");
+        console.log("[WIDGET] Smart Hub settings loaded:", smartSettings);
       }
     } catch (err) {
       console.warn("[WIDGET] Smart Hub settings load failed", err);
+    }
+  }
+
+  // ===== ENRICH LEAD WITH APOLLO =====
+  async function enrichLeadWithApollo(email, name) {
+    if (!smartSettings?.apollo_active || !smartSettings?.apollo_key) return null;
+    
+    try {
+      console.log("[WIDGET] Enriching lead with Apollo:", email);
+      const res = await fetch(`${SERVER_URL}/api/apollo/enrich`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        body: JSON.stringify({ email, name })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log("[WIDGET] Apollo enrichment result:", data);
+        return data;
+      }
+    } catch (err) {
+      console.warn("[WIDGET] Apollo enrichment failed:", err);
+    }
+    return null;
+  }
+
+  // ===== SCHEDULE FOLLOW-UP =====
+  async function scheduleFollowUp(email, name) {
+    if (!smartSettings?.followup_active) return;
+    
+    try {
+      await fetch(`${SERVER_URL}/api/followup/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          name, 
+          widget_key: WIDGET_KEY,
+          session_id: activeSessionId
+        })
+      });
+      console.log("[WIDGET] Follow-up scheduled for:", email);
+    } catch (err) {
+      console.warn("[WIDGET] Follow-up scheduling failed:", err);
     }
   }
 
@@ -63,11 +121,10 @@
       primaryColor: dbConfig.widget_color || marker.dataset.primaryColor || "#4285f4",
       position: marker.dataset.position || "bottom-right",
       welcome: dbConfig.welcome_message || marker.dataset.welcome || "Hi! I'm your AI assistant. How can I help you today?",
-      title: businessName,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(businessName)}&background=4285f4&color=fff`
+      title: businessName
     };
 
-    // Professional styles with black and white pixel face
+    // Professional styles with black and white pixel face - FIXED CSS SYNTAX
     const style = document.createElement('style');
     style.textContent = `
       #ai-widget-container { 
@@ -175,7 +232,7 @@
         font-weight: bold; 
       }
       
-      /* Black and White Pixel Face - Inspired by Vanbrush/Shutterstock style */
+      /* Black and White Pixel Face */
       .pixel-face-container {
         display: none;
         flex-direction: column;
@@ -202,7 +259,6 @@
         transition: all 0.3s ease;
       }
       
-      /* Ears - Black and White style */
       .pixel-face::before,
       .pixel-face::after {
         content: '';
@@ -224,7 +280,6 @@
         transform: rotate(15deg);
       }
       
-      /* Inner Ears - White */
       .ear-inner-left,
       .ear-inner-right {
         position: absolute;
@@ -244,7 +299,6 @@
         right: 30px;
       }
       
-      /* Eyes - Black and White */
       .pixel-eyes {
         display: flex;
         gap: 40px;
@@ -271,7 +325,6 @@
         transition: all 0.3s ease;
       }
       
-      /* Nose - Black */
       .nose {
         width: 25px;
         height: 20px;
@@ -301,7 +354,6 @@
         transform: rotate(15deg);
       }
       
-      /* Mouth - Black */
       .mouth {
         width: 50px;
         height: 25px;
@@ -311,7 +363,6 @@
         transition: all 0.3s ease;
       }
       
-      /* Expressions */
       .pixel-face.smiling .mouth {
         border-bottom: 6px solid #000000;
         width: 55px;
@@ -354,7 +405,6 @@
         transform: scale(0.8);
       }
       
-      /* Voice Wave */
       .voice-wave {
         display: flex;
         gap: 8px;
@@ -382,7 +432,6 @@
         50% { height: 32px; }
       }
       
-      /* Status Text */
       .voice-status {
         text-align: center;
         font-size: 16px;
@@ -392,7 +441,6 @@
         letter-spacing: 0.3px;
       }
       
-      /* Color Picker - Moved to Top */
       .live-controls {
         display: flex;
         align-items: center;
@@ -657,14 +705,13 @@
       <div id="lead-form" class="lead-overlay" style="${leadCaptured ? 'display:none' : 'display:flex'}">
         <h3 style="margin-bottom:8px;">Welcome!</h3>
         <p style="font-size:14px; color:#5f6368; margin-bottom:24px;">Please tell us who you are to start.</p>
-        <input type="text" id="lead-name" class="lead-field" placeholder="Your Name" required />
-        <input type="email" id="lead-email" class="lead-field" placeholder="Email Address" required />
+        <input type="text" id="lead-name" class="lead-field" placeholder="Your Name" value="${userName}" required />
+        <input type="email" id="lead-email" class="lead-field" placeholder="Email Address" value="${userEmail}" required />
         <button id="lead-submit-btn" class="lead-submit">Start Conversation</button>
       </div>
 
       <!-- Premium Black and White Pixel Face Container -->
       <div id="pixel-face-container" class="pixel-face-container">
-        <!-- Color Picker moved to top of live mode -->
         <div class="live-controls">
           <span class="color-picker-label">Background</span>
           <input type="color" id="bg-color-picker" class="color-picker" value="${customBgColor}" />
@@ -730,51 +777,100 @@
     const previewIcon = win.querySelector("#file-preview-icon");
     const previewCancel = win.querySelector("#file-preview-cancel");
     const fileNameDisplay = win.querySelector("#file-name-display");
-    const pixelFaceContainer = win.querySelector("#pixel-face-container");
     const pixelFace = win.querySelector("#pixel-face");
     const bgColorPicker = win.querySelector("#bg-color-picker");
     const aiStatus = win.querySelector("#ai-status");
     const voiceStatus = win.querySelector("#voice-status");
     const voiceWave = win.querySelector("#voice-wave");
 
-    // Initialize speech recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    // ===== SPEECH RECOGNITION SETUP =====
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn("[WIDGET] Speech recognition not supported");
+        return null;
+      }
+      
+      const recog = new SpeechRecognition();
+      recog.continuous = true;
+      recog.interimResults = true;
+      recog.lang = 'en-US';
+      recog.maxAlternatives = 1;
+      
+      return recog;
+    }
+    
+    recognition = initSpeechRecognition();
     
     if (recognition) {
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
+      let finalTranscript = '';
+      let timeoutId = null;
+      
       recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        if (isLiveMode) {
-          voiceWave.style.display = "none";
-          voiceStatus.textContent = "Processing...";
-          updateCatExpression('thinking');
-          sendMessage(transcript);
-        } else {
-          inputField.value = transcript;
-          sendMessage();
+        let interimTranscript = '';
+        
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const transcript = e.results[i][0].transcript;
+          if (e.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+            
+            timeoutId = setTimeout(() => {
+              if (finalTranscript.trim()) {
+                if (isLiveMode) {
+                  voiceWave.style.display = "none";
+                  voiceStatus.textContent = "Processing...";
+                  updateCatExpression('thinking');
+                  sendMessage(finalTranscript.trim());
+                } else {
+                  inputField.value = finalTranscript.trim();
+                }
+                finalTranscript = '';
+                timeoutId = null;
+              }
+            }, 800);
+          } else {
+            interimTranscript += transcript;
+            if (isLiveMode) {
+              voiceStatus.textContent = `Listening: ${interimTranscript}`;
+            }
+          }
         }
       };
       
       recognition.onend = () => {
+        console.log("[WIDGET] Recognition ended");
         voiceBtn.classList.remove("mic-active");
-        if (isLiveMode) {
-          voiceWave.style.display = "none";
-          voiceStatus.textContent = "Live chat activated - start speaking";
-          updateCatExpression('smiling');
-          // Auto-start listening again in live mode
+        
+        if (isLiveMode && recognitionActive) {
           setTimeout(() => {
-            if (isLiveMode && !isProcessing) {
-              recognition.start();
+            if (isLiveMode && recognitionActive) {
+              try {
+                recognition.start();
+                console.log("[WIDGET] Recognition restarted");
+              } catch (e) {
+                console.warn("[WIDGET] Could not restart recognition:", e);
+              }
             }
-          }, 500);
+          }, 300);
+        } else {
+          voiceWave.style.display = "none";
+          if (isLiveMode) {
+            voiceStatus.textContent = "Live chat activated - start speaking";
+            updateCatExpression('smiling');
+          }
         }
       };
       
       recognition.onstart = () => {
+        console.log("[WIDGET] Recognition started");
+        recognitionActive = true;
+        reconnectAttempts = 0;
+        
         if (isLiveMode) {
           voiceWave.style.display = "flex";
           voiceStatus.textContent = "Listening...";
@@ -783,61 +879,37 @@
       };
       
       recognition.onerror = (e) => {
-        console.error("Speech recognition error:", e);
-        if (isLiveMode) {
-          voiceWave.style.display = "none";
-          voiceStatus.textContent = "Please try again";
-          updateCatExpression('surprised');
-          setTimeout(() => {
-            voiceStatus.textContent = "Live chat activated - start speaking";
-            updateCatExpression('smiling');
-            // Try to restart
-            if (isLiveMode) {
-              recognition.start();
-            }
-          }, 2000);
+        console.error("[WIDGET] Speech recognition error:", e.error);
+        
+        if (e.error === 'no-speech' || e.error === 'audio-capture') {
+          if (isLiveMode && recognitionActive) {
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch (err) {}
+            }, 500);
+          }
+        } else if (e.error === 'not-allowed') {
+          voiceStatus.textContent = "Microphone access denied";
+          recognitionActive = false;
+        } else if (e.error === 'network') {
+          reconnectAttempts++;
+          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            setTimeout(() => {
+              if (isLiveMode && recognitionActive) {
+                try {
+                  recognition.start();
+                } catch (err) {}
+              }
+            }, 1000 * reconnectAttempts);
+          } else {
+            voiceStatus.textContent = "Network error - please refresh";
+            recognitionActive = false;
+          }
         }
       };
     }
 
-    // Live mode toggle - auto-starts voice
-    liveBtn.onclick = () => {
-      isLiveMode = !isLiveMode;
-      if (isLiveMode) {
-        win.classList.add("live-mode");
-        aiStatus.textContent = "● Live Mode";
-        voiceStatus.textContent = "Live chat activated - start speaking";
-        updateCatExpression('smiling');
-        
-        // Auto-start voice recognition
-        if (recognition) {
-          setTimeout(() => {
-            recognition.start();
-          }, 500);
-        }
-      } else {
-        win.classList.remove("live-mode");
-        aiStatus.textContent = "● Online Assistant";
-        voiceWave.style.display = "none";
-        voiceStatus.textContent = "Live chat activated - start speaking";
-        
-        // Stop recognition
-        if (recognition) {
-          try {
-            recognition.stop();
-          } catch (e) {}
-        }
-      }
-    };
-
-    // Background color picker
-    bgColorPicker.onchange = (e) => {
-      customBgColor = e.target.value;
-      localStorage.setItem(`ai_widget_bg_color_${WIDGET_KEY}`, customBgColor);
-      win.style.background = customBgColor;
-    };
-
-    // Update cat expression
     function updateCatExpression(expression) {
       pixelFace.classList.remove('smiling', 'listening', 'thinking', 'surprised', 'happy');
       pixelFace.classList.add(expression);
@@ -852,23 +924,30 @@
           inputField.focus();
           await loadSmartSettings();
         }
+      } else {
+        if (recognition && recognitionActive) {
+          try {
+            recognitionActive = false;
+            recognition.stop();
+          } catch (e) {}
+        }
       }
     };
 
     win.querySelector(".close-btn").onclick = () => {
       win.classList.remove("open");
+      if (recognition && recognitionActive) {
+        recognitionActive = false;
+        try {
+          recognition.stop();
+        } catch (e) {}
+      }
+      
       if (activeSessionId && leadCaptured) {
         navigator.sendBeacon(`${SERVER_URL}/api/public/session-end`, JSON.stringify({
           session_id: activeSessionId,
           widget_key: WIDGET_KEY
         }));
-      }
-      
-      // Stop recognition if active
-      if (recognition && isLiveMode) {
-        try {
-          recognition.stop();
-        } catch (e) {}
       }
     };
 
@@ -878,16 +957,19 @@
 
       if (!name || !email) return alert("Please provide your name and email.");
 
-      // === CHECK FOR DUPLICATE EMAIL ===
+      localStorage.setItem(`ai_user_name_${WIDGET_KEY}`, name);
+      localStorage.setItem(`ai_user_email_${WIDGET_KEY}`, email);
+      userName = name;
+      userEmail = email;
+
       if (capturedEmails.has(email)) {
-        console.log("[WIDGET] Duplicate email detected - bypassing lead submission:", email);
+        console.log("[WIDGET] Duplicate email detected:", email);
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
         inputField.focus();
         await loadSmartSettings();
         
-        // Show welcome back message
         appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
         return;
       }
@@ -908,6 +990,14 @@
           leadForm.style.display = "none";
           inputField.focus();
           await loadSmartSettings();
+          
+          if (smartSettings?.apollo_active) {
+            enrichLeadWithApollo(email, name);
+          }
+          
+          if (smartSettings?.followup_active) {
+            scheduleFollowUp(email, name);
+          }
         } else {
           const error = await res.json();
           if (error.error && error.error.includes("duplicate")) {
@@ -925,13 +1015,67 @@
       }
     };
 
+    liveBtn.onclick = () => {
+      isLiveMode = !isLiveMode;
+      if (isLiveMode) {
+        win.classList.add("live-mode");
+        aiStatus.textContent = "● Live Mode";
+        voiceStatus.textContent = "Live chat activated - start speaking";
+        updateCatExpression('smiling');
+        recognitionActive = true;
+        
+        if (recognition) {
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.warn("[WIDGET] Could not start recognition:", e);
+            }
+          }, 500);
+        }
+      } else {
+        win.classList.remove("live-mode");
+        aiStatus.textContent = "● Online Assistant";
+        voiceWave.style.display = "none";
+        voiceStatus.textContent = "Live chat activated - start speaking";
+        
+        if (recognition) {
+          recognitionActive = false;
+          try {
+            recognition.stop();
+          } catch (e) {}
+        }
+        updateCatExpression('smiling');
+      }
+    };
+
+    bgColorPicker.onchange = (e) => {
+      customBgColor = e.target.value;
+      localStorage.setItem(`ai_widget_bg_color_${WIDGET_KEY}`, customBgColor);
+      win.style.background = customBgColor;
+    };
+
     voiceBtn.onclick = () => {
       if (!recognition) {
         alert("Voice recognition is not supported in your browser.");
         return;
       }
-      voiceBtn.classList.add("mic-active");
-      recognition.start();
+      
+      if (recognitionActive) {
+        recognitionActive = false;
+        try {
+          recognition.stop();
+        } catch (e) {}
+        voiceBtn.classList.remove("mic-active");
+      } else {
+        recognitionActive = true;
+        voiceBtn.classList.add("mic-active");
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn("[WIDGET] Could not start recognition:", e);
+        }
+      }
     };
 
     muteBtn.onclick = () => {
@@ -1028,7 +1172,8 @@
 
     async function sendMessage(voiceText = null) {
       if (isProcessing) return;
-      const text = voiceText || inputField.value.trim();
+      
+      let text = voiceText || inputField.value.trim();
 
       if (!text && !pendingFileData) return;
 
@@ -1036,7 +1181,6 @@
         updateCatExpression('thinking');
       }
 
-      const userName = win.querySelector("#lead-name")?.value || "Visitor";
       const currentFile = pendingFileData;
       const currentFileName = pendingFileName;
       const currentText = text;
@@ -1069,6 +1213,10 @@
         if (currentFile) {
           body.file_data = currentFile;
           body.file_name = currentFileName;
+          
+          if (currentFile.startsWith('data:image/') && smartSettings?.vision_active) {
+            body.vision_enabled = true;
+          }
         }
 
         console.log("[WIDGET → SERVER] Sending request:", body);
@@ -1101,11 +1249,14 @@
             localStorage.setItem(`ai_widget_session_${WIDGET_KEY}`, activeSessionId);
           }
           
+          if (data.sentiment === 'negative' && smartSettings?.sentiment_active) {
+            console.log("[WIDGET] Negative sentiment detected - alert sent");
+          }
+          
           if (!isLiveMode) {
             appendMessage(data.reply, "bot");
             speak(data.reply);
           } else {
-            // Auto-speak response in live mode with sweet female voice
             speak(data.reply);
           }
         } else {
@@ -1149,7 +1300,6 @@
       }
     };
 
-    // Sweet, calming female voice
     function speak(text) {
       if (isMuted || !window.speechSynthesis) return;
       
@@ -1163,16 +1313,13 @@
       
       const msg = new SpeechSynthesisUtterance(cleanText);
       
-      // Configure for sweet, calm female voice
-      msg.rate = 0.85;        // Slightly slower for calmness
-      msg.pitch = 1.25;       // Higher pitch for feminine voice
-      msg.volume = 0.95;      // Comfortable volume
+      msg.rate = 0.85;
+      msg.pitch = 1.25;
+      msg.volume = 0.95;
       
-      // Try to find the perfect female voice
       function setVoice() {
         const voices = window.speechSynthesis.getVoices();
         
-        // Priority order for sweet female voices
         const preferredVoices = [
           'Google UK English Female',
           'Microsoft Zira',
@@ -1192,7 +1339,6 @@
           }
         }
         
-        // If no preferred voice found, pick any English female-sounding voice
         if (!msg.voice) {
           const femaleVoice = voices.find(v => 
             v.lang.includes('en') && 
@@ -1204,7 +1350,6 @@
         }
       }
       
-      // Voices might not be loaded yet
       if (window.speechSynthesis.getVoices().length > 0) {
         setVoice();
       } else {
@@ -1214,7 +1359,6 @@
       window.speechSynthesis.speak(msg);
     }
 
-    // Load voices when they become available
     if (window.speechSynthesis) {
       window.speechSynthesis.onvoiceschanged = () => {
         console.log("[WIDGET] Voices loaded for speech");
