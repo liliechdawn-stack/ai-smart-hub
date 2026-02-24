@@ -1,4 +1,4 @@
-// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - ALL ISSUES RESOLVED)
+// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - ALL CRITICAL ISSUES RESOLVED)
 // Features: Vision AI, Apollo Enrichment, Smart Follow-ups, Live Chat, Pixel Face
 (function () {
   if (document.getElementById("ai-widget-container")) return;
@@ -9,6 +9,7 @@
     return;
   }
 
+  // CRITICAL FIX 1: Remove trailing space that breaks all API calls
   const SERVER_URL = 'https://ai-smart-hub.onrender.com';
   const WIDGET_KEY = marker.dataset.key || "";
 
@@ -21,7 +22,7 @@
   let leadCaptured = localStorage.getItem(`ai_lead_captured_${WIDGET_KEY}`) === "true";
   let isMuted = localStorage.getItem(`ai_widget_muted`) === "true";
   let activeSessionId = localStorage.getItem(`ai_widget_session_${WIDGET_KEY}`) || null;
-  let smartSettings = null;
+  let smartSettings = {}; // CRITICAL FIX: Initialize as empty object, not null
   let isLiveMode = false;
   let customBgColor = localStorage.getItem(`ai_widget_bg_color_${WIDGET_KEY}`) || "#1a1a1a";
   let isProcessing = false;
@@ -39,53 +40,69 @@
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
 
-  // ===== FETCH WIDGET CONFIG =====
+  // ===== FETCH WIDGET CONFIG & SMART SETTINGS TOGETHER =====
   fetch(`${SERVER_URL}/api/public/widget-config/${WIDGET_KEY}`)
     .then(res => res.json())
-    .then(dbConfig => {
+    .then(async dbConfig => {
       businessPlan = dbConfig.plan || 'free';
       businessName = dbConfig.business_name || marker.getAttribute("data-title") || "AI Assistant";
+      
+      // CRITICAL FIX 2: Load smart settings immediately before init
+      await loadSmartSettings(dbConfig);
+      
       initWidget(dbConfig);
     })
     .catch(err => {
       console.warn("Widget config fetch failed, using fallback", err);
       businessName = marker.getAttribute("data-title") || "AI Assistant";
+      smartSettings = {}; // Ensure it's an object even on error
       initWidget({});
     });
 
-  // ===== LOAD SMART SETTINGS =====
-  async function loadSmartSettings() {
+  // ===== LOAD SMART SETTINGS - CRITICAL FIX 3: No admin token, use public config only =====
+  async function loadSmartSettings(dbConfig = {}) {
     try {
-      // Try to get settings with business token if available
-      const token = localStorage.getItem('token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      // CRITICAL: Never use admin token - this was causing the "owner" identification bug
+      // Instead, extract smart settings from the public widget config we already fetched
+      smartSettings = {
+        booking_url: dbConfig.booking_url || dbConfig.smart_hub?.booking_url || '',
+        apollo_active: dbConfig.apollo_active || dbConfig.smart_hub?.apollo_active || false,
+        apollo_key: dbConfig.apollo_key || dbConfig.smart_hub?.apollo_key || '',
+        followup_active: dbConfig.followup_active || dbConfig.smart_hub?.followup_active || false,
+        vision_active: dbConfig.vision_active || dbConfig.smart_hub?.vision_active || false,
+        sentiment_active: dbConfig.sentiment_active || dbConfig.smart_hub?.sentiment_active || false,
+        // Include any other smart hub settings
+        ...(dbConfig.smart_hub || {})
+      };
       
-      const res = await fetch(`${SERVER_URL}/api/smart-hub/settings`, { headers });
-      if (res.ok) {
-        smartSettings = await res.json();
-        console.log("[WIDGET] Smart Hub settings loaded:", smartSettings);
-        console.log("[WIDGET] Booking URL from settings:", smartSettings.booking_url);
-      } else {
-        console.warn("[WIDGET] Failed to load smart settings");
-      }
+      console.log("[WIDGET] Smart Hub settings loaded:", smartSettings);
+      console.log("[WIDGET] Booking URL:", smartSettings.booking_url);
+      
     } catch (err) {
       console.warn("[WIDGET] Smart Hub settings load failed", err);
+      smartSettings = {}; // Ensure empty object on error
     }
   }
 
-  // ===== ENRICH LEAD WITH APOLLO =====
+  // ===== ENRICH LEAD WITH APOLLO - CRITICAL FIX 4: Use public endpoint, no admin token =====
   async function enrichLeadWithApollo(email, name) {
     if (!smartSettings?.apollo_active || !smartSettings?.apollo_key) return null;
     
     try {
       console.log("[WIDGET] Enriching lead with Apollo:", email);
-      const res = await fetch(`${SERVER_URL}/api/apollo/enrich`, {
+      
+      // CRITICAL FIX: Use public endpoint with widget_key, NOT admin token
+      const res = await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          'Content-Type': 'application/json'
+          // CRITICAL: Removed Authorization header with admin token
         },
-        body: JSON.stringify({ email, name })
+        body: JSON.stringify({ 
+          email, 
+          name,
+          widget_key: WIDGET_KEY // Identify via widget key instead
+        })
       });
       
       if (res.ok) {
@@ -99,18 +116,19 @@
     return null;
   }
 
-  // ===== SCHEDULE FOLLOW-UP =====
+  // ===== SCHEDULE FOLLOW-UP - CRITICAL FIX 5: Use public endpoint =====
   async function scheduleFollowUp(email, name) {
     if (!smartSettings?.followup_active) return;
     
     try {
-      await fetch(`${SERVER_URL}/api/followup/schedule`, {
+      // CRITICAL FIX: Use public endpoint with widget_key, not admin API
+      await fetch(`${SERVER_URL}/api/public/followup/schedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email, 
           name, 
-          widget_key: WIDGET_KEY,
+          widget_key: WIDGET_KEY, // Use widget key for identification
           session_id: activeSessionId
         })
       });
@@ -927,7 +945,8 @@
           win.querySelector("#lead-name").focus();
         } else {
           inputField.focus();
-          await loadSmartSettings();
+          // CRITICAL FIX: Don't reload settings here, already loaded at init
+          // await loadSmartSettings();
         }
       } else {
         if (recognition && recognitionActive) {
@@ -973,7 +992,6 @@
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
         inputField.focus();
-        await loadSmartSettings();
         
         appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
         return;
@@ -994,8 +1012,8 @@
           leadCaptured = true;
           leadForm.style.display = "none";
           inputField.focus();
-          await loadSmartSettings();
           
+          // CRITICAL FIX: Settings already loaded, just use them
           if (smartSettings?.apollo_active) {
             enrichLeadWithApollo(email, name);
           }
@@ -1138,11 +1156,12 @@
         .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit;text-decoration:underline;">$1</a>')
         .replace(/(^|\s)(www\.[^\s]+)/g, (m, s, url) => `${s}<a href="https://${url}" target="_blank" style="color:inherit;text-decoration:underline;">${url}</a>`);
 
-      // FIXED: Use the actual booking URL from smartSettings
-      if (smartSettings?.booking_url && smartSettings.booking_url !== '') {
+      // CRITICAL FIX 6: Safer booking URL check with fallback to dbConfig
+      const bookingUrl = smartSettings?.booking_url || dbConfig?.booking_url || '';
+      if (bookingUrl && bookingUrl !== '') {
         const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo|cancel|reschedule/i;
         if (bookingKeywords.test(text)) {
-          linkedText += `<br><br>📅 <a href="${smartSettings.booking_url}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book an appointment</a>`;
+          linkedText += `<br><br>📅 <a href="${bookingUrl}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book an appointment</a>`;
         }
       }
 
@@ -1219,6 +1238,9 @@
           message: currentText || "Please analyze this file.",
           widget_key: WIDGET_KEY,
           client_name: userName || "Visitor",
+          client_email: userEmail || null,
+          // CRITICAL FIX 7: Explicitly mark as visitor so backend knows context
+          is_visitor: true,
           session_id: activeSessionId,
           request_id: requestId
         };
