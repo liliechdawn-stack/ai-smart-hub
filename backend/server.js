@@ -696,14 +696,34 @@ app.get("/api/chat/session/:session_id", auth, (req, res) => {
   );
 });
 
-// ================= WIDGET CONFIG =================
+// ================= WIDGET CONFIG - CRITICAL FIX: Return all smart settings =================
 app.get("/api/public/widget-config/:key", (req, res) => {
-  db.get(`SELECT business_name, widget_color, welcome_message FROM users WHERE widget_key = ?`, [req.params.key], (err, row) => {
-    if (err || !row) return res.status(404).json({ error: "Widget not found" });
-    res.json({
-      business_name: row.business_name || "AI Assistant",
-      widget_color: row.widget_color || "#d4af37",
-      welcome_message: row.welcome_message || "Hi! How can I help you today?"
+  const widgetKey = req.params.key;
+  
+  db.get(`SELECT id, business_name, widget_color, welcome_message, plan FROM users WHERE widget_key = ?`, [widgetKey], (err, user) => {
+    if (err || !user) return res.status(404).json({ error: "Widget not found" });
+    
+    // Get smart hub settings for this user
+    db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, smartSettings) => {
+      const settings = smartSettings || {};
+      
+      res.json({
+        business_name: user.business_name || "AI Assistant",
+        widget_color: user.widget_color || "#d4af37",
+        welcome_message: user.welcome_message || "Hi! How can I help you today?",
+        plan: user.plan || 'free',
+        // CRITICAL FIX: Include all smart hub settings for the widget
+        booking_url: settings.booking_url || '',
+        booking_active: settings.booking_active || 0,
+        apollo_active: settings.apollo_active || 0,
+        apollo_key: settings.apollo_key || '',
+        followup_active: settings.followup_active || 0,
+        vision_active: settings.vision_active || 0,
+        sentiment_active: settings.sentiment_active || 0,
+        ai_instructions: settings.ai_instructions || '',
+        ai_temp: settings.ai_temp || '0.7',
+        smart_hub: settings // Include full settings object
+      });
     });
   });
 });
@@ -729,8 +749,14 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
         db.get(`SELECT ai_instructions, ai_temp FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
       });
 
-      const systemPrompt = smartSettings.ai_instructions || `You are a helpful AI assistant for ${user.business_name || 'this business'}.`;
+      // CRITICAL FIX: Stronger system prompt that establishes AI persona
+      const systemPrompt = smartSettings.ai_instructions || 
+        `You are the AI assistant for ${user.business_name || 'this business'}. 
+         You are helpful, professional, and knowledgeable about the business. 
+         Always represent yourself as the business assistant, never as a generic AI.
+         Current date: ${new Date().toLocaleDateString()}`;
 
+      // CRITICAL FIX: Remove space in Cloudflare URL
       const aiRes = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
         {
@@ -741,7 +767,7 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
           },
           body: JSON.stringify({
             messages: [
-              { role: "system", content: `${systemPrompt} Use this business context: ${context}` },
+              { role: "system", content: `${systemPrompt}\n\nBusiness Context:\n${context}` },
               { role: "user", content: message }
             ]
           })
@@ -767,13 +793,18 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
   });
 });
 
-// ================= PUBLIC WIDGET CHAT =================
+// ================= PUBLIC WIDGET CHAT - CRITICAL FIXES =================
 app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res) => {
-  const { message, image_data, file_data, file_name, widget_key, client_name, session_id } = req.body;
+  // CRITICAL FIX: Extract is_visitor flag from request
+  const { message, image_data, file_data, file_name, widget_key, client_name, session_id, is_visitor } = req.body;
   const activeSession = session_id || "pub_" + Date.now();
 
   if (!message && !image_data && !file_data) {
     return res.status(400).json({ error: "Missing message or file" });
+  }
+
+  if (!widget_key) {
+    return res.status(400).json({ error: "Widget key required" });
   }
 
   db.get(`SELECT * FROM users WHERE widget_key = ?`, [widget_key], async (err, user) => {
@@ -786,12 +817,40 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
       const knowledge = await getKnowledgeByUser(user.id);
       const context = knowledge.map(k => k.content).join("\n");
 
+      // CRITICAL FIX: Get ALL smart settings including booking URL
       const smartSettings = await new Promise((resolve) => {
-        db.get(`SELECT ai_instructions, ai_temp, booking_url FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
+        db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
       });
 
       let reply = "";
       let fileContent = "";
+
+      // CRITICAL FIX: Build professional system prompt
+      const buildSystemPrompt = () => {
+        const basePrompt = smartSettings.ai_instructions || 
+          `You are the AI assistant for ${user.business_name || 'our business'}.`;
+        
+        const visitorContext = is_visitor 
+          ? `You are chatting with a website visitor named ${client_name || 'Guest'}. Be helpful, professional, and guide them to take action.`
+          : `You are assisting the business owner.`;
+        
+        const bookingContext = smartSettings.booking_url && smartSettings.booking_active
+          ? `When visitors want to book, schedule, or make appointments, provide this booking link: ${smartSettings.booking_url}`
+          : '';
+        
+        return `${basePrompt}
+${visitorContext}
+${bookingContext}
+Business Context:
+${context || 'No additional context provided.'}
+
+IMPORTANT INSTRUCTIONS:
+- Always identify yourself as ${user.business_name || 'our'} AI assistant, NEVER as "a language model" or "AI"
+- Be concise but helpful (2-3 sentences max for simple questions)
+- If you don't know something specific about the business, say "Let me connect you with the team" rather than making things up
+- Use the booking link when visitors show interest in meetings/appointments
+- Today's date: ${new Date().toLocaleDateString()}`;
+      };
 
       if (image_data) {
         console.log("[WIDGET] Processing image with Cloudflare Vision");
@@ -800,8 +859,9 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
         const mimeType = image_data.match(/:(.*?);/)[1];
 
         const userPrompt = message || "Please describe what you see in this image in detail.";
-        const systemContext = `${smartSettings.ai_instructions || 'You are a helpful AI assistant with vision capabilities.'}\nBusiness context: ${context}`;
+        const systemContext = buildSystemPrompt();
 
+        // CRITICAL FIX: Remove space in Cloudflare URL
         const cfRes = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
           {
@@ -841,6 +901,9 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
         try {
           fileContent = await extractTextFromFile(file_data, file_name, mimeType);
           
+          const systemContext = buildSystemPrompt();
+          
+          // CRITICAL FIX: Remove space in Cloudflare URL
           const cfRes = await fetch(
             `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
             {
@@ -851,10 +914,7 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
               },
               body: JSON.stringify({
                 messages: [
-                  { 
-                    role: "system", 
-                    content: `${smartSettings.ai_instructions || 'You are a helpful document analyst.'}\nBusiness context: ${context}` 
-                  },
+                  { role: "system", content: systemContext },
                   { 
                     role: "user", 
                     content: `Here is the content of the file "${file_name}":\n\n${fileContent}\n\nUser question: ${message || "Please summarize this document and extract key information."}` 
@@ -878,6 +938,13 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
       else {
         console.log("[WIDGET] Processing text message");
         
+        const systemContext = buildSystemPrompt();
+        
+        // CRITICAL FIX: Check for booking intent and inject link if needed
+        const bookingKeywords = /book|appointment|schedule|meeting|reserve|consultation|demo/i;
+        const hasBookingIntent = bookingKeywords.test(message);
+        
+        // CRITICAL FIX: Remove space in Cloudflare URL
         const cfRes = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
           {
@@ -888,10 +955,7 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
             },
             body: JSON.stringify({
               messages: [
-                { 
-                  role: "system", 
-                  content: `${smartSettings.ai_instructions || 'You are a helpful assistant.'}\nBusiness context: ${context}` 
-                },
+                { role: "system", content: systemContext },
                 { role: "user", content: message }
               ]
             })
@@ -903,6 +967,11 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
         } else {
           const cfData = await cfRes.json();
           reply = cfData.result?.response || "I couldn't generate a response.";
+          
+          // CRITICAL FIX: If booking intent detected and we have URL but AI didn't include it, append it
+          if (hasBookingIntent && smartSettings.booking_url && smartSettings.booking_active && !reply.includes(smartSettings.booking_url)) {
+            reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
+          }
         }
       }
 
