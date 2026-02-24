@@ -493,6 +493,29 @@
           border-top: 1px solid var(--border-color); 
           background: white;
         }
+
+        /* NEW: Business Type Card Styles */
+        .business-type-info {
+          background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+          padding: 20px;
+          border-radius: 12px;
+          border: 1px solid var(--primary);
+          margin-top: 15px;
+        }
+        
+        .business-type-info h4 {
+          color: var(--dark);
+          margin-bottom: 10px;
+          font-size: 1rem;
+        }
+        
+        .business-type-info ul {
+          margin: 0;
+          padding-left: 20px;
+          color: #666;
+          font-size: 0.9rem;
+          line-height: 1.8;
+        }
     </style>
 </head>
 <body>
@@ -520,6 +543,68 @@
 </div>
 
 <div class="container">
+
+  <!-- NEW: Business Identity Section -->
+  <div class="section-header" id="business-identity-section">
+    <h2>🏢 Business Identity</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="grid">
+    <div class="tool-card wide-card" id="card-business-type">
+      <div style="flex: 1;">
+        <div class="icon-box">🏢</div>
+        <h3>Business Profile <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+        <p class="tool-description">Define your business type and industry so the AI can represent you accurately to customers with appropriate tone and terminology.</p>
+        
+        <div class="input-group">
+          <label>Business Type / Industry</label>
+          <select id="businessType">
+            <option value="">Select your business type...</option>
+            <option value="retail">Retail Store (Clothing, Electronics, etc.)</option>
+            <option value="restaurant">Restaurant / Food Service</option>
+            <option value="salon">Beauty Salon / Spa</option>
+            <option value="consulting">Consulting / Professional Services</option>
+            <option value="healthcare">Healthcare / Medical</option>
+            <option value="fitness">Fitness / Gym</option>
+            <option value="realestate">Real Estate</option>
+            <option value="education">Education / Training</option>
+            <option value="technology">Technology / SaaS</option>
+            <option value="automotive">Automotive / Car Dealership</option>
+            <option value="hotel">Hotel / Hospitality</option>
+            <option value="legal">Legal Services</option>
+            <option value="finance">Financial Services</option>
+            <option value="construction">Construction / Home Services</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="input-group">
+          <label>Custom Business Description (Optional)</label>
+          <textarea id="businessDescription" rows="3" placeholder="e.g., We sell premium men's formal wear and accessories, specializing in wedding suits and corporate attire..."></textarea>
+        </div>
+        
+        <button class="btn-save" onclick="saveSmartTool('business_type', event)">Save Business Identity</button>
+      </div>
+      
+      <div style="flex: 0.8; background: #fafafa; padding: 25px; border-radius: 14px; border: 1px dashed #ddd;">
+        <h3>Why This Matters</h3>
+        <div class="business-type-info">
+          <h4>When customers chat with your widget, the AI will know:</h4>
+          <ul>
+            <li>What industry you're in</li>
+            <li>Appropriate tone and terminology</li>
+            <li>Relevant services to suggest</li>
+            <li>How to handle industry-specific questions</li>
+            <li>When to escalate to human agents</li>
+          </ul>
+        </div>
+        <p style="font-size: 0.85rem; color: #666; margin-top: 15px; line-height: 1.6;">
+          <strong>Example:</strong> A restaurant AI will know about reservations, menu items, and dietary restrictions. A salon AI will understand appointment types, stylist specialties, and beauty services.
+        </p>
+      </div>
+    </div>
+  </div>
 
   <div class="section-header" id="ai-brain-section">
     <h2>🧠 AI Knowledge Base</h2>
@@ -786,6 +871,7 @@
   <p>&copy; 2026 AI Smart Business Hub | Advanced Agent Control Panel</p>
 </footer>
 
+
 <!-- Load smart-logic.js separately -->
 <script src="smart-logic.js"></script>
 
@@ -868,7 +954,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {}
     }
 });
-</script>
-
+</script
 </body>
 </html>
