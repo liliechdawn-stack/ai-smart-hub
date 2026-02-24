@@ -14,6 +14,20 @@ const API_BASE = window.BACKEND_URL;
 let CURRENT_USER_PLAN = localStorage.getItem('currentPlan') || 'free';
 let CURRENT_USER_TOKEN = localStorage.getItem('token');
 
+// Tool name mapping for user-friendly messages
+const TOOL_NAMES = {
+    'brain': 'AI Brain & Knowledge Base',
+    'booking': 'Appointment Booking',
+    'sentiment': 'Crisis Guard (Sentiment Monitoring)',
+    'handover': 'Live Handover',
+    'webhook': 'CRM Webhook Sync',
+    'apollo': 'Apollo Lead Enrichment',
+    'enrichment': 'Apollo Lead Enrichment',
+    'vision': 'AI Vision Hub',
+    'followup': 'AI Email Nurture',
+    'business_type': 'Business Identity'
+};
+
 // 1. Load on page ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Smart Hub Logic Initialized - Fetching real plan...");
@@ -111,7 +125,7 @@ function unlockPremiumFeatures(plan) {
     const normalized = plan.toLowerCase().trim();
 
     // Always unlock core tools (available to everyone)
-    const coreTools = ['card-brain', 'card-booking', 'card-handover', 'card-analytics'];
+    const coreTools = ['card-brain', 'card-booking', 'card-handover', 'card-analytics', 'card-business-type'];
     coreTools.forEach(id => removeLock(id));
 
     if (normalized === 'free') {
@@ -257,10 +271,11 @@ async function runSmartTool(toolType, btn) {
         btn.classList.add('btn-live-status');
         btn.disabled = false;
 
+        const toolName = TOOL_NAMES[toolType] || toolType;
         if (result && result.output) {
-            alert("Tool executed successfully:\n\n" + result.output);
+            alert(`${toolName} has been successfully activated!\n\n${result.output}`);
         } else {
-            alert("Tool executed successfully.");
+            alert(`${toolName} has been successfully activated and is now LIVE.`);
         }
 
     } catch (err) {
@@ -283,6 +298,7 @@ async function saveSmartTool(toolType, event) {
 
     const btn = event?.currentTarget || event?.target || document.activeElement;
     const originalText = btn?.innerText || '';
+    const toolName = TOOL_NAMES[toolType] || toolType;
 
     let data = {};
 
@@ -327,6 +343,12 @@ async function saveSmartTool(toolType, event) {
             case 'followup':
                 data = { enabled: document.getElementById('followupToggle')?.checked || false };
                 break;
+            case 'business_type':
+                data = { 
+                    businessType: document.getElementById('businessType')?.value || '',
+                    businessDescription: document.getElementById('businessDescription')?.value || ''
+                };
+                break;
         }
 
         console.log(`[SAVE] Sending for ${toolType}:`, data);
@@ -352,16 +374,34 @@ async function saveSmartTool(toolType, event) {
 
         if (response.ok && result.success) {
             console.log(`[SAVE] Success for ${toolType}`);
+            
+            // Show specific success message with tool name
             if (btn) {
-                btn.innerText = "✓ Saved";
+                btn.innerText = `✓ ${toolName} Saved`;
                 btn.style.background = "#28a745";
             }
+            
+            // Show alert with tool name
+            alert(`${toolName} has been successfully saved!`);
+            
             localStorage.setItem(`ai_settings_${toolType}`, JSON.stringify(data));
             
-            // Re-run tool to activate LIVE status
-            setTimeout(() => {
-                runSmartTool(toolType, btn);
-            }, 500);
+            // Re-run tool to activate LIVE status (for tools that support it)
+            if (toolType !== 'business_type') {
+                setTimeout(() => {
+                    runSmartTool(toolType, btn);
+                }, 500);
+            } else {
+                // For business type, just show LIVE status without calling test-tool
+                setTimeout(() => {
+                    if (btn) {
+                        btn.innerText = "● LIVE";
+                        btn.classList.add('btn-live-status');
+                        btn.style.background = "";
+                        btn.disabled = false;
+                    }
+                }, 1000);
+            }
         } else {
             const errorMsg = result.error || "Server rejected update";
             console.error(`[SAVE] Failed for ${toolType}:`, errorMsg);
@@ -373,11 +413,11 @@ async function saveSmartTool(toolType, event) {
             btn.innerText = "❌ Error";
             btn.style.background = "#e74c3c";
         }
-        alert("Could not save: " + err.message);
+        alert(`Could not save ${toolName}: ${err.message}`);
     }
 
     setTimeout(() => {
-        if (btn && btn.innerText === "✓ Saved") {
+        if (btn && btn.innerText.startsWith('✓')) {
             btn.innerText = "● LIVE";
             btn.classList.add('btn-live-status');
             btn.style.background = "";
@@ -426,6 +466,12 @@ async function loadSavedSettingsFromServer() {
             }
         }
 
+        // NEW: Load business type
+        if (data.business_type) {
+            const businessTypeEl = document.getElementById('businessType');
+            if (businessTypeEl) businessTypeEl.value = data.business_type;
+        }
+
         // Restore ALL toggles
         const toggleMap = {
             sentimentToggle: data.sentiment_active === 1,
@@ -452,7 +498,8 @@ async function loadSavedSettingsFromServer() {
             webhook: { active: data.webhook_active === 1, cardId: 'card-webhook' },
             enrichment: { active: data.apollo_active === 1, cardId: 'card-apollo' },
             vision: { active: data.vision_active === 1, cardId: 'card-vision' },
-            followup: { active: data.followup_active === 1, cardId: 'card-followup' }
+            followup: { active: data.followup_active === 1, cardId: 'card-followup' },
+            business_type: { active: true, cardId: 'card-business-type' }
         };
 
         Object.entries(activeMap).forEach(([tool, { active, cardId }]) => {
@@ -477,7 +524,7 @@ async function loadSavedSettingsFromServer() {
 }
 
 function loadSavedSettingsFromLocal() {
-    const tools = ['brain', 'booking', 'sentiment', 'handover', 'webhook', 'enrichment', 'vision'];
+    const tools = ['brain', 'booking', 'sentiment', 'handover', 'webhook', 'enrichment', 'vision', 'business_type'];
     tools.forEach(tool => {
         const saved = localStorage.getItem(`ai_settings_${tool}`);
         if (saved) {
@@ -493,7 +540,11 @@ function loadSavedSettingsFromLocal() {
             }
             if (tool === 'enrichment' && document.getElementById('apolloKey')) {
                 document.getElementById('apolloKey').value = data.apolloKey || "";
-                document.getElementById('syncToggle').checked = data.autoSync || false;
+                const syncToggle = document.getElementById('syncToggle');
+                if (syncToggle) syncToggle.checked = data.autoSync || false;
+            }
+            if (tool === 'business_type' && document.getElementById('businessType')) {
+                document.getElementById('businessType').value = data.businessType || "";
             }
         }
     });
