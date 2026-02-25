@@ -35,7 +35,10 @@ const {
   getLeadByEmail,
   saveBroadcast,
   getBroadcastsByUser,
-  getBroadcastStats
+  getBroadcastStats,
+  getBusinessIdentity,
+  saveBusinessIdentity,
+  getSmartSettings
 } = dbModule;
 
 // Import auth
@@ -91,6 +94,48 @@ const transporter = nodemailer.createTransport({
   },
   tls: { rejectUnauthorized: false }
 });
+
+// ================= EMAIL SENDING FUNCTION WITH FALLBACK =================
+async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
+  // Try Resend first (best option)
+  if (resend) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+        to: [to],
+        subject: subject,
+        html: html,
+        text: text || html.replace(/<[^>]*>/g, '')
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      console.log(`✅ Resend email sent to: ${to}`);
+      return { success: true, method: 'resend' };
+    } catch (err) {
+      console.error(`❌ Resend failed for ${to}:`, err.message);
+      // Fall through to nodemailer
+    }
+  }
+
+  // Fallback to nodemailer
+  try {
+    await transporter.sendMail({
+      from: `"${fromName}" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, '')
+    });
+    console.log(`✅ Nodemailer email sent to: ${to}`);
+    return { success: true, method: 'nodemailer' };
+  } catch (err) {
+    console.error(`❌ Both email methods failed for ${to}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
 
 // ================= FILE PROCESSING =================
 async function extractTextFromFile(fileData, fileName, mimeType) {
@@ -263,185 +308,6 @@ db.serialize(() => {
   });
 });
 
-// ================= HELPER FUNCTIONS FOR STATUS =================
-async function checkService(service) {
-  // Implement actual service checks
-  return true;
-}
-
-async function getLatency(service) {
-  // Mock latency for now
-  const latencies = {
-    'cloudflare-ai': '45ms',
-    'database': '23ms',
-    'api': '89ms'
-  };
-  return latencies[service] || Math.floor(Math.random() * 100) + 'ms';
-}
-
-// ================= STATUS PAGE ENDPOINTS =================
-app.get("/api/status", async (req, res) => {
-  try {
-    // Check each service
-    const services = [
-      { 
-        name: 'AI Chat Widget', 
-        icon: '🤖', 
-        provider: 'Cloudflare AI', 
-        status: await checkService('cloudflare-ai') ? 'operational' : 'degraded',
-        latency: await getLatency('cloudflare-ai')
-      },
-      { 
-        name: 'Customer Insights', 
-        icon: '📊', 
-        provider: 'Analytics Dashboard', 
-        status: await checkService('database') ? 'operational' : 'degraded',
-        latency: await getLatency('database')
-      },
-      { 
-        name: 'AI Automations', 
-        icon: '⚙️', 
-        provider: 'Workflow Engine', 
-        status: await checkService('database') ? 'operational' : 'degraded',
-        latency: await getLatency('api')
-      },
-      { 
-        name: 'Email Broadcast', 
-        icon: '📧', 
-        provider: 'Resend', 
-        status: process.env.RESEND_API_KEY ? 'operational' : 'degraded',
-        latency: '234ms'
-      },
-      { 
-        name: 'Payments', 
-        icon: '💳', 
-        provider: 'Paystack', 
-        status: 'operational',
-        latency: '156ms'
-      },
-      { 
-        name: 'Database', 
-        icon: '🗄️', 
-        provider: 'SQLite', 
-        status: 'operational',
-        latency: '23ms'
-      }
-    ];
-
-    // Get recent incidents from database
-    const incidents = await new Promise((resolve, reject) => {
-      db.all(
-        `SELECT * FROM incidents ORDER BY date DESC LIMIT 5`,
-        [],
-        (err, rows) => {
-          if (err) resolve([]);
-          else resolve(rows || []);
-        }
-      );
-    });
-
-    res.json({
-      services,
-      metrics: {
-        uptime30d: '99.97%',
-        uptime7d: '100%',
-        uptime90d: '99.95%',
-        avgResponse: '47ms',
-        totalIncidents: incidents.length.toString()
-      },
-      incidents: incidents.length ? incidents : [
-        {
-          date: new Date().toLocaleString(),
-          title: 'All Systems Operational',
-          description: 'No incidents reported',
-          status: 'resolved'
-        }
-      ],
-      lastUpdated: new Date().toISOString()
-    });
-
-  } catch (err) {
-    console.error('Status error:', err);
-    res.status(500).json({ error: 'Failed to fetch status' });
-  }
-});
-
-// ================= STATUS SUBSCRIBE ENDPOINT =================
-app.post("/api/status/subscribe", bodyParser.json(), async (req, res) => {
-  const { email } = req.body;
-  
-  if (!email) {
-    return res.status(400).json({ error: "Email required" });
-  }
-
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: "Invalid email format" });
-  }
-
-  try {
-    // Save to database
-    db.run(
-      `INSERT INTO status_subscribers (email, created_at) VALUES (?, datetime('now'))`,
-      [email.toLowerCase().trim()],
-      function(err) {
-        if (err) {
-          if (err.message.includes('UNIQUE')) {
-            return res.json({ success: true, message: "Already subscribed" });
-          }
-          console.error("Subscribe DB error:", err);
-          return res.status(500).json({ error: "Database error" });
-        }
-        
-        // Send confirmation email via Resend
-        const sendConfirmation = async () => {
-          if (resend) {
-            try {
-              await resend.emails.send({
-                from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
-                to: [email],
-                subject: '✅ Status Updates Subscription Confirmed',
-                html: `
-                  <!DOCTYPE html>
-                  <html>
-                  <head><meta charset="UTF-8"></head>
-                  <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                      <h1 style="color: white; margin: 0;">✅ Subscription Confirmed</h1>
-                    </div>
-                    <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-                      <h2>You're subscribed to AI Smart Hub status updates!</h2>
-                      <p>You'll receive notifications when:</p>
-                      <ul style="margin: 20px 0;">
-                        <li>🔴 Services go down</li>
-                        <li>🟡 Performance degrades</li>
-                        <li>🔵 Scheduled maintenance occurs</li>
-                        <li>🟢 Services recover</li>
-                      </ul>
-                      <p style="color: #666; font-size: 14px;">To unsubscribe, click <a href="#" style="color: #667eea;">here</a></p>
-                    </div>
-                  </body>
-                  </html>
-                `
-              });
-              console.log(`✅ Status subscription confirmation sent to: ${email}`);
-            } catch (err) {
-              console.error("❌ Failed to send confirmation:", err);
-            }
-          }
-        };
-        
-        sendConfirmation();
-        res.json({ success: true, message: "Subscribed successfully" });
-      }
-    );
-  } catch (err) {
-    console.error('Subscribe error:', err);
-    res.status(500).json({ error: "Failed to subscribe" });
-  }
-});
-
 // ================= VERIFICATION MIDDLEWARE =================
 async function checkVerified(req, res, next) {
   try {
@@ -455,6 +321,82 @@ async function checkVerified(req, res, next) {
     res.status(500).json({ error: "Verification check failed" });
   }
 }
+
+// ================= RESEND VERIFICATION CODE =================
+app.post("/api/auth/resend-verification", bodyParser.json(), async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email required" });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  
+  try {
+    // Generate new verification code
+    const vCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Update user with new verification token
+    db.run(
+      `UPDATE users SET verification_token = ? WHERE email = ?`,
+      [vCode, normalizedEmail],
+      async function(err) {
+        if (err) {
+          console.error("Update verification token error:", err);
+          return res.status(500).json({ error: "Database error" });
+        }
+        
+        if (this.changes === 0) {
+          return res.status(404).json({ error: "Email not found" });
+        }
+
+        // Send verification email
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"></head>
+          <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
+              <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">✨ AI Smart Hub</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
+              </div>
+              <div style="padding: 40px;">
+                <h2 style="color: #333; margin-bottom: 20px;">Your New Verification Code</h2>
+                <p style="color: #666; margin-bottom: 20px;">You requested a new verification code for your account.</p>
+                <div style="background: #f8f9fa; padding: 30px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                  <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
+                </div>
+                <p style="color: #666;">Enter this code on the website to verify your account.</p>
+                <p style="color: #999; font-size: 14px; margin-top: 20px;">This code will expire in 24 hours.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const result = await sendEmailWithFallback(
+          normalizedEmail,
+          'AI Smart Hub Support',
+          'Your New Verification Code',
+          emailHtml
+        );
+
+        if (result.success) {
+          res.json({ 
+            success: true, 
+            message: `New verification code sent to ${normalizedEmail} via ${result.method}` 
+          });
+        } else {
+          res.status(500).json({ error: "Failed to send verification email" });
+        }
+      }
+    );
+  } catch (err) {
+    console.error("Resend verification error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 // ================= AUTH ROUTES =================
 app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
@@ -475,65 +417,42 @@ app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
           const widgetKey = uuidv4();
           setWidgetKey(userId, widgetKey);
 
-          // Send verification email via Resend (preferred)
-          const sendEmail = async () => {
-            if (resend) {
-              try {
-                const { data, error } = await resend.emails.send({
-                  from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
-                  to: [normalizedEmail],
-                  subject: "Your AI Platform Verification Code",
-                  html: `
-                    <!DOCTYPE html>
-                    <html>
-                    <head><meta charset="UTF-8"></head>
-                    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-                      <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
-                        <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                          <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
-                        </div>
-                        <div style="padding: 40px;">
-                          <h2>Verify Your Email</h2>
-                          <p>Your verification code is:</p>
-                          <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                            <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
-                          </div>
-                          <p>Enter this code on the website to verify your account.</p>
-                          <p style="color: #999; font-size: 14px;">This code will expire in 24 hours.</p>
-                        </div>
-                      </div>
-                    </body>
-                    </html>
-                  `
-                });
+          // Send verification email
+          const emailHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"></head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
+                  <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
+                </div>
+                <div style="padding: 40px;">
+                  <h2 style="color: #333;">Verify Your Email</h2>
+                  <p style="color: #666; margin-bottom: 20px;">Your verification code is:</p>
+                  <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                    <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
+                  </div>
+                  <p style="color: #666;">Enter this code on the website to verify your account.</p>
+                  <p style="color: #999; font-size: 14px;">This code will expire in 24 hours.</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
 
-                if (error) {
-                  throw new Error(error.message);
-                }
-                console.log("✅ Verification email sent via Resend to:", normalizedEmail);
-              } catch (err) {
-                console.error("❌ Resend error:", err.message);
-                // Fallback to nodemailer
-                transporter.sendMail({
-                  from: `"AI Assistant Support" <${process.env.EMAIL_USER}>`,
-                  to: normalizedEmail,
-                  subject: "Your AI Platform Verification Code",
-                  html: `<h1>${vCode}</h1>`
-                }).catch(e => console.error("❌ Email fallback failed:", e.message));
-              }
-            } else {
-              // Use nodemailer as fallback
-              transporter.sendMail({
-                from: `"AI Assistant Support" <${process.env.EMAIL_USER}>`,
-                to: normalizedEmail,
-                subject: "Your AI Platform Verification Code",
-                html: `<h1>${vCode}</h1>`
-              }).catch(e => console.error("❌ Email send fail:", e.message));
-            }
-          };
+          sendEmailWithFallback(
+            normalizedEmail,
+            'AI Smart Hub Support',
+            'Your Verification Code',
+            emailHtml
+          );
 
-          sendEmail();
-          res.json({ message: "Signup successful. Please check your email for your 6-digit verification code." });
+          res.json({ 
+            success: true, 
+            message: "Signup successful. Please check your email for your 6-digit verification code.",
+            email: normalizedEmail
+          });
         })
         .catch(err => {
           console.error("Signup insert error:", err);
@@ -553,12 +472,46 @@ app.get("/api/auth/verify/:token", async (req, res) => {
 });
 
 app.post("/api/auth/verify-code", bodyParser.json(), async (req, res) => {
-  const { code } = req.body;
-  const success = await verifyUser(code);
-  if (success) {
-    res.json({ success: true, message: "Account verified successfully!" });
-  } else {
-    res.status(400).json({ error: "Invalid verification code." });
+  const { code, email } = req.body;
+  
+  try {
+    // Find user with this verification token
+    const user = await new Promise((resolve, reject) => {
+      db.get(`SELECT * FROM users WHERE verification_token = ?`, [code], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid verification code." });
+    }
+
+    // Verify the user
+    const success = await verifyUser(code);
+    
+    if (success) {
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user.id, email: user.email, plan: user.plan }, 
+        JWT_SECRET, 
+        { expiresIn: '7d' }
+      );
+      
+      res.json({ 
+        success: true, 
+        message: "Account verified successfully!",
+        token,
+        plan: user.plan,
+        email: user.email,
+        business_name: user.business_name
+      });
+    } else {
+      res.status(400).json({ error: "Invalid verification code." });
+    }
+  } catch (err) {
+    console.error("Verify code error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -707,22 +660,45 @@ app.get("/api/public/widget-config/:key", (req, res) => {
     db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, smartSettings) => {
       const settings = smartSettings || {};
       
-      res.json({
-        business_name: user.business_name || "AI Assistant",
-        widget_color: user.widget_color || "#d4af37",
-        welcome_message: user.welcome_message || "Hi! How can I help you today?",
-        plan: user.plan || 'free',
-        // CRITICAL FIX: Include all smart hub settings for the widget
-        booking_url: settings.booking_url || '',
-        booking_active: settings.booking_active || 0,
-        apollo_active: settings.apollo_active || 0,
-        apollo_key: settings.apollo_key || '',
-        followup_active: settings.followup_active || 0,
-        vision_active: settings.vision_active || 0,
-        sentiment_active: settings.sentiment_active || 0,
-        ai_instructions: settings.ai_instructions || '',
-        ai_temp: settings.ai_temp || '0.7',
-        smart_hub: settings // Include full settings object
+      // Get business identity
+      getBusinessIdentity(user.id).then(identity => {
+        res.json({
+          business_name: user.business_name || "AI Assistant",
+          widget_color: user.widget_color || "#d4af37",
+          welcome_message: user.welcome_message || "Hi! How can I help you today?",
+          plan: user.plan || 'free',
+          // Business identity
+          business_type: identity.business_type || '',
+          business_description: identity.business_description || '',
+          // CRITICAL FIX: Include all smart hub settings for the widget
+          booking_url: settings.booking_url || '',
+          booking_active: settings.booking_active || 0,
+          apollo_active: settings.apollo_active || 0,
+          apollo_key: settings.apollo_key || '',
+          followup_active: settings.followup_active || 0,
+          vision_active: settings.vision_active || 0,
+          sentiment_active: settings.sentiment_active || 0,
+          ai_instructions: settings.ai_instructions || '',
+          ai_temp: settings.ai_temp || '0.7',
+          smart_hub: settings // Include full settings object
+        });
+      }).catch(() => {
+        res.json({
+          business_name: user.business_name || "AI Assistant",
+          widget_color: user.widget_color || "#d4af37",
+          welcome_message: user.welcome_message || "Hi! How can I help you today?",
+          plan: user.plan || 'free',
+          booking_url: settings.booking_url || '',
+          booking_active: settings.booking_active || 0,
+          apollo_active: settings.apollo_active || 0,
+          apollo_key: settings.apollo_key || '',
+          followup_active: settings.followup_active || 0,
+          vision_active: settings.vision_active || 0,
+          sentiment_active: settings.sentiment_active || 0,
+          ai_instructions: settings.ai_instructions || '',
+          ai_temp: settings.ai_temp || '0.7',
+          smart_hub: settings
+        });
       });
     });
   });
@@ -749,9 +725,17 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
         db.get(`SELECT ai_instructions, ai_temp FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
       });
 
+      // Get business identity
+      const identity = await getBusinessIdentity(user.id);
+
+      // Build system prompt with business identity
+      const businessContext = identity.business_type ? 
+        `Business Type: ${identity.business_type}\nBusiness Description: ${identity.business_description || 'Not provided'}\n` : '';
+
       // CRITICAL FIX: Stronger system prompt that establishes AI persona
       const systemPrompt = smartSettings.ai_instructions || 
         `You are the AI assistant for ${user.business_name || 'this business'}. 
+         ${businessContext}
          You are helpful, professional, and knowledgeable about the business. 
          Always represent yourself as the business assistant, never as a generic AI.
          Current date: ${new Date().toLocaleDateString()}`;
@@ -822,6 +806,9 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
         db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
       });
 
+      // Get business identity
+      const identity = await getBusinessIdentity(user.id).catch(() => ({ business_type: '', business_description: '' }));
+
       let reply = "";
       let fileContent = "";
 
@@ -829,6 +816,9 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
       const buildSystemPrompt = () => {
         const basePrompt = smartSettings.ai_instructions || 
           `You are the AI assistant for ${user.business_name || 'our business'}.`;
+        
+        const businessContext = identity.business_type ? 
+          `Business Type: ${identity.business_type}. ${identity.business_description || ''}` : '';
         
         const visitorContext = is_visitor 
           ? `You are chatting with a website visitor named ${client_name || 'Guest'}. Be helpful, professional, and guide them to take action.`
@@ -839,6 +829,7 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
           : '';
         
         return `${basePrompt}
+${businessContext}
 ${visitorContext}
 ${bookingContext}
 Business Context:
@@ -887,7 +878,8 @@ IMPORTANT INSTRUCTIONS:
 
         if (!cfRes.ok) {
           const errData = await cfRes.json();
-          reply = `I had trouble analyzing this image: ${errData.errors?.[0]?.message || 'Unknown error'}.`;
+          console.error("Vision API error:", errData);
+          reply = `I had trouble analyzing this image. Please try again.`;
         } else {
           const cfData = await cfRes.json();
           reply = cfData.result?.response || "I couldn't analyze this image.";
@@ -926,12 +918,14 @@ IMPORTANT INSTRUCTIONS:
 
           if (!cfRes.ok) {
             const errData = await cfRes.json();
+            console.error("File processing error:", errData);
             reply = `I had trouble processing this file.`;
           } else {
             const cfData = await cfRes.json();
             reply = cfData.result?.response || "I couldn't extract any information from this file.";
           }
         } catch (fileErr) {
+          console.error("File extraction error:", fileErr);
           reply = `Sorry, I couldn't process this file.`;
         }
       } 
@@ -963,6 +957,8 @@ IMPORTANT INSTRUCTIONS:
         );
 
         if (!cfRes.ok) {
+          const errData = await cfRes.json();
+          console.error("Text API error:", errData);
           reply = `I'm having trouble connecting. Please try again.`;
         } else {
           const cfData = await cfRes.json();
@@ -1102,16 +1098,16 @@ app.get("/api/content/legal", (req, res) => {
 
 // ================= ADMIN ROUTES =================
 app.get("/api/admin/users", auth, isAdminMiddleware, (req, res) => {
-  db.all(`SELECT id, email, business_name, plan, messages_used, leads_used, is_verified FROM users`, (_, rows) => {
+  db.all(`SELECT id, email, business_name, plan, messages_used, leads_used, is_verified FROM users ORDER BY created_at DESC`, (_, rows) => {
     res.json(rows || []);
   });
 });
 
 app.put("/api/admin/users/:id", auth, isAdminMiddleware, bodyParser.json(), (req, res) => {
-  const { plan, messages_used, leads_used } = req.body;
+  const { plan, is_verified, messages_used, leads_used } = req.body;
   db.run(
-    `UPDATE users SET plan = ?, messages_used = ?, leads_used = ? WHERE id = ?`,
-    [plan, messages_used, leads_used, req.params.id],
+    `UPDATE users SET plan = ?, is_verified = ?, messages_used = ?, leads_used = ? WHERE id = ?`,
+    [plan, is_verified, messages_used, leads_used, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: "Update failed" });
       res.json({ success: true });
@@ -1130,9 +1126,117 @@ app.delete("/api/admin/users/:id", auth, isAdminMiddleware, (req, res) => {
 });
 
 app.get("/api/admin/activities", auth, isAdminMiddleware, (req, res) => {
-  db.all(`SELECT * FROM chats ORDER BY created_at DESC`, (_, rows) => {
+  db.all(`SELECT * FROM chats ORDER BY created_at DESC LIMIT 100`, (_, rows) => {
     res.json(rows || []);
   });
+});
+
+// ================= SMART HUB SAVE ENDPOINT =================
+app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
+  try {
+    const { toolType, data } = req.body;
+    const userId = req.user.id;
+    
+    console.log(`[SMART-HUB] Saving ${toolType} for user ${userId}:`, data);
+    
+    // Ensure smart_hub_settings exists
+    await new Promise((resolve, reject) => {
+      db.run(`INSERT OR IGNORE INTO smart_hub_settings (user_id) VALUES (?)`, [userId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    if (toolType === 'business_type') {
+      await saveBusinessIdentity(userId, data.businessType, data.businessDescription);
+      return res.json({ success: true });
+    }
+    
+    // Handle other tool types
+    let query = "";
+    let params = [];
+
+    switch(toolType) {
+      case 'brain':
+        query = `UPDATE smart_hub_settings SET ai_instructions = ?, ai_temp = ?, ai_lang = ?, brain_active = 1 WHERE user_id = ?`;
+        params = [data.instructions, data.temp, data.lang, userId];
+        break;
+      case 'booking':
+        query = `UPDATE smart_hub_settings SET booking_url = ?, booking_active = 1 WHERE user_id = ?`;
+        params = [data.url, userId];
+        break;
+      case 'sentiment':
+        query = `UPDATE smart_hub_settings SET sentiment_enabled = ?, alert_email = ?, sentiment_active = 1 WHERE user_id = ?`;
+        params = [data.enabled ? 1 : 0, data.email, userId];
+        break;
+      case 'handover':
+        query = `UPDATE smart_hub_settings SET handover_trigger = ?, handover_active = 1 WHERE user_id = ?`;
+        params = [data.trigger, userId];
+        break;
+      case 'webhook':
+        query = `UPDATE smart_hub_settings SET webhook_url = ?, webhook_active = 1 WHERE user_id = ?`;
+        params = [data.url, userId];
+        break;
+      case 'apollo':
+      case 'enrichment':
+        query = `UPDATE smart_hub_settings SET apollo_active = ?, apollo_key = ?, auto_sync = ? WHERE user_id = ?`;
+        params = [data.apolloKey ? 1 : 0, data.apolloKey || null, data.autoSync ? 1 : 0, userId];
+        break;
+      case 'vision':
+        query = `UPDATE smart_hub_settings SET vision_active = ?, vision_sensitivity = ?, vision_area = ? WHERE user_id = ?`;
+        params = [data.enabled ? 1 : 0, data.sensitivity || 'high', data.area || 'all', userId];
+        break;
+      case 'followup':
+        query = `UPDATE smart_hub_settings SET followup_active = ? WHERE user_id = ?`;
+        params = [data.enabled ? 1 : 0, userId];
+        break;
+      default:
+        return res.status(400).json({ error: "Invalid tool type" });
+    }
+
+    db.run(query, params, function(err) {
+      if (err) {
+        console.error("Smart hub save error:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true });
+    });
+
+  } catch (err) {
+    console.error("Smart hub save error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= SMART HUB GET SETTINGS =================
+app.get("/api/smart-hub/settings", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get smart hub settings
+    const settings = await new Promise((resolve, reject) => {
+      db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [userId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row || {});
+      });
+    });
+
+    // Get business identity
+    const identity = await getBusinessIdentity(userId).catch(() => ({}));
+
+    // Get user for booking_url
+    const user = await getUserById(userId);
+
+    res.json({
+      ...settings,
+      ...identity,
+      booking_url: settings.booking_url || user?.booking_url || ''
+    });
+
+  } catch (err) {
+    console.error("Smart hub get error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ================= PAYSTACK =================
@@ -1275,45 +1379,6 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
 });
 
 // ================= ENHANCED EMAIL BROADCAST SYSTEM =================
-async function sendEmailWithFallback(to, fromName, subject, html) {
-  // Try Resend first (best option)
-  if (resend) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
-        to: [to],
-        subject: subject,
-        html: html,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log(`✅ Resend email sent to: ${to}`);
-      return { success: true, method: 'resend' };
-    } catch (err) {
-      console.error(`❌ Resend failed for ${to}:`, err.message);
-      // Fall through to nodemailer
-    }
-  }
-
-  // Fallback to nodemailer
-  try {
-    await transporter.sendMail({
-      from: `"${fromName}" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html
-    });
-    console.log(`✅ Nodemailer email sent to: ${to}`);
-    return { success: true, method: 'nodemailer' };
-  } catch (err) {
-    console.error(`❌ Both email methods failed for ${to}:`, err.message);
-    return { success: false, error: err.message };
-  }
-}
-
 app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
   const { subject, content, target } = req.body;
   const userId = req.user.id;
