@@ -179,7 +179,7 @@ db.serialize(() => {
     }
   });
 
-  // ==================== NEW: BUSINESS IDENTITY TABLE ====================
+  // ==================== BUSINESS IDENTITY TABLE ====================
   db.run(`
     CREATE TABLE IF NOT EXISTS business_identity (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,7 +211,39 @@ db.serialize(() => {
     }
   });
 
-  // ==================== NEW: INCIDENTS TABLE FOR STATUS PAGE ====================
+  // ==================== TOOL STATES TABLE (for cross-device sync) ====================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS tool_states (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      tool_type TEXT NOT NULL,
+      is_active INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, tool_type),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Error creating tool_states table:", err.message);
+    } else {
+      console.log("✅ Tool states table ready");
+    }
+  });
+
+  // Add trigger for updated_at on tool_states
+  db.run(`
+    CREATE TRIGGER IF NOT EXISTS update_tool_states_timestamp 
+    AFTER UPDATE ON tool_states
+    BEGIN
+      UPDATE tool_states SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+  `, (err) => {
+    if (err && !err.message.includes('already exists')) {
+      console.error("Error creating tool_states trigger:", err.message);
+    }
+  });
+
+  // ==================== INCIDENTS TABLE FOR STATUS PAGE ====================
   db.run(`
     CREATE TABLE IF NOT EXISTS incidents (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -243,7 +275,7 @@ db.serialize(() => {
     }
   });
 
-  // ==================== NEW: STATUS SUBSCRIBERS TABLE ====================
+  // ==================== STATUS SUBSCRIBERS TABLE ====================
   db.run(`
     CREATE TABLE IF NOT EXISTS status_subscribers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -533,6 +565,53 @@ function getBusinessIdentity(user_id) {
       (err, row) => {
         if (err) return reject(err);
         resolve(row || { business_type: '', business_description: '' });
+      }
+    );
+  });
+}
+
+// ===============================
+// TOOL STATE FUNCTIONS (for cross-device sync)
+// ===============================
+function saveToolState(user_id, toolType, isActive) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO tool_states (user_id, tool_type, is_active) VALUES (?, ?, ?)
+       ON CONFLICT(user_id, tool_type) DO UPDATE SET is_active = ?, updated_at = CURRENT_TIMESTAMP`,
+      [user_id, toolType, isActive ? 1 : 0, isActive ? 1 : 0],
+      function (err) {
+        if (err) return reject(err);
+        resolve(true);
+      }
+    );
+  });
+}
+
+function getToolStates(user_id) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT tool_type, is_active FROM tool_states WHERE user_id = ?`,
+      [user_id],
+      (err, rows) => {
+        if (err) return reject(err);
+        const states = {};
+        rows.forEach(row => {
+          states[row.tool_type] = row.is_active === 1;
+        });
+        resolve(states);
+      }
+    );
+  });
+}
+
+function deleteToolState(user_id, toolType) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `DELETE FROM tool_states WHERE user_id = ? AND tool_type = ?`,
+      [user_id, toolType],
+      function (err) {
+        if (err) return reject(err);
+        resolve(this.changes > 0);
       }
     );
   });
@@ -941,7 +1020,7 @@ function getBroadcastStats(user_id) {
 }
 
 // ===============================
-// NEW: INCIDENTS FUNCTIONS
+// INCIDENTS FUNCTIONS
 // ===============================
 function getIncidents(limit = 5) {
   return new Promise((resolve, reject) => {
@@ -970,7 +1049,7 @@ function addIncident(date, title, description, status = 'resolved') {
 }
 
 // ===============================
-// NEW: STATUS SUBSCRIBERS FUNCTIONS
+// STATUS SUBSCRIBERS FUNCTIONS
 // ===============================
 function addSubscriber(email) {
   return new Promise((resolve, reject) => {
@@ -1026,6 +1105,9 @@ module.exports = {
   getSmartSettings,
   saveBusinessIdentity,
   getBusinessIdentity,
+  saveToolState,
+  getToolStates,
+  deleteToolState,
   saveSupportTicket,
   updateBusinessAbout,
   addKnowledge,
@@ -1052,9 +1134,10 @@ module.exports = {
   saveBroadcast,
   getBroadcastsByUser,
   getBroadcastStats,
-  // New exports for status page
+  // Incident exports
   getIncidents,
   addIncident,
+  // Status subscribers exports
   addSubscriber,
   getSubscribers,
   removeSubscriber
