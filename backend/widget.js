@@ -1,4 +1,4 @@
-// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - CRITICAL UPDATES)
+// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - NO REPETITION)
 // Features: Business Identity Integration, Proper Conversation Flow, Professional AI Responses
 (function () {
   if (document.getElementById("ai-widget-container")) return;
@@ -32,6 +32,8 @@
   let userName = localStorage.getItem(`ai_user_name_${WIDGET_KEY}`) || '';
   let businessPlan = 'free';
   let businessName = '';
+  let aiName = ''; // Store AI's name
+  let hasIntroduced = false; // Track if AI has introduced itself
   let recognition = null;
   let recognitionActive = false;
   let reconnectAttempts = 0;
@@ -39,6 +41,8 @@
 
   // Track conversation history to prevent repetition
   let conversationHistory = JSON.parse(localStorage.getItem(`ai_conversation_${WIDGET_KEY}`) || '[]');
+  let lastResponseText = ''; // Track last response to prevent repetition
+  let messageCount = 0; // Track number of messages in this session
   
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
@@ -48,12 +52,13 @@
     .then(res => res.json())
     .then(async dbConfig => {
       businessPlan = dbConfig.plan || 'free';
-      businessName = dbConfig.business_name || marker.getAttribute("data-title") || "AI Assistant";
+      businessName = dbConfig.business_name || marker.getAttribute("data-title") || "our store";
+      aiName = dbConfig.ai_name || marker.getAttribute("data-ai-name") || "AI Assistant";
       
       // Store business identity
       businessIdentity = {
-        business_type: dbConfig.business_type || '',
-        business_description: dbConfig.business_description || ''
+        business_type: dbConfig.business_type || 'retail',
+        business_description: dbConfig.business_description || 'a modern retail store'
       };
       
       // Store smart settings
@@ -69,68 +74,38 @@
         ...(dbConfig.smart_hub || {})
       };
       
-      console.log("[WIDGET] Business Identity:", businessIdentity);
+      console.log("[WIDGET] Business Name:", businessName);
       console.log("[WIDGET] Smart Hub settings:", smartSettings);
       
       initWidget(dbConfig);
     })
     .catch(err => {
       console.warn("Widget config fetch failed, using fallback", err);
-      businessName = marker.getAttribute("data-title") || "AI Assistant";
+      businessName = marker.getAttribute("data-title") || "our store";
+      aiName = "AI Assistant";
       smartSettings = {};
-      businessIdentity = {};
+      businessIdentity = {
+        business_type: 'retail',
+        business_description: 'a modern retail store'
+      };
       initWidget({});
     });
 
-  // ===== ENRICH LEAD WITH APOLLO =====
-  async function enrichLeadWithApollo(email, name) {
-    if (!smartSettings?.apollo_active) return null;
-    
-    try {
-      const res = await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, widget_key: WIDGET_KEY })
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        console.log("[WIDGET] Apollo enrichment result:", data);
-        return data;
-      }
-    } catch (err) {
-      console.warn("[WIDGET] Apollo enrichment failed:", err);
-    }
-    return null;
-  }
-
-  // ===== SCHEDULE FOLLOW-UP =====
-  async function scheduleFollowUp(email, name) {
-    if (!smartSettings?.followup_active) return;
-    
-    try {
-      await fetch(`${SERVER_URL}/api/public/followup/schedule`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          name, 
-          widget_key: WIDGET_KEY,
-          session_id: activeSessionId
-        })
-      });
-      console.log("[WIDGET] Follow-up scheduled for:", email);
-    } catch (err) {
-      console.warn("[WIDGET] Follow-up scheduling failed:", err);
-    }
-  }
-
   function initWidget(dbConfig) {
+    // Set welcome message WITHOUT introduction if lead already captured
+    let welcomeMessage;
+    if (leadCaptured) {
+      welcomeMessage = `How can I help you today?`;
+      hasIntroduced = true; // Mark as already introduced
+    } else {
+      welcomeMessage = dbConfig.welcome_message || marker.dataset.welcome || `Hi! I'm ${aiName}, the AI assistant for ${businessName}. How can I help you today?`;
+    }
+
     const config = {
       key: WIDGET_KEY,
       primaryColor: dbConfig.widget_color || marker.dataset.primaryColor || "#d4af37",
       position: marker.dataset.position || "bottom-right",
-      welcome: dbConfig.welcome_message || marker.dataset.welcome || `Hi! I'm the ${businessName} AI assistant. How can I help you today?`,
+      welcome: welcomeMessage,
       title: businessName
     };
 
@@ -976,7 +951,9 @@
         leadForm.style.display = "none";
         inputField.focus();
         
+        // Don't introduce again, just welcome back
         appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
+        hasIntroduced = true; // Mark as introduced
         return;
       }
 
@@ -996,6 +973,9 @@
           leadForm.style.display = "none";
           inputField.focus();
           
+          // Mark as introduced - the welcome message already introduced
+          hasIntroduced = true;
+          
           if (smartSettings?.apollo_active) {
             enrichLeadWithApollo(email, name);
           }
@@ -1010,6 +990,7 @@
             localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
             leadForm.style.display = "none";
             inputField.focus();
+            hasIntroduced = true;
           } else {
             alert("Failed to save your info. Please try again.");
           }
@@ -1225,7 +1206,10 @@
           client_email: userEmail || null,
           is_visitor: true,
           session_id: activeSessionId,
-          conversation_history: conversationHistory.slice(-5) // Send last 5 messages for context
+          conversation_history: conversationHistory.slice(-5), // Send last 5 messages for context
+          business_name: businessName,
+          ai_name: aiName,
+          has_introduced: hasIntroduced // CRITICAL: Tell backend if we've already introduced
         };
 
         if (currentFile) {
@@ -1270,11 +1254,22 @@
             localStorage.setItem(`ai_widget_session_${WIDGET_KEY}`, activeSessionId);
           }
           
-          if (!isLiveMode) {
-            appendMessage(data.reply, "bot");
-            speak(data.reply);
-          } else {
-            speak(data.reply);
+          // Mark as introduced after first response
+          if (!hasIntroduced) {
+            hasIntroduced = true;
+          }
+          
+          messageCount++;
+          
+          // Prevent repetition - don't show if it's the same as last response
+          if (data.reply !== lastResponseText || messageCount === 1) {
+            if (!isLiveMode) {
+              appendMessage(data.reply, "bot");
+              speak(data.reply);
+            } else {
+              speak(data.reply);
+            }
+            lastResponseText = data.reply;
           }
         } else {
           const errorMsg = data.error || "Server returned error";
@@ -1381,6 +1376,49 @@
       window.speechSynthesis.onvoiceschanged = () => {
         console.log("[WIDGET] Voices loaded for speech");
       };
+    }
+  }
+
+  // ===== ENRICH LEAD WITH APOLLO =====
+  async function enrichLeadWithApollo(email, name) {
+    if (!smartSettings?.apollo_active) return null;
+    
+    try {
+      const res = await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, widget_key: WIDGET_KEY })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log("[WIDGET] Apollo enrichment result:", data);
+        return data;
+      }
+    } catch (err) {
+      console.warn("[WIDGET] Apollo enrichment failed:", err);
+    }
+    return null;
+  }
+
+  // ===== SCHEDULE FOLLOW-UP =====
+  async function scheduleFollowUp(email, name) {
+    if (!smartSettings?.followup_active) return;
+    
+    try {
+      await fetch(`${SERVER_URL}/api/public/followup/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          name, 
+          widget_key: WIDGET_KEY,
+          session_id: activeSessionId
+        })
+      });
+      console.log("[WIDGET] Follow-up scheduled for:", email);
+    } catch (err) {
+      console.warn("[WIDGET] Follow-up scheduling failed:", err);
     }
   }
 })();
