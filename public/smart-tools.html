@@ -871,17 +871,16 @@
   <p>&copy; 2026 AI Smart Business Hub | Advanced Agent Control Panel</p>
 </footer>
 
-
-<!-- Load smart-logic.js separately -->
+<!-- Load smart-logic.js -->
 <script src="smart-logic.js"></script>
 
-<!-- Add this script to handle the booking URL specifically -->
+<!-- Comprehensive fix for all tool types -->
 <script>
-// Additional fix for booking URL saving
+// Comprehensive save function for all tool types
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[SMART-TOOLS] Additional fix loaded");
+    console.log("[SMART-TOOLS] Initializing comprehensive tool handlers");
     
-    // Make sure saveSmartTool is globally available
+    // Make saveSmartTool globally available - THIS REPLACES THE OLD ONE
     window.saveSmartTool = function(toolType, event) {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -890,22 +889,98 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const btn = event?.currentTarget || event?.target;
+        const originalText = btn ? btn.innerHTML : '';
+        
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '⏳ Saving...';
         }
         
+        // Collect data based on tool type
         let data = {};
         
-        if (toolType === 'booking') {
-            data = {
-                url: document.getElementById('bookingUrl')?.value || ''
-            };
-            console.log("[BOOKING] Saving URL:", data.url);
+        switch(toolType) {
+            case 'business_type':
+                data = {
+                    business_type: document.getElementById('businessType')?.value || '',
+                    business_description: document.getElementById('businessDescription')?.value || ''
+                };
+                console.log("[BUSINESS] Saving business identity:", data);
+                break;
+                
+            case 'brain':
+                data = {
+                    instructions: document.getElementById('aiInstructions')?.value || '',
+                    temp: document.getElementById('aiTemp')?.value || '0.7',
+                    lang: document.getElementById('aiLang')?.value || 'auto'
+                };
+                console.log("[BRAIN] Saving AI instructions:", data);
+                break;
+                
+            case 'booking':
+                data = {
+                    url: document.getElementById('bookingUrl')?.value || ''
+                };
+                console.log("[BOOKING] Saving URL:", data.url);
+                break;
+                
+            case 'apollo':
+                data = {
+                    apolloKey: document.getElementById('apolloKey')?.value || '',
+                    autoSync: document.getElementById('syncToggle')?.checked || false
+                };
+                console.log("[APOLLO] Saving Apollo settings");
+                break;
+                
+            case 'followup':
+                data = {
+                    enabled: document.getElementById('followupToggle')?.checked || false
+                };
+                console.log("[FOLLOWUP] Saving follow-up settings");
+                break;
+                
+            case 'vision':
+                data = {
+                    enabled: document.getElementById('visionToggle')?.checked || false,
+                    sensitivity: document.getElementById('visionSens')?.value || 'high',
+                    area: document.getElementById('visionArea')?.value || 'all'
+                };
+                console.log("[VISION] Saving vision settings");
+                break;
+                
+            case 'sentiment':
+                data = {
+                    enabled: document.getElementById('sentimentToggle')?.checked || false,
+                    email: document.getElementById('alertEmail')?.value || ''
+                };
+                console.log("[SENTIMENT] Saving sentiment settings");
+                break;
+                
+            case 'handover':
+                data = {
+                    trigger: document.getElementById('handoverTrigger')?.value || 'human'
+                };
+                console.log("[HANDOVER] Saving handover settings");
+                break;
+                
+            case 'webhook':
+                data = {
+                    url: document.getElementById('webhookUrl')?.value || ''
+                };
+                console.log("[WEBHOOK] Saving webhook URL");
+                break;
+                
+            default:
+                console.warn("[SAVE] Unknown tool type:", toolType);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+                return;
         }
         
-        // Call the backend
-        fetch(`${window.BACKEND_URL}/api/smart-hub/save`, {
+        // Send to backend
+        fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/save`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -919,29 +994,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (btn) {
                     btn.innerHTML = '✓ Saved';
                     btn.style.background = '#28a745';
+                    
+                    // Update button text based on tool type
+                    let liveText = '● LIVE';
+                    if (toolType === 'booking') liveText = '● LIVE';
+                    else if (toolType === 'brain') liveText = '● LIVE';
+                    else if (toolType === 'business_type') liveText = '● LIVE';
+                    else liveText = '● LIVE';
+                    
                     setTimeout(() => {
-                        btn.innerHTML = '● LIVE';
+                        btn.innerHTML = liveText;
                         btn.classList.add('btn-live-status');
                         btn.disabled = false;
+                        btn.style.background = '';
                     }, 1000);
                 }
-                alert("Booking URL saved successfully!");
+                
+                // Show appropriate success message
+                const messages = {
+                    'business_type': 'Business identity saved successfully!',
+                    'brain': 'AI knowledge base updated!',
+                    'booking': 'Booking URL saved successfully!',
+                    'apollo': 'Apollo API settings saved!',
+                    'followup': 'Follow-up automation settings saved!',
+                    'vision': 'Vision AI settings updated!',
+                    'sentiment': 'Sentiment alert settings saved!',
+                    'handover': 'Handover rules updated!',
+                    'webhook': 'Webhook URL saved!'
+                };
+                
+                alert(messages[toolType] || 'Settings saved successfully!');
+                
             } else {
                 throw new Error(result.error || "Save failed");
             }
         })
         .catch(err => {
-            console.error("[BOOKING] Error:", err);
+            console.error(`[${toolType}] Error:`, err);
             if (btn) {
                 btn.innerHTML = '❌ Error';
                 btn.style.background = '#dc3545';
                 setTimeout(() => {
-                    btn.innerHTML = 'Sync Booking Logic';
+                    btn.innerHTML = originalText;
                     btn.style.background = '';
                     btn.disabled = false;
                 }, 2000);
             }
-            alert("Failed to save: " + err.message);
+            alert(`Failed to save: ${err.message}`);
         });
     };
     
@@ -950,10 +1049,55 @@ document.addEventListener('DOMContentLoaded', function() {
     if (token) {
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            document.getElementById('userEmail').textContent = payload.email || 'admin@business.io';
-        } catch (e) {}
+            const userEmailEl = document.getElementById('userEmail');
+            if (userEmailEl) {
+                userEmailEl.textContent = payload.email || 'admin@business.io';
+            }
+        } catch (e) {
+            console.warn("Could not parse token", e);
+        }
     }
+    
+    // Team invite function
+    window.openInviteModal = function() {
+        const email = prompt("Enter the email address of the team member:");
+        if (email && email.includes('@')) {
+            const table = document.getElementById('teamTableBody');
+            if(!table) return;
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+                <td><strong>New Member</strong></td>
+                <td>${email}</td>
+                <td><span class="role-tag tag-staff">Staff</span></td>
+                <td><span style="color: orange">● Pending</span></td>
+                <td><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer;">Remove</button></td>
+            `;
+            alert("Invitation sent to " + email);
+        }
+    };
+    
+    // Export function
+    window.exportBusinessData = function() {
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "Exporting...";
+        btn.disabled = true;
+        
+        setTimeout(() => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorage));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "business_export.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            
+            btn.innerHTML = "Download Report";
+            btn.disabled = false;
+        }, 1000);
+    };
 });
-</script
+</script>
+
 </body>
 </html>
