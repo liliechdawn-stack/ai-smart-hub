@@ -1,8 +1,9 @@
 // smart-logic.js - Smart Business Hub - AI Logic Controller (FULLY FIXED)
 // Unlocks tools for ANY Pro / Enterprise / Agency subscriber
 // Saves & loads settings to/from real backend
-// LIVE button stays "● LIVE" after activation (persists on refresh)
+// LIVE button stays "● LIVE" after activation (persists on refresh AND logout)
 // Added Business Identity support with proper unlocking
+// Tool states now persist in database and localStorage
 
 // Ensure BACKEND_URL is available
 if (typeof window.BACKEND_URL === 'undefined') {
@@ -14,6 +15,9 @@ const API_BASE = window.BACKEND_URL;
 
 let CURRENT_USER_PLAN = localStorage.getItem('currentPlan') || 'free';
 let CURRENT_USER_TOKEN = localStorage.getItem('token');
+
+// Tool state management - persists across sessions
+let TOOL_STATES = JSON.parse(localStorage.getItem('toolStates') || '{}');
 
 // Tool name mapping for user-friendly messages
 const TOOL_NAMES = {
@@ -29,19 +33,75 @@ const TOOL_NAMES = {
     'business_type': 'Business Identity'
 };
 
+// Tool to card ID mapping
+const TOOL_CARD_MAP = {
+    'brain': 'card-brain',
+    'booking': 'card-booking',
+    'sentiment': 'card-sentiment',
+    'handover': 'card-handover',
+    'webhook': 'card-webhook',
+    'apollo': 'card-apollo',
+    'enrichment': 'card-apollo',
+    'vision': 'card-vision',
+    'followup': 'card-followup',
+    'business_type': 'card-business-type'
+};
+
 // 1. Load on page ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Smart Hub Logic Initialized - Fetching real plan...");
     injectLiveStatusCSS();
     loadUserPlanAndUnlock();
     wireSmartToolActivateButtons();
-    wireSaveButtons(); // New function to handle save buttons
+    wireSaveButtons();
     updateUserEmail();
+    loadToolStatesFromStorage();
 });
+
+// Load tool states from localStorage and apply to UI
+function loadToolStatesFromStorage() {
+    console.log("[TOOL] Loading tool states from localStorage:", TOOL_STATES);
+    
+    Object.keys(TOOL_STATES).forEach(toolType => {
+        if (TOOL_STATES[toolType]) {
+            const cardId = TOOL_CARD_MAP[toolType];
+            if (cardId) {
+                const card = document.getElementById(cardId);
+                if (card) {
+                    const btn = card.querySelector('.btn-save');
+                    if (btn) {
+                        btn.innerText = "● LIVE";
+                        btn.classList.add('btn-live-status');
+                        console.log(`[TOOL] Applied LIVE state to ${toolType}`);
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Save tool state to localStorage and optionally to backend
+function saveToolState(toolType, isActive) {
+    TOOL_STATES[toolType] = isActive;
+    localStorage.setItem('toolStates', JSON.stringify(TOOL_STATES));
+    console.log(`[TOOL] State saved for ${toolType}: ${isActive ? 'LIVE' : 'inactive'}`);
+    
+    // Also save to backend if token exists
+    const token = localStorage.getItem('token');
+    if (token) {
+        fetch(`${API_BASE}/api/smart-hub/tool-state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ toolType, isActive })
+        }).catch(err => console.warn("[TOOL] Failed to sync state to backend:", err));
+    }
+}
 
 // Wire all save buttons
 function wireSaveButtons() {
-    // Get all buttons with onclick="saveSmartTool(...)" and let them work naturally
     console.log("[WIRE] Save buttons ready");
 }
 
@@ -72,6 +132,13 @@ function injectLiveStatusCSS() {
             border: none !important;
             font-weight: bold;
             animation: pulse-live 2s infinite;
+        }
+        .btn-inactive {
+            background: #6c757d !important;
+            color: white !important;
+        }
+        .btn-inactive:hover {
+            background: #5a6268 !important;
         }
         @keyframes pulse-live {
             0% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0.7); }
@@ -274,10 +341,13 @@ async function runSmartTool(toolType, btn) {
             throw new Error(result?.error || "Tool execution failed");
         }
 
-        // SUCCESS: Make button LIVE permanently
+        // SUCCESS: Make button LIVE permanently and save state
         btn.innerText = "● LIVE";
         btn.classList.add('btn-live-status');
         btn.disabled = false;
+        
+        // Save tool state
+        saveToolState(toolType, true);
 
         const toolName = TOOL_NAMES[toolType] || toolType;
         if (result && result.output) {
@@ -308,6 +378,14 @@ async function saveSmartTool(toolType, event) {
     const originalText = btn?.innerText || '';
     const toolName = TOOL_NAMES[toolType] || toolType;
 
+    // Check if tool is already LIVE - for deactivation
+    if (TOOL_STATES[toolType] === true) {
+        if (confirm(`Are you sure you want to deactivate ${toolName}?`)) {
+            deactivateTool(toolType, btn);
+        }
+        return;
+    }
+
     let data = {};
 
     try {
@@ -337,7 +415,6 @@ async function saveSmartTool(toolType, event) {
                 break;
             case 'enrichment':
             case 'apollo':
-                // Check if syncToggle exists
                 const syncToggle = document.getElementById('syncToggle');
                 data = { 
                     apolloKey: document.getElementById('apolloKey')?.value || '',
@@ -345,7 +422,6 @@ async function saveSmartTool(toolType, event) {
                 };
                 break;
             case 'vision':
-                // Check if vision elements exist
                 const visionSens = document.getElementById('visionSens');
                 const visionArea = document.getElementById('visionArea');
                 data = { 
@@ -396,33 +472,37 @@ async function saveSmartTool(toolType, event) {
         if (response.ok && result.success) {
             console.log(`[SAVE] Success for ${toolType}`);
             
-            // Show specific success message with tool name
+            // Save settings to localStorage
+            localStorage.setItem(`ai_settings_${toolType}`, JSON.stringify(data));
+            
+            // Show success message
             if (btn) {
                 btn.innerText = `✓ Saved`;
                 btn.style.background = "#28a745";
             }
             
-            // Show alert with tool name
             alert(`${toolName} has been successfully saved!`);
             
-            localStorage.setItem(`ai_settings_${toolType}`, JSON.stringify(data));
+            // Activate tool and save state
+            saveToolState(toolType, true);
             
-            // Re-run tool to activate LIVE status (for tools that support it)
+            // Update button to LIVE
+            setTimeout(() => {
+                if (btn) {
+                    btn.innerText = "● LIVE";
+                    btn.classList.add('btn-live-status');
+                    btn.style.background = "";
+                    btn.disabled = false;
+                }
+            }, 1000);
+            
+            // Re-run tool to test (for tools that support it)
             if (toolType !== 'business_type') {
                 setTimeout(() => {
                     runSmartTool(toolType, btn);
-                }, 500);
-            } else {
-                // For business type, just show LIVE status without calling test-tool
-                setTimeout(() => {
-                    if (btn) {
-                        btn.innerText = "● LIVE";
-                        btn.classList.add('btn-live-status');
-                        btn.style.background = "";
-                        btn.disabled = false;
-                    }
-                }, 1000);
+                }, 1500);
             }
+            
         } else {
             const errorMsg = result.error || "Server rejected update";
             console.error(`[SAVE] Failed for ${toolType}:`, errorMsg);
@@ -443,6 +523,73 @@ async function saveSmartTool(toolType, event) {
                 btn.style.background = "";
             }
         }, 2000);
+    }
+}
+
+// Deactivate tool
+async function deactivateTool(toolType, btn) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Please log in first");
+        return;
+    }
+
+    const originalText = btn?.innerText || 'Activate';
+    const toolName = TOOL_NAMES[toolType] || toolType;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Deactivating...";
+    }
+
+    try {
+        // Send deactivation to backend
+        const response = await fetch(`${API_BASE}/api/smart-hub/deactivate`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ toolType })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Update tool state
+            saveToolState(toolType, false);
+            
+            if (btn) {
+                btn.innerText = "✗ Deactivated";
+                btn.style.background = "#6c757d";
+                btn.classList.remove('btn-live-status');
+                btn.classList.add('btn-inactive');
+                
+                setTimeout(() => {
+                    btn.innerText = "Activate";
+                    btn.disabled = false;
+                    btn.style.background = "";
+                }, 1500);
+            }
+            
+            alert(`${toolName} has been deactivated.`);
+            
+        } else {
+            throw new Error(result.error || "Deactivation failed");
+        }
+    } catch (err) {
+        console.error("[DEACTIVATE] Error:", err);
+        if (btn) {
+            btn.innerText = "❌ Error";
+            btn.style.background = "#e74c3c";
+            setTimeout(() => {
+                btn.innerText = "● LIVE";
+                btn.classList.add('btn-live-status');
+                btn.disabled = false;
+                btn.style.background = "";
+            }, 2000);
+        }
+        alert(`Failed to deactivate: ${err.message}`);
     }
 }
 
@@ -505,7 +652,7 @@ async function loadSavedSettingsFromServer() {
             }
         }
 
-        // Re-apply LIVE button status - includes all cards including business type
+        // Re-apply LIVE button status from database
         const activeMap = {
             brain: { active: data.brain_active === 1, cardId: 'card-brain' },
             booking: { active: data.booking_active === 1, cardId: 'card-booking' },
@@ -515,7 +662,7 @@ async function loadSavedSettingsFromServer() {
             enrichment: { active: data.apollo_active === 1, cardId: 'card-apollo' },
             vision: { active: data.vision_active === 1, cardId: 'card-vision' },
             followup: { active: data.followup_active === 1, cardId: 'card-followup' },
-            business_type: { active: true, cardId: 'card-business-type' } // Always show LIVE for business type if data exists
+            business_type: { active: data.business_type ? true : false, cardId: 'card-business-type' }
         };
 
         Object.entries(activeMap).forEach(([tool, { active, cardId }]) => {
@@ -528,6 +675,9 @@ async function loadSavedSettingsFromServer() {
                         btn.innerText = "● LIVE";
                         btn.classList.add('btn-live-status');
                         btn.disabled = false;
+                        
+                        // Save to localStorage state
+                        saveToolState(tool, true);
                     }
                 }
             }
@@ -572,6 +722,9 @@ function loadSavedSettingsFromLocal() {
             }
         }
     });
+    
+    // Apply saved tool states from localStorage
+    loadToolStatesFromStorage();
 }
 
 // 6. Team Management
@@ -601,7 +754,13 @@ function exportBusinessData() {
     
     setTimeout(() => {
         try {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorage));
+            // Include tool states in export
+            const exportData = {
+                localStorage: localStorage,
+                toolStates: TOOL_STATES,
+                timestamp: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", "business_export.json");
@@ -620,7 +779,6 @@ function exportBusinessData() {
 
 // 8. Initialize any additional elements
 function initializeBusinessType() {
-    // This ensures business type is properly initialized
     console.log("[INIT] Business Identity section ready");
 }
 
@@ -629,6 +787,7 @@ window.saveSmartTool = saveSmartTool;
 window.openInviteModal = openInviteModal;
 window.exportBusinessData = exportBusinessData;
 window.runSmartTool = runSmartTool;
+window.deactivateTool = deactivateTool;
 
 // Call initialize on load
 document.addEventListener('DOMContentLoaded', initializeBusinessType);
