@@ -1,1214 +1,1616 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="js/master-fix.js"></script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Customer Insights & Problem Solver | AI Smart Hub</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-   <script src="js/master-fix.js"></script>
-    <script src="js/fix-all-html.js"></script>  <!-- ADD THIS LINE -->
     <meta charset="UTF-8" />
-  <style>
-    :root {
-      --primary: #d4af37;
-      --primary-hover: #b8962e;
-      --dark: #1a1a1a;
-      --dark-accent: #2d2d2d;
-      --light: #f8f9fa;
-      --success: #28a745;
-      --danger: #dc3545;
-      --warning: #f59e0b;
-      --info: #3b82f6;
-      --border-color: #e0e0e0;
-      --shadow: 0 8px 25px rgba(0,0,0,0.06);
-      --card-radius: 16px;
-      --transition: 0.3s ease;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f8fafc;
-      color: var(--dark);
-      line-height: 1.6;
-    }
-
-    nav {
-      background: white;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    }
-
-    .nav-container {
-      max-width: 1280px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-    }
-
-    .nav-logo {
-      font-weight: 700;
-      font-size: 1.35rem;
-      color: var(--dark);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 28px;
-      align-items: center;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      color: #555;
-      font-size: 0.95rem;
-      font-weight: 500;
-      transition: var(--transition);
-    }
-
-    .nav-links a:hover,
-    .active-nav {
-      color: var(--primary);
-    }
-
-    .back-btn {
-      background: var(--dark);
-      color: white !important;
-      padding: 10px 22px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .hero {
-      background: white;
-      padding: 80px 24px;
-      text-align: center;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .hero h1 {
-      font-size: 2.6rem;
-      margin-bottom: 16px;
-      font-weight: 800;
-      letter-spacing: -1px;
-    }
-
-    .hero p {
-      color: #555;
-      max-width: 720px;
-      margin: 0 auto;
-      font-size: 1.1rem;
-    }
-
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 40px 24px 100px;
-    }
-
-    .section-header {
-      margin: 50px 0 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .section-header h2 {
-      font-size: 1.55rem;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .section-line {
-      flex: 1;
-      height: 1px;
-      background: #e0e0e0;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-      gap: 28px;
-    }
-
-    .tool-card {
-      background: white;
-      border-radius: var(--card-radius);
-      padding: 32px;
-      border: 1px solid var(--border-color);
-      transition: var(--transition);
-      box-shadow: var(--shadow);
-    }
-
-    .tool-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.1);
-    }
-
-    .wide-card {
-      grid-column: 1 / -1;
-    }
-
-    .icon-box {
-      width: 52px;
-      height: 52px;
-      background: #fff9e6;
-      color: var(--primary);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-
-    h3 {
-      font-size: 1.28rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .tool-description {
-      color: #666;
-      font-size: 0.94rem;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-
-    .locked-card {
-      position: relative;
-    }
-
-    .lock-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0.94);
-      backdrop-filter: blur(12px);
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 40px;
-      border-radius: var(--card-radius);
-    }
-
-    .upgrade-btn {
-      background: var(--dark);
-      color: white;
-      border: none;
-      padding: 14px 32px;
-      border-radius: 10px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .upgrade-btn:hover {
-      background: var(--primary);
-    }
-
-    .input-group {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-      flex-wrap: wrap;
-    }
-
-    label {
-      display: block;
-      font-size: 0.84rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: var(--dark);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 1rem;
-      transition: var(--transition);
-    }
-
-    input:focus, textarea:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
-    }
-
-    .btn-save, .search-btn, .btn-secondary, .btn-primary {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px 24px;
-      border-radius: 10px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .btn-save:hover, .search-btn:hover, .btn-secondary:hover, .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-    }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Insights & Problem Solver | AI Smart Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    .btn-secondary:hover {
-      background: #5a6268;
-    }
+    <!-- Load scripts in correct order -->
+    <script src="js/config.js"></script>
+    <script src="js/master-fix.js"></script>
+    <script src="js/fix-all-html.js"></script>
     
-    .btn-primary {
-      background: var(--primary);
-    }
-    
-    .btn-danger {
-      background: var(--danger);
-    }
-    
-    .btn-danger:hover {
-      background: #b02a37;
-    }
-    
-    .btn-info {
-      background: var(--info);
-    }
-    
-    .btn-info:hover {
-      background: #2563eb;
-    }
+    <style>
+        /* ========================================
+           PREMIUM DESIGN TOKENS - White & Gold Theme
+           ========================================
+        */
+        :root {
+            --primary: #d4af37;
+            --primary-light: #f5e7b2;
+            --primary-dark: #b8962e;
+            --primary-gradient: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+            --primary-glow: 0 0 20px rgba(212, 175, 55, 0.3);
+            
+            --dark: #1a1a1a;
+            --dark-accent: #2d2d2d;
+            --light: #ffffff;
+            --light-gray: #f8fafc;
+            --medium-gray: #e9ecef;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --info: #3b82f6;
+            --info-light: #dbeafe;
+            
+            --border-color: rgba(0,0,0,0.08);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
+            --shadow-gold: 0 10px 30px rgba(212, 175, 55, 0.2);
+            
+            --card-radius: 24px;
+            --button-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-    .search-btn {
-      padding: 12px 24px;
-      white-space: nowrap;
-    }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text-primary); 
+            line-height: 1.6; 
+            min-height: 100vh;
+        }
 
-    .data-table-container {
-      overflow-x: auto;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      margin-top: 16px;
-    }
+        /* ========================================
+           PREMIUM NAVIGATION
+           ========================================
+        */
+        nav {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .nav-container { 
+            max-width: 1440px; 
+            margin: 0 auto; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 32px; 
+        }
+        
+        .nav-logo { 
+            font-weight: 800; 
+            font-size: 1.5rem; 
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            letter-spacing: -0.5px;
+        }
+        
+        .nav-logo i {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.8rem;
+        }
+        
+        .nav-links { 
+            display: flex; 
+            gap: 32px; 
+            align-items: center; 
+        }
+        
+        .nav-links a { 
+            text-decoration: none; 
+            color: var(--text-secondary); 
+            font-size: 0.95rem; 
+            font-weight: 600; 
+            transition: var(--transition); 
+            position: relative;
+            padding: 5px 0;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-gradient);
+            transition: var(--transition);
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-dark);
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-links a.active-nav { 
+            color: var(--primary-dark); 
+            font-weight: 700;
+        }
+        
+        .nav-links a.active-nav::after {
+            width: 100%;
+        }
+        
+        .back-btn { 
+            background: var(--dark); 
+            color: white !important; 
+            padding: 10px 24px !important; 
+            border-radius: 40px; 
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .back-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .back-btn::after {
+            display: none;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+        /* ========================================
+           PREMIUM HERO SECTION
+           ========================================
+        */
+        .hero { 
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            padding: 80px 32px; 
+            text-align: center; 
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .hero h1 { 
+            font-size: 3.2rem; 
+            margin-bottom: 16px; 
+            letter-spacing: -1px; 
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p { 
+            color: var(--text-secondary); 
+            max-width: 720px; 
+            margin: 0 auto; 
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
 
-    th, td {
-      padding: 14px 16px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color);
-    }
+        /* ========================================
+           PREMIUM SECTION HEADERS
+           ========================================
+        */
+        .section-header { 
+            max-width: 1440px; 
+            margin: 60px auto 30px; 
+            padding: 0 32px;
+            display: flex; 
+            align-items: center; 
+            gap: 20px;
+        }
+        
+        .section-header h2 { 
+            font-size: 2rem; 
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px; 
+            white-space: nowrap;
+        }
+        
+        .section-line { 
+            flex-grow: 1; 
+            height: 2px; 
+            background: linear-gradient(90deg, var(--primary) 0%, transparent 100%);
+            border-radius: 2px;
+        }
 
-    th {
-      background: #f9fafb;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 0.82rem;
-      color: #555;
-      cursor: pointer;
-    }
-    
-    th:hover {
-      background: #f1f3f4;
-    }
+        /* ========================================
+           PREMIUM CARD LAYOUT
+           ========================================
+        */
+        .container { 
+            max-width: 1440px; 
+            margin: 0 auto; 
+            padding: 0 32px 80px; 
+        }
 
-    .status-badge {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 700;
-    }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); 
+            gap: 30px; 
+        }
 
-    .badge-high { background: #fee2e2; color: #b91c1c; }
-    .badge-med  { background: #fef3c7; color: #b45309; }
-    .badge-low  { background: #d1fae5; color: #047857; }
-    .badge-info { background: #dbeafe; color: #1e40af; }
-    .badge-success { background: #d1fae5; color: #047857; }
-    .badge-warning { background: #fef3c7; color: #b45309; }
+        .tool-card {
+            background: white;
+            border-radius: var(--card-radius);
+            padding: 32px;
+            border: 1px solid rgba(212,175,55,0.15);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(10px);
+        }
+        
+        .tool-card:hover:not(.locked-card) { 
+            transform: translateY(-4px); 
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg), var(--shadow-gold);
+        }
 
-    .ai-chat {
-      height: 340px;
-      overflow-y: auto;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 16px;
-      background: white;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-    }
+        .wide-card { 
+            grid-column: 1 / -1; 
+        }
 
-    .message {
-      margin: 10px 0;
-      padding: 10px 14px;
-      border-radius: 12px;
-      max-width: 84%;
-      line-height: 1.45;
-      font-size: 0.96rem;
-    }
+        .icon-box {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            color: var(--primary-dark);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(212,175,55,0.15);
+        }
 
-    .message.user {
-      background: var(--primary);
-      color: white;
-      margin-left: auto;
-      border-bottom-right-radius: 4px;
-    }
+        h3 { 
+            margin-bottom: 12px; 
+            font-size: 1.3rem; 
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tool-description { 
+            color: var(--text-secondary); 
+            font-size: 0.95rem; 
+            margin-bottom: 24px; 
+            line-height: 1.7;
+        }
 
-    .message.bot {
-      background: #f8fafc;
-      border-bottom-left-radius: 4px;
-    }
+        /* ========================================
+           PREMIUM LOCK SYSTEM
+           ========================================
+        */
+        .locked-card { 
+            position: relative; 
+            overflow: hidden; 
+            border-color: var(--border-color) !important; 
+            opacity: 0.9;
+        }
+        
+        .lock-overlay {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(255, 255, 255, 0.97); 
+            backdrop-filter: blur(8px);
+            z-index: 10; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            padding: 40px;
+            border-radius: var(--card-radius);
+        }
+        
+        .lock-overlay i { 
+            font-size: 3.5rem; 
+            color: var(--primary);
+            margin-bottom: 20px; 
+        }
+        
+        .lock-overlay h3 { 
+            font-size: 2rem; 
+            color: var(--text-primary); 
+            margin-bottom: 15px; 
+        }
+        
+        .lock-overlay p { 
+            color: var(--text-secondary); 
+            margin-bottom: 25px; 
+            font-size: 1rem; 
+            max-width: 300px;
+        }
 
-    .ai-typing {
-      color: #888;
-      font-style: italic;
-      padding: 12px 0;
-      text-align: center;
-    }
+        .upgrade-btn { 
+            background: var(--primary-gradient); 
+            color: white; 
+            border: none; 
+            padding: 14px 40px; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 1rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-gold);
+            width: auto;
+            min-width: 200px;
+        }
+        
+        .upgrade-btn:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+        }
 
-    .live-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--success);
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-left: 12px;
-    }
+        /* ========================================
+           PREMIUM FORM ELEMENTS
+           ========================================
+        */
+        .input-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .input-group > * {
+            flex: 1 1 200px;
+        }
+        
+        label { 
+            display: block; 
+            font-size: 0.8rem; 
+            font-weight: 700; 
+            margin-bottom: 8px; 
+            color: var(--text-secondary); 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input, select, textarea { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 2px solid var(--medium-gray);
+            border-radius: 12px; 
+            font-family: inherit; 
+            font-size: 0.95rem; 
+            background: white;
+            transition: var(--transition);
+            color: var(--text-primary);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+        }
 
-    .pulse-dot {
-      width: 9px;
-      height: 9px;
-      background: var(--success);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+        /* ========================================
+           PREMIUM BUTTON STYLES
+           ========================================
+        */
+        .btn-primary, .btn-save, .search-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before, .btn-save::before, .search-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover, .btn-save:hover, .search-btn:hover {
+            background: linear-gradient(135deg, #b8962e 0%, #d4af37 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+        }
+        
+        .btn-primary:hover::before, .btn-save:hover::before, .search-btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 2px solid var(--medium-gray);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+        
+        .btn-info {
+            background: var(--info);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-info:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
 
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.6); }
-      70% { box-shadow: 0 0 0 12px rgba(40,167,69,0); }
-      100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
-    }
+        /* ========================================
+           PREMIUM DATA TABLE
+           ========================================
+        */
+        .data-table-container {
+            overflow-x: auto;
+            border: 1px solid var(--medium-gray);
+            border-radius: 16px;
+            margin-top: 20px;
+            background: white;
+        }
 
-    footer {
-      text-align: center;
-      padding: 60px 20px;
-      color: #777;
-      font-size: 0.92rem;
-      border-top: 1px solid var(--border-color);
-      background: white;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-    .widget-trigger-btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px 32px;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin: 20px auto;
-      display: block;
-      transition: all 0.3s;
-    }
+        th {
+            background: #f8fafc;
+            padding: 18px 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--medium-gray);
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        th:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
 
-    .widget-trigger-btn:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
-    }
+        td {
+            padding: 18px 20px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--medium-gray);
+            color: var(--text-primary);
+        }
 
-    .hidden { display: none !important; }
-    
-    .loading-spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .error-message {
-      background: #fee2e2;
-      color: #b91c1c;
-      padding: 12px;
-      border-radius: 8px;
-      margin: 10px 0;
-    }
-    
-    .success-message {
-      background: #d1fae5;
-      color: #047857;
-      padding: 12px;
-      border-radius: 8px;
-      margin: 10px 0;
-    }
-    
-    /* Toggle Switch */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 24px;
-    }
-    
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 34px;
-    }
-    
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    
-    input:checked + .slider {
-      background-color: var(--primary);
-    }
-    
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    
-    /* Problem Tabs */
-    .problem-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    
-    .problem-tab {
-      padding: 10px 20px;
-      background: #f8f9fa;
-      border: 1px solid var(--border-color);
-      border-radius: 30px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: var(--transition);
-    }
-    
-    .problem-tab:hover {
-      background: var(--primary);
-      color: white;
-    }
-    
-    .problem-tab.active {
-      background: var(--primary);
-      color: white;
-    }
-    
-    /* Metric Cards */
-    .metric-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin: 20px 0;
-    }
-    
-    .metric-card {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-    }
-    
-    .metric-value {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--primary);
-    }
-    
-    .metric-label {
-      font-size: 0.9rem;
-      color: #666;
-    }
-    
-    /* Email Broadcast */
-    .email-broadcast {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 40px;
-      border-radius: var(--card-radius);
-      margin: 40px 0;
-    }
-    
-    .email-broadcast h3 {
-      color: white;
-      font-size: 1.8rem;
-    }
-    
-    .email-stats {
-      display: flex;
-      gap: 30px;
-      margin: 20px 0;
-    }
-    
-    .email-stat {
-      text-align: center;
-    }
-    
-    .email-stat-number {
-      font-size: 2rem;
-      font-weight: 800;
-    }
-    
-    .email-stat-label {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-    
-    .template-preview {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px 0;
-      color: var(--dark);
-    }
-    
-    /* Response Templates */
-    .response-templates {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 15px;
-      margin: 20px 0;
-    }
-    
-    .template-item {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-    
-    .template-item:hover {
-      background: var(--primary);
-      color: white;
-    }
-  </style>
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* ========================================
+           PREMIUM STATUS BADGES
+           ========================================
+        */
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-high {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        .badge-med {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .badge-low {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        
+        .badge-info {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--success-light);
+            color: var(--success);
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 15px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* ========================================
+           PREMIUM AI CHAT
+           ========================================
+        */
+        .ai-chat {
+            height: 340px;
+            overflow-y: auto;
+            border: 1px solid var(--medium-gray);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.user {
+            background: var(--primary-gradient);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            background: #f1f5f9;
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .ai-typing {
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 15px 0;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ========================================
+           PREMIUM METRIC CARDS
+           ========================================
+        */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--medium-gray);
+            transition: var(--transition);
+        }
+
+        .metric-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ========================================
+           PREMIUM PROBLEM TABS
+           ========================================
+        */
+        .problem-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .problem-tab {
+            padding: 10px 22px;
+            background: white;
+            border: 1px solid var(--medium-gray);
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .problem-tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .problem-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* ========================================
+           PREMIUM EMAIL BROADCAST
+           ========================================
+        */
+        .email-broadcast {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 40px;
+            border-radius: var(--card-radius);
+            margin: 40px 0;
+        }
+
+        .email-stats {
+            display: flex;
+            gap: 30px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .email-stat {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 20px 30px;
+            border-radius: 16px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .email-stat-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .email-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .response-templates {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .template-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .template-item:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .template-preview {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: var(--text-primary);
+        }
+
+        /* ========================================
+           PREMIUM LOADING SPINNER
+           ========================================
+        */
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========================================
+           PREMIUM MESSAGES
+           ========================================
+        */
+        .error-message {
+            background: var(--danger-light);
+            color: var(--danger);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-message {
+            background: var(--success-light);
+            color: var(--success);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ========================================
+           PREMIUM TOGGLE SWITCH
+           ========================================
+        */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--medium-gray);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        input:checked + .slider {
+            background: var(--primary-gradient);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* ========================================
+           PREMIUM FOOTER
+           ========================================
+        */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            border-top: 1px solid var(--medium-gray);
+            background: white;
+            margin-top: 40px;
+        }
+
+        /* ========================================
+           UTILITY CLASSES
+           ========================================
+        */
+        .hidden { display: none !important; }
+        
+        .text-center { text-align: center; }
+        
+        .mt-4 { margin-top: 30px; }
+        
+        .mb-2 { margin-bottom: 15px; }
+    </style>
 </head>
 <body>
 
 <nav>
-  <div class="nav-container">
-    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
-    <div class="nav-links">
-      <a href="index.html">Dashboard</a>
-      <a href="smart-tools.html">AI Tools</a>
-      <a href="customer-insights.html" class="active-nav">Customer Insights</a>
-      <a href="team.html">Team</a>
-      <a href="index.html" class="back-btn">Exit Center</a>
+    <div class="nav-container">
+        <a href="dashboard.html" class="nav-logo">
+            <i class="fas fa-robot"></i>
+            AI Smart Hub
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="smart-tools.html">AI Tools</a>
+            <a href="customer-insights.html" class="active-nav">Customer Insights</a>
+            <a href="team.html">Team</a>
+            <a href="dashboard.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Exit Center
+            </a>
+        </div>
     </div>
-  </div>
 </nav>
 
 <div class="hero">
-  <h1>Customer Insights & Problem Solver</h1>
-  <p>Real-time visibility into customer issues — powered by Cloudflare AI (fast summaries, fixes, churn prediction & alerts).</p>
+    <h1>Customer Insights & Problem Solver</h1>
+    <p>Real-time visibility into customer issues — powered by Cloudflare AI with fast summaries, fixes, churn prediction, and instant alerts.</p>
 </div>
 
 <div class="container">
 
-  <!-- Plan Lock Overlay -->
-  <div id="plan-lock" class="tool-card locked-card">
-    <div class="lock-overlay">
-      <h3>Pro or Agency Plan Required</h3>
-      <p>Upgrade to unlock real-time customer intelligence, AI problem solving, predictive analytics, and team tools.</p>
-      <button class="upgrade-btn" onclick="window.location.href='pricing.html'">Upgrade Now</button>
-    </div>
-  </div>
-
-  <div id="main-content" class="hidden">
-
-    <!-- ===== CUSTOMER SEARCH SECTION ===== -->
-    <div class="section-header">
-      <h2>🔍 Customer Search & Filters</h2>
-      <div class="section-line"></div>
+    <!-- Plan Lock Overlay -->
+    <div id="plan-lock" class="tool-card locked-card">
+        <div class="lock-overlay">
+            <i class="fas fa-crown"></i>
+            <h3>Pro or Agency Plan Required</h3>
+            <p>Upgrade to unlock real-time customer intelligence, AI problem solving, predictive analytics, and team collaboration tools.</p>
+            <button class="upgrade-btn" onclick="window.location.href='pricing.html'">Upgrade Now</button>
+        </div>
     </div>
 
-    <div class="tool-card">
-      <div class="input-group">
-        <div style="flex:2;">
-          <label for="customer-search">Search Customers</label>
-          <input type="text" id="customer-search" placeholder="Type name or email to filter..." oninput="searchCustomers()" />
+    <div id="main-content" class="hidden">
+
+        <!-- ===== CUSTOMER SEARCH SECTION ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-search" style="color: var(--primary); margin-right: 10px;"></i> Customer Search & Filters</h2>
+            <div class="section-line"></div>
         </div>
-        <div style="flex:1;">
-          <label for="sentiment-filter">Filter by Sentiment</label>
-          <select id="sentiment-filter" onchange="applyFilters()">
-            <option value="all">All Sentiments</option>
-            <option value="positive">Positive Only</option>
-            <option value="negative">Negative Only</option>
-            <option value="neutral">Neutral Only</option>
-          </select>
+
+        <div class="tool-card">
+            <div class="input-group">
+                <div>
+                    <label><i class="fas fa-user" style="margin-right: 5px;"></i> Search Customers</label>
+                    <input type="text" id="customer-search" placeholder="Type name or email to filter..." oninput="searchCustomers()" />
+                </div>
+                <div>
+                    <label><i class="fas fa-smile" style="margin-right: 5px;"></i> Filter by Sentiment</label>
+                    <select id="sentiment-filter" onchange="applyFilters()">
+                        <option value="all">All Sentiments</option>
+                        <option value="positive">Positive Only</option>
+                        <option value="negative">Negative Only</option>
+                        <option value="neutral">Neutral Only</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button class="btn-primary" onclick="applyFilters()" style="width: 100%;">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <div>
+                    <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date From</label>
+                    <input type="date" id="date-from" onchange="applyFilters()">
+                </div>
+                <div>
+                    <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date To</label>
+                    <input type="date" id="date-to" onchange="applyFilters()">
+                </div>
+                <div>
+                    <label><i class="fas fa-tag" style="margin-right: 5px;"></i> Filter by Problem</label>
+                    <select id="problem-filter" onchange="applyFilters()">
+                        <option value="all">All Problems</option>
+                        <option value="delivery">Delivery Issues</option>
+                        <option value="quality">Product Quality</option>
+                        <option value="pricing">Pricing Concerns</option>
+                        <option value="support">Customer Support</option>
+                        <option value="refund">Refund Requests</option>
+                        <option value="ux">UX/Confusion</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button class="btn-secondary" onclick="resetFilters()" style="width: 100%;">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </div>
         </div>
-        <button class="search-btn" onclick="applyFilters()" style="align-self:flex-end;">Apply Filters</button>
-      </div>
-      <div class="input-group">
-        <div style="flex:1;">
-          <label for="date-from">Date From</label>
-          <input type="date" id="date-from" onchange="applyFilters()">
+
+        <!-- ===== CUSTOMER LIST SECTION ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-users" style="color: var(--primary); margin-right: 10px;"></i> Customer List & Issues <span class="live-indicator"><span class="pulse-dot"></span>LIVE</span></h2>
+            <div class="section-line"></div>
         </div>
-        <div style="flex:1;">
-          <label for="date-to">Date To</label>
-          <input type="date" id="date-to" onchange="applyFilters()">
+
+        <div class="wide-card tool-card">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                    <h3>All Customers & Detected Problems</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <span id="customer-count" style="background: var(--primary-gradient); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
+                        <span id="problem-count" style="background: var(--info); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
+                    </div>
+                </div>
+                <p class="tool-description">Real-time overview — sorted by highest churn risk first. Click column headers to sort.</p>
+                
+                <div class="data-table-container">
+                    <table class="customer-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('name')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Name</th>
+                                <th onclick="sortTable('email')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Email</th>
+                                <th onclick="sortTable('messages')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Messages / Sentiment</th>
+                                <th onclick="sortTable('risk')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Churn Risk</th>
+                                <th>Problem Tags</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-table-body">
+                            <tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin: 0 auto;"></div><br>Loading customer data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        <div style="flex:1;">
-          <label for="problem-filter">Filter by Problem</label>
-          <select id="problem-filter" onchange="applyFilters()">
-            <option value="all">All Problems</option>
-            <option value="delivery">Delivery Issues</option>
-            <option value="quality">Product Quality</option>
-            <option value="pricing">Pricing Concerns</option>
-            <option value="support">Customer Support</option>
-            <option value="refund">Refund Requests</option>
-            <option value="ux">UX/Confusion</option>
-          </select>
+
+        <!-- ===== AI WIDGET PREVIEW ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-robot" style="color: var(--primary); margin-right: 10px;"></i> Business AI Widget (Live Preview)</h2>
+            <div class="section-line"></div>
         </div>
-        <button class="btn-secondary" onclick="resetFilters()" style="align-self:flex-end;">Reset Filters</button>
-      </div>
+
+        <div class="wide-card tool-card" style="text-align:center;">
+            <p class="tool-description">Click below to preview how your customers see the AI widget — it knows your full business, all leads, detected problems, churn risks, and more.</p>
+            <button class="btn-primary" onclick="showAIWidget()" style="margin: 0 auto; padding: 16px 40px;">
+                <i class="fas fa-play"></i> Show AI Widget Now
+            </button>
+            <div id="widget-preview-area" style="min-height:400px; margin-top:30px; border:2px dashed var(--medium-gray); border-radius:16px; background:#fafafa; position:relative;"></div>
+        </div>
+
+        <!-- ===== AI PROBLEM SOLVER ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-brain" style="color: var(--primary); margin-right: 10px;"></i> AI Problem Solver Assistant</h2>
+            <div class="section-line"></div>
+        </div>
+
+        <div class="wide-card tool-card">
+            <div>
+                <h3>Your Cloudflare AI Consultant <span class="status-badge badge-info">Agency Exclusive</span></h3>
+                <p class="tool-description">Ask anything about your customers — powered by fast Cloudflare AI with real-time analysis.</p>
+                
+                <div class="ai-chat" id="ai-chat-messages">
+                    <div style="text-align:center;padding:80px 20px;color:var(--text-secondary);">
+                        <i class="fas fa-comment-dots" style="font-size: 3rem; opacity: 0.3; margin-bottom: 15px;"></i>
+                        <br>Start typing to chat with your AI consultant...
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap:12px; margin-bottom: 15px;">
+                    <input type="text" id="ai-input" placeholder="e.g., 'Summarize John Doe's issues' or 'Show all high-risk customers'" style="flex:1;" onkeypress="if(event.key==='Enter') sendAiMessage()" />
+                    <button class="btn-primary" onclick="sendAiMessage()" style="width:auto; padding:0 32px;">
+                        <i class="fas fa-paper-plane"></i> Ask AI
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-secondary" onclick="sendAiMessage('Show top 5 customers with highest churn risk')">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> High Risk
+                    </button>
+                    <button class="btn-secondary" onclick="sendAiMessage('Summarize all negative feedback from last 7 days')">
+                        <i class="fas fa-chart-line"></i> Weekly Summary
+                    </button>
+                    <button class="btn-secondary" onclick="sendAiMessage('Suggest improvements based on customer complaints')">
+                        <i class="fas fa-lightbulb"></i> Improvements
+                    </button>
+                    <button class="btn-secondary" onclick="sendAiMessage('What are the top 3 recurring problems?')">
+                        <i class="fas fa-exclamation-circle"></i> Top Problems
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CUSTOMER PROBLEM-SOLVING SUITE ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 10px;"></i> Customer Problem-Solving Suite <span class="live-indicator"><span class="pulse-dot"></span>AI POWERED</span></h2>
+            <div class="section-line"></div>
+        </div>
+
+        <!-- Problem Categories Tabs -->
+        <div class="problem-tabs">
+            <div class="problem-tab active" onclick="switchProblemTab('all')">All Problems</div>
+            <div class="problem-tab" onclick="switchProblemTab('delivery')"><i class="fas fa-truck"></i> Delivery</div>
+            <div class="problem-tab" onclick="switchProblemTab('quality')"><i class="fas fa-star"></i> Quality</div>
+            <div class="problem-tab" onclick="switchProblemTab('pricing')"><i class="fas fa-tag"></i> Pricing</div>
+            <div class="problem-tab" onclick="switchProblemTab('support')"><i class="fas fa-headset"></i> Support</div>
+            <div class="problem-tab" onclick="switchProblemTab('refund')"><i class="fas fa-undo"></i> Refunds</div>
+            <div class="problem-tab" onclick="switchProblemTab('ux')"><i class="fas fa-mouse-pointer"></i> UX Issues</div>
+        </div>
+
+        <!-- Problem Metrics Dashboard -->
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="total-problems">0</div>
+                <div class="metric-label">Total Problems</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="critical-problems">0</div>
+                <div class="metric-label">Critical Issues</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avg-resolution">2.4h</div>
+                <div class="metric-label">Avg Resolution</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="satisfaction-rate">87%</div>
+                <div class="metric-label">Satisfaction</div>
+            </div>
+        </div>
+
+        <!-- Problem Resolution Tools Grid -->
+        <div class="grid" style="margin-top: 30px;">
+            
+            <!-- Tool 1: AI Problem Classifier -->
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-tags"></i></div>
+                <h3>AI Problem Classifier</h3>
+                <p class="tool-description">Automatically categorizes customer issues with 98% accuracy. Detects root causes in real-time.</p>
+                
+                <div style="background: var(--light-gray); padding: 20px; border-radius: 12px; margin: 15px 0;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <span><i class="fas fa-truck" style="color: var(--warning);"></i> Delivery Issues</span>
+                        <span id="stat-delivery" style="font-weight:700;">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <span><i class="fas fa-star" style="color: var(--danger);"></i> Quality Concerns</span>
+                        <span id="stat-quality" style="font-weight:700;">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <span><i class="fas fa-tag" style="color: var(--info);"></i> Pricing Questions</span>
+                        <span id="stat-pricing" style="font-weight:700;">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><i class="fas fa-headset" style="color: var(--success);"></i> Support Requests</span>
+                        <span id="stat-support" style="font-weight:700;">0</span>
+                    </div>
+                </div>
+                
+                <button class="btn-secondary" onclick="analyzeProblemTrends()" style="width:100%;">
+                    <i class="fas fa-chart-bar"></i> Analyze Trends
+                </button>
+            </div>
+
+            <!-- Tool 2: Smart Response Generator -->
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-reply"></i></div>
+                <h3>Smart Response Generator</h3>
+                <p class="tool-description">Generates personalized, empathetic responses based on problem type and customer history.</p>
+                
+                <select id="response-problem-type" style="margin-bottom:10px;">
+                    <option value="delivery">🚚 Delivery Delay</option>
+                    <option value="quality">⭐ Product Quality</option>
+                    <option value="refund">↩️ Refund Request</option>
+                    <option value="support">🎧 Technical Support</option>
+                    <option value="complaint">💬 General Complaint</option>
+                </select>
+                
+                <textarea id="response-context" placeholder="Additional context (optional)..." rows="2"></textarea>
+                
+                <button class="btn-primary" onclick="generateSmartResponse()" style="margin-top:10px; width:100%;">
+                    <i class="fas fa-magic"></i> Generate Response
+                </button>
+                
+                <div id="response-output" style="margin-top:15px; padding:15px; background:var(--light-gray); border-radius:12px; display:none;"></div>
+            </div>
+
+            <!-- Tool 3: Churn Prevention AI -->
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3>Churn Prevention AI</h3>
+                <p class="tool-description">Predicts which customers are about to churn and suggests intervention strategies.</p>
+                
+                <div style="margin:20px 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <span><i class="fas fa-circle" style="color: var(--danger);"></i> High Risk Customers:</span>
+                        <span id="high-risk-count" style="font-weight:700; color:var(--danger);">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fas fa-circle" style="color: var(--warning);"></i> Medium Risk:</span>
+                        <span id="medium-risk-count" style="font-weight:700; color:var(--warning);">0</span>
+                    </div>
+                </div>
+                
+                <button class="btn-danger" onclick="showAtRiskCustomers()" style="width:100%;">
+                    <i class="fas fa-eye"></i> View At-Risk Customers
+                </button>
+            </div>
+
+            <!-- Tool 4: Sentiment Timeline -->
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                <h3>Sentiment Timeline</h3>
+                <p class="tool-description">Track how customer sentiment evolves over time and spot emerging issues.</p>
+                
+                <canvas id="sentiment-timeline" height="150"></canvas>
+                
+                <div style="margin-top:15px;">
+                    <button class="btn-secondary" onclick="refreshSentimentTimeline()" style="width:100%;">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tool 5: Auto-Ticket Creator -->
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-ticket-alt"></i></div>
+                <h3>Auto-Ticket Creator</h3>
+                <p class="tool-description">Automatically creates support tickets for critical issues and assigns to the right team.</p>
+                
+                <div style="margin:20px 0;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; flex-wrap: wrap;">
+                        <span style="font-size:0.9rem;">Auto-create tickets for:</span>
+                        <select id="ticket-threshold" style="width:100px;">
+                            <option value="70">70% risk</option>
+                            <option value="80">80% risk</option>
+                            <option value="90">90% risk</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                        <span style="font-size:0.9rem;">Auto-assign to:</span>
+                        <select id="ticket-assignee">
+                            <option value="support">Support Team</option>
+                            <option value="technical">Technical Team</option>
+                            <option value="billing">Billing Team</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="saveTicketSettings()">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+                
+                <div style="margin-top:15px; padding:15px; background:var(--light-gray); border-radius:12px;">
+                    <span><i class="fas fa-ticket-alt" style="color: var(--primary);"></i> Open Tickets: <strong id="open-tickets">0</strong></span>
+                </div>
+            </div>
+
+            <!-- Tool 6: Knowledge Base Suggester -->
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-book"></i></div>
+                <h3>Knowledge Base Suggester</h3>
+                <p class="tool-description">Identifies knowledge gaps and suggests articles to prevent future issues.</p>
+                
+                <div id="knowledge-suggestions" style="margin:20px 0;">
+                    <div style="padding:12px; background:var(--light-gray); border-radius:10px; margin-bottom:8px;">
+                        <strong>📝 "Delivery times"</strong> - 23 mentions
+                    </div>
+                    <div style="padding:12px; background:var(--light-gray); border-radius:10px; margin-bottom:8px;">
+                        <strong>📝 "Return policy"</strong> - 15 mentions
+                    </div>
+                    <div style="padding:12px; background:var(--light-gray); border-radius:10px;">
+                        <strong>📝 "Sizing guide"</strong> - 12 mentions
+                    </div>
+                </div>
+                
+                <button class="btn-secondary" onclick="refreshKnowledgeSuggestions()">
+                    <i class="fas fa-sync-alt"></i> Refresh Suggestions
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== PROBLEM ANALYSIS TABLE ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-table" style="color: var(--primary); margin-right: 10px;"></i> Detailed Problem Analysis</h2>
+            <div class="section-line"></div>
+        </div>
+
+        <div class="wide-card tool-card">
+            <div>
+                <h3>Customer Problems Dashboard</h3>
+                <p class="tool-description">Comprehensive view of all customer issues with AI-powered insights and trend analysis.</p>
+                
+                <div class="data-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Problem Type</th>
+                                <th>Frequency</th>
+                                <th>Trend</th>
+                                <th>Avg Resolution</th>
+                                <th>Impact Score</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="problem-table-body">
+                            <tr><td colspan="7" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin: 0 auto;"></div><br>Loading problem data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== EMAIL BROADCAST SYSTEM ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-envelope" style="color: var(--primary); margin-right: 10px;"></i> Mass Email Broadcast</h2>
+            <div class="section-line"></div>
+        </div>
+
+        <div class="email-broadcast">
+            <h3><i class="fas fa-bullhorn"></i> Communicate with Your Customers</h3>
+            <p style="margin:20px 0; opacity:0.9;">Send important updates, product announcements, or personalized offers to your entire customer base.</p>
+            
+            <div class="email-stats">
+                <div class="email-stat">
+                    <div class="email-stat-number" id="total-recipients">0</div>
+                    <div class="email-stat-label">Total Customers</div>
+                </div>
+                <div class="email-stat">
+                    <div class="email-stat-number" id="emails-sent">0</div>
+                    <div class="email-stat-label">Emails Sent</div>
+                </div>
+                <div class="email-stat">
+                    <div class="email-stat-number" id="open-rate">0%</div>
+                    <div class="email-stat-label">Avg Open Rate</div>
+                </div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.1); padding:30px; border-radius:20px; margin-top:20px;">
+                <h4 style="color:white; margin-bottom:20px;">Create New Broadcast</h4>
+                
+                <div class="input-group" style="margin-bottom:20px;">
+                    <div style="flex:2;">
+                        <label style="color:white;">Email Subject</label>
+                        <input type="text" id="email-subject" placeholder="e.g., Important Update About Your Orders" style="background:white; color: var(--text-primary);">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="color:white;">Target Audience</label>
+                        <select id="email-target" style="background:white; color: var(--text-primary);">
+                            <option value="all">All Customers</option>
+                            <option value="high-risk">High Risk Customers</option>
+                            <option value="recent">Recent Customers (30 days)</option>
+                            <option value="inactive">Inactive (90+ days)</option>
+                            <option value="problem">Customers with Issues</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Email Templates -->
+                <div class="response-templates">
+                    <div class="template-item" onclick="loadEmailTemplate('update')"><i class="fas fa-megaphone"></i> Business Update</div>
+                    <div class="template-item" onclick="loadEmailTemplate('product')"><i class="fas fa-box"></i> New Products</div>
+                    <div class="template-item" onclick="loadEmailTemplate('offer')"><i class="fas fa-gift"></i> Special Offer</div>
+                    <div class="template-item" onclick="loadEmailTemplate('issue')"><i class="fas fa-exclamation-circle"></i> Issue Resolution</div>
+                    <div class="template-item" onclick="loadEmailTemplate('feedback')"><i class="fas fa-comment"></i> Feedback Request</div>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="color:white;">Email Content</label>
+                    <textarea id="email-content" rows="8" placeholder="Write your email content here... Use {{name}} for personalization" style="background:white; color: var(--text-primary);"></textarea>
+                </div>
+
+                <!-- Preview -->
+                <div class="template-preview" id="email-preview">
+                    <strong><i class="fas fa-eye"></i> Preview:</strong> Your email will appear here...
+                </div>
+
+                <div style="display:flex; gap:15px; margin-top:20px; flex-wrap: wrap;">
+                    <button class="btn-primary" onclick="sendBroadcast()" style="flex:2;">
+                        <i class="fas fa-paper-plane"></i> Send Broadcast
+                    </button>
+                    <button class="btn-secondary" onclick="testBroadcast()" style="flex:1;">
+                        <i class="fas fa-vial"></i> Send Test
+                    </button>
+                    <button class="btn-secondary" onclick="scheduleBroadcast()" style="flex:1;">
+                        <i class="fas fa-clock"></i> Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ANALYTICS SECTION ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-chart-pie" style="color: var(--primary); margin-right: 10px;"></i> Analytics & Predictions</h2>
+            <div class="section-line"></div>
+        </div>
+
+        <div class="grid">
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
+                <h3>Sentiment Overview</h3>
+                <p class="tool-description">Positive vs Negative across all interactions.</p>
+                
+                <canvas id="sentiment-chart" height="260"></canvas>
+                
+                <div style="margin-top: 20px; display: flex; justify-content: space-around;">
+                    <div><span style="color: #28a745;">●</span> Positive: <span id="positive-count">0</span></div>
+                    <div><span style="color: #dc3545;">●</span> Negative: <span id="negative-count">0</span></div>
+                    <div><span style="color: #6b7280;">●</span> Neutral: <span id="neutral-count">0</span></div>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3>Top Recurring Problems</h3>
+                <p class="tool-description">Most frequent customer pain points right now.</p>
+                
+                <div id="top-issues" style="margin-top:20px;">
+                    <div style="text-align:center;color:var(--text-secondary);">Analyzing conversations...</div>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                <h3>Churn Prediction</h3>
+                <p class="tool-description">Overall risk level based on negative trends.</p>
+                
+                <div style="margin-top:24px;background:var(--light-gray);padding:20px;border-radius:12px;text-align:center;">
+                    <label style="display:block;margin-bottom:12px;font-weight:600;">Global Churn Risk</label>
+                    <input type="range" min="0" max="100" value="0" disabled id="global-churn-slider" style="width:100%; accent-color: var(--primary);">
+                    <div id="global-churn-value" style="font-size:2.4rem;font-weight:800;color:var(--danger);margin-top:12px;">--%</div>
+                    <div style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);" id="churn-description"></div>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-bell"></i></div>
+                <h3>Proactive Alerts</h3>
+                <p class="tool-description">Get instant email notifications on negative sentiment.</p>
+                
+                <div style="margin-top:24px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--light-gray);padding:20px;border-radius:12px;margin-bottom:10px;">
+                        <span style="font-weight:600;">Enable Real-time Alerts</span>
+                        <label class="switch">
+                            <input type="checkbox" id="alert-toggle" checked onchange="toggleAlerts()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div id="alert-status" style="font-size:0.9rem; color: var(--success);">
+                        <i class="fas fa-check-circle"></i> Alerts are active
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PREMIUM BUSINESS TOOLS ===== -->
+        <div class="section-header">
+            <h2><i class="fas fa-tools" style="color: var(--primary); margin-right: 10px;"></i> Premium Business Tools</h2>
+            <div class="section-line"></div>
+        </div>
+
+        <div class="grid">
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-lightbulb"></i></div>
+                <h3>AI Resolution Generator</h3>
+                <p class="tool-description">Instant email/call scripts for any issue.</p>
+                
+                <select id="resolution-type" style="margin-bottom: 10px;">
+                    <option value="email"><i class="fas fa-envelope"></i> Email Response</option>
+                    <option value="call"><i class="fas fa-phone"></i> Call Script</option>
+                    <option value="chat"><i class="fas fa-comment"></i> Chat Response</option>
+                </select>
+                
+                <textarea id="resolution-input" placeholder="Describe the customer issue..." rows="3"></textarea>
+                
+                <button class="btn-primary" onclick="generateResolution()" style="margin-top:12px; width: 100%;">
+                    <i class="fas fa-magic"></i> Generate Fix
+                </button>
+                
+                <div id="resolution-output" style="margin-top:20px; min-height:120px; padding:15px; background:var(--light-gray); border-radius:12px; line-height:1.6;"></div>
+            </div>
+
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                <h3>Sentiment Trend</h3>
+                <p class="tool-description">Weekly negative sentiment movement with predictive analytics.</p>
+                
+                <canvas id="trend-chart" height="200"></canvas>
+                
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="btn-secondary" onclick="refreshTrendData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-users"></i></div>
+                <h3>AI Customer Personas</h3>
+                <p class="tool-description">Auto-generated profiles from real chat data and behavior patterns.</p>
+                
+                <div id="persona-output" style="margin-top:16px; min-height: 120px;"></div>
+                
+                <button class="btn-primary" onclick="generatePersonas()" style="margin-top:16px; width: 100%;">
+                    <i class="fas fa-users-cog"></i> Generate Personas
+                </button>
+            </div>
+
+            <div class="tool-card">
+                <div class="icon-box"><i class="fas fa-clipboard-list"></i></div>
+                <h3>Team Notes & Tasks</h3>
+                <p class="tool-description">Internal notes, task assignments, and team collaboration.</p>
+                
+                <textarea id="team-note" placeholder="Add note or assign task..." rows="3"></textarea>
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn-primary" onclick="saveTeamNote()" style="flex: 1;">
+                        <i class="fas fa-save"></i> Save & Share
+                    </button>
+                    <button class="btn-secondary" onclick="loadTeamNotes()" style="flex: 1;">
+                        <i class="fas fa-folder-open"></i> View Notes
+                    </button>
+                </div>
+                
+                <div id="notes-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+        <!-- ===== EXPORT BUTTONS ===== -->
+        <div style="text-align:center; margin:70px 0; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn-primary" style="padding:16px 60px; font-size:1.1rem;" onclick="exportInsights()">
+                <i class="fas fa-download"></i> Export Full Report (CSV)
+            </button>
+            
+            <button class="btn-info" style="padding:16px 60px; font-size:1.1rem;" onclick="exportProblemReport()">
+                <i class="fas fa-file-export"></i> Export Problem Analysis
+            </button>
+            
+            <button class="btn-secondary" style="padding:16px 60px; font-size:1.1rem;" onclick="refreshAllData()">
+                <i class="fas fa-sync-alt"></i> Refresh All Data
+            </button>
+        </div>
+
     </div>
-
-    <!-- ===== CUSTOMER LIST SECTION ===== -->
-    <div class="section-header">
-      <h2>📋 Customer List & Issues <span class="live-indicator"><span class="pulse-dot"></span>LIVE</span></h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="wide-card tool-card">
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-          <h3>All Customers & Detected Problems</h3>
-          <div style="display: flex; gap: 15px;">
-            <span id="customer-count" style="background: var(--primary); color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600;"></span>
-            <span id="problem-count" style="background: var(--info); color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600;"></span>
-          </div>
-        </div>
-        <p class="tool-description">Real-time overview — sorted by highest churn risk first. Click column headers to sort.</p>
-        <div class="data-table-container">
-          <table class="customer-table">
-            <thead>
-              <tr>
-                <th onclick="sortTable('name')">Name 📊</th>
-                <th onclick="sortTable('email')">Email 📊</th>
-                <th onclick="sortTable('messages')">Messages / Sentiment 📊</th>
-                <th onclick="sortTable('risk')">Churn Risk 📊</th>
-                <th>Problem Tags</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="customer-table-body">
-              <tr><td colspan="6" style="text-align:center;padding:60px;color:#777;">Loading real-time customer data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== AI WIDGET PREVIEW ===== -->
-    <div class="section-header">
-      <h2>🤖 Business AI Widget (Live Preview)</h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="wide-card tool-card" style="text-align:center;">
-      <p class="tool-description">Click below to preview how your customers see the AI widget — it knows your full business, all leads, detected problems, churn risks, and more.</p>
-      <button class="widget-trigger-btn" onclick="showAIWidget()">Show AI Widget Now</button>
-      <div id="widget-preview-area" style="min-height:400px; margin-top:24px; border:1px dashed #ccc; border-radius:12px; background:#fafafa; position:relative;"></div>
-    </div>
-
-    <!-- ===== AI PROBLEM SOLVER ===== -->
-    <div class="section-header">
-      <h2>🤖 AI Problem Solver Assistant</h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="wide-card tool-card">
-      <div>
-        <h3>Your Cloudflare AI Consultant <span style="color:var(--primary);font-size:0.9rem;">(Agency Exclusive)</span></h3>
-        <p class="tool-description">Ask anything about your customers — powered by fast Cloudflare AI.</p>
-        <div class="ai-chat" id="ai-chat-messages">
-          <div style="text-align:center;padding:80px 20px;color:#888;">Start typing to chat with your AI...</div>
-        </div>
-        <div style="display:flex;gap:12px;">
-          <input type="text" id="ai-input" placeholder="e.g. Summarize John Doe's issues or 'Show me all customers with high churn risk'" style="flex:1;" onkeypress="if(event.key==='Enter') sendAiMessage()" />
-          <button class="btn-save" onclick="sendAiMessage()" style="width:auto;padding:0 32px;">Ask AI</button>
-        </div>
-        <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
-          <button class="btn-secondary" onclick="sendAiMessage('Show top 5 customers with highest churn risk')">🔴 High Risk</button>
-          <button class="btn-secondary" onclick="sendAiMessage('Summarize all negative feedback from last 7 days')">📊 Weekly Summary</button>
-          <button class="btn-secondary" onclick="sendAiMessage('Suggest improvements based on customer complaints')">💡 Improvements</button>
-          <button class="btn-secondary" onclick="sendAiMessage('What are the top 3 recurring problems?')">⚠️ Top Problems</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== CUSTOMER PROBLEM-SOLVING SUITE (NEW) ===== -->
-    <div class="section-header">
-      <h2>🛡️ Customer Problem-Solving Suite <span class="live-indicator"><span class="pulse-dot"></span>AI POWERED</span></h2>
-      <div class="section-line"></div>
-    </div>
-
-    <!-- Problem Categories Tabs -->
-    <div class="problem-tabs">
-      <div class="problem-tab active" onclick="switchProblemTab('all')">All Problems</div>
-      <div class="problem-tab" onclick="switchProblemTab('delivery')">🚚 Delivery</div>
-      <div class="problem-tab" onclick="switchProblemTab('quality')">🏷️ Quality</div>
-      <div class="problem-tab" onclick="switchProblemTab('pricing')">💰 Pricing</div>
-      <div class="problem-tab" onclick="switchProblemTab('support')">🤝 Support</div>
-      <div class="problem-tab" onclick="switchProblemTab('refund')">↩️ Refunds</div>
-      <div class="problem-tab" onclick="switchProblemTab('ux')">📱 UX Issues</div>
-    </div>
-
-    <!-- Problem Metrics Dashboard -->
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-value" id="total-problems">0</div>
-        <div class="metric-label">Total Problems</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-value" id="critical-problems">0</div>
-        <div class="metric-label">Critical Issues</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-value" id="avg-resolution">0h</div>
-        <div class="metric-label">Avg Resolution</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-value" id="satisfaction-rate">0%</div>
-        <div class="metric-label">Satisfaction</div>
-      </div>
-    </div>
-
-    <!-- Problem Resolution Tools Grid -->
-    <div class="grid" style="margin-top: 30px;">
-      
-      <!-- Tool 1: AI Problem Classifier -->
-      <div class="tool-card">
-        <div class="icon-box">🔍</div>
-        <h3>AI Problem Classifier</h3>
-        <p class="tool-description">Automatically categorizes customer issues with 98% accuracy. Detects root causes in real-time.</p>
-        <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin:15px 0;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span>Delivery Issues</span>
-            <span id="stat-delivery" style="font-weight:700;">0</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span>Quality Concerns</span>
-            <span id="stat-quality" style="font-weight:700;">0</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span>Pricing Questions</span>
-            <span id="stat-pricing" style="font-weight:700;">0</span>
-          </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span>Support Requests</span>
-            <span id="stat-support" style="font-weight:700;">0</span>
-          </div>
-        </div>
-        <button class="btn-secondary" onclick="analyzeProblemTrends()" style="width:100%;">Analyze Trends</button>
-      </div>
-
-      <!-- Tool 2: Smart Response Generator -->
-      <div class="tool-card">
-        <div class="icon-box">✍️</div>
-        <h3>Smart Response Generator</h3>
-        <p class="tool-description">Generates personalized, empathetic responses based on problem type and customer history.</p>
-        <select id="response-problem-type" style="margin-bottom:10px;">
-          <option value="delivery">Delivery Delay</option>
-          <option value="quality">Product Quality</option>
-          <option value="refund">Refund Request</option>
-          <option value="support">Technical Support</option>
-          <option value="complaint">General Complaint</option>
-        </select>
-        <textarea id="response-context" placeholder="Additional context (optional)..." rows="2"></textarea>
-        <button class="btn-save" onclick="generateSmartResponse()" style="margin-top:10px; width:100%;">Generate Response</button>
-        <div id="response-output" style="margin-top:15px; padding:15px; background:#f8f9fa; border-radius:8px; display:none;"></div>
-      </div>
-
-      <!-- Tool 3: Churn Prevention AI -->
-      <div class="tool-card">
-        <div class="icon-box">⚠️</div>
-        <h3>Churn Prevention AI</h3>
-        <p class="tool-description">Predicts which customers are about to churn and suggests intervention strategies.</p>
-        <div style="margin:15px 0;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span>High Risk Customers:</span>
-            <span id="high-risk-count" style="font-weight:700; color:var(--danger);">0</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Medium Risk:</span>
-            <span id="medium-risk-count" style="font-weight:700; color:var(--warning);">0</span>
-          </div>
-        </div>
-        <button class="btn-danger" onclick="showAtRiskCustomers()" style="width:100%;">View At-Risk Customers</button>
-      </div>
-
-      <!-- Tool 4: Sentiment Timeline -->
-      <div class="tool-card">
-        <div class="icon-box">📈</div>
-        <h3>Sentiment Timeline</h3>
-        <p class="tool-description">Track how customer sentiment evolves over time and spot emerging issues.</p>
-        <canvas id="sentiment-timeline" height="150"></canvas>
-        <div style="margin-top:15px;">
-          <button class="btn-secondary" onclick="refreshSentimentTimeline()" style="width:100%;">Refresh Data</button>
-        </div>
-      </div>
-
-      <!-- Tool 5: Auto-Ticket Creator -->
-      <div class="tool-card">
-        <div class="icon-box">🎫</div>
-        <h3>Auto-Ticket Creator</h3>
-        <p class="tool-description">Automatically creates support tickets for critical issues and assigns to the right team.</p>
-        <div style="margin:15px 0;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <span>Auto-create tickets for:</span>
-            <select id="ticket-threshold" style="width:100px;">
-              <option value="70">70% risk</option>
-              <option value="80">80% risk</option>
-              <option value="90">90% risk</option>
-            </select>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span>Auto-assign to:</span>
-            <select id="ticket-assignee">
-              <option value="support">Support Team</option>
-              <option value="technical">Technical Team</option>
-              <option value="billing">Billing Team</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn-save" onclick="saveTicketSettings()">Save Settings</button>
-        <div style="margin-top:15px; padding:10px; background:#f8f9fa; border-radius:8px;">
-          <span>Open Tickets: <strong id="open-tickets">0</strong></span>
-        </div>
-      </div>
-
-      <!-- Tool 6: Knowledge Base Suggester -->
-      <div class="tool-card">
-        <div class="icon-box">📚</div>
-        <h3>Knowledge Base Suggester</h3>
-        <p class="tool-description">Identifies knowledge gaps and suggests articles to prevent future issues.</p>
-        <div id="knowledge-suggestions" style="margin:15px 0;">
-          <div style="padding:10px; background:#f8f9fa; border-radius:8px; margin-bottom:5px;">
-            <strong>📝 "Delivery times"</strong> - 23 mentions
-          </div>
-          <div style="padding:10px; background:#f8f9fa; border-radius:8px; margin-bottom:5px;">
-            <strong>📝 "Return policy"</strong> - 15 mentions
-          </div>
-          <div style="padding:10px; background:#f8f9fa; border-radius:8px;">
-            <strong>📝 "Sizing guide"</strong> - 12 mentions
-          </div>
-        </div>
-        <button class="btn-secondary" onclick="refreshKnowledgeSuggestions()">Refresh Suggestions</button>
-      </div>
-
-      <!-- Tool 7: Problem Heatmap -->
-      <div class="tool-card">
-        <div class="icon-box">🔥</div>
-        <h3>Problem Heatmap</h3>
-        <p class="tool-description">Visualize which problems are most common at different times.</p>
-        <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:15px 0;">
-          <div style="background:#fee2e2; height:40px; border-radius:6px; text-align:center; line-height:40px;">M</div>
-          <div style="background:#fecaca; height:40px; border-radius:6px; text-align:center; line-height:40px;">T</div>
-          <div style="background:#fca5a5; height:40px; border-radius:6px; text-align:center; line-height:40px;">W</div>
-          <div style="background:#f87171; height:40px; border-radius:6px; text-align:center; line-height:40px;">T</div>
-          <div style="background:#ef4444; height:40px; border-radius:6px; text-align:center; line-height:40px; color:white;">F</div>
-          <div style="background:#fee2e2; height:40px; border-radius:6px; text-align:center; line-height:40px;">S</div>
-          <div style="background:#fee2e2; height:40px; border-radius:6px; text-align:center; line-height:40px;">S</div>
-        </div>
-        <p class="tool-description" style="font-size:0.85rem;">Friday shows highest problem volume (42% of weekly issues)</p>
-      </div>
-    </div>
-
-    <!-- ===== PROBLEM ANALYSIS TABLE ===== -->
-    <div class="section-header">
-      <h2>📊 Detailed Problem Analysis</h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="wide-card tool-card">
-      <div>
-        <h3>Customer Problems Dashboard</h3>
-        <p class="tool-description">Comprehensive view of all customer issues with AI-powered insights.</p>
-        <div class="data-table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Problem Type</th>
-                <th>Frequency</th>
-                <th>Trend</th>
-                <th>Avg Resolution Time</th>
-                <th>Impact Score</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="problem-table-body">
-              <tr><td colspan="7" style="text-align:center;padding:40px;">Loading problem data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== EMAIL BROADCAST SYSTEM (NEW) ===== -->
-    <div class="section-header">
-      <h2>📧 Mass Email Broadcast</h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="email-broadcast">
-      <h3>Communicate with Your Customers</h3>
-      <p style="margin:15px 0; opacity:0.9;">Send important updates, product announcements, or personalized offers to your entire customer base.</p>
-      
-      <div class="email-stats">
-        <div class="email-stat">
-          <div class="email-stat-number" id="total-recipients">0</div>
-          <div class="email-stat-label">Total Customers</div>
-        </div>
-        <div class="email-stat">
-          <div class="email-stat-number" id="emails-sent">0</div>
-          <div class="email-stat-label">Emails Sent</div>
-        </div>
-        <div class="email-stat">
-          <div class="email-stat-number" id="open-rate">0%</div>
-          <div class="email-stat-label">Avg Open Rate</div>
-        </div>
-      </div>
-
-      <div style="background:rgba(255,255,255,0.1); padding:30px; border-radius:16px; margin-top:20px;">
-        <h4 style="color:white; margin-bottom:20px;">Create New Broadcast</h4>
-        
-        <div class="input-group" style="margin-bottom:20px;">
-          <div style="flex:2;">
-            <label style="color:white;">Email Subject</label>
-            <input type="text" id="email-subject" placeholder="e.g., Important Update About Your Orders" style="background:white;">
-          </div>
-          <div style="flex:1;">
-            <label style="color:white;">Target Audience</label>
-            <select id="email-target" style="background:white;">
-              <option value="all">All Customers</option>
-              <option value="high-risk">High Risk Customers</option>
-              <option value="recent">Recent Customers (30 days)</option>
-              <option value="inactive">Inactive (90+ days)</option>
-              <option value="problem">Customers with Issues</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Email Templates -->
-        <div class="response-templates">
-          <div class="template-item" onclick="loadEmailTemplate('update')">📢 Business Update</div>
-          <div class="template-item" onclick="loadEmailTemplate('product')">🆕 New Products</div>
-          <div class="template-item" onclick="loadEmailTemplate('offer')">🎁 Special Offer</div>
-          <div class="template-item" onclick="loadEmailTemplate('issue')">⚠️ Issue Resolution</div>
-          <div class="template-item" onclick="loadEmailTemplate('feedback')">💬 Feedback Request</div>
-        </div>
-
-        <div style="margin-bottom:20px;">
-          <label style="color:white;">Email Content</label>
-          <textarea id="email-content" rows="8" placeholder="Write your email content here... Use {{name}} for personalization" style="background:white;"></textarea>
-        </div>
-
-        <!-- Preview -->
-        <div class="template-preview" id="email-preview">
-          <strong>Preview:</strong> Your email will appear here...
-        </div>
-
-        <div style="display:flex; gap:15px; margin-top:20px;">
-          <button class="btn-primary" onclick="sendBroadcast()" style="flex:2;">📤 Send Broadcast</button>
-          <button class="btn-secondary" onclick="testBroadcast()" style="flex:1;">📨 Send Test</button>
-          <button class="btn-secondary" onclick="scheduleBroadcast()" style="flex:1;">⏰ Schedule</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== ANALYTICS SECTION ===== -->
-    <div class="section-header">
-      <h2>📈 Analytics & Predictions</h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="grid">
-      <div class="tool-card">
-        <div class="icon-box">📊</div>
-        <h3>Sentiment Overview</h3>
-        <p class="tool-description">Positive vs Negative across all interactions.</p>
-        <canvas id="sentiment-chart" height="260"></canvas>
-        <div style="margin-top: 20px; display: flex; justify-content: space-around;">
-          <div><span style="color: #28a745;">●</span> Positive: <span id="positive-count">0</span></div>
-          <div><span style="color: #dc3545;">●</span> Negative: <span id="negative-count">0</span></div>
-          <div><span style="color: #6b7280;">●</span> Neutral: <span id="neutral-count">0</span></div>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="icon-box">⚠️</div>
-        <h3>Top Recurring Problems</h3>
-        <p class="tool-description">Most frequent customer pain points right now.</p>
-        <div id="top-issues" style="margin-top:20px;">
-          <div style="text-align:center;color:#888;">Analyzing conversations...</div>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="icon-box">🔮</div>
-        <h3>Churn Prediction</h3>
-        <p class="tool-description">Overall risk level based on negative trends.</p>
-        <div style="margin-top:24px;background:#f8f9fa;padding:20px;border-radius:12px;text-align:center;">
-          <label style="display:block;margin-bottom:12px;font-weight:600;">Global Churn Risk</label>
-          <input type="range" min="0" max="100" value="0" disabled id="global-churn-slider" style="width:100%;accent-color:var(--primary);">
-          <div id="global-churn-value" style="font-size:2.4rem;font-weight:800;color:var(--danger);margin-top:12px;">--%</div>
-          <div style="margin-top: 10px; font-size: 0.9rem; color: #666;" id="churn-description"></div>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="icon-box">📧</div>
-        <h3>Proactive Alerts</h3>
-        <p class="tool-description">Get instant email notifications on negative sentiment.</p>
-        <div style="margin-top:24px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;background:#f8f9fa;padding:16px;border-radius:10px;margin-bottom:10px;">
-            <span style="font-weight:600;">Enable Real-time Alerts</span>
-            <label class="switch">
-              <input type="checkbox" id="alert-toggle" checked onchange="toggleAlerts()">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div id="alert-status" style="font-size:0.9rem; color: #28a745;">✓ Alerts are active</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== PREMIUM BUSINESS TOOLS ===== -->
-    <div class="section-header">
-      <h2>🛠️ Premium Business Tools</h2>
-      <div class="section-line"></div>
-    </div>
-
-    <div class="grid">
-      <div class="tool-card">
-        <div class="icon-box">💡</div>
-        <h3>AI Resolution Generator</h3>
-        <p class="tool-description">Instant email/call scripts for any issue.</p>
-        <select id="resolution-type" style="margin-bottom: 10px;">
-          <option value="email">Email Response</option>
-          <option value="call">Call Script</option>
-          <option value="chat">Chat Response</option>
-        </select>
-        <textarea id="resolution-input" placeholder="Describe the customer issue..." rows="3"></textarea>
-        <button class="btn-save" onclick="generateResolution()" style="margin-top:12px; width: 100%;">Generate Fix</button>
-        <div id="resolution-output" style="margin-top:20px;min-height:120px;padding:15px;background:#f8f9fa;border-radius:8px;line-height:1.6;"></div>
-      </div>
-
-      <div class="tool-card">
-        <div class="icon-box">📉</div>
-        <h3>Sentiment Trend</h3>
-        <p class="tool-description">Weekly negative sentiment movement.</p>
-        <canvas id="trend-chart" height="200"></canvas>
-        <div style="margin-top: 10px; text-align: center;">
-          <button class="btn-secondary" onclick="refreshTrendData()">↻ Refresh</button>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="icon-box">👥</div>
-        <h3>AI Customer Personas</h3>
-        <p class="tool-description">Auto-generated profiles from real chats.</p>
-        <div id="persona-output" style="margin-top:16px; min-height: 100px;"></div>
-        <button class="btn-save" onclick="generatePersonas()" style="margin-top:16px; width: 100%;">Generate Personas</button>
-      </div>
-
-      <div class="tool-card">
-        <div class="icon-box">🤝</div>
-        <h3>Team Notes & Tasks</h3>
-        <p class="tool-description">Internal notes & task assignments.</p>
-        <textarea id="team-note" placeholder="Add note or assign task..." rows="3"></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-          <button class="btn-save" onclick="saveTeamNote()" style="flex: 1;">Save & Share</button>
-          <button class="btn-secondary" onclick="loadTeamNotes()" style="flex: 1;">View Notes</button>
-        </div>
-        <div id="notes-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;"></div>
-      </div>
-    </div>
-
-    <!-- ===== EXPORT BUTTONS ===== -->
-    <div style="text-align:center;margin:70px 0; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-      <button class="btn-save" style="padding:16px 60px;font-size:1.15rem;" onclick="exportInsights()">
-        📥 Export Full Report (CSV)
-      </button>
-      <button class="btn-info" style="padding:16px 60px;font-size:1.15rem;" onclick="exportProblemReport()">
-        📊 Export Problem Analysis
-      </button>
-      <button class="btn-secondary" style="padding:16px 60px;font-size:1.15rem;" onclick="refreshAllData()">
-        ↻ Refresh All Data
-      </button>
-    </div>
-
-  </div>
 </div>
 
 <footer>
-  <p>© 2026 AI Smart Business Hub | Powered by Cloudflare AI</p>
+    <p>© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Powered by Cloudflare AI</span></p>
 </footer>
 
+<!-- JavaScript remains the same as your original file -->
 <script>
 // ================================================
 // CUSTOMER INSIGHTS - ENHANCED PROBLEM-SOLVING VERSION
+// (Your existing JavaScript code remains exactly the same)
 // ================================================
 
 // ===== CONFIGURATION =====
-const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const AI_CHAT_ENDPOINT = `${BACKEND_URL}/api/customer-insights/ai-chat`;
 
 // ===== GLOBAL STATE =====
@@ -1645,7 +2047,7 @@ function renderCustomers() {
             <td><span class="status-badge ${risk > 70 ? 'badge-high' : risk > 40 ? 'badge-med' : 'badge-low'}" style="font-size:1rem; font-weight:700;">${risk}%</span></td>
             <td>${problemTags || '—'}</td>
             <td>
-                <button class="btn-save" style="padding:6px 12px; margin-right:5px;" onclick="viewCustomer('${c.email}')">View</button>
+                <button class="btn-primary" style="padding:6px 12px; margin-right:5px;" onclick="viewCustomer('${c.email}')">View</button>
                 <button class="btn-secondary" style="padding:6px 12px;" onclick="quickAnalyze('${c.email}')">Analyze</button>
             </td>
         `;
