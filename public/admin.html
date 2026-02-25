@@ -5,6 +5,10 @@
   <title>Admin Panel - AI Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Load config and fix scripts first -->
+  <script src="js/config.js"></script>
+  <script src="js/master-fix.js"></script>
+  <script src="js/fix-all-html.js"></script>
   <style>
     :root {
       --bg-main: #0b0b0b;
@@ -203,7 +207,6 @@
 
     .hidden { display: none !important; }
   </style>
-<base target="_blank">
 </head>
 
 <body>
@@ -284,22 +287,31 @@
 </div>
 
 <script>
-// CRITICAL FIX: Use consistent API_URL (removed trailing space!)
-const API_URL = 'https://ai-smart-hub.onrender.com';
+// CRITICAL FIX: Use window.BACKEND_URL from config.js
+const API_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const token = localStorage.getItem("token");
 
 // Auth Guard
-if (!token) location.href = "login.html";
+if (!token) {
+  alert("Please login first");
+  window.location.href = "login.html";
+}
 
 function parseJwt(token) {
-  try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
+  try { 
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64)); 
+  } catch { 
+    return null; 
+  }
 }
 
 const admin = parseJwt(token);
 // Strict admin check
 if (!admin || admin.email !== "ericchung992@gmail.com") {
-  alert("Unauthorized Access");
-  location.href = "dashboard.html";
+  alert("Unauthorized Access - Admin only");
+  window.location.href = "dashboard.html";
 }
 
 let allUsers = [];
@@ -311,8 +323,8 @@ const activitiesTableBody = document.getElementById("activitiesTableBody");
 const usersLoading = document.getElementById("usersLoading");
 
 // Navigation logic
-document.getElementById("navUsers").onclick = (e) => toggleTab(e.target, usersSection);
-document.getElementById("navActivities").onclick = (e) => toggleTab(e.target, activitiesSection);
+document.getElementById("navUsers").addEventListener('click', (e) => toggleTab(e.target, usersSection));
+document.getElementById("navActivities").addEventListener('click', (e) => toggleTab(e.target, activitiesSection));
 
 function toggleTab(link, section) {
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
@@ -322,27 +334,42 @@ function toggleTab(link, section) {
   if (section === usersSection) loadUsers(); else loadActivities();
 }
 
-// Load Users from Backend
+// Load Users from Backend - FIXED: Added /api/ prefix
 async function loadUsers() {
   usersLoading.classList.remove("hidden");
-  usersTableBody.innerHTML = "";
+  usersTableBody.innerHTML = "<tr><td colspan='5' style='text-align:center;padding:20px;'>Loading users...</td></tr>";
+  
   try {
-    const res = await fetch(`${API_URL}/admin/users`, {
+    console.log("[ADMIN] Fetching users from:", `${API_URL}/api/admin/users`);
+    
+    const res = await fetch(`${API_URL}/api/admin/users`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    // CRITICAL FIX: Check for HTTP errors
+    // Check for HTTP errors
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Server error: ${res.status} - ${errorText}`);
+      if (res.status === 403) {
+        throw new Error("Access denied - Admin privileges required");
+      } else if (res.status === 401) {
+        throw new Error("Session expired - Please login again");
+      } else {
+        const errorText = await res.text();
+        throw new Error(`Server error (${res.status}): ${errorText.substring(0, 100)}`);
+      }
     }
     
     allUsers = await res.json();
+    console.log("[ADMIN] Loaded users:", allUsers.length);
+    
     updateStats(allUsers);
     renderUserTable(allUsers);
   } catch (e) {
-    console.error("Load Users Error:", e);
-    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:20px;">Error loading users: ${e.message}</td></tr>`;
+    console.error("[ADMIN] Load Users Error:", e);
+    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:40px;">
+      <strong>Error loading users</strong><br>
+      ${e.message}<br>
+      <button onclick="loadUsers()" style="margin-top:15px;padding:8px 20px;background:var(--gold);color:black;border:none;border-radius:6px;cursor:pointer;">Retry</button>
+    </td></tr>`;
   }
   usersLoading.classList.add("hidden");
 }
@@ -363,21 +390,21 @@ function renderUserTable(users) {
   usersTableBody.innerHTML = "";
   
   if (users.length === 0) {
-    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;">No users found</td></tr>`;
+    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;">No users found</td></tr>`;
     return;
   }
   
   users.forEach(u => {
     const tr = document.createElement("tr");
     
-    // Standardizing business name display (FIX APPLIED)
-    const displayName = u.business_name || u.name || "Unnamed Business";
+    // Standardizing business name display
+    const displayName = u.business_name || u.name || u.email?.split('@')[0] || "Unnamed Business";
     const isVerified = u.is_verified === 1 || u.is_verified === true;
     
     tr.innerHTML = `
       <td>
-        <div style="font-weight:600; color:var(--gold)">${displayName}</div>
-        <div style="font-size:0.8rem; color:var(--text-secondary)">${u.email}</div>
+        <div style="font-weight:600; color:var(--gold)">${escapeHtml(displayName)}</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary)">${escapeHtml(u.email)}</div>
       </td>
       <td>
         <select id="plan-${u.id}" style="margin-bottom: 5px; display: block;">
@@ -389,7 +416,7 @@ function renderUserTable(users) {
         <span class="status-badge ${isVerified ? 'status-verified' : 'status-pending'}">
             ${isVerified ? 'VERIFIED' : 'PENDING'}
         </span>
-        <select id="verify-${u.id}" style="width: 80px; font-size: 10px; padding: 2px;">
+        <select id="verify-${u.id}" style="width: 80px; font-size: 10px; padding: 2px; margin-top:5px;">
             <option value="1" ${isVerified ? 'selected' : ''}>Verify</option>
             <option value="0" ${!isVerified ? 'selected' : ''}>Unverify</option>
         </select>
@@ -405,15 +432,28 @@ function renderUserTable(users) {
   });
 }
 
-// Admin Update Function
+// Helper to escape HTML
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Admin Update Function - FIXED: Added /api/ prefix
 async function updateUser(userId) {
   const plan = document.getElementById(`plan-${userId}`).value;
   const is_verified = parseInt(document.getElementById(`verify-${userId}`).value);
-  const messages_used = parseInt(document.getElementById(`msg-${userId}`).value);
-  const leads_used = parseInt(document.getElementById(`lead-${userId}`).value);
+  const messages_used = parseInt(document.getElementById(`msg-${userId}`).value) || 0;
+  const leads_used = parseInt(document.getElementById(`lead-${userId}`).value) || 0;
 
   try {
-    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    console.log("[ADMIN] Updating user:", userId, {plan, is_verified, messages_used, leads_used});
+    
+    const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -434,12 +474,14 @@ async function updateUser(userId) {
   }
 }
 
-// Admin Delete Function
+// Admin Delete Function - FIXED: Added /api/ prefix
 async function deleteUser(userId) {
-  if (!confirm("PERMANENT ACTION: Delete this business and all its chat logs/leads?")) return;
+  if (!confirm("PERMANENT ACTION: Delete this business and all its data? This cannot be undone.")) return;
 
   try {
-    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    console.log("[ADMIN] Deleting user:", userId);
+    
+    const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -457,23 +499,26 @@ async function deleteUser(userId) {
 }
 
 // Search filter
-document.getElementById("userSearch").oninput = (e) => {
+document.getElementById("userSearch").addEventListener('input', (e) => {
   const term = e.target.value.toLowerCase();
   const filtered = allUsers.filter(u => 
-    u.email.toLowerCase().includes(term) || 
+    (u.email && u.email.toLowerCase().includes(term)) || 
     (u.business_name && u.business_name.toLowerCase().includes(term)) ||
     (u.name && u.name.toLowerCase().includes(term))
   );
   renderUserTable(filtered);
-};
+});
 
-// Global Logs Logic
+// Global Logs Logic - FIXED: Added /api/ prefix
 async function loadActivities() {
   const activitiesLoading = document.getElementById("activitiesLoading");
   activitiesLoading.classList.remove("hidden");
-  activitiesTableBody.innerHTML = "";
+  activitiesTableBody.innerHTML = "<tr><td colspan='4' style='text-align:center;padding:20px;'>Loading activities...</td></tr>";
+  
   try {
-    const res = await fetch(`${API_URL}/admin/activities`, {
+    console.log("[ADMIN] Fetching activities from:", `${API_URL}/api/admin/activities`);
+    
+    const res = await fetch(`${API_URL}/api/admin/activities`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -482,36 +527,50 @@ async function loadActivities() {
     }
     
     const acts = await res.json();
+    console.log("[ADMIN] Loaded activities:", acts.length);
+    
+    activitiesTableBody.innerHTML = "";
     
     if (acts.length === 0) {
-      activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;">No activities found</td></tr>`;
+      activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;">No activities found</td></tr>`;
       return;
     }
     
     acts.forEach(a => {
-      activitiesTableBody.innerHTML += `
-        <tr>
-          <td>${a.client_name || "Visitor"}</td>
-          <td>${a.message}</td>
-          <td>${a.response}</td>
-          <td>${new Date(a.created_at).toLocaleString()}</td>
-        </tr>`;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${escapeHtml(a.client_name || "Visitor")}</td>
+        <td>${escapeHtml(a.message || '')}</td>
+        <td>${escapeHtml(a.response || '')}</td>
+        <td>${a.created_at ? new Date(a.created_at).toLocaleString() : 'Unknown'}</td>
+      `;
+      activitiesTableBody.appendChild(row);
     });
   } catch (err) {
-    console.error("Load Activities Error:", err);
-    activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:20px;">Error loading activities: ${err.message}</td></tr>`;
+    console.error("[ADMIN] Load Activities Error:", err);
+    activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:40px;">
+      <strong>Error loading activities</strong><br>
+      ${err.message}<br>
+      <button onclick="loadActivities()" style="margin-top:15px;padding:8px 20px;background:var(--gold);color:black;border:none;border-radius:6px;cursor:pointer;">Retry</button>
+    </td></tr>`;
   }
   activitiesLoading.classList.add("hidden");
 }
 
 // Utilities
-document.getElementById("logoutBtn").onclick = () => {
+document.getElementById("logoutBtn").addEventListener('click', () => {
   localStorage.clear();
-  location.href = "login.html";
-};
+  window.location.href = "login.html";
+});
 
-document.getElementById("refreshUsersBtn").onclick = loadUsers;
-document.getElementById("refreshActivitiesBtn").onclick = loadActivities;
+document.getElementById("refreshUsersBtn").addEventListener('click', loadUsers);
+document.getElementById("refreshActivitiesBtn").addEventListener('click', loadActivities);
+
+// Make functions globally available for onclick handlers
+window.updateUser = updateUser;
+window.deleteUser = deleteUser;
+window.loadUsers = loadUsers;
+window.loadActivities = loadActivities;
 
 // Start
 loadUsers();
