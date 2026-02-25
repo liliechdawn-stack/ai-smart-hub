@@ -179,6 +179,38 @@ db.serialize(() => {
     }
   });
 
+  // ==================== NEW: BUSINESS IDENTITY TABLE ====================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS business_identity (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      business_type TEXT,
+      business_description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Error creating business_identity table:", err.message);
+    } else {
+      console.log("✅ Business Identity table ready");
+    }
+  });
+
+  // Add trigger to update updated_at for business_identity
+  db.run(`
+    CREATE TRIGGER IF NOT EXISTS update_business_identity_timestamp 
+    AFTER UPDATE ON business_identity
+    BEGIN
+      UPDATE business_identity SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+  `, (err) => {
+    if (err && !err.message.includes('already exists')) {
+      console.error("Error creating trigger:", err.message);
+    }
+  });
+
   // ==================== NEW: INCIDENTS TABLE FOR STATUS PAGE ====================
   db.run(`
     CREATE TABLE IF NOT EXISTS incidents (
@@ -273,7 +305,7 @@ db.serialize(() => {
     { name: "apollo_key", type: "TEXT" },
     { name: "auto_sync", type: "INTEGER DEFAULT 0" },
     { name: "vision_sensitivity", type: "TEXT DEFAULT 'high'" },
-    { name: "vision_area", type: "TEXT DEFAULT 'all'" }
+    { name: "vision_area", type: "TEXT DEFAULT 'all'"}
   ];
 
   smartHubColumns.forEach((col) => {
@@ -457,6 +489,53 @@ function getSmartSettings(user_id) {
         resolve(row || {});
       });
     });
+}
+
+// ===============================
+// BUSINESS IDENTITY FUNCTIONS
+// ===============================
+function saveBusinessIdentity(user_id, business_type, business_description) {
+  return new Promise((resolve, reject) => {
+    // Check if identity exists
+    db.get(`SELECT id FROM business_identity WHERE user_id = ?`, [user_id], (err, row) => {
+      if (err) return reject(err);
+      
+      if (row) {
+        // Update existing
+        db.run(
+          `UPDATE business_identity SET business_type = ?, business_description = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+          [business_type, business_description, user_id],
+          function (err) {
+            if (err) return reject(err);
+            resolve(true);
+          }
+        );
+      } else {
+        // Insert new
+        db.run(
+          `INSERT INTO business_identity (user_id, business_type, business_description) VALUES (?, ?, ?)`,
+          [user_id, business_type, business_description],
+          function (err) {
+            if (err) return reject(err);
+            resolve(true);
+          }
+        );
+      }
+    });
+  });
+}
+
+function getBusinessIdentity(user_id) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT business_type, business_description, created_at, updated_at FROM business_identity WHERE user_id = ?`,
+      [user_id],
+      (err, row) => {
+        if (err) return reject(err);
+        resolve(row || { business_type: '', business_description: '' });
+      }
+    );
+  });
 }
 
 // ===============================
@@ -945,6 +1024,8 @@ module.exports = {
   updateWidgetSettings,
   updateSmartSettings,
   getSmartSettings,
+  saveBusinessIdentity,
+  getBusinessIdentity,
   saveSupportTicket,
   updateBusinessAbout,
   addKnowledge,
