@@ -1,887 +1,1891 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="js/master-fix.js"></script>
-  <meta charset="UTF-8" />
-  <title>AI Chat Widget Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-   <script src="js/master-fix.js"></script>
-    <script src="js/fix-all-html.js"></script>  <!-- ADD THIS LINE -->
     <meta charset="UTF-8" />
-  <style>
-    /* RESET & BASE STYLES */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    <title>AI Smart Hub - Business Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    body { 
-      font-family: 'Inter', sans-serif; 
-      background-color: #f8f9fa; 
-      color: #333; 
-      line-height: 1.6;
-    }
-
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-
-    /* HEADER */
-    header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      padding: 20px 0; 
-      border-bottom: 2px solid #eaeaea; 
-      margin-bottom: 30px; 
-    }
+    <!-- Load scripts in correct order -->
+    <script src="js/config.js"></script>
+    <script src="js/master-fix.js"></script>
+    <script src="js/fix-all-html.js"></script>
     
-    header h1 { font-size: 1.5rem; color: #1a1a1a; }
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* NOTIFICATION STYLES */
-    .header-right-actions {
-      display: flex;
-      align-items: center;
-      gap: 15px; /* Adjusted gap for more buttons */
-    }
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b8962e;
+            --primary-light: #f5e7b2;
+            --dark: #1a1a1a;
+            --dark-card: #2d2d2d;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --sidebar-bg: #0f0f0f;
+            --sidebar-hover: #2a2a2a;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
+            --transition: all 0.3s ease;
+            --sidebar-width: 280px;
+        }
 
-    .notification-wrapper {
-      position: relative;
-      cursor: pointer;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f2f5;
+            color: var(--dark);
+            line-height: 1.6;
+        }
 
-    .bell-icon {
-      font-size: 22px;
-      color: #333;
-      transition: 0.3s;
-    }
+        /* ========== SIDEBAR STYLES (Facebook-style) ========== */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
 
-    .bell-icon:hover { color: #d4af37; }
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            transition: var(--transition);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
 
-    .notif-badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background: #ff4d4d;
-      color: white;
-      border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 10px;
-      font-weight: bold;
-      border: 2px solid #fff;
-      display: none;
-    }
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
 
-    .notif-panel {
-      position: absolute;
-      top: 40px;
-      right: 0;
-      width: 320px;
-      background: #fff;
-      border: 1px solid #eee;
-      border-radius: 12px;
-      display: none;
-      flex-direction: column;
-      z-index: 10000;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
+        .sidebar-header h2 {
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .notif-panel.show { display: flex; }
+        .sidebar-header h2 i {
+            font-size: 1.8rem;
+        }
 
-    .notif-header {
-      padding: 15px;
-      background: #fafafa;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-    }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 15px;
+        }
 
-    .notif-content {
-      max-height: 400px;
-      overflow-y: auto;
-    }
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
 
-    .notif-entry {
-      padding: 15px;
-      border-bottom: 1px solid #f9f9f9;
-      font-size: 13px;
-    }
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: var(--transition);
+            font-weight: 500;
+        }
 
-    .notif-entry:hover { background: #fdfaf0; }
+        .sidebar-menu a i {
+            width: 24px;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
 
-    .notif-entry strong { color: #d4af37; display: block; margin-bottom: 2px; }
+        .sidebar-menu a:hover {
+            background: var(--sidebar-hover);
+            color: white;
+        }
 
-    /* CARDS & SECTIONS */
-    section { 
-      margin-bottom: 30px; 
-      padding: 25px; 
-      border-radius: 12px; 
-      background: #ffffff; 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
-      border: 1px solid #eee;
-    }
+        .sidebar-menu a.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--primary);
+            border-left: 3px solid var(--primary);
+        }
 
-    h2 { margin-bottom: 20px; color: #d4af37; font-size: 1.25rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
-    h4 { margin-bottom: 10px; color: #1a1a1a; }
+        .sidebar-menu a.active i {
+            color: var(--primary);
+        }
 
-    .hidden { display: none !important; }
-    
-    /* GRID SYSTEM */
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .sidebar-profile {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background: var(--sidebar-bg);
+        }
 
-    /* BUTTONS */
-    button { 
-      cursor: pointer; 
-      border: none; 
-      border-radius: 6px; 
-      font-weight: 600; 
-      padding: 10px 20px; 
-      transition: 0.3s;
-      background: #d4af37; 
-      color: #fff;
-    }
-    button:hover { background: #b8962e; transform: translateY(-1px); }
-    
-    #logoutBtn { background: #333; }
-    #logoutBtn:hover { background: #000; }
+        .profile-trigger {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
 
-    .nav-link-btn {
-      background: transparent;
-      color: #d4af37;
-      border: 1px solid #d4af37;
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: 0.3s;
-    }
-    .nav-link-btn:hover { background: #fdfaf0; color: #b8962e; }
+        .profile-trigger:hover {
+            background: var(--sidebar-hover);
+        }
 
-    /* --- NEW SMART HUB BUTTON CSS --- */
-    .nav-smart-hub-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
-      color: #fff !important;
-      padding: 10px 16px;
-      border-radius: 50px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.8rem;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
+        .profile-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
 
-    .nav-smart-hub-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
-    }
+        .profile-info {
+            flex: 1;
+        }
 
-    .btn-badge {
-      background: #fff;
-      color: #d4af37;
-      font-size: 0.6rem;
-      padding: 1px 5px;
-      border-radius: 10px;
-      font-weight: 900;
-      animation: pulse-glow 2s infinite;
-    }
+        .profile-info h4 {
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+            color: white;
+        }
 
-    @keyframes pulse-glow {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
+        .profile-info p {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.6);
+        }
 
-    /* DASHBOARD ELEMENTS */
-    .step-card { border-left: 4px solid #d4af37; padding: 15px; margin-bottom: 15px; background: #fafafa; border-radius: 0 8px 8px 0; }
-    
-    code { background: #eee; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #c7254e; }
-    
-    ul { list-style: none; }
-    li { 
-      padding: 15px; 
-      border-bottom: 1px solid #f1f1f1; 
-      font-size: 0.95rem; 
-      flex-shrink: 0; 
-    }
-    li:last-child { border-bottom: none; }
+        /* ========== PROFILE DROPDOWN MODAL ========== */
+        .profile-modal {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            width: 320px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1001;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
 
-    /* ================= FIXED SCROLLABLE LISTS ================= */
-    #leadsList, #chatsList, #ticketsList, #userLinksList {
-      display: flex !important;
-      flex-direction: column;
-      height: 320px !important;     
-      overflow-y: scroll !important;  /* Forced scroll for visibility */
-      overflow-x: hidden;
-      padding: 0;
-      margin: 0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #fff;
-    }
+        .profile-modal.show {
+            display: block;
+        }
 
-    /* CUSTOM SCROLLBAR */
-    #leadsList::-webkit-scrollbar, 
-    #chatsList::-webkit-scrollbar, 
-    #ticketsList::-webkit-scrollbar, 
-    #userLinksList::-webkit-scrollbar {
-      width: 12px;
-      display: block !important;
-    }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-    #leadsList::-webkit-scrollbar-track, 
-    #chatsList::-webkit-scrollbar-track, 
-    #ticketsList::-webkit-scrollbar-track, 
-    #userLinksList::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-left: 1px solid #eee;
-      border-radius: 0 8px 8px 0;
-    }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-    #leadsList::-webkit-scrollbar-thumb, 
-    #chatsList::-webkit-scrollbar-thumb, 
-    #ticketsList::-webkit-scrollbar-thumb, 
-    #userLinksList::-webkit-scrollbar-thumb {
-      background-color: #d4af37; 
-      border-radius: 20px; 
-      border: 3px solid #f1f1f1; 
-    }
+        .modal-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
 
-    #leadsList::-webkit-scrollbar-thumb:hover, 
-    #chatsList::-webkit-scrollbar-thumb:hover {
-      background-color: #b8962e;
-    }
+        .modal-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
 
-    /* SUPPORT FORM */
-    .support-form input, .support-form textarea { 
-      width: 100%; 
-      margin-bottom: 15px; 
-      padding: 12px; 
-      border: 1px solid #ddd; 
-      border-radius: 8px;
-      font-family: inherit;
-    }
+        .modal-info p {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
 
-    .legal-box { 
-      font-size: 0.85em; 
-      color: #666; 
-      background: #fdfdfd; 
-      padding: 15px; 
-      border: 1px solid #f0f0f0;
-      border-radius: 8px; 
-      max-height: 150px; 
-      overflow-y: auto; 
-    }
+        .modal-body {
+            padding: 20px;
+        }
 
-    .plan-card {
-      text-align: center;
-      padding: 20px;
-      border: 2px solid #f0f0f0;
-      border-radius: 12px;
-    }
+        .modal-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
 
-    /* PROFILE SECTION STYLES */
-    .profile-header {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-    .profile-avatar-container {
-      position: relative;
-      width: 100px;
-      height: 100px;
-    }
-    .profile-avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid #d4af37;
-      background: #eee;
-    }
-    .avatar-edit-label {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      background: #d4af37;
-      color: white;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 12px;
-      border: 2px solid white;
-    }
-    .profile-details input {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      margin-top: 5px;
-      width: 100%;
-    }
+        .modal-item:hover {
+            background: var(--light);
+            padding-left: 10px;
+        }
 
-    /* DELETE ACCOUNT STYLING */
-    .delete-btn {
-      background: #ff4d4d;
-      margin-top: 15px;
-      font-size: 0.8rem;
-    }
-    .delete-btn:hover { background: #cc0000; }
+        .modal-item i {
+            width: 24px;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
 
-    /* SMART TOOLS CUSTOM STYLE */
-    .flex-row-between {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 15px;
-      padding: 10px;
-      background: #f9f9f9;
-      border-radius: 8px;
-    }
+        .modal-item span {
+            flex: 1;
+            font-size: 0.95rem;
+        }
 
-    footer { text-align: center; margin-top: 50px; padding: 20px; color: #888; font-size: 0.9rem; }
-  </style>
+        .modal-item .badge {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+            transition: var(--transition);
+        }
+
+        /* ========== TOP HEADER ========== */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .page-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .page-title p {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification-badge {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .notification-badge i {
+            font-size: 1.3rem;
+            color: var(--gray);
+            transition: var(--transition);
+        }
+
+        .notification-badge:hover i {
+            color: var(--primary);
+        }
+
+        .badge-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+
+        .plan-badge {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .plan-badge i {
+            font-size: 1rem;
+        }
+
+        /* ========== NOTIFICATION PANEL ========== */
+        .notification-panel {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            width: 360px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 1002;
+            display: none;
+        }
+
+        .notification-panel.show {
+            display: block;
+        }
+
+        .notification-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .notification-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: var(--light);
+        }
+
+        .notification-item.unread {
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .notification-title .time {
+            font-size: 0.7rem;
+            color: var(--gray);
+            font-weight: normal;
+        }
+
+        .notification-message {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        /* ========== STATS CARDS ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(212, 175, 55, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .stat-change {
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        /* ========== SECTION CARDS ========== */
+        .section-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header h2 i {
+            color: var(--primary);
+        }
+
+        .view-all {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition);
+        }
+
+        .view-all:hover {
+            gap: 10px;
+        }
+
+        /* ========== LIST STYLES ========== */
+        .leads-list, .chats-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .lead-item, .chat-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .lead-item:hover, .chat-item:hover {
+            background: var(--light);
+        }
+
+        .lead-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .lead-email {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        .lead-date {
+            font-size: 0.7rem;
+            color: var(--gray);
+        }
+
+        .chat-client {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .chat-preview {
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* ========== TICKETS ========== */
+        .ticket-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .ticket-status.open {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .ticket-status.closed {
+            background: rgba(108, 117, 125, 0.1);
+            color: var(--gray);
+        }
+
+        /* ========== PLANS ========== */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .plan-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px 20px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .plan-card.popular::before {
+            content: '🔥 MOST POPULAR';
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: var(--primary);
+            color: white;
+            padding: 5px 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transform: rotate(45deg);
+        }
+
+        .plan-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .plan-icon i {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .plan-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            color: var(--gray);
+            font-weight: normal;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .plan-features li {
+            padding: 8px 0;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .plan-features li i {
+            color: var(--primary);
+            margin-right: 8px;
+            font-size: 0.8rem;
+        }
+
+        .plan-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .plan-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .plan-btn.current {
+            background: var(--light-gray);
+            color: var(--gray);
+            cursor: not-allowed;
+        }
+
+        /* ========== FORMS ========== */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: inherit;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        /* ========== WIDGET KEY ========== */
+        .widget-key-box {
+            background: var(--light);
+            padding: 20px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--dark);
+            word-break: break-all;
+            border: 1px dashed var(--primary);
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* ========== GUIDANCE ========== */
+        .guidance-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .step {
+            text-align: center;
+            padding: 25px;
+            background: var(--light);
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .step-number {
+            width: 35px;
+            height: 35px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 15px;
+        }
+
+        .step h4 {
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        /* ========== FOOTER ========== */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        /* ========== UTILITIES ========== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-4 {
+            margin-top: 30px;
+        }
+
+        .mb-2 {
+            margin-bottom: 15px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .plans-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-
-<div class="container">
-  <header>
-    <h1>AI Chat Widget</h1>
-    <div class="header-right-actions">
-        <a href="about.html" class="nav-link-btn">About Us</a>
-        
-        <a href="smart-tools.html" class="nav-smart-hub-btn">
-          <span>🚀</span>
-          <span>Smart Business Hub</span>
-          <span class="btn-badge">NEW</span>
-        </a>
-
-        <div class="notification-wrapper" id="notif-bell-container">
-          <span class="bell-icon">🔔</span>
-          <span class="notif-badge" id="notif-badge">0</span>
-          <div class="notif-panel" id="notif-panel">
-            <div class="notif-header">
-              <span>Notifications</span>
-              <button id="notif-close-btn" style="padding: 2px 5px; font-size: 12px; background: #eee; color: #333;">Close</button>
+    <div class="app-container">
+        <!-- Facebook-style Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>
+                    <i class="fas fa-robot"></i>
+                    AI Smart Hub
+                </h2>
             </div>
-            <div class="notif-content" id="notif-content-list">
-              <div class="notif-entry"><strong>Welcome</strong> Your dashboard is now active.</div>
+
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#" class="active" onclick="showSection('dashboard')">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showSection('leads')">
+                        <i class="fas fa-users"></i>
+                        <span>Leads</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showSection('chats')">
+                        <i class="fas fa-comments"></i>
+                        <span>Chats</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showSection('tickets')">
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Support Tickets</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showSection('plans')">
+                        <i class="fas fa-crown"></i>
+                        <span>Subscription Plans</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showSection('widget')">
+                        <i class="fas fa-code"></i>
+                        <span>Widget Setup</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="smart-tools.html">
+                        <i class="fas fa-magic"></i>
+                        <span>Smart Tools</span>
+                        <span class="badge" style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: auto;">NEW</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="customer-insights.html">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Customer Insights</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="ai-automations.html">
+                        <i class="fas fa-bolt"></i>
+                        <span>AI Automations</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Profile Trigger at Bottom -->
+            <div class="sidebar-profile">
+                <div class="profile-trigger" onclick="toggleProfileModal()">
+                    <div class="profile-avatar" id="sidebarAvatar">👤</div>
+                    <div class="profile-info">
+                        <h4 id="sidebarBusinessName">Business Name</h4>
+                        <p id="sidebarPlan">Free Plan</p>
+                    </div>
+                    <i class="fas fa-chevron-up" style="color: var(--primary);"></i>
+                </div>
             </div>
-          </div>
+        </aside>
+
+        <!-- Profile Modal (Facebook-style dropdown) -->
+        <div class="profile-modal" id="profileModal">
+            <div class="modal-header">
+                <div class="modal-avatar" id="modalAvatar">👤</div>
+                <div class="modal-info">
+                    <h3 id="modalBusinessName">Business Name</h3>
+                    <p id="modalEmail">email@example.com</p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-item" onclick="editProfile()">
+                    <i class="fas fa-user-edit"></i>
+                    <span>Edit Profile</span>
+                </div>
+                <div class="modal-item" onclick="changePassword()">
+                    <i class="fas fa-key"></i>
+                    <span>Change Password</span>
+                </div>
+                <div class="modal-item" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    <span>Export Data</span>
+                </div>
+                <div class="modal-item" onclick="showPrivacySettings()">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Privacy Settings</span>
+                    <span class="badge">New</span>
+                </div>
+                <div class="modal-item" style="color: var(--danger);" onclick="deleteAccount()">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Delete Account</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" style="flex:1;" onclick="logout()">Logout</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="toggleProfileModal()">Close</button>
+            </div>
         </div>
 
-        <span id="verifyWarning" style="color:red; font-weight:bold; margin-right:20px;" class="hidden">⚠️ Verify Email</span>
-        <button class="nav-link-btn" onclick="window.location.href='dashboard.html'">Go to Admin Panel</button>
-        <button id="logoutBtn">Logout</button>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <div class="top-header">
+                <div class="page-title">
+                    <h1 id="pageTitle">Dashboard</h1>
+                    <p id="pageSubtitle">Welcome back! Here's your business overview</p>
+                </div>
+                <div class="header-actions">
+                    <div class="notification-badge" onclick="toggleNotifications()">
+                        <i class="far fa-bell"></i>
+                        <span class="badge-count" id="notificationCount">0</span>
+                    </div>
+                    <div class="plan-badge" id="headerPlan">
+                        <i class="fas fa-crown"></i>
+                        <span id="headerPlanName">FREE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Panel -->
+            <div class="notification-panel" id="notificationPanel">
+                <div class="notification-header">
+                    <h3>Notifications</h3>
+                    <button class="btn btn-outline" style="padding: 5px 15px;" onclick="markAllRead()">Mark all read</button>
+                </div>
+                <div class="notification-list" id="notificationList">
+                    <div class="notification-item unread">
+                        <div class="notification-title">
+                            <span>🎉 Welcome!</span>
+                            <span class="time">Just now</span>
+                        </div>
+                        <div class="notification-message">Your dashboard is now active and ready to use.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards (always visible) -->
+            <div class="stats-grid" id="statsSection">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="stat-value" id="statMessages">0</div>
+                    </div>
+                    <div class="stat-label">AI Messages Used</div>
+                    <div class="stat-change positive" id="statMessagesChange">+12% from last month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="stat-value" id="statLeads">0</div>
+                    </div>
+                    <div class="stat-label">Leads Captured</div>
+                    <div class="stat-change positive" id="statLeadsChange">+8% from last month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                        <div class="stat-value" id="statChats">0</div>
+                    </div>
+                    <div class="stat-label">Total Conversations</div>
+                    <div class="stat-change" id="statChatsChange">Updated real-time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="stat-value" id="statTickets">0</div>
+                    </div>
+                    <div class="stat-label">Open Tickets</div>
+                    <div class="stat-change" id="statTicketsChange">Support status</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section (default view) -->
+            <div id="dashboardSection">
+                <!-- Smart Tools Quick Section -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-magic"></i> Smart Tools</h2>
+                        <a href="smart-tools.html" class="view-all">Configure Tools <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                        <div class="form-group">
+                            <label>Booking URL</label>
+                            <input type="text" id="bookingUrlInput" class="form-control" placeholder="https://calendly.com/...">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+                            <label style="margin-bottom: 0;">Sentiment Alerts</label>
+                            <label class="switch">
+                                <input type="checkbox" id="sentimentToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" onclick="saveSmartTools()" style="width: 100%;">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guidance Section -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-rocket"></i> Getting Started</h2>
+                    </div>
+                    <div class="guidance-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <h4>Add Knowledge</h4>
+                            <p>Tell the AI about your business in Smart Tools</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <h4>Install Widget</h4>
+                            <p>Copy your widget code to your website</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <h4>Collect Leads</h4>
+                            <p>Watch leads come in automatically</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout -->
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 25px;">
+                    <!-- Recent Leads -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-users"></i> Recent Leads</h2>
+                            <a href="#" class="view-all" onclick="showSection('leads')">View All <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="leads-list" id="recentLeadsList">
+                            <div class="text-center" style="padding: 40px;">No leads yet</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Chats -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-comments"></i> Recent Chats</h2>
+                            <a href="#" class="view-all" onclick="showSection('chats')">View All <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="chats-list" id="recentChatsList">
+                            <div class="text-center" style="padding: 40px;">No chats yet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Widget Key Section -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-code"></i> Your Widget Key</h2>
+                    </div>
+                    <div class="widget-key-box" id="widgetKeyBox">
+                        <span id="widgetKeyDisplay">Loading...</span>
+                        <button class="copy-btn" onclick="copyWidgetKey()">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads Section (hidden by default) -->
+            <div id="leadsSection" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users"></i> All Leads</h2>
+                    </div>
+                    <div class="leads-list" id="allLeadsList"></div>
+                </div>
+            </div>
+
+            <!-- Chats Section (hidden by default) -->
+            <div id="chatsSection" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-comments"></i> All Conversations</h2>
+                    </div>
+                    <div class="chats-list" id="allChatsList"></div>
+                </div>
+            </div>
+
+            <!-- Tickets Section (hidden by default) -->
+            <div id="ticketsSection" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-ticket-alt"></i> Support Tickets</h2>
+                        <button class="btn btn-primary" onclick="showNewTicketModal()">+ New Ticket</button>
+                    </div>
+                    <div id="ticketsList"></div>
+                </div>
+            </div>
+
+            <!-- Plans Section (hidden by default) -->
+            <div id="plansSection" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-crown"></i> Subscription Plans</h2>
+                    </div>
+                    <div class="plans-grid" id="planCards"></div>
+                </div>
+            </div>
+
+            <!-- Widget Setup Section (hidden by default) -->
+            <div id="widgetSection" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-code"></i> Widget Installation</h2>
+                    </div>
+                    <p>Copy and paste this code into your website's HTML, just before the closing &lt;/body&gt; tag:</p>
+                    <div class="widget-key-box" style="min-height: 200px; white-space: pre-wrap;" id="widgetCode">Loading...</div>
+                    <button class="btn btn-primary" onclick="copyWidgetCode()"><i class="fas fa-copy"></i> Copy Code</button>
+                </div>
+            </div>
+
+            <!-- New Ticket Modal -->
+            <div id="ticketModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 2000;">
+                <div style="background: white; width: 90%; max-width: 500px; border-radius: 16px; padding: 30px;">
+                    <h3 style="margin-bottom: 20px;">Create Support Ticket</h3>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="ticketSubject" class="form-control" placeholder="e.g., Billing Issue">
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea id="ticketMessage" class="form-control" rows="4" placeholder="Describe your issue..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <button class="btn btn-primary" style="flex:1;" onclick="submitTicket()">Submit</button>
+                        <button class="btn btn-outline" style="flex:1;" onclick="closeTicketModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>&copy; 2026 AI Smart Hub. All rights reserved.</p>
+            </div>
+        </main>
     </div>
-  </header>
 
-  <section id="smart-tools-section">
-    <h2>🚀 Smart Business Tools (Problem Solvers)</h2>
-    <div class="grid">
-      <div class="support-form">
-        <h4>📅 Appointment Booking</h4>
-        <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">The AI will share this link automatically when visitors ask to book a meeting.</p>
-        <input type="text" id="bookingUrlInput" placeholder="https://calendly.com/your-business">
-        
-        <div class="flex-row-between">
-          <span><strong>Enable Sentiment Alerts</strong><br><small>Get emails when customers are angry</small></span>
-          <input type="checkbox" id="sentimentToggle" style="width:25px; height:25px;">
-        </div>
-        
-        <button id="saveSmartToolsBtn" style="width: 100%; margin-top: 15px;">Save Smart Settings</button>
-      </div>
-      <div>
-        <h4>How it works</h4>
-        <ul class="step-card" style="border-left: 4px solid #1a1a1a;">
-          <li><strong>Proactive Booking:</strong> If a user says "I want to visit" or "schedule," AI gives the link.</li>
-          <li><strong>Crisis Control:</strong> If the AI detects words like "refund" or "scam," it flags the chat and emails you immediately.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="profile-section">
-    <h2>User Profile & Settings</h2>
-    <div class="grid">
-      <div class="profile-card">
-        <div class="profile-header">
-          <div class="profile-avatar-container">
-            <img src="https://via.placeholder.com/100" id="profileImg" class="profile-avatar" alt="Business Logo">
-            <label for="avatarUpload" class="avatar-edit-label">✎</label>
-            <input type="file" id="avatarUpload" class="hidden" accept="image/*">
-          </div>
-          <div class="profile-details">
-            <h3 id="displayBusinessName">Business Name</h3>
-            <p id="displayEmail" style="color: #777; font-size: 0.9rem;">email@example.com</p>
-          </div>
-        </div>
-        <div class="support-form" style="border-top: 1px solid #f0f0f0; padding-top: 15px;">
-          <h4>Update Business Info</h4>
-          <label style="font-size: 0.8rem; font-weight: 600;">Business Name</label>
-          <input type="text" id="editBusinessName" placeholder="Enter new business name">
-          
-          <label style="font-size: 0.8rem; font-weight: 600; margin-top: 10px; display: block;">Change Password</label>
-          <input type="password" id="newPassword" placeholder="Enter new password (optional)">
-          
-          <button id="updateProfileBtn">Save Changes</button>
-        </div>
-      </div>
-      
-      <div class="settings-card">
-        <h4>Account Management</h4>
-        <ul style="margin-top: 10px; margin-bottom: 20px;">
-          <li style="display: flex; justify-content: space-between; align-items: center;">
-            <strong>Privacy Mode (Incognito)</strong>
-            <input type="checkbox" id="privacyToggle" style="width: 20px; height: 20px;">
-          </li>
-          <li><strong>Status:</strong> <span style="color: green;">Active</span></li>
-          <li><strong>Account ID:</strong> <small id="accountId">Loading...</small></li>
-          <li><strong>Data Export:</strong> <a href="#" style="color: #d4af37; text-decoration: none;">Request JSON Export</a></li>
-        </ul>
-        
-        <div style="border-top: 1px solid #eee; padding-top: 15px;">
-          <h4 style="color: #cc0000;">Danger Zone</h4>
-          <p style="font-size: 0.8rem; color: #666;">Once you delete your account, there is no going back. Please be certain.</p>
-          <button id="deleteAccountBtn" class="delete-btn">Delete My Account Permanently</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="links-management">
-    <h2>🔗 External Links</h2>
-    <div class="grid">
-      <div class="support-form">
-        <h4>Add Custom Link</h4>
-        <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Add links for your widget (e.g., Website, Socials).</p>
-        <input type="text" id="linkName" placeholder="Link Label (e.g. Visit Website)">
-        <input type="url" id="linkValue" placeholder="https://yourlink.com">
-        <button id="saveLinkBtn" style="width: 100%;">Add Link</button>
-      </div>
-      <div>
-        <h4>Saved Links</h4>
-        <ul id="userLinksList">
-          <li style="color: #aaa; text-align: center;">No links added.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="dashboard-info">
-    <h2>Welcome, <span id="businessName">Loading...</span></h2>
-    <div class="grid">
-        <div>
-            <p><strong>Current Plan:</strong> <span id="currentPlan" style="color:#d4af37; font-weight:bold;">Free</span></p>
-            <p><strong>Messages:</strong> <span id="messagesUsed">0</span> / <span id="messagesLimit">50</span></p>
-        </div>
-        <div>
-            <p><strong>Leads Captured:</strong> <span id="leadsUsed">0</span> / <span id="leadsLimit">10</span></p>
-            <p><strong>Widget Key:</strong> <code id="widgetKeyDisplay">Loading...</code></p>
-        </div>
-    </div>
-  </section>
-
-  <section class="guidance">
-    <h2>🚀 Getting Started</h2>
-    <div id="guidanceSteps">
-        <div class="step-card">
-            <h4>1. Add Knowledge</h4>
-            <p>Go to the <strong>Admin Panel</strong> to tell the AI about your business, pricing, and services.</p>
-        </div>
-        <div class="step-card">
-            <h4>2. Install the Widget</h4>
-            <p>Copy your Widget Key and paste the script tag into your website's HTML header or footer.</p>
-        </div>
-        <div class="step-card">
-            <h4>3. Collect Leads</h4>
-            <p>The AI will automatically capture visitor emails. View them in the "Leads" section below.</p>
-        </div>
-    </div>
-  </section>
-
-  <div class="grid">
-      <section class="leads">
-        <h2>Your Leads</h2>
-        <ul id="leadsList"></ul>
-      </section>
-
-      <section class="chats">
-        <h2>Recent Conversations</h2>
-        <ul id="chatsList"></ul>
-      </section>
-  </div>
-
-  <section class="support">
-    <h2>🛠️ Customer Support</h2>
-    <div class="grid">
-        <div class="support-form">
-            <p style="margin-bottom:10px;">Need help? Open a support ticket.</p>
-            <input type="text" id="ticketSubject" placeholder="Subject (e.g. Billing Issue)">
-            <textarea id="ticketMessage" rows="4" placeholder="Describe your issue in detail..."></textarea>
-            <button id="submitTicketBtn" style="width:100%;">Submit Ticket</button>
-        </div>
-        <div>
-            <h4>Ticket Status</h4>
-            <ul id="ticketsList"></ul>
-        </div>
-    </div>
-  </section>
-
-  <section class="plans">
-    <h2>Scale Your Business</h2>
-    <div class="grid" id="planCards"></div>
-  </section>
-
-  <section class="legal">
-    <h2>Legal & Privacy</h2>
-    <div class="grid">
-        <div>
-            <h4>Terms of Service</h4>
-            <div id="termsContent" class="legal-box">Loading terms...</div>
-        </div>
-        <div>
-            <h4>Privacy Policy</h4>
-            <div id="privacyContent" class="legal-box">Loading privacy policy...</div>
-        </div>
-    </div>
-  </section>
-
-  <footer>
-    <p>&copy; 2026 AI SaaS Platform. All Rights Reserved.</p>
-  </footer>
-</div>
-
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-<script>
-// --- SECURITY PROTECTION: REDIRECT IF NO TOKEN ---
-if (!localStorage.getItem("token")) {
-    window.location.href = "login.html";
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-
-  const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
-  const token = localStorage.getItem("token");
-
-  if (!token) return;
-
-  const socket = io("https://ai-smart-hub.onrender.com");
-
-  /* ================= NOTIFICATION LOGIC ================= */
-  const notifBell = document.getElementById("notif-bell-container");
-  const notifPanel = document.getElementById("notif-panel");
-  const notifBadge = document.getElementById("notif-badge");
-  const notifList = document.getElementById("notif-content-list");
-  const notifClose = document.getElementById("notif-close-btn");
-
-  notifBell.addEventListener("click", (e) => {
-    e.stopPropagation();
-    notifPanel.classList.toggle("show");
-    notifBadge.style.display = "none";
-    notifBadge.innerText = "0";
-  });
-
-  notifClose.addEventListener("click", (e) => {
-    e.stopPropagation();
-    notifPanel.classList.remove("show");
-  });
-
-  document.addEventListener("click", () => {
-    notifPanel.classList.remove("show");
-  });
-
-  window.addNotification = function(title, msg) {
-    const entry = document.createElement("div");
-    entry.className = "notif-entry";
-    entry.innerHTML = `<strong>${title}</strong> ${msg}`;
-    notifList.prepend(entry);
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
-    let count = parseInt(notifBadge.innerText) + 1;
-    notifBadge.innerText = count;
-    notifBadge.style.display = "block";
-  };
+    <script>
+        // ========== GLOBAL VARIABLES ==========
+        const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
+        const token = localStorage.getItem("token");
+        let socket = null;
+        let currentPlan = 'free';
+        let businessData = {};
+        let notifications = [];
+        let notificationCount = 0;
 
-  socket.on("newLead", (data) => {
-    window.addNotification("🚀 New Lead!", `${data.name} just signed up via the widget.`);
-    const list = document.getElementById("leadsList");
-    if (list.innerText.includes("No leads captured")) list.innerHTML = "";
-    const newLeadHtml = `<li><strong>${data.name}</strong><br><span style="color:#666">${data.email}</span><br><small style="color:#aaa">Just now</small></li>`;
-    list.insertAdjacentHTML('afterbegin', newLeadHtml);
-    const leadsUsed = document.getElementById("leadsUsed");
-    leadsUsed.textContent = parseInt(leadsUsed.textContent || 0) + 1;
-  });
+        // ========== INITIALIZATION ==========
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
 
-  /* ================= SMART TOOLS LOGIC ================= */
-  document.getElementById("saveSmartToolsBtn").addEventListener("click", async () => {
-      const bookingUrl = document.getElementById("bookingUrlInput").value;
-      const sentimentEnabled = document.getElementById("sentimentToggle").checked ? 1 : 0;
-
-      try {
-          const res = await fetch(`${API_BASE}/admin/users/update-smart-settings`, {
-              method: "PUT",
-              headers: { 
-                  "Content-Type": "application/json", 
-                  "Authorization": `Bearer ${token}` 
-              },
-              body: JSON.stringify({ 
-                  booking_url: bookingUrl,
-                  sentiment_alerts: sentimentEnabled 
-              })
-          });
-          
-          if(res.ok) {
-              alert("Smart Tools updated! Your AI is now more powerful.");
-          } else {
-              alert("Failed to update settings.");
-          }
-      } catch (err) {
-          console.error("Smart Tools Error:", err);
-      }
-  });
-
-  /* ================= FETCH DASHBOARD DATA ================= */
-  async function loadDashboard() {
-    try {
-      const res = await fetch(`${API_BASE}/dashboard/full`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      
-      if (res.status === 401) {
-          localStorage.clear();
-          window.location.href = "login.html";
-          return;
-      }
-
-      const data = await res.json();
-
-      if (data.id) {
-          socket.emit("join", data.id);
-      }
-
-      const bName = data.business_name || "Business Owner";
-      document.getElementById("businessName").textContent = bName;
-      document.getElementById("displayBusinessName").textContent = bName;
-      document.getElementById("editBusinessName").value = bName;
-      document.getElementById("displayEmail").textContent = data.email || "No Email Found";
-      document.getElementById("accountId").textContent = data.id || "N/A";
-      
-      document.getElementById("currentPlan").textContent = (data.plan || "free").toUpperCase();
-      document.getElementById("messagesUsed").textContent = data.messages_used || 0;
-      document.getElementById("messagesLimit").textContent = data.messages_limit || 0;
-      document.getElementById("leadsUsed").textContent = data.leads_used || 0;
-      document.getElementById("leadsLimit").textContent = data.leads_limit || 0;
-      document.getElementById("widgetKeyDisplay").textContent = data.widget_key || "No Key Found";
-
-      // Load existing Smart Settings into inputs
-      document.getElementById("bookingUrlInput").value = data.booking_url || "";
-      document.getElementById("sentimentToggle").checked = data.sentiment_alerts === 1;
-
-      if(data.profile_pic) {
-          document.getElementById("profileImg").src = data.profile_pic;
-      }
-
-      if (data.is_verified === 0) {
-        document.getElementById("verifyWarning").classList.remove("hidden");
-      }
-
-      renderLeads(data.leads || []);
-      renderChats(data.chats || []);
-      renderPlans(data.plan || "free");
-    } catch (err) {
-      console.error("Dashboard Load Error:", err);
-    }
-  }
-
-  /* ================= PROFILE UPDATES ================= */
-  document.getElementById("updateProfileBtn").addEventListener("click", async () => {
-      const newName = document.getElementById("editBusinessName").value;
-      const newPass = document.getElementById("newPassword").value;
-      
-      if(!newName) return alert("Business name cannot be empty");
-
-      try {
-          const res = await fetch(`${API_BASE}/admin/users/update-profile`, {
-              method: "PUT",
-              headers: { 
-                  "Content-Type": "application/json", 
-                  "Authorization": `Bearer ${token}` 
-              },
-              body: JSON.stringify({ 
-                  business_name: newName,
-                  password: newPass 
-              })
-          });
-          
-          if(res.ok) {
-              alert("Profile updated successfully!");
-              document.getElementById("newPassword").value = "";
-              loadDashboard();
-          }
-      } catch (err) {
-          console.error("Update Error:", err);
-      }
-  });
-
-  /* ================= ADD LINK LOGIC ================= */
-  document.getElementById("saveLinkBtn").addEventListener("click", () => {
-      const name = document.getElementById("linkName").value;
-      const val = document.getElementById("linkValue").value;
-      if(!name || !val) return alert("Please enter both link name and URL");
-      
-      const list = document.getElementById("userLinksList");
-      if(list.innerText.includes("No links added")) list.innerHTML = "";
-      
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="${val}" target="_blank" style="color: #d4af37; font-weight: 600;">${name}</a> <br><small style="color:#888">${val}</small>`;
-      list.appendChild(li);
-      
-      document.getElementById("linkName").value = "";
-      document.getElementById("linkValue").value = "";
-      alert("Link added!");
-  });
-
-  /* ================= ACCOUNT DELETION ================= */
-  document.getElementById("deleteAccountBtn").addEventListener("click", async () => {
-      const confirmDelete = confirm("CRITICAL: Are you sure you want to delete your account?");
-      if (confirmDelete) {
-          const secondConfirm = prompt("To confirm, please type 'DELETE' in the box below:");
-          if (secondConfirm === "DELETE") {
-              try {
-                  const res = await fetch(`${API_BASE}/admin/users/delete-account`, {
-                      method: "DELETE",
-                      headers: { "Authorization": `Bearer ${token}` }
-                  });
-                  if (res.ok) {
-                      alert("Account successfully deleted.");
-                      localStorage.clear();
-                      window.location.href = "login.html";
-                  }
-              } catch (err) {
-                  console.error("Delete Error:", err);
-              }
-          }
-      }
-  });
-
-  document.getElementById("avatarUpload").addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      if (file) {
-          const reader = new FileReader();
-          reader.onload = function(event) {
-              document.getElementById("profileImg").src = event.target.result;
-          };
-          reader.readAsDataURL(file);
-      }
-  });
-
-  function renderLeads(leads) {
-    const list = document.getElementById("leadsList");
-    list.innerHTML = leads.length ? "" : "<li style='text-align:center;'>No leads captured yet.</li>";
-    leads.forEach(l => {
-      list.innerHTML += `<li><strong>${l.name}</strong><br><span style="color:#666">${l.email}</span><br><small style="color:#aaa">${new Date(l.created_at).toLocaleDateString()}</small></li>`;
-    });
-  }
-
-  function renderChats(chats) {
-    const list = document.getElementById("chatsList");
-    list.innerHTML = chats.length ? "" : "<li style='text-align:center;'>No conversations yet.</li>";
-    chats.forEach(c => {
-      list.innerHTML += `<li>Visitor: <strong>${c.client_name || 'Guest'}</strong> <br> <small style="color:#aaa">Last active: ${c.created_at ? new Date(c.created_at).toLocaleTimeString() : 'Unknown'}</small></li>`;
-    });
-  }
-
-  /* ================= SUPPORT TICKETS ================= */
-  document.getElementById("submitTicketBtn").addEventListener("click", async () => {
-    const subject = document.getElementById("ticketSubject").value;
-    const message = document.getElementById("ticketMessage").value;
-    if(!subject || !message) return alert("Please fill in both fields");
-    const res = await fetch(`${API_BASE}/support/ticket`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ subject, message })
-    });
-    if (res.ok) {
-      alert("Ticket submitted successfully!");
-      document.getElementById("ticketSubject").value = "";
-      document.getElementById("ticketMessage").value = "";
-      loadTickets();
-    }
-  });
-
-  async function loadTickets() {
-    try {
-        const res = await fetch(`${API_BASE}/support/my-tickets`, {
-        headers: { "Authorization": `Bearer ${token}` }
+            // Initialize socket
+            socket = io(BACKEND_URL);
+            
+            // Load dashboard data
+            await loadDashboardData();
+            
+            // Set up socket listeners
+            setupSocketListeners();
+            
+            // Show dashboard section by default
+            showSection('dashboard');
         });
-        const tickets = await res.json();
-        const list = document.getElementById("ticketsList");
-        list.innerHTML = tickets.length ? "" : "<li style='text-align:center;'>No tickets opened.</li>";
-        tickets.forEach(t => {
-        list.innerHTML += `<li><span style="color:#d4af37">[${t.status.toUpperCase()}]</span> ${t.subject}</li>`;
+
+        // ========== SOCKET SETUP ==========
+        function setupSocketListeners() {
+            socket.on("newLead", (data) => {
+                addNotification('🚀 New Lead!', `${data.name} (${data.email}) just signed up.`);
+                loadDashboardData();
+            });
+
+            socket.on("newChat", (data) => {
+                addNotification('💬 New Chat', `New conversation with ${data.client_name}`);
+                loadDashboardData();
+            });
+
+            socket.on("ticketUpdate", (data) => {
+                addNotification('🎫 Ticket Update', `Your ticket "${data.subject}" has been updated.`);
+                loadTickets();
+            });
+        }
+
+        // ========== NOTIFICATION SYSTEM ==========
+        function addNotification(title, message) {
+            const list = document.getElementById('notificationList');
+            const count = document.getElementById('notificationCount');
+            
+            notificationCount++;
+            count.textContent = notificationCount;
+            
+            const item = document.createElement('div');
+            item.className = 'notification-item unread';
+            item.innerHTML = `
+                <div class="notification-title">
+                    <span>${title}</span>
+                    <span class="time">Just now</span>
+                </div>
+                <div class="notification-message">${message}</div>
+            `;
+            list.prepend(item);
+        }
+
+        function toggleNotifications() {
+            document.getElementById('notificationPanel').classList.toggle('show');
+        }
+
+        function markAllRead() {
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.classList.remove('unread');
+            });
+            notificationCount = 0;
+            document.getElementById('notificationCount').textContent = '0';
+        }
+
+        // ========== PROFILE MODAL ==========
+        function toggleProfileModal() {
+            document.getElementById('profileModal').classList.toggle('show');
+        }
+
+        // ========== SECTION NAVIGATION ==========
+        function showSection(section) {
+            // Update active menu item
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            event?.target?.closest('a')?.classList.add('active');
+            
+            // Hide all sections
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('leadsSection').style.display = 'none';
+            document.getElementById('chatsSection').style.display = 'none';
+            document.getElementById('ticketsSection').style.display = 'none';
+            document.getElementById('plansSection').style.display = 'none';
+            document.getElementById('widgetSection').style.display = 'none';
+            
+            // Show selected section
+            document.getElementById(section + 'Section').style.display = 'block';
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'leads': 'Leads Management',
+                'chats': 'Chat History',
+                'tickets': 'Support Tickets',
+                'plans': 'Subscription Plans',
+                'widget': 'Widget Setup'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
+            document.getElementById('pageSubtitle').textContent = `Manage your ${titles[section].toLowerCase()}`;
+            
+            // Load section data if needed
+            if (section === 'leads') loadLeads();
+            if (section === 'chats') loadChats();
+            if (section === 'tickets') loadTickets();
+            if (section === 'plans') renderPlans(currentPlan);
+            if (section === 'widget') loadWidgetCode();
+        }
+
+        // ========== LOAD DASHBOARD DATA ==========
+        async function loadDashboardData() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/dashboard/full`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await res.json();
+                businessData = data;
+                currentPlan = data.plan || 'free';
+
+                // Update UI
+                updateUI(data);
+                
+                // Join socket room
+                if (data.id) socket.emit("join", data.id);
+
+            } catch (err) {
+                console.error("Dashboard Load Error:", err);
+            }
+        }
+
+        // ========== UPDATE UI ==========
+        function updateUI(data) {
+            // Business info
+            const businessName = data.business_name || "Business Owner";
+            document.querySelectorAll('[id$="BusinessName"]').forEach(el => {
+                if (el) el.textContent = businessName;
+            });
+            
+            // Email
+            document.getElementById('modalEmail').textContent = data.email || "No Email";
+            
+            // Plan
+            currentPlan = (data.plan || "free").toUpperCase();
+            document.querySelectorAll('[id$="Plan"], [id$="PlanName"]').forEach(el => {
+                if (el) el.textContent = currentPlan;
+            });
+            
+            // Stats
+            document.getElementById('statMessages').textContent = data.messages_used || 0;
+            document.getElementById('statLeads').textContent = data.leads_used || 0;
+            document.getElementById('statChats').textContent = data.chats?.length || 0;
+            
+            // Widget key
+            document.getElementById('widgetKeyDisplay').textContent = data.widget_key || "No Key Found";
+            
+            // Smart Tools
+            document.getElementById('bookingUrlInput').value = data.booking_url || "";
+            document.getElementById('sentimentToggle').checked = data.sentiment_alerts === 1;
+
+            // Render recent lists
+            renderRecentLeads(data.leads || []);
+            renderRecentChats(data.chats || []);
+            
+            // Generate widget code
+            generateWidgetCode(data.widget_key);
+        }
+
+        // ========== RENDER RECENT LEADS ==========
+        function renderRecentLeads(leads) {
+            const list = document.getElementById('recentLeadsList');
+            if (!list) return;
+            
+            if (leads.length === 0) {
+                list.innerHTML = '<div class="text-center" style="padding: 40px;">No leads yet</div>';
+                return;
+            }
+
+            list.innerHTML = leads.slice(0, 5).map(l => `
+                <div class="lead-item">
+                    <div class="lead-name">
+                        <span>${l.name}</span>
+                        <span class="lead-date">${new Date(l.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div class="lead-email">${l.email}</div>
+                </div>
+            `).join('');
+        }
+
+        // ========== RENDER RECENT CHATS ==========
+        function renderRecentChats(chats) {
+            const list = document.getElementById('recentChatsList');
+            if (!list) return;
+            
+            if (chats.length === 0) {
+                list.innerHTML = '<div class="text-center" style="padding: 40px;">No chats yet</div>';
+                return;
+            }
+
+            list.innerHTML = chats.slice(0, 5).map(c => `
+                <div class="chat-item">
+                    <div class="chat-client">${c.client_name || 'Guest'}</div>
+                    <div class="chat-preview">
+                        <span>${c.message?.substring(0, 50)}...</span>
+                        <span class="lead-date">${new Date(c.created_at).toLocaleTimeString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ========== LOAD ALL LEADS ==========
+        async function loadLeads() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/leads`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const leads = await res.json();
+                
+                const list = document.getElementById('allLeadsList');
+                if (leads.length === 0) {
+                    list.innerHTML = '<div class="text-center" style="padding: 60px;">No leads captured yet</div>';
+                    return;
+                }
+
+                list.innerHTML = leads.map(l => `
+                    <div class="lead-item">
+                        <div class="lead-name">
+                            <span>${l.name}</span>
+                            <span class="lead-date">${new Date(l.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="lead-email">${l.email}</div>
+                        ${l.company ? `<div style="font-size:0.8rem; color:#666;">${l.company} - ${l.job_title || ''}</div>` : ''}
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Load leads error:", err);
+            }
+        }
+
+        // ========== LOAD ALL CHATS ==========
+        async function loadChats() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/chat`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const chats = await res.json();
+                
+                const list = document.getElementById('allChatsList');
+                if (chats.length === 0) {
+                    list.innerHTML = '<div class="text-center" style="padding: 60px;">No conversations yet</div>';
+                    return;
+                }
+
+                list.innerHTML = chats.map(c => `
+                    <div class="chat-item">
+                        <div class="chat-client">${c.client_name || 'Guest'}</div>
+                        <div class="chat-preview">
+                            <span><strong>Q:</strong> ${c.message?.substring(0, 60)}...</span>
+                            <span class="lead-date">${new Date(c.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="chat-preview" style="margin-top:5px;">
+                            <span><strong>A:</strong> ${c.response?.substring(0, 60)}...</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Load chats error:", err);
+            }
+        }
+
+        // ========== LOAD TICKETS ==========
+        async function loadTickets() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/support/my-tickets`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const tickets = await res.json();
+                
+                const list = document.getElementById('ticketsList');
+                if (tickets.length === 0) {
+                    list.innerHTML = '<div class="text-center" style="padding: 60px;">No support tickets</div>';
+                    return;
+                }
+
+                document.getElementById('statTickets').textContent = tickets.filter(t => t.status === 'open').length;
+
+                list.innerHTML = tickets.map(t => `
+                    <div class="ticket-item">
+                        <div>
+                            <strong>${t.subject}</strong>
+                            <div style="font-size:0.8rem; color:#666;">${new Date(t.created_at).toLocaleString()}</div>
+                        </div>
+                        <span class="ticket-status ${t.status}">${t.status.toUpperCase()}</span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Load tickets error:", err);
+            }
+        }
+
+        // ========== SMART TOOLS ==========
+        async function saveSmartTools() {
+            const bookingUrl = document.getElementById('bookingUrlInput').value;
+            const sentimentEnabled = document.getElementById('sentimentToggle').checked;
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/smart-hub/save`, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "Authorization": `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ 
+                        toolType: 'booking',
+                        data: { url: bookingUrl }
+                    })
+                });
+
+                if (res.ok) {
+                    // Also save sentiment settings
+                    await fetch(`${BACKEND_URL}/api/smart-hub/save`, {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json", 
+                            "Authorization": `Bearer ${token}` 
+                        },
+                        body: JSON.stringify({ 
+                            toolType: 'sentiment',
+                            data: { enabled: sentimentEnabled, email: businessData.email }
+                        })
+                    });
+                    
+                    alert("Smart Tools updated successfully!");
+                } else {
+                    alert("Failed to update settings.");
+                }
+            } catch (err) {
+                console.error("Smart Tools Error:", err);
+                alert("Error saving settings.");
+            }
+        }
+
+        // ========== WIDGET CODE ==========
+        function generateWidgetCode(widgetKey) {
+            const businessName = businessData.business_name || 'Business';
+            const code = `<!-- AI Smart Hub Widget -->
+<script>
+  (function() {
+    const widget = document.createElement('div');
+    widget.id = 'ai-chat-widget';
+    widget.setAttribute('data-key', '${widgetKey}');
+    widget.setAttribute('data-title', '${businessName} AI');
+    widget.setAttribute('data-primary-color', '#d4af37');
+    widget.setAttribute('data-position', 'bottom-right');
+    widget.setAttribute('data-welcome', 'Hi! How can I help you today?');
+    document.body.appendChild(widget);
+
+    const script = document.createElement('script');
+    script.src = '${BACKEND_URL}/widget.js';
+    script.async = true;
+    document.head.appendChild(script);
+  })();
+<\/script>`;
+
+            document.getElementById('widgetCode').textContent = code;
+        }
+
+        function loadWidgetCode() {
+            const widgetKey = document.getElementById('widgetKeyDisplay').textContent;
+            generateWidgetCode(widgetKey);
+        }
+
+        function copyWidgetKey() {
+            const key = document.getElementById('widgetKeyDisplay').textContent;
+            navigator.clipboard.writeText(key);
+            alert('Widget key copied!');
+        }
+
+        function copyWidgetCode() {
+            const code = document.getElementById('widgetCode').textContent;
+            navigator.clipboard.writeText(code);
+            alert('Widget code copied to clipboard!');
+        }
+
+        // ========== PLANS ==========
+        function renderPlans(currentPlan) {
+            const ALL_PLANS = [
+                { name: "basic", price: "10,000", features: ["500 AI messages", "Unlimited leads", "Email support"] },
+                { name: "pro", price: "25,000", features: ["3,000 AI messages", "Unlimited leads", "Priority AI", "Analytics export"], popular: true },
+                { name: "agency", price: "80,000", features: ["10 businesses", "White-label widget", "API access", "Priority support"] }
+            ];
+
+            const container = document.getElementById("planCards");
+            container.innerHTML = "";
+
+            ALL_PLANS.forEach(p => {
+                const isCurrent = p.name === currentPlan.toLowerCase();
+                const card = document.createElement("div");
+                card.className = `plan-card ${p.popular ? 'popular' : ''}`;
+                
+                let icon = 'fa-star';
+                if (p.name === 'basic') icon = 'fa-seedling';
+                if (p.name === 'pro') icon = 'fa-rocket';
+                if (p.name === 'agency') icon = 'fa-crown';
+
+                card.innerHTML = `
+                    <div class="plan-icon"><i class="fas ${icon}"></i></div>
+                    <div class="plan-name">${p.name.toUpperCase()}</div>
+                    <div class="plan-price">₦${p.price}<span>/mo</span></div>
+                    <ul class="plan-features">
+                        ${p.features.map(f => `<li><i class="fas fa-check"></i>${f}</li>`).join('')}
+                    </ul>
+                    <button class="plan-btn ${isCurrent ? 'current' : ''}" ${isCurrent ? 'disabled' : ''} onclick="upgrade('${p.name}')">
+                        ${isCurrent ? 'Current Plan' : 'Upgrade'}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function upgrade(planName) {
+            const res = await fetch(`${BACKEND_URL}/api/subscription/create-checkout-session`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ plan: planName })
+            });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+        }
+
+        // ========== TICKET MODAL ==========
+        function showNewTicketModal() {
+            document.getElementById('ticketModal').style.display = 'flex';
+        }
+
+        function closeTicketModal() {
+            document.getElementById('ticketModal').style.display = 'none';
+        }
+
+        async function submitTicket() {
+            const subject = document.getElementById('ticketSubject').value;
+            const message = document.getElementById('ticketMessage').value;
+            
+            if (!subject || !message) {
+                alert("Please fill in both fields");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/support/ticket`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify({ subject, message })
+                });
+
+                if (res.ok) {
+                    alert("Ticket submitted successfully!");
+                    closeTicketModal();
+                    document.getElementById('ticketSubject').value = "";
+                    document.getElementById('ticketMessage').value = "";
+                    loadTickets();
+                }
+            } catch (err) {
+                console.error("Ticket error:", err);
+                alert("Failed to submit ticket");
+            }
+        }
+
+        // ========== PROFILE ACTIONS ==========
+        function editProfile() {
+            const newName = prompt("Enter new business name:", businessData.business_name);
+            if (newName && newName.trim()) {
+                updateProfile(newName.trim());
+            }
+        }
+
+        async function updateProfile(newName) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/admin/users/update-profile`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify({ business_name: newName })
+                });
+
+                if (res.ok) {
+                    alert("Profile updated!");
+                    loadDashboardData();
+                }
+            } catch (err) {
+                console.error("Update error:", err);
+            }
+        }
+
+        function changePassword() {
+            const newPass = prompt("Enter new password (min 6 characters):");
+            if (newPass && newPass.length >= 6) {
+                updatePassword(newPass);
+            } else {
+                alert("Password must be at least 6 characters");
+            }
+        }
+
+        async function updatePassword(newPass) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/admin/users/update-profile`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify({ password: newPass })
+                });
+
+                if (res.ok) {
+                    alert("Password updated!");
+                }
+            } catch (err) {
+                console.error("Password error:", err);
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(businessData));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = "business_data.json";
+            a.click();
+        }
+
+        function showPrivacySettings() {
+            alert("Privacy settings will be available in the next update.");
+        }
+
+        function deleteAccount() {
+            if (confirm("Are you sure you want to delete your account? This cannot be undone!")) {
+                const confirm2 = prompt("Type 'DELETE' to confirm:");
+                if (confirm2 === "DELETE") {
+                    performDelete();
+                }
+            }
+        }
+
+        async function performDelete() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/admin/users/delete-account`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    alert("Account deleted");
+                    logout();
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+            }
+        }
+
+        // ========== LOGOUT ==========
+        function logout() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        // ========== CLICK OUTSIDE TO CLOSE MODALS ==========
+        document.addEventListener('click', (e) => {
+            // Close notification panel
+            if (!e.target.closest('.notification-badge') && !e.target.closest('.notification-panel')) {
+                document.getElementById('notificationPanel').classList.remove('show');
+            }
+            
+            // Close profile modal
+            if (!e.target.closest('.profile-trigger') && !e.target.closest('.profile-modal')) {
+                document.getElementById('profileModal').classList.remove('show');
+            }
         });
-    } catch (e) {}
-  }
-
-  /* ================= LEGAL CONTENT ================= */
-  async function loadLegal() {
-    try {
-        const res = await fetch(`${API_BASE}/content/legal`);
-        const data = await res.json();
-        document.getElementById("termsContent").textContent = data.terms || "Standard Terms of Service apply.";
-        document.getElementById("privacyContent").textContent = data.privacy || "Your data is protected under GDPR.";
-    } catch(e) {}
-  }
-
-  /* ================= LOGOUT ================= */
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    localStorage.clear();
-    window.location.href = "login.html";
-  });
-
-  /* ================= PLANS ================= */
-  function renderPlans(currentPlan) {
-    const ALL_PLANS = [
-      { name: "basic", price: "₦10,000" },
-      { name: "pro", price: "₦25,000" },
-      { name: "agency", price: "₦80,000" }
-    ];
-    const container = document.getElementById("planCards");
-    container.innerHTML = "";
-    ALL_PLANS.forEach(p => {
-      if (p.name.toLowerCase() === currentPlan.toLowerCase()) return;
-      const card = document.createElement("div");
-      card.className = "plan-card";
-      card.innerHTML = `<h3>${p.name.toUpperCase()}</h3><p style="font-size:1.2rem; font-weight:bold; margin:10px 0;">${p.price}/mo</p><button style="width:100%">Upgrade</button>`;
-      card.querySelector("button").onclick = () => upgrade(p.name);
-      container.appendChild(card);
-    });
-  }
-
-  async function upgrade(planName) {
-    const res = await fetch(`${API_BASE}/subscription/create-checkout-session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ plan: planName })
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-  }
-
-  loadDashboard();
-  loadTickets();
-  loadLegal();
-
-});
-</script>
-
+    </script>
 </body>
 </html>
