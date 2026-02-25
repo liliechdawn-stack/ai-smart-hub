@@ -1314,7 +1314,6 @@ function getPlanFromToken() {
 // ===== UI HELPERS =====
 function showToast(msg, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = type === 'success' ? 'success-message' : 'error-message';
     toast.style.cssText = `
         position:fixed;
         bottom:24px;
@@ -1488,6 +1487,7 @@ function closeTemplateModal() {
 function loadActivity() {
     const timeline = document.getElementById('activity-timeline');
     
+    // In production, this would come from the backend
     activities = [
         { id: 1, type: 'success', title: 'Welcome Series triggered for John Doe', time: '2 minutes ago', icon: 'fa-user-plus', color: '#10b981' },
         { id: 2, type: 'warning', title: 'Lead scoring updated for 5 contacts', time: '15 minutes ago', icon: 'fa-chart-line', color: '#f59e0b' },
@@ -1512,7 +1512,8 @@ function loadActivity() {
 // ===== LOAD AUTOMATIONS =====
 async function loadAutomations() {
     const grid = document.getElementById('automation-grid');
-    
+    grid.innerHTML = '<div style="text-align:center;padding:120px;color:#777; grid-column: 1/-1;"><div class="loading-spinner" style="margin:0 auto;"></div><br>Loading your automations...</div>';
+
     try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -1520,10 +1521,24 @@ async function loadAutomations() {
             return;
         }
 
-        // Mock data for demo
+        const response = await fetch(`${API_BASE}/automations`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load automations');
+        }
+
+        automations = await response.json();
+        renderAutomations(automations);
+        updateStats();
+        
+    } catch (err) {
+        console.error("[LOAD ERROR]", err);
+        // Fallback to mock data if backend not ready
         automations = [
             {
-                id: 1,
+                id: "1",
                 title: "Welcome Series",
                 icon: "envelope",
                 trigger: "new-lead",
@@ -1535,7 +1550,7 @@ async function loadAutomations() {
                 leads: 189
             },
             {
-                id: 2,
+                id: "2",
                 title: "Abandoned Cart",
                 icon: "shopping-cart",
                 trigger: "cart-abandoned",
@@ -1547,7 +1562,7 @@ async function loadAutomations() {
                 leads: 98
             },
             {
-                id: 3,
+                id: "3",
                 title: "Review Collector",
                 icon: "star",
                 trigger: "purchase-complete",
@@ -1559,19 +1574,8 @@ async function loadAutomations() {
                 leads: 67
             }
         ];
-        
         renderAutomations(automations);
         updateStats();
-        
-    } catch (err) {
-        console.error("[LOAD ERROR]", err);
-        grid.innerHTML = `
-            <div style="text-align:center;padding:60px;color:var(--danger); grid-column: 1/-1;">
-                <i class="fas fa-exclamation-triangle fa-3x"></i>
-                <h3 style="margin:20px 0;">Failed to load automations</h3>
-                <button onclick="loadAutomations()" class="btn-primary">Retry</button>
-            </div>
-        `;
     }
 }
 
@@ -1595,7 +1599,7 @@ function renderAutomations(items) {
         <div class="automation-card ${item.live ? 'premium' : ''}">
             <div class="automation-header">
                 <div class="automation-icon">
-                    <i class="fas fa-${item.icon}"></i>
+                    <i class="fas fa-${item.icon || 'robot'}"></i>
                 </div>
                 <div>
                     <span class="automation-status ${item.live ? 'status-live' : 'status-paused'}">
@@ -1607,15 +1611,15 @@ function renderAutomations(items) {
             
             <div class="automation-stats">
                 <div class="stat-item">
-                    <div class="stat-value">${item.trigger_count}</div>
+                    <div class="stat-value">${item.trigger_count || 0}</div>
                     <div class="stat-label">Triggers</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">${item.success_rate}%</div>
+                    <div class="stat-value">${item.success_rate || 98}%</div>
                     <div class="stat-label">Success</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">${item.leads}</div>
+                    <div class="stat-value">${item.leads || 0}</div>
                     <div class="stat-label">Leads</div>
                 </div>
             </div>
@@ -1632,12 +1636,12 @@ function renderAutomations(items) {
 
             <div class="automation-footer">
                 <div style="display:flex; gap:8px;">
-                    <button class="btn-icon" onclick="editAutomation(${item.id})" title="Edit"><i class="fas fa-edit"></i></button>
-                    <button class="btn-icon" onclick="duplicateAutomation(${item.id})" title="Duplicate"><i class="fas fa-copy"></i></button>
-                    <button class="btn-icon" onclick="deleteAutomation(${item.id})" title="Delete"><i class="fas fa-trash"></i></button>
+                    <button class="btn-icon" onclick="editAutomation('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon" onclick="duplicateAutomation('${item.id}')" title="Duplicate"><i class="fas fa-copy"></i></button>
+                    <button class="btn-icon" onclick="deleteAutomation('${item.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleAutomation(${item.id}, this.checked)">
+                    <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleAutomation('${item.id}', this.checked)">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -1650,11 +1654,13 @@ function formatTrigger(trigger) {
         'new-lead': 'New lead captured',
         'cart-abandoned': 'Cart abandoned (1h)',
         'sentiment-negative': 'Negative sentiment detected',
+        'purchase-made': 'Purchase completed',
         'purchase-complete': 'Purchase completed',
         'booking-request': 'Booking requested',
         'inactive-7d': 'Customer inactive 7 days',
         'price-question': 'Price question asked',
-        'competitor-mention': 'Competitor mentioned'
+        'competitor-mention': 'Competitor mentioned',
+        'multiple': 'Multiple triggers'
     };
     return triggers[trigger] || trigger;
 }
@@ -1682,14 +1688,52 @@ function updateStats() {
 
 // ===== AUTOMATION ACTIONS =====
 async function toggleAutomation(id, shouldEnable) {
-    showToast(`Automation ${shouldEnable ? 'activated' : 'paused'}`);
-    await loadAutomations();
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/automations/${id}/toggle`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ enabled: shouldEnable })
+        });
+
+        if (response.ok) {
+            showToast(`Automation ${shouldEnable ? 'activated' : 'paused'}`);
+            await loadAutomations();
+        } else {
+            throw new Error('Toggle failed');
+        }
+    } catch (err) {
+        console.error('Toggle error:', err);
+        showToast('Failed to update status', 'error');
+        // Revert checkbox
+        const checkbox = document.querySelector(`[onchange*="toggleAutomation('${id}'"]`);
+        if (checkbox) checkbox.checked = !shouldEnable;
+    }
 }
 
 async function deleteAutomation(id) {
-    if (!confirm('Are you sure you want to delete this automation?')) return;
-    showToast("Automation deleted");
-    await loadAutomations();
+    if (!confirm('Are you sure you want to delete this automation? This action cannot be undone.')) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/automations/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast("Automation deleted");
+            await loadAutomations();
+        } else {
+            throw new Error('Delete failed');
+        }
+    } catch (err) {
+        console.error('Delete error:', err);
+        showToast("Failed to delete", "error");
+    }
 }
 
 function duplicateAutomation(id) {
@@ -1698,7 +1742,9 @@ function duplicateAutomation(id) {
         document.getElementById('automation-name').value = `${automation.title} (Copy)`;
         document.getElementById('automation-description').value = automation.description || '';
         document.getElementById('automation-trigger').value = automation.trigger;
-        showCreateModal();
+        document.getElementById('automation-action').value = automation.action;
+        document.getElementById('modal-title').textContent = "Duplicate Automation";
+        document.getElementById('automation-modal').classList.add('active');
     }
 }
 
@@ -1708,6 +1754,7 @@ function editAutomation(id) {
         document.getElementById('automation-name').value = automation.title;
         document.getElementById('automation-description').value = automation.description || '';
         document.getElementById('automation-trigger').value = automation.trigger;
+        document.getElementById('automation-action').value = automation.action;
         document.getElementById('modal-title').textContent = "Edit Automation";
         document.getElementById('automation-modal').classList.add('active');
     }
@@ -1719,6 +1766,7 @@ function showCreateModal() {
     document.getElementById('automation-name').value = "";
     document.getElementById('automation-description').value = "";
     document.getElementById('automation-trigger').value = "new-lead";
+    document.getElementById('automation-action').value = "send-email";
     document.getElementById('automation-modal').classList.add('active');
 }
 
@@ -1760,16 +1808,40 @@ function addCondition() {
 
 async function saveAutomation() {
     const title = document.getElementById('automation-name').value.trim();
+    const description = document.getElementById('automation-description').value.trim();
     const trigger = document.getElementById('automation-trigger').value;
+    const action = document.getElementById('automation-action').value;
     
     if (!title) {
         showToast("Enter automation name", "error");
         return;
     }
 
-    showToast("Automation created successfully!");
-    closeModal();
-    await loadAutomations();
+    try {
+        const token = localStorage.getItem('token');
+        const isEdit = document.getElementById('modal-title').textContent.includes('Edit');
+        const url = isEdit ? `${API_BASE}/automations/${automationId}` : `${API_BASE}/automations`;
+        
+        const response = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title, description, trigger, action })
+        });
+
+        if (response.ok) {
+            showToast(isEdit ? "Automation updated!" : "Automation created!");
+            closeModal();
+            await loadAutomations();
+        } else {
+            throw new Error('Save failed');
+        }
+    } catch (err) {
+        console.error('Save error:', err);
+        showToast("Failed to save", "error");
+    }
 }
 
 // ===== FILTER =====
@@ -1825,6 +1897,20 @@ async function checkPlan() {
     }
 }
 
+// ===== WIDGET TRIGGER ENDPOINT =====
+async function triggerAutomation(eventType, data) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/automations/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventType, data })
+        });
+        return await response.json();
+    } catch (err) {
+        console.error('Trigger error:', err);
+    }
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 AI Automations Studio Starting...");
@@ -1849,6 +1935,7 @@ window.toggleAutomation = toggleAutomation;
 window.deleteAutomation = deleteAutomation;
 window.duplicateAutomation = duplicateAutomation;
 window.editAutomation = editAutomation;
+window.triggerAutomation = triggerAutomation;
 </script>
 </body>
 </html>
