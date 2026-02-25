@@ -1,295 +1,1065 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <title>AI Smart Hub - Business Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Load scripts in correct order -->
+    <script src="js/config.js"></script>
     <script src="js/master-fix.js"></script>
-  <meta charset="UTF-8" />
-  <title>Business Login / Signup</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --gold: #d4af37;
-      --light-gold: #f5e7b2;
-      --dark: #1a1a1a;
-      --error: #dc3545;
-    }
+    <script src="js/fix-all-html.js"></script>
     
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      padding: 20px;
-    }
-    
-    .container {
-      max-width: 450px;
-      width: 100%;
-      background: white;
-      border-radius: 20px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    
-    h1 {
-      text-align: center;
-      color: var(--gold);
-      margin-bottom: 30px;
-      font-size: 2rem;
-    }
-    
-    h2 {
-      margin-bottom: 20px;
-      font-size: 1.5rem;
-    }
-    
-    input {
-      width: 100%;
-      padding: 15px;
-      margin: 10px 0;
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      transition: all 0.3s ease;
-    }
-    
-    input:focus {
-      outline: none;
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.1);
-    }
-    
-    button {
-      width: 100%;
-      padding: 15px;
-      background: var(--gold);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin: 10px 0;
-    }
-    
-    button:hover {
-      background: #b8962e;
-      transform: translateY(-2px);
-    }
-    
-    .hidden { display: none !important; }
-    
-    .verify-box {
-      border: 2px solid var(--gold);
-      padding: 30px;
-      border-radius: 16px;
-      text-align: center;
-      background: #f8f9fa;
-    }
-    
-    .resend-link {
-      color: var(--gold);
-      cursor: pointer;
-      font-size: 0.9rem;
-      text-decoration: underline;
-      margin-top: 10px;
-      display: block;
-    }
-    
-    #verifyCode {
-      text-align: center;
-      font-size: 24px;
-      letter-spacing: 10px;
-      font-weight: 600;
-    }
-    
-    .or-divider {
-      text-align: center;
-      margin: 20px 0;
-      color: #666;
-      position: relative;
-    }
-    
-    .or-divider::before,
-    .or-divider::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 45%;
-      height: 1px;
-      background: #e0e0e0;
-    }
-    
-    .or-divider::before { left: 0; }
-    .or-divider::after { right: 0; }
-  </style>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b8962e;
+            --primary-light: #f5e7b2;
+            --dark: #1a1a1a;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --shadow: 0 10px 40px rgba(0,0,0,0.1);
+            --shadow-hover: 0 15px 50px rgba(0,0,0,0.15);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-bubbles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bg-bubbles li {
+            position: absolute;
+            list-style: none;
+            display: block;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            bottom: -160px;
+            animation: square 25s infinite;
+            transition-timing-function: linear;
+            border-radius: 50%;
+        }
+
+        .bg-bubbles li:nth-child(1) { left: 10%; width: 80px; height: 80px; animation-delay: 0s; }
+        .bg-bubbles li:nth-child(2) { left: 20%; width: 60px; height: 60px; animation-delay: 2s; animation-duration: 17s; }
+        .bg-bubbles li:nth-child(3) { left: 35%; width: 120px; height: 120px; animation-delay: 4s; }
+        .bg-bubbles li:nth-child(4) { left: 50%; width: 100px; height: 100px; animation-delay: 0s; animation-duration: 22s; }
+        .bg-bubbles li:nth-child(5) { left: 65%; width: 70px; height: 70px; animation-delay: 0s; }
+        .bg-bubbles li:nth-child(6) { left: 80%; width: 90px; height: 90px; animation-delay: 3s; animation-duration: 18s; }
+        .bg-bubbles li:nth-child(7) { left: 90%; width: 50px; height: 50px; animation-delay: 7s; }
+        .bg-bubbles li:nth-child(8) { left: 30%; width: 110px; height: 110px; animation-delay: 15s; animation-duration: 45s; }
+
+        @keyframes square {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+            100% { transform: translateY(-1200px) rotate(720deg); opacity: 0; }
+        }
+
+        .container {
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-radius: 24px;
+            padding: 45px 40px;
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .logo h1 i {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .logo p {
+            color: var(--gray);
+            font-size: 0.95rem;
+            margin-top: 8px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: var(--light-gray);
+            padding: 5px;
+            border-radius: 50px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 50px;
+            font-weight: 600;
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            color: var(--dark);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+            font-size: 1.1rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid var(--light-gray);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: var(--transition);
+            background: var(--light);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            margin: 0;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-group label {
+            font-size: 0.95rem;
+            color: var(--dark);
+        }
+
+        .checkbox-group a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .checkbox-group a:hover {
+            text-decoration: underline;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin: 10px 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .forgot-password a {
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .forgot-password a:hover {
+            color: var(--primary);
+        }
+
+        .verify-box {
+            border: 2px solid var(--primary);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            background: white;
+        }
+
+        .verify-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .verify-box h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .verify-box p {
+            color: var(--gray);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .code-input {
+            text-align: center;
+            font-size: 28px;
+            letter-spacing: 12px;
+            font-weight: 700;
+            padding: 15px;
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            background: var(--light);
+        }
+
+        .resend-link {
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 15px;
+            display: inline-block;
+            transition: var(--transition);
+        }
+
+        .resend-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .timer-text {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.95rem;
+            margin-top: 20px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        .terms-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .terms-modal.active {
+            display: flex;
+        }
+
+        .terms-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+        }
+
+        .terms-content h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .terms-content h3 {
+            margin: 20px 0 10px;
+            color: var(--dark);
+        }
+
+        .terms-content p {
+            color: var(--gray);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: var(--success);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>✨ AI Smart Hub</h1>
+    <!-- Animated Background -->
+    <ul class="bg-bubbles">
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+    </ul>
 
-    <div id="authContainer">
-      <!-- Login Form -->
-      <form id="loginForm">
-        <h2>Welcome Back</h2>
-        <input type="email" id="loginEmail" placeholder="Email" required />
-        <input type="password" id="loginPassword" placeholder="Password" required />
-        <button type="submit">Login to Dashboard</button>
-      </form>
+    <div class="container">
+        <div class="logo">
+            <h1>
+                <i class="fas fa-robot"></i>
+                AI Smart Hub
+            </h1>
+            <p>Intelligent Business Solutions</p>
+        </div>
 
-      <div class="or-divider">OR</div>
+        <!-- Tab Buttons -->
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+            <button class="tab-btn" onclick="switchTab('signup')">Sign Up</button>
+        </div>
 
-      <!-- Signup Form -->
-      <form id="signupForm">
-        <h2>Create Account</h2>
-        <input type="text" id="businessName" placeholder="Business Name" required />
-        <input type="email" id="signupEmail" placeholder="Email" required />
-        <input type="password" id="signupPassword" placeholder="Password" required />
-        <button type="submit">Sign Up Free</button>
-      </form>
+        <!-- Auth Container -->
+        <div id="authContainer">
+            <!-- Login Form -->
+            <div id="loginTab" class="tab-content active">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Log in to access your business dashboard</p>
+                
+                <form id="loginForm">
+                    <div class="input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="loginEmail" placeholder="Email address" required />
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="loginPassword" placeholder="Password" required />
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('loginPassword')"></i>
+                    </div>
+
+                    <div class="forgot-password">
+                        <a href="#" onclick="showForgotPassword()">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to Dashboard
+                    </button>
+                </form>
+
+                <div style="text-align: center;">
+                    <span style="color: var(--gray);">Don't have an account? </span>
+                    <a href="#" onclick="switchTab('signup')" style="color: var(--primary); font-weight: 600; text-decoration: none;">Sign up</a>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupTab" class="tab-content">
+                <h2>Create Account</h2>
+                <p class="subtitle">Start your 14-day free trial today</p>
+                
+                <form id="signupForm">
+                    <div class="input-group">
+                        <i class="fas fa-building input-icon"></i>
+                        <input type="text" id="businessName" placeholder="Business Name" required />
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="signupEmail" placeholder="Email address" required />
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="signupPassword" placeholder="Password (min. 6 characters)" required minlength="6" />
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('signupPassword')"></i>
+                    </div>
+
+                    <!-- Terms and Privacy Checkboxes -->
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="termsCheckbox" required>
+                        <label for="termsCheckbox">
+                            I agree to the 
+                            <a href="#" onclick="showTerms()">Terms of Service</a> and 
+                            <a href="#" onclick="showPrivacy()">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="marketingCheckbox">
+                        <label for="marketingCheckbox">
+                            I want to receive product updates and offers (optional)
+                        </label>
+                    </div>
+
+                    <!-- Error/Success Messages -->
+                    <div id="signupError" class="error-message"></div>
+                    <div id="signupSuccess" class="success-message"></div>
+
+                    <button type="submit" class="btn" id="signupBtn">
+                        <i class="fas fa-user-plus"></i>
+                        Sign Up Free
+                    </button>
+                </form>
+
+                <div style="text-align: center;">
+                    <span style="color: var(--gray);">Already have an account? </span>
+                    <a href="#" onclick="switchTab('login')" style="color: var(--primary); font-weight: 600; text-decoration: none;">Log in</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Container -->
+        <div id="verifyContainer" class="hidden">
+            <div class="verify-box">
+                <div class="verify-icon">
+                    <i class="fas fa-envelope-open-text"></i>
+                </div>
+                <h2>Verify Your Email</h2>
+                <p>We've sent a 6-digit verification code to<br><strong id="userEmailDisplay"></strong></p>
+                
+                <input type="text" id="verifyCode" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
+                
+                <div id="verifyError" class="error-message"></div>
+                <div id="verifySuccess" class="success-message"></div>
+                
+                <button class="btn" id="confirmVerifyBtn">
+                    <i class="fas fa-check-circle"></i>
+                    Verify Account
+                </button>
+                
+                <div class="timer-text" id="timerText"></div>
+                
+                <span class="resend-link" id="resendBtn">
+                    <i class="fas fa-redo-alt"></i>
+                    Didn't get a code? Resend
+                </span>
+                
+                <div class="back-link" onclick="backToAuth()">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Login
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Verification Container -->
-    <div id="verifyContainer" class="hidden">
-      <div class="verify-box">
-        <h2 style="color: var(--gold);">✅ Verify Your Email</h2>
-        <p>We've sent a 6-digit code to your email. Please enter it below to activate your account.</p>
-        <input type="text" id="verifyCode" placeholder="000000" maxlength="6" />
-        <button id="confirmVerifyBtn">Verify Account</button>
-        <span class="resend-link" id="resendBtn">Didn't get a code? Resend</span>
-        <button onclick="location.reload()" style="background: transparent; color: #666; margin-top: 15px;">← Back to Login</button>
-      </div>
+    <!-- Terms Modal -->
+    <div class="terms-modal" id="termsModal">
+        <div class="terms-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2>Terms of Service</h2>
+            <p>Last updated: February 2026</p>
+            
+            <h3>1. Acceptance of Terms</h3>
+            <p>By accessing and using AI Smart Hub ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.</p>
+            
+            <h3>2. Description of Service</h3>
+            <p>AI Smart Hub provides AI-powered business tools including chat widgets, lead generation, customer insights, and automation features for businesses.</p>
+            
+            <h3>3. Account Registration</h3>
+            <p>You must provide accurate and complete information when creating an account. You are responsible for maintaining the security of your account and password.</p>
+            
+            <h3>4. Subscription and Payments</h3>
+            <p>Certain features require a paid subscription. Fees are billed in advance on a monthly basis and are non-refundable except as required by law.</p>
+            
+            <h3>5. Acceptable Use</h3>
+            <p>You agree not to use the Service for any illegal purposes or to transmit any harmful code. We reserve the right to terminate accounts that violate these terms.</p>
+            
+            <h3>6. Data Privacy</h3>
+            <p>Your use of the Service is also governed by our Privacy Policy. We take data protection seriously and comply with applicable laws.</p>
+            
+            <h3>7. Limitation of Liability</h3>
+            <p>The Service is provided "as is" without warranties of any kind. We are not liable for any indirect damages arising from your use of the Service.</p>
+            
+            <h3>8. Changes to Terms</h3>
+            <p>We may modify these terms at any time. Continued use of the Service constitutes acceptance of the modified terms.</p>
+            
+            <button class="btn" onclick="closeModal()">Close</button>
+        </div>
     </div>
-  </div>
 
-<script>
-    // ===== PRODUCTION BACKEND URL =====
-    const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
-
-    console.log("[LOGIN] Using backend:", BACKEND_URL);
-
-    // =================== UI HELPERS ===================
-    function showVerifyUI() {
-        document.getElementById("authContainer").classList.add("hidden");
-        document.getElementById("verifyContainer").classList.remove("hidden");
-    }
-
-    function saveAuth(token, plan, name, email) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("plan", plan || "free");
-        localStorage.setItem("email", email);
-        localStorage.setItem("businessName", name || "Business");
-        console.log("[LOGIN] Auth saved for:", email);
-    }
-
-    // =================== LOGIN ===================
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        
-        const email = document.getElementById("loginEmail").value;
-        const password = document.getElementById("loginPassword").value;
-
-        console.log("[LOGIN] Attempting login for:", email);
-
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            });
+    <!-- Privacy Modal -->
+    <div class="terms-modal" id="privacyModal">
+        <div class="terms-content">
+            <button class="close-btn" onclick="closePrivacyModal()">&times;</button>
+            <h2>Privacy Policy</h2>
+            <p>Last updated: February 2026</p>
             
-            const data = await res.json();
-            console.log("[LOGIN] Response:", data);
-
-            if (res.status === 403) {
-                alert("Account not verified. Please check your email.");
-                showVerifyUI();
-            } else if (res.ok) {
-                const displayName = data.business_name || data.name || "Business";
-                saveAuth(data.token, data.plan, displayName, email);
-                window.location.href = "dashboard.html";
-            } else {
-                alert(data.error || "Login failed");
-            }
-        } catch (err) { 
-            console.error("[LOGIN] Error:", err);
-            alert("Server error - please try again later"); 
-        }
-    });
-
-    // =================== SIGNUP ===================
-    document.getElementById("signupForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        
-        const name = document.getElementById("businessName").value;
-        const email = document.getElementById("signupEmail").value;
-        const password = document.getElementById("signupPassword").value;
-
-        console.log("[SIGNUP] Attempting signup for:", email);
-
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    business_name: name,
-                    email: email, 
-                    password: password 
-                })
-            });
+            <h3>1. Information We Collect</h3>
+            <p>We collect information you provide directly, such as account details, business information, and communication data. We also automatically collect usage data.</p>
             
-            const data = await res.json();
-            console.log("[SIGNUP] Response:", data);
-
-            if (res.ok) {
-                alert("✅ Signup successful! Please check your email for verification code.");
-                showVerifyUI();
-            } else {
-                alert(data.error || "Signup failed");
-            }
-        } catch (err) { 
-            console.error("[SIGNUP] Error:", err);
-            alert("Server error during signup - please try again"); 
-        }
-    });
-
-    // =================== VERIFY CODE ===================
-    document.getElementById("confirmVerifyBtn").addEventListener("click", async () => {
-        const code = document.getElementById("verifyCode").value.trim();
-        
-        if (code.length !== 6) {
-            alert("Please enter the full 6-digit code");
-            return;
-        }
-
-        console.log("[VERIFY] Verifying code:", code);
-
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/auth/verify/${code}`); 
+            <h3>2. How We Use Information</h3>
+            <p>We use your information to provide and improve the Service, process payments, send updates, and personalize your experience.</p>
             
-            if (res.ok) {
-                alert("✅ Verification successful! You can now login.");
-                location.reload(); 
-            } else {
-                const text = await res.text();
-                alert("Invalid or expired code: " + text);
-            }
-        } catch (err) { 
-            console.error("[VERIFY] Error:", err);
-            alert("Error verifying code"); 
-        }
-    });
+            <h3>3. Data Sharing</h3>
+            <p>We do not sell your personal information. We may share data with service providers who assist in operating the Service, subject to confidentiality agreements.</p>
+            
+            <h3>4. Data Security</h3>
+            <p>We implement security measures to protect your data. However, no method of transmission over the Internet is 100% secure.</p>
+            
+            <h3>5. Your Rights</h3>
+            <p>You may access, correct, or delete your personal information by contacting us. You can also opt out of marketing communications.</p>
+            
+            <h3>6. Cookies</h3>
+            <p>We use cookies to enhance your experience. You can control cookies through your browser settings.</p>
+            
+            <h3>7. Children's Privacy</h3>
+            <p>The Service is not intended for individuals under 18. We do not knowingly collect information from minors.</p>
+            
+            <h3>8. Changes to Policy</h3>
+            <p>We may update this policy. Material changes will be notified via email or through the Service.</p>
+            
+            <button class="btn" onclick="closePrivacyModal()">Close</button>
+        </div>
+    </div>
 
-    // =================== RESEND CODE ===================
-    document.getElementById("resendBtn").addEventListener("click", async () => {
-        alert("Resend functionality coming soon. Please check your email or try signing up again.");
-    });
-</script>
+    <!-- Forgot Password Modal -->
+    <div class="terms-modal" id="forgotModal">
+        <div class="terms-content" style="max-width: 400px;">
+            <button class="close-btn" onclick="closeForgotModal()">&times;</button>
+            <h2>Reset Password</h2>
+            <p>Enter your email to receive a password reset link.</p>
+            
+            <div class="input-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input type="email" id="resetEmail" placeholder="Email address" />
+            </div>
+            
+            <div id="resetError" class="error-message"></div>
+            <div id="resetSuccess" class="success-message"></div>
+            
+            <button class="btn" onclick="sendResetLink()">
+                <i class="fas fa-paper-plane"></i>
+                Send Reset Link
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
+        let currentEmail = '';
+        let resendTimer = null;
+        let timerInterval = null;
+
+        console.log("[LOGIN] Using backend:", BACKEND_URL);
+
+        // ===== TAB SWITCHING =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.querySelector('[onclick="switchTab(\'login\')"]').classList.add('active');
+                document.getElementById('loginTab').classList.add('active');
+            } else {
+                document.querySelector('[onclick="switchTab(\'signup\')"]').classList.add('active');
+                document.getElementById('signupTab').classList.add('active');
+            }
+        }
+
+        // ===== TOGGLE PASSWORD VISIBILITY =====
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // ===== SHOW/HIDE UI =====
+        function showVerifyUI(email) {
+            currentEmail = email;
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('verifyContainer').classList.remove('hidden');
+            document.getElementById('userEmailDisplay').textContent = email;
+            document.getElementById('verifyCode').value = '';
+            startResendTimer();
+        }
+
+        function backToAuth() {
+            document.getElementById('authContainer').style.display = 'block';
+            document.getElementById('verifyContainer').classList.add('hidden');
+            clearInterval(timerInterval);
+        }
+
+        // ===== RESEND TIMER =====
+        function startResendTimer() {
+            const timerText = document.getElementById('timerText');
+            let timeLeft = 60;
+            
+            document.getElementById('resendBtn').style.opacity = '0.5';
+            document.getElementById('resendBtn').style.pointerEvents = 'none';
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = `You can request a new code in ${timeLeft} seconds`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerText.textContent = '';
+                    document.getElementById('resendBtn').style.opacity = '1';
+                    document.getElementById('resendBtn').style.pointerEvents = 'auto';
+                }
+            }, 1000);
+        }
+
+        // ===== SAVE AUTH =====
+        function saveAuth(token, plan, name, email) {
+            localStorage.setItem("token", token);
+            localStorage.setItem("plan", plan || "free");
+            localStorage.setItem("email", email);
+            localStorage.setItem("businessName", name || "Business");
+            console.log("[LOGIN] Auth saved for:", email);
+        }
+
+        // ===== SHOW ERROR/SUCCESS =====
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        // ===== LOGIN =====
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+            const loginBtn = document.getElementById("loginBtn");
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await res.json();
+
+                if (res.status === 403) {
+                    showVerifyUI(email);
+                    showError('verifyError', 'Account not verified. Please check your email for the verification code.');
+                } else if (res.ok) {
+                    const displayName = data.business_name || data.name || "Business";
+                    saveAuth(data.token, data.plan, displayName, email);
+                    window.location.href = "dashboard.html";
+                } else {
+                    showError('loginError', data.error || "Login failed");
+                }
+            } catch (err) { 
+                console.error("[LOGIN] Error:", err);
+                showError('loginError', "Server error - please try again later");
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard';
+            }
+        });
+
+        // ===== SIGNUP =====
+        document.getElementById("signupForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById("businessName").value;
+            const email = document.getElementById("signupEmail").value;
+            const password = document.getElementById("signupPassword").value;
+            const termsChecked = document.getElementById("termsCheckbox").checked;
+            
+            if (!termsChecked) {
+                showError('signupError', "You must agree to the Terms of Service and Privacy Policy");
+                return;
+            }
+
+            const signupBtn = document.getElementById("signupBtn");
+            signupBtn.disabled = true;
+            signupBtn.innerHTML = '<span class="loading-spinner"></span> Creating account...';
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        business_name: name,
+                        email: email, 
+                        password: password 
+                    })
+                });
+                
+                const data = await res.json();
+
+                if (res.ok) {
+                    showSuccess('signupSuccess', "✅ Signup successful! Please check your email for verification code.");
+                    showVerifyUI(email);
+                } else {
+                    showError('signupError', data.error || "Signup failed");
+                }
+            } catch (err) { 
+                console.error("[SIGNUP] Error:", err);
+                showError('signupError', "Server error during signup - please try again");
+            } finally {
+                signupBtn.disabled = false;
+                signupBtn.innerHTML = '<i class="fas fa-user-plus"></i> Sign Up Free';
+            }
+        });
+
+        // ===== VERIFY CODE =====
+        document.getElementById("confirmVerifyBtn").addEventListener("click", async () => {
+            const code = document.getElementById("verifyCode").value.trim();
+            
+            if (code.length !== 6) {
+                showError('verifyError', "Please enter the full 6-digit code");
+                return;
+            }
+
+            const verifyBtn = document.getElementById("confirmVerifyBtn");
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="loading-spinner"></span> Verifying...';
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/verify-code`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code, email: currentEmail })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showSuccess('verifySuccess', "✅ Verification successful!");
+                    
+                    if (data.token) {
+                        saveAuth(data.token, data.plan, data.business_name, data.email);
+                        setTimeout(() => {
+                            window.location.href = "dashboard.html";
+                        }, 1500);
+                    } else {
+                        setTimeout(() => {
+                            backToAuth();
+                        }, 2000);
+                    }
+                } else {
+                    showError('verifyError', data.error || "Invalid or expired code");
+                }
+            } catch (err) { 
+                console.error("[VERIFY] Error:", err);
+                showError('verifyError', "Error verifying code");
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Account';
+            }
+        });
+
+        // ===== RESEND CODE =====
+        document.getElementById("resendBtn").addEventListener("click", async () => {
+            if (!currentEmail) return;
+            
+            const resendBtn = document.getElementById("resendBtn");
+            resendBtn.style.opacity = '0.5';
+            resendBtn.style.pointerEvents = 'none';
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/resend-verification`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: currentEmail })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showSuccess('verifySuccess', "✅ New verification code sent!");
+                    startResendTimer();
+                } else {
+                    showError('verifyError', data.error || "Failed to resend code");
+                    resendBtn.style.opacity = '1';
+                    resendBtn.style.pointerEvents = 'auto';
+                }
+            } catch (err) {
+                console.error("[RESEND] Error:", err);
+                showError('verifyError', "Error resending code");
+                resendBtn.style.opacity = '1';
+                resendBtn.style.pointerEvents = 'auto';
+            }
+        });
+
+        // ===== MODAL FUNCTIONS =====
+        function showTerms() {
+            document.getElementById('termsModal').classList.add('active');
+        }
+
+        function showPrivacy() {
+            document.getElementById('privacyModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('termsModal').classList.remove('active');
+        }
+
+        function closePrivacyModal() {
+            document.getElementById('privacyModal').classList.remove('active');
+        }
+
+        function showForgotPassword() {
+            document.getElementById('forgotModal').classList.add('active');
+        }
+
+        function closeForgotModal() {
+            document.getElementById('forgotModal').classList.remove('active');
+        }
+
+        async function sendResetLink() {
+            const email = document.getElementById('resetEmail').value;
+            
+            if (!email) {
+                showError('resetError', 'Please enter your email');
+                return;
+            }
+
+            const resetBtn = document.querySelector('#forgotModal .btn');
+            resetBtn.disabled = true;
+            resetBtn.innerHTML = '<span class="loading-spinner"></span> Sending...';
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/forgot-password`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showSuccess('resetSuccess', '✅ Reset link sent! Check your email.');
+                    setTimeout(closeForgotModal, 2000);
+                } else {
+                    showError('resetError', data.error || 'Failed to send reset link');
+                }
+            } catch (err) {
+                console.error("[FORGOT] Error:", err);
+                showError('resetError', 'Server error');
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reset Link';
+            }
+        }
+    </script>
 </body>
 </html>
