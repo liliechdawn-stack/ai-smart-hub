@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="js/master-fix.js"></script>
   <meta charset="UTF-8">
   <title>Admin Panel - AI Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
- <script src="js/master-fix.js"></script>
-    <script src="js/fix-all-html.js"></script>  <!-- ADD THIS LINE -->
-    <meta charset="UTF-8" />
   <style>
     :root {
       --bg-main: #0b0b0b;
@@ -207,6 +203,7 @@
 
     .hidden { display: none !important; }
   </style>
+<base target="_blank">
 </head>
 
 <body>
@@ -287,7 +284,8 @@
 </div>
 
 <script>
-const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+// CRITICAL FIX: Use consistent API_URL (removed trailing space!)
+const API_URL = 'https://ai-smart-hub.onrender.com';
 const token = localStorage.getItem("token");
 
 // Auth Guard
@@ -332,12 +330,19 @@ async function loadUsers() {
     const res = await fetch(`${API_URL}/admin/users`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+    
+    // CRITICAL FIX: Check for HTTP errors
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Server error: ${res.status} - ${errorText}`);
+    }
+    
     allUsers = await res.json();
     updateStats(allUsers);
     renderUserTable(allUsers);
   } catch (e) {
-    console.error(e);
-    alert("Error loading users");
+    console.error("Load Users Error:", e);
+    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:20px;">Error loading users: ${e.message}</td></tr>`;
   }
   usersLoading.classList.add("hidden");
 }
@@ -356,12 +361,18 @@ function updateStats(users) {
 
 function renderUserTable(users) {
   usersTableBody.innerHTML = "";
+  
+  if (users.length === 0) {
+    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;">No users found</td></tr>`;
+    return;
+  }
+  
   users.forEach(u => {
     const tr = document.createElement("tr");
     
     // Standardizing business name display (FIX APPLIED)
     const displayName = u.business_name || u.name || "Unnamed Business";
-    const isVerified = u.is_verified === 1;
+    const isVerified = u.is_verified === 1 || u.is_verified === true;
     
     tr.innerHTML = `
       <td>
@@ -415,16 +426,17 @@ async function updateUser(userId) {
       alert("User updated successfully");
       loadUsers();
     } else {
-      alert("Update failed");
+      const error = await res.text();
+      alert("Update failed: " + error);
     }
   } catch (e) {
-    alert("Network error during update");
+    alert("Network error during update: " + e.message);
   }
 }
 
 // Admin Delete Function
 async function deleteUser(userId) {
-  if (!confirm("⚠️ PERMANENT ACTION: Delete this business and all its chat logs/leads?")) return;
+  if (!confirm("PERMANENT ACTION: Delete this business and all its chat logs/leads?")) return;
 
   try {
     const res = await fetch(`${API_URL}/admin/users/${userId}`, {
@@ -435,9 +447,12 @@ async function deleteUser(userId) {
     if (res.ok) {
       alert("Account Deleted");
       loadUsers();
+    } else {
+      const error = await res.text();
+      alert("Deletion failed: " + error);
     }
   } catch (e) {
-    alert("Deletion failed");
+    alert("Deletion failed: " + e.message);
   }
 }
 
@@ -461,7 +476,18 @@ async function loadActivities() {
     const res = await fetch(`${API_URL}/admin/activities`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+    
+    if (!res.ok) {
+      throw new Error(`Server error: ${res.status}`);
+    }
+    
     const acts = await res.json();
+    
+    if (acts.length === 0) {
+      activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;">No activities found</td></tr>`;
+      return;
+    }
+    
     acts.forEach(a => {
       activitiesTableBody.innerHTML += `
         <tr>
@@ -471,8 +497,9 @@ async function loadActivities() {
           <td>${new Date(a.created_at).toLocaleString()}</td>
         </tr>`;
     });
-  } catch {
-    alert("Error loading activities");
+  } catch (err) {
+    console.error("Load Activities Error:", err);
+    activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:20px;">Error loading activities: ${err.message}</td></tr>`;
   }
   activitiesLoading.classList.add("hidden");
 }
