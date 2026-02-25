@@ -1,875 +1,1214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="js/master-fix.js"></script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Automations Studio | AI Smart Hub</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-   <script src="js/master-fix.js"></script>
-    <script src="js/fix-all-html.js"></script>  <!-- ADD THIS LINE -->
     <meta charset="UTF-8" />
-  <style>
-    :root {
-      --primary: #d4af37;
-      --primary-hover: #b8962e;
-      --dark: #1a1a1a;
-      --light: #f8f9fa;
-      --success: #28a745;
-      --danger: #dc3545;
-      --warning: #f59e0b;
-      --info: #3b82f6;
-      --border-color: #e0e0e0;
-      --shadow: 0 8px 25px rgba(0,0,0,0.06);
-      --card-radius: 16px;
-      --transition: 0.3s ease;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f8fafc;
-      color: var(--dark);
-      line-height: 1.6;
-    }
-
-    nav {
-      background: white;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    }
-
-    .nav-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-    }
-
-    .nav-logo {
-      font-weight: 700;
-      font-size: 1.35rem;
-      color: var(--dark);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 28px;
-      align-items: center;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      color: #555;
-      font-size: 0.95rem;
-      font-weight: 500;
-      transition: var(--transition);
-    }
-
-    .nav-links a:hover,
-    .active-nav {
-      color: var(--primary);
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 80px 24px;
-      text-align: center;
-      color: white;
-    }
-
-    .hero h1 {
-      font-size: 3.2rem;
-      font-weight: 800;
-      margin-bottom: 16px;
-    }
-
-    .hero p {
-      max-width: 680px;
-      margin: 0 auto;
-      font-size: 1.2rem;
-      opacity: 0.95;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 40px 24px 100px;
-    }
-
-    /* Premium Stats Section */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 24px;
-      margin-bottom: 40px;
-    }
-
-    .stat-card-premium {
-      background: white;
-      padding: 24px;
-      border-radius: var(--card-radius);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow);
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .stat-icon {
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      color: white;
-    }
-
-    .stat-content h3 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--dark);
-      line-height: 1.2;
-    }
-
-    .stat-content p {
-      color: #666;
-      font-size: 0.95rem;
-    }
-
-    /* Analytics Dashboard */
-    .analytics-dashboard {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-      margin-bottom: 40px;
-    }
-
-    .chart-card {
-      background: white;
-      padding: 24px;
-      border-radius: var(--card-radius);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow);
-    }
-
-    .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .chart-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-    }
-
-    .chart-legend {
-      display: flex;
-      gap: 20px;
-      font-size: 0.9rem;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .legend-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 4px;
-    }
-
-    /* Templates Section */
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 50px 0 30px;
-    }
-
-    .section-header h2 {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-
-    .template-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
-      margin-bottom: 50px;
-    }
-
-    .template-card {
-      background: white;
-      border-radius: var(--card-radius);
-      padding: 28px;
-      border: 1px solid var(--border-color);
-      transition: var(--transition);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .template-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      border-color: var(--primary);
-    }
-
-    .template-badge {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      background: var(--primary);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .template-icon {
-      font-size: 2.5rem;
-      margin-bottom: 16px;
-    }
-
-    .template-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .template-description {
-      color: #666;
-      font-size: 0.95rem;
-      margin-bottom: 20px;
-    }
-
-    .template-meta {
-      display: flex;
-      gap: 16px;
-      font-size: 0.9rem;
-      color: #888;
-    }
-
-    /* Automation Grid - Enhanced */
-    .automation-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 24px;
-      margin-bottom: 40px;
-    }
-
-    .automation-card {
-      background: white;
-      border-radius: var(--card-radius);
-      padding: 28px;
-      border: 1px solid var(--border-color);
-      transition: var(--transition);
-      box-shadow: var(--shadow);
-      position: relative;
-    }
-
-    .automation-card.premium {
-      border: 2px solid var(--primary);
-    }
-
-    .automation-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    }
-
-    .automation-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-
-    .automation-icon {
-      width: 50px;
-      height: 50px;
-      background: #fff9e6;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      color: var(--primary);
-    }
-
-    .automation-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-    }
-
-    .automation-status {
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .status-live {
-      background: #d1fae5;
-      color: #047857;
-    }
-
-    .status-paused {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .status-draft {
-      background: #fef3c7;
-      color: #b45309;
-    }
-
-    .automation-stats {
-      display: flex;
-      gap: 20px;
-      margin: 20px 0;
-      padding: 16px 0;
-      border-top: 1px solid var(--border-color);
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .stat-item {
-      flex: 1;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      color: #666;
-    }
-
-    .trigger, .action {
-      background: #f8f9fa;
-      padding: 14px;
-      border-radius: 10px;
-      margin: 16px 0;
-      font-size: 0.95rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .trigger i, .action i {
-      color: var(--primary);
-      font-size: 1.2rem;
-    }
-
-    .automation-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 20px;
-    }
-
-    /* Toggle Switch */
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 54px;
-      height: 30px;
-    }
-
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #ccc;
-      transition: .4s;
-      border-radius: 34px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 24px;
-      width: 24px;
-      left: 3px;
-      bottom: 3px;
-      background: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-
-    input:checked + .slider {
-      background: var(--primary);
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(24px);
-    }
-
-    /* Buttons */
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px 32px;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(212,175,55,0.3);
-    }
-
-    .btn-secondary {
-      background: white;
-      color: var(--dark);
-      border: 1px solid var(--border-color);
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-secondary:hover {
-      background: #f8f9fa;
-      border-color: var(--primary);
-    }
-
-    .btn-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f8f9fa;
-      border: 1px solid var(--border-color);
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .btn-icon:hover {
-      background: var(--primary);
-      color: white;
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-      background: white;
-      width: 90%;
-      max-width: 600px;
-      border-radius: 24px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-
-    .modal-tabs {
-      display: flex;
-      gap: 16px;
-      margin: 30px 0 20px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 16px;
-    }
-
-    .modal-tab {
-      padding: 8px 16px;
-      cursor: pointer;
-      font-weight: 600;
-      color: #666;
-      transition: var(--transition);
-    }
-
-    .modal-tab.active {
-      color: var(--primary);
-      border-bottom: 2px solid var(--primary);
-    }
-
-    .form-group {
-      margin-bottom: 24px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: var(--dark);
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      font-size: 1rem;
-      transition: var(--transition);
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
-    }
-
-    .condition-builder {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 12px;
-      margin: 20px 0;
-    }
-
-    .condition-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-      align-items: center;
-    }
-
-    /* Lock Overlay */
-    .lock-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0.97);
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 60px;
-      z-index: 10;
-      border-radius: var(--card-radius);
-    }
-
-    .hidden { display: none !important; }
-
-    /* Activity Timeline */
-    .timeline {
-      margin-top: 30px;
-    }
-
-    .timeline-item {
-      display: flex;
-      gap: 16px;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .timeline-icon {
-      width: 40px;
-      height: 40px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-    }
-
-    .timeline-content {
-      flex: 1;
-    }
-
-    .timeline-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .timeline-time {
-      font-size: 0.85rem;
-      color: #888;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .analytics-dashboard {
-        grid-template-columns: 1fr;
-      }
-      
-      .automation-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Automations Studio | AI Smart Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Load scripts in correct order -->
+    <script src="js/config.js"></script>
+    <script src="js/master-fix.js"></script>
+    <script src="js/fix-all-html.js"></script>
+    
+    <style>
+        /* ========================================
+           PREMIUM DESIGN TOKENS - White & Gold Theme
+           ========================================
+        */
+        :root {
+            --primary: #d4af37;
+            --primary-light: #f5e7b2;
+            --primary-dark: #b8962e;
+            --primary-gradient: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+            --primary-glow: 0 0 20px rgba(212, 175, 55, 0.3);
+            
+            --dark: #1a1a1a;
+            --dark-accent: #2d2d2d;
+            --light: #ffffff;
+            --light-gray: #f8fafc;
+            --medium-gray: #e9ecef;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --info: #3b82f6;
+            --info-light: #dbeafe;
+            
+            --border-color: rgba(0,0,0,0.08);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
+            --shadow-gold: 0 10px 30px rgba(212, 175, 55, 0.2);
+            
+            --card-radius: 24px;
+            --button-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text-primary); 
+            line-height: 1.6; 
+            min-height: 100vh;
+        }
+
+        /* ========================================
+           PREMIUM NAVIGATION
+           ========================================
+        */
+        nav {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .nav-container { 
+            max-width: 1440px; 
+            margin: 0 auto; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 32px; 
+        }
+        
+        .nav-logo { 
+            font-weight: 800; 
+            font-size: 1.5rem; 
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            letter-spacing: -0.5px;
+        }
+        
+        .nav-logo i {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.8rem;
+        }
+        
+        .nav-links { 
+            display: flex; 
+            gap: 32px; 
+            align-items: center; 
+        }
+        
+        .nav-links a { 
+            text-decoration: none; 
+            color: var(--text-secondary); 
+            font-size: 0.95rem; 
+            font-weight: 600; 
+            transition: var(--transition); 
+            position: relative;
+            padding: 5px 0;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-gradient);
+            transition: var(--transition);
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-dark);
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-links a.active-nav { 
+            color: var(--primary-dark); 
+            font-weight: 700;
+        }
+        
+        .nav-links a.active-nav::after {
+            width: 100%;
+        }
+        
+        .back-btn { 
+            background: var(--dark); 
+            color: white !important; 
+            padding: 10px 24px !important; 
+            border-radius: 40px; 
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .back-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .back-btn::after {
+            display: none;
+        }
+
+        /* ========================================
+           PREMIUM HERO SECTION
+           ========================================
+        */
+        .hero { 
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            padding: 60px 32px; 
+            text-align: center; 
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .hero h1 { 
+            font-size: 3.2rem; 
+            margin-bottom: 16px; 
+            letter-spacing: -1px; 
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p { 
+            color: var(--text-secondary); 
+            max-width: 720px; 
+            margin: 0 auto; 
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* ========================================
+           PREMIUM STATS GRID
+           ========================================
+        */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            max-width: 1440px;
+            margin: 40px auto 0;
+            padding: 0 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 28px;
+            border-radius: 20px;
+            border: 1px solid var(--medium-gray);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md), var(--shadow-gold);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-gradient);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            box-shadow: 0 5px 15px rgba(212,175,55,0.3);
+        }
+
+        .stat-content h3 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .stat-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* ========================================
+           SECTION HEADERS
+           ========================================
+        */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 50px 32px 30px;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header h2 i {
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        /* ========================================
+           ANALYTICS DASHBOARD
+           ========================================
+        */
+        .analytics-dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin: 0 32px 40px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid var(--medium-gray);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+
+        /* ========================================
+           TEMPLATE GRID
+           ========================================
+        */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin: 0 32px 50px;
+        }
+
+        .template-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            border: 1px solid var(--medium-gray);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg), var(--shadow-gold);
+        }
+
+        .template-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .template-icon {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+        }
+
+        .template-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .template-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .template-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .template-meta i {
+            color: var(--primary);
+        }
+
+        /* ========================================
+           AUTOMATION GRID
+           ========================================
+        */
+        .automation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin: 0 32px 40px;
+        }
+
+        .automation-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            border: 1px solid var(--medium-gray);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+
+        .automation-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg), var(--shadow-gold);
+        }
+
+        .automation-card.premium {
+            border: 2px solid var(--primary);
+            background: linear-gradient(135deg, white 0%, #fff9e6 100%);
+        }
+
+        .automation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .automation-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--primary-dark);
+        }
+
+        .automation-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .automation-status {
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .status-live {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .status-paused {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .status-draft {
+            background: var(--medium-gray);
+            color: var(--text-secondary);
+        }
+
+        .automation-stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 16px 0;
+            border-top: 1px solid var(--medium-gray);
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .trigger, .action {
+            background: var(--light-gray);
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin: 12px 0;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trigger i, .action i {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .automation-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        /* ========================================
+           TOGGLE SWITCH
+           ========================================
+        */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 54px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--medium-gray);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background: var(--primary-gradient);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* ========================================
+           BUTTONS
+           ========================================
+        */
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 15px rgba(212,175,55,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212,175,55,0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 2px solid var(--medium-gray);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid var(--medium-gray);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-secondary);
+        }
+
+        .btn-icon:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ========================================
+           MODAL
+           ========================================
+        */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            color: var(--danger);
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--medium-gray);
+            padding-bottom: 16px;
+        }
+
+        .modal-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .modal-tab.active {
+            color: var(--primary);
+        }
+
+        .modal-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -18px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-gradient);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--medium-gray);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(212,175,55,0.1);
+        }
+
+        .condition-builder {
+            background: var(--light-gray);
+            padding: 24px;
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+
+        .condition-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        /* ========================================
+           LOCK OVERLAY
+           ========================================
+        */
+        .lock-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            z-index: 10;
+            border-radius: 24px;
+        }
+
+        .lock-overlay i {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .lock-overlay h3 {
+            font-size: 2rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+
+        .lock-overlay p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            max-width: 400px;
+        }
+
+        /* ========================================
+           ACTIVITY TIMELINE
+           ========================================
+        */
+        .timeline {
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--light-gray);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .timeline-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* ========================================
+           FLOATING ACTION BUTTON
+           ========================================
+        */
+        .fab {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg), var(--primary-glow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+            z-index: 100;
+        }
+
+        .fab:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(212,175,55,0.4);
+        }
+
+        /* ========================================
+           FOOTER
+           ========================================
+        */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            border-top: 1px solid var(--medium-gray);
+            background: white;
+            margin-top: 40px;
+        }
+
+        /* ========================================
+           UTILITY CLASSES
+           ========================================
+        */
+        .hidden { display: none !important; }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(212,175,55,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .analytics-dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .automation-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .fab {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 24px;
+                font-size: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
 
 <nav>
-  <div class="nav-container">
-    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
-    <div class="nav-links">
-      <a href="index.html">Dashboard</a>
-      <a href="smart-tools.html">AI Tools</a>
-      <a href="customer-insights.html">Customer Insights</a>
-      <a href="ai-automations.html" class="active-nav">Automations</a>
-      <a href="team.html">Team</a>
-      <a href="analytics.html">Analytics</a>
-      <a href="pricing.html" class="btn-primary" style="padding:8px 20px;">Upgrade</a>
+    <div class="nav-container">
+        <a href="dashboard.html" class="nav-logo">
+            <i class="fas fa-robot"></i>
+            AI Smart Hub
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="smart-tools.html">Smart Tools</a>
+            <a href="customer-insights.html">Customer Insights</a>
+            <a href="ai-automations.html" class="active-nav">Automations</a>
+            <a href="team.html">Team</a>
+            <a href="dashboard.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Exit
+            </a>
+        </div>
     </div>
-  </div>
 </nav>
 
 <!-- Agency Lock Overlay -->
-<div id="plan-lock" class="hidden" style="position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;">
-  <div class="lock-overlay" style="position: relative; width: 90%; max-width: 500px; margin: 0 auto;">
-    <i class="fas fa-crown" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
-    <h3 style="font-size: 2rem; margin-bottom: 20px;">Agency Plan Required</h3>
-    <p style="font-size: 1.1rem; margin-bottom: 30px;">Unlock the full power of AI Automations with our Agency plan. Create unlimited workflows, advanced conditions, and priority support.</p>
-    <button class="btn-primary" onclick="window.location.href='pricing.html'" style="padding:16px 48px; font-size:1.1rem;">Upgrade to Agency</button>
-  </div>
+<div id="plan-lock" class="hidden" style="position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;">
+    <div class="lock-overlay" style="position: relative; width: 90%; max-width: 500px; margin: 0 auto; background: white;">
+        <i class="fas fa-crown"></i>
+        <h3>Agency Plan Required</h3>
+        <p>Unlock the full power of AI Automations with our Agency plan. Create unlimited workflows, advanced conditions, email/SMS sending, and priority support.</p>
+        <button class="btn-primary" onclick="window.location.href='pricing.html'" style="padding:16px 48px;">Upgrade to Agency</button>
+    </div>
 </div>
 
 <div class="hero">
-  <h1>AI Automations Studio</h1>
-  <p>Build powerful no-code AI workflows that automate your entire business 24/7</p>
+    <h1>AI Automations Studio</h1>
+    <p>Build powerful no-code AI workflows that automate your entire business 24/7</p>
 </div>
 
-<div class="container" id="main-content" class="hidden">
-
-  <!-- Premium Stats -->
-  <div class="stats-grid">
-    <div class="stat-card-premium">
-      <div class="stat-icon"><i class="fas fa-bolt"></i></div>
-      <div class="stat-content">
-        <h3 id="active-count">0</h3>
-        <p>Active Automations</p>
-      </div>
-    </div>
-    <div class="stat-card-premium">
-      <div class="stat-icon"><i class="fas fa-clock"></i></div>
-      <div class="stat-content">
-        <h3 id="hours-saved">0</h3>
-        <p>Hours Saved This Month</p>
-      </div>
-    </div>
-    <div class="stat-card-premium">
-      <div class="stat-icon"><i class="fas fa-users"></i></div>
-      <div class="stat-content">
-        <h3 id="leads-generated">0</h3>
-        <p>Leads Generated</p>
-      </div>
-    </div>
-    <div class="stat-card-premium">
-      <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-      <div class="stat-content">
-        <h3 id="success-rate">98%</h3>
-        <p>Success Rate</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Analytics Dashboard -->
-  <div class="analytics-dashboard">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Automation Performance</div>
-        <div class="chart-legend">
-          <div class="legend-item"><span class="legend-color" style="background: var(--primary);"></span> Success</div>
-          <div class="legend-item"><span class="legend-color" style="background: var(--danger);"></span> Failed</div>
+<!-- Premium Stats -->
+<div class="stats-grid" id="main-content">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+        <div class="stat-content">
+            <h3 id="active-count">0</h3>
+            <p>Active Automations</p>
         </div>
-      </div>
-      <canvas id="performanceChart" height="200"></canvas>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-content">
+            <h3 id="hours-saved">0</h3>
+            <p>Hours Saved</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-content">
+            <h3 id="leads-generated">0</h3>
+            <p>Leads Generated</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-content">
+            <h3 id="success-rate">98%</h3>
+            <p>Success Rate</p>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Dashboard -->
+<div class="analytics-dashboard">
+    <div class="chart-card">
+        <div class="chart-header">
+            <div class="chart-title">Automation Performance</div>
+            <div class="chart-legend">
+                <div class="legend-item"><span class="legend-color" style="background: var(--primary);"></span> Success</div>
+                <div class="legend-item"><span class="legend-color" style="background: var(--danger);"></span> Failed</div>
+            </div>
+        </div>
+        <canvas id="performanceChart" height="200"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Trigger Types</div>
-      </div>
-      <canvas id="triggerChart" height="200"></canvas>
+        <div class="chart-header">
+            <div class="chart-title">Trigger Types</div>
+        </div>
+        <canvas id="triggerChart" height="200"></canvas>
     </div>
-  </div>
-
-  <!-- Templates Section -->
-  <div class="section-header">
-    <h2>🚀 Quick Start Templates</h2>
-    <button class="btn-secondary" onclick="showTemplateModal()"><i class="fas fa-plus"></i> Browse All</button>
-  </div>
-
-  <div class="template-grid" id="template-grid">
-    <!-- Templates will be loaded here -->
-  </div>
-
-  <!-- Your Automations -->
-  <div class="section-header">
-    <h2>⚙️ Your Automations</h2>
-    <div>
-      <button class="btn-secondary" onclick="filterAutomations('all')" style="margin-right:10px;">All</button>
-      <button class="btn-secondary" onclick="filterAutomations('live')" style="margin-right:10px;">Live</button>
-      <button class="btn-secondary" onclick="filterAutomations('paused')">Paused</button>
-    </div>
-  </div>
-
-  <div class="automation-grid" id="automation-grid">
-    <!-- Automations will be loaded here -->
-  </div>
-
-  <!-- Activity Timeline -->
-  <div class="section-header">
-    <h2>📊 Recent Activity</h2>
-  </div>
-  <div class="chart-card">
-    <div class="timeline" id="activity-timeline">
-      <!-- Timeline will be loaded here -->
-    </div>
-  </div>
-
-  <!-- Floating Action Button -->
-  <button onclick="showCreateModal()" class="btn-primary" style="position:fixed;bottom:40px;right:40px;padding:16px 32px;font-size:1.15rem;box-shadow:0 12px 40px rgba(212,175,55,0.35);">
-    <i class="fas fa-plus"></i> New Automation
-  </button>
 </div>
+
+<!-- Templates Section -->
+<div class="section-header">
+    <h2><i class="fas fa-bolt"></i> Quick Start Templates</h2>
+    <button class="btn-secondary" onclick="showTemplateModal()"><i class="fas fa-eye"></i> Browse All</button>
+</div>
+
+<div class="template-grid" id="template-grid">
+    <!-- Templates will be loaded here -->
+</div>
+
+<!-- Your Automations -->
+<div class="section-header">
+    <h2><i class="fas fa-cog"></i> Your Automations</h2>
+    <div>
+        <button class="btn-secondary" onclick="filterAutomations('all')" style="margin-right:10px;">All</button>
+        <button class="btn-secondary" onclick="filterAutomations('live')" style="margin-right:10px;">Live</button>
+        <button class="btn-secondary" onclick="filterAutomations('paused')">Paused</button>
+    </div>
+</div>
+
+<div class="automation-grid" id="automation-grid">
+    <!-- Automations will be loaded here -->
+</div>
+
+<!-- Activity Timeline -->
+<div class="section-header">
+    <h2><i class="fas fa-history"></i> Recent Activity</h2>
+</div>
+
+<div class="chart-card">
+    <div class="timeline" id="activity-timeline">
+        <!-- Timeline will be loaded here -->
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<button onclick="showCreateModal()" class="fab">
+    <i class="fas fa-plus"></i> New Automation
+</button>
 
 <footer>
-  <p>© 2026 AI Smart Hub • Enterprise AI Automation Platform</p>
+    <p>© 2026 AI Smart Hub • <span style="color: var(--primary);">Enterprise AI Automation Platform</span></p>
 </footer>
 
 <!-- Create/Edit Modal -->
 <div id="automation-modal" class="modal">
-  <div class="modal-content">
-    <h2 id="modal-title">Create Advanced Automation</h2>
-    
-    <div class="modal-tabs">
-      <span class="modal-tab active" onclick="switchModalTab('basic')">Basic</span>
-      <span class="modal-tab" onclick="switchModalTab('conditions')">Conditions</span>
-      <span class="modal-tab" onclick="switchModalTab('actions')">Actions</span>
-      <span class="modal-tab" onclick="switchModalTab('schedule')">Schedule</span>
-    </div>
-
-    <div id="modal-basic">
-      <div class="form-group">
-        <label>Automation Name</label>
-        <input type="text" id="modal-title-input" class="form-control" placeholder="e.g. Welcome Series">
-      </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea id="modal-description" class="form-control" rows="2" placeholder="What does this automation do?"></textarea>
-      </div>
-    </div>
-
-    <div id="modal-conditions" style="display:none;">
-      <div class="condition-builder">
-        <div class="condition-row">
-          <select class="form-control" style="flex:1;" id="condition-field">
-            <option value="sentiment">Sentiment</option>
-            <option value="time">Time of Day</option>
-            <option value="location">Location</option>
-            <option value="device">Device Type</option>
-            <option value="visits">Visit Count</option>
-          </select>
-          <select class="form-control" style="flex:1;" id="condition-operator">
-            <option value="equals">Equals</option>
-            <option value="not-equals">Not Equals</option>
-            <option value="greater-than">Greater Than</option>
-            <option value="less-than">Less Than</option>
-            <option value="contains">Contains</option>
-          </select>
-          <input type="text" class="form-control" style="flex:1;" id="condition-value" placeholder="Value">
-          <button class="btn-icon" onclick="addCondition()"><i class="fas fa-plus"></i></button>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">Create Automation</h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
         </div>
-        <div id="conditions-list"></div>
-      </div>
-    </div>
+        
+        <div class="modal-tabs">
+            <span class="modal-tab active" onclick="switchModalTab('basic')">Basic</span>
+            <span class="modal-tab" onclick="switchModalTab('conditions')">Conditions</span>
+            <span class="modal-tab" onclick="switchModalTab('actions')">Actions</span>
+            <span class="modal-tab" onclick="switchModalTab('schedule')">Schedule</span>
+        </div>
 
-    <div id="modal-actions" style="display:none;">
-      <div class="form-group">
-        <label>Primary Action</label>
-        <select id="modal-action" class="form-control">
-          <option value="send-email">Send Email</option>
-          <option value="send-sms">Send SMS</option>
-          <option value="webhook">Call Webhook</option>
-          <option value="slack">Send to Slack</option>
-          <option value="zapier">Trigger Zapier</option>
-          <option value="tag">Add Tag</option>
-          <option value="score">Update Lead Score</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Action Configuration</label>
-        <textarea id="action-config" class="form-control" rows="3" placeholder='{"template":"welcome","delay":0}'></textarea>
-      </div>
-    </div>
+        <div id="modal-basic">
+            <div class="form-group">
+                <label>Automation Name</label>
+                <input type="text" id="automation-name" class="form-control" placeholder="e.g., Welcome Series">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="automation-description" class="form-control" rows="2" placeholder="What does this automation do?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Trigger</label>
+                <select id="automation-trigger" class="form-control">
+                    <option value="new-lead">New Lead Captured</option>
+                    <option value="sentiment-negative">Negative Sentiment Detected</option>
+                    <option value="cart-abandoned">Cart Abandoned (1 hour)</option>
+                    <option value="purchase-made">Purchase Made</option>
+                    <option value="inactive-7d">Customer Inactive (7 days)</option>
+                    <option value="booking-request">Booking Requested</option>
+                    <option value="support-ticket">Support Ticket Created</option>
+                    <option value="price-question">Price Question Asked</option>
+                    <option value="competitor-mention">Competitor Mentioned</option>
+                </select>
+            </div>
+        </div>
 
-    <div id="modal-schedule" style="display:none;">
-      <div class="form-group">
-        <label>Schedule Type</label>
-        <select id="schedule-type" class="form-control">
-          <option value="immediate">Run Immediately</option>
-          <option value="delay">Delay</option>
-          <option value="recurring">Recurring</option>
-          <option value="business-hours">Business Hours Only</option>
-        </select>
-      </div>
-      <div class="form-group" id="schedule-config">
-        <label>Schedule Details</label>
-        <input type="text" class="form-control" placeholder="e.g. 24h, every monday, etc">
-      </div>
-    </div>
+        <div id="modal-conditions" style="display:none;">
+            <div class="condition-builder">
+                <div class="condition-row">
+                    <select class="form-control" style="flex:1;" id="condition-field">
+                        <option value="lead-score">Lead Score</option>
+                        <option value="email-domain">Email Domain</option>
+                        <option value="location">Location</option>
+                        <option value="device">Device Type</option>
+                        <option value="visit-count">Visit Count</option>
+                        <option value="purchase-value">Purchase Value</option>
+                    </select>
+                    <select class="form-control" style="flex:1;" id="condition-operator">
+                        <option value="greater-than">Greater than</option>
+                        <option value="less-than">Less than</option>
+                        <option value="equals">Equals</option>
+                        <option value="contains">Contains</option>
+                        <option value="not-equals">Not equals</option>
+                    </select>
+                    <input type="text" class="form-control" style="flex:1;" id="condition-value" placeholder="Value">
+                    <button class="btn-icon" onclick="addCondition()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="conditions-list"></div>
+                <p style="color: var(--text-secondary); font-size:0.85rem; margin-top:15px;">
+                    <i class="fas fa-info-circle"></i> All conditions must be met for automation to run
+                </p>
+            </div>
+        </div>
 
-    <div style="display:flex;gap:16px;margin-top:40px;">
-      <button onclick="closeModal()" class="btn-secondary" style="flex:1;">Cancel</button>
-      <button onclick="saveAutomation()" class="btn-primary" style="flex:1;">Save Automation</button>
+        <div id="modal-actions" style="display:none;">
+            <div class="form-group">
+                <label>Action Type</label>
+                <select id="automation-action" class="form-control">
+                    <option value="send-email">📧 Send Email</option>
+                    <option value="send-sms">📱 Send SMS</option>
+                    <option value="update-score">📊 Update Lead Score</option>
+                    <option value="add-tag">🏷️ Add Tag</option>
+                    <option value="send-webhook">🔗 Send Webhook</option>
+                    <option value="slack-notify">💬 Slack Notification</option>
+                    <option value="create-task">✅ Create Task</option>
+                    <option value="assign-owner">👤 Assign to Owner</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Action Details</label>
+                <textarea id="action-config" class="form-control" rows="3" placeholder='{"template":"welcome", "subject":"Welcome!"}'></textarea>
+            </div>
+        </div>
+
+        <div id="modal-schedule" style="display:none;">
+            <div class="form-group">
+                <label>When to Run</label>
+                <select id="schedule-type" class="form-control">
+                    <option value="immediate">Immediately</option>
+                    <option value="delay">Delay (minutes)</option>
+                    <option value="specific">Specific Time</option>
+                    <option value="business-hours">Business Hours Only</option>
+                    <option value="recurring">Recurring</option>
+                </select>
+            </div>
+            <div class="form-group" id="schedule-config">
+                <label>Delay (minutes)</label>
+                <input type="number" class="form-control" value="60" min="0">
+            </div>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:40px;">
+            <button onclick="closeModal()" class="btn-secondary" style="flex:1;">Cancel</button>
+            <button onclick="saveAutomation()" class="btn-primary" style="flex:1;">Save Automation</button>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Template Preview Modal -->
 <div id="template-modal" class="modal">
-  <div class="modal-content">
-    <h2>Automation Templates</h2>
-    <div class="template-grid" style="grid-template-columns:1fr 1fr; max-height:500px; overflow-y:auto;">
-      <!-- Templates will be loaded here -->
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Automation Templates</h3>
+            <button class="close-btn" onclick="closeTemplateModal()">&times;</button>
+        </div>
+        <div class="template-grid" style="grid-template-columns:1fr 1fr; max-height:500px; overflow-y:auto;" id="template-modal-grid">
+            <!-- Templates will be loaded here -->
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
@@ -877,7 +1216,7 @@
 // AI AUTOMATIONS - ENTERPRISE SAAS VERSION
 // ================================================
 
-const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api/ai-automations`;
 let automations = [];
 let activities = [];
@@ -888,519 +1227,628 @@ const ADMIN_EMAIL = "ericchung992@gmail.com";
 
 // Templates
 const templates = [
-  {
-    id: 1,
-    icon: "👋",
-    title: "Welcome Series",
-    description: "Automatically engage new leads with a personalized welcome sequence",
-    popularity: "2.5k uses",
-    time: "5 min setup",
-    trigger: "new-lead",
-    action: "email-sequence"
-  },
-  {
-    id: 2,
-    icon: "💰",
-    title: "Abandoned Cart Recovery",
-    description: "Recover lost sales with automated follow-ups and discounts",
-    popularity: "1.8k uses",
-    time: "10 min setup",
-    trigger: "cart-abandoned",
-    action: "email+discount"
-  },
-  {
-    id: 3,
-    icon: "⭐",
-    title: "Review Collector",
-    description: "Automatically request reviews after purchase",
-    popularity: "3.1k uses",
-    time: "3 min setup",
-    trigger: "purchase-complete",
-    action: "review-request"
-  },
-  {
-    id: 4,
-    icon: "🎯",
-    title: "Lead Scoring",
-    description: "Score and segment leads based on behavior",
-    popularity: "1.2k uses",
-    time: "15 min setup",
-    trigger: "multiple",
-    action: "update-score"
-  }
+    {
+        id: 1,
+        icon: "👋",
+        title: "Welcome Series",
+        description: "Automatically engage new leads with a personalized 3-email welcome sequence",
+        popularity: "2.5k",
+        time: "5 min",
+        trigger: "new-lead",
+        action: "email-sequence",
+        badge: "POPULAR"
+    },
+    {
+        id: 2,
+        icon: "🛒",
+        title: "Abandoned Cart Recovery",
+        description: "Recover lost sales with automated follow-ups and discount offers",
+        popularity: "1.8k",
+        time: "10 min",
+        trigger: "cart-abandoned",
+        action: "email+discount",
+        badge: "HOT"
+    },
+    {
+        id: 3,
+        icon: "⭐",
+        title: "Review Collector",
+        description: "Automatically request reviews 3 days after purchase",
+        popularity: "3.1k",
+        time: "3 min",
+        trigger: "purchase-complete",
+        action: "review-request",
+        badge: ""
+    },
+    {
+        id: 4,
+        icon: "🎯",
+        title: "Lead Scoring",
+        description: "Score and segment leads based on behavior and engagement",
+        popularity: "1.2k",
+        time: "15 min",
+        trigger: "multiple",
+        action: "update-score",
+        badge: "NEW"
+    },
+    {
+        id: 5,
+        icon: "😡",
+        title: "Crisis Management",
+        description: "Get instant alerts when customers express negative sentiment",
+        popularity: "890",
+        time: "5 min",
+        trigger: "negative-sentiment",
+        action: "slack-notify",
+        badge: "PRO"
+    },
+    {
+        id: 6,
+        icon: "📅",
+        title: "Booking Reminder",
+        description: "Send SMS reminders 24h before appointments",
+        popularity: "2.1k",
+        time: "8 min",
+        trigger: "booking-created",
+        action: "sms-reminder",
+        badge: ""
+    }
 ];
 
 // ===== TOKEN HELPERS =====
 function getPlanFromToken() {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    
-    const payload = JSON.parse(atob(parts[1]));
-    return payload;
-  } catch (e) {
-    return null;
-  }
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        
+        const payload = JSON.parse(atob(parts[1]));
+        return payload;
+    } catch (e) {
+        return null;
+    }
 }
 
 // ===== UI HELPERS =====
 function showToast(msg, type = 'success') {
-  const toast = document.createElement('div');
-  toast.innerHTML = msg;
-  toast.style.cssText = `position:fixed;bottom:24px;right:24px;padding:16px 32px;border-radius:10px;color:white;font-weight:600;z-index:3000;background:${type==='success'?'#28a745':'#dc3545'};box-shadow:0 8px 24px rgba(0,0,0,0.2);display:flex;align-items:center;gap:12px;`;
-  toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-exclamation-circle'}"></i> ${msg}`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
+    const toast = document.createElement('div');
+    toast.className = type === 'success' ? 'success-message' : 'error-message';
+    toast.style.cssText = `
+        position:fixed;
+        bottom:24px;
+        right:24px;
+        padding:16px 32px;
+        border-radius:12px;
+        color:white;
+        font-weight:600;
+        z-index:3000;
+        background:${type==='success' ? '#10b981' : '#ef4444'};
+        box-shadow:0 8px 24px rgba(0,0,0,0.2);
+        display:flex;
+        align-items:center;
+        gap:12px;
+    `;
+    toast.innerHTML = `<i class="fas ${type==='success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 }
 
 function unlockContent() {
-  const lock = document.getElementById('plan-lock');
-  const main = document.getElementById('main-content');
-  
-  if (lock) {
-    lock.classList.add('hidden');
-    lock.style.display = 'none';
-  }
-  
-  if (main) {
-    main.classList.remove('hidden');
-    main.style.display = 'block';
+    const lock = document.getElementById('plan-lock');
+    const main = document.getElementById('main-content');
+    
+    if (lock) {
+        lock.classList.add('hidden');
+        lock.style.display = 'none';
+    }
+    
+    if (main) {
+        main.style.display = 'grid';
+    }
     initCharts();
     renderTemplates();
     loadActivity();
-  }
+    loadAutomations();
 }
 
 // ===== CHARTS =====
 function initCharts() {
-  const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
-  if (perfCtx) {
-    performanceChart = new Chart(perfCtx, {
-      type: 'line',
-      data: {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [
-          {
-            label: 'Success',
-            data: [65, 78, 82, 91, 88, 72, 84],
-            borderColor: '#d4af37',
-            backgroundColor: 'rgba(212,175,55,0.1)',
-            tension: 0.4,
-            fill: true
-          },
-          {
-            label: 'Failed',
-            data: [5, 3, 2, 4, 3, 2, 1],
-            borderColor: '#dc3545',
-            backgroundColor: 'rgba(220,53,69,0.1)',
-            tension: 0.4,
-            fill: true
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }
+    const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
+    if (perfCtx) {
+        performanceChart = new Chart(perfCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Success',
+                        data: [65, 78, 82, 91, 88, 72, 84],
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212,175,55,0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#d4af37'
+                    },
+                    {
+                        label: 'Failed',
+                        data: [5, 3, 2, 4, 3, 2, 1],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ef4444'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
 
-  const triggerCtx = document.getElementById('triggerChart')?.getContext('2d');
-  if (triggerCtx) {
-    triggerChart = new Chart(triggerCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Booking', 'Sentiment', 'Pricing', 'Cancel', 'Review'],
-        datasets: [{
-          data: [35, 25, 20, 12, 8],
-          backgroundColor: ['#d4af37', '#28a745', '#3b82f6', '#f59e0b', '#6c757d']
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
-      }
-    });
-  }
+    const triggerCtx = document.getElementById('triggerChart')?.getContext('2d');
+    if (triggerCtx) {
+        triggerChart = new Chart(triggerCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['New Lead', 'Cart Abandoned', 'Sentiment', 'Purchase', 'Inactive'],
+                datasets: [{
+                    data: [35, 25, 20, 12, 8],
+                    backgroundColor: ['#d4af37', '#10b981', '#3b82f6', '#f59e0b', '#6c757d']
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
 }
 
 // ===== TEMPLATES =====
 function renderTemplates() {
-  const grid = document.getElementById('template-grid');
-  if (!grid) return;
+    const grid = document.getElementById('template-grid');
+    if (!grid) return;
 
-  grid.innerHTML = templates.slice(0, 3).map(t => `
-    <div class="template-card" onclick="useTemplate(${t.id})">
-      <div class="template-badge">Popular</div>
-      <div class="template-icon">${t.icon}</div>
-      <div class="template-title">${t.title}</div>
-      <div class="template-description">${t.description}</div>
-      <div class="template-meta">
-        <span><i class="fas fa-users"></i> ${t.popularity}</span>
-        <span><i class="fas fa-clock"></i> ${t.time}</span>
-      </div>
-    </div>
-  `).join('');
+    grid.innerHTML = templates.slice(0, 3).map(t => `
+        <div class="template-card" onclick="useTemplate(${t.id})">
+            ${t.badge ? `<div class="template-badge">${t.badge}</div>` : ''}
+            <div class="template-icon">${t.icon}</div>
+            <div class="template-title">${t.title}</div>
+            <div class="template-description">${t.description}</div>
+            <div class="template-meta">
+                <span><i class="fas fa-users"></i> ${t.popularity} uses</span>
+                <span><i class="fas fa-clock"></i> ${t.time}</span>
+            </div>
+        </div>
+    `).join('');
 }
 
 function useTemplate(id) {
-  const template = templates.find(t => t.id === id);
-  if (template) {
-    document.getElementById('modal-title-input').value = template.title;
-    document.getElementById('modal-trigger').value = template.trigger;
-    document.getElementById('modal-action').value = template.action;
-    showCreateModal();
-  }
+    const template = templates.find(t => t.id === id);
+    if (template) {
+        document.getElementById('automation-name').value = template.title;
+        document.getElementById('automation-description').value = template.description;
+        
+        // Map template trigger to select option
+        const triggerMap = {
+            'new-lead': 'new-lead',
+            'cart-abandoned': 'cart-abandoned',
+            'negative-sentiment': 'sentiment-negative',
+            'purchase-complete': 'purchase-made',
+            'booking-created': 'booking-request'
+        };
+        
+        const triggerSelect = document.getElementById('automation-trigger');
+        if (triggerMap[template.trigger]) {
+            triggerSelect.value = triggerMap[template.trigger];
+        }
+        
+        showCreateModal();
+        closeTemplateModal();
+    }
+}
+
+function showTemplateModal() {
+    const modal = document.getElementById('template-modal');
+    const grid = document.getElementById('template-modal-grid');
+    
+    grid.innerHTML = templates.map(t => `
+        <div class="template-card" onclick="useTemplate(${t.id})">
+            ${t.badge ? `<div class="template-badge">${t.badge}</div>` : ''}
+            <div class="template-icon">${t.icon}</div>
+            <div class="template-title">${t.title}</div>
+            <div class="template-description">${t.description}</div>
+            <div class="template-meta">
+                <span><i class="fas fa-users"></i> ${t.popularity} uses</span>
+                <span><i class="fas fa-clock"></i> ${t.time}</span>
+            </div>
+        </div>
+    `).join('');
+    
+    modal.classList.add('active');
+}
+
+function closeTemplateModal() {
+    document.getElementById('template-modal').classList.remove('active');
 }
 
 // ===== ACTIVITY TIMELINE =====
 function loadActivity() {
-  const timeline = document.getElementById('activity-timeline');
-  
-  activities = [
-    { id: 1, type: 'success', title: 'Welcome Series triggered', time: '2 minutes ago', icon: 'fa-check-circle', color: '#28a745' },
-    { id: 2, type: 'warning', title: 'Lead scoring updated for 5 contacts', time: '15 minutes ago', icon: 'fa-chart-line', color: '#f59e0b' },
-    { id: 3, type: 'info', title: 'Abandoned cart recovery sent', time: '1 hour ago', icon: 'fa-shopping-cart', color: '#3b82f6' },
-    { id: 4, type: 'success', title: 'Review request delivered', time: '3 hours ago', icon: 'fa-star', color: '#d4af37' },
-  ];
+    const timeline = document.getElementById('activity-timeline');
+    
+    activities = [
+        { id: 1, type: 'success', title: 'Welcome Series triggered for John Doe', time: '2 minutes ago', icon: 'fa-user-plus', color: '#10b981' },
+        { id: 2, type: 'warning', title: 'Lead scoring updated for 5 contacts', time: '15 minutes ago', icon: 'fa-chart-line', color: '#f59e0b' },
+        { id: 3, type: 'info', title: 'Abandoned cart recovery sent to jane@example.com', time: '1 hour ago', icon: 'fa-shopping-cart', color: '#3b82f6' },
+        { id: 4, type: 'success', title: 'Review request delivered to 3 customers', time: '3 hours ago', icon: 'fa-star', color: '#d4af37' },
+        { id: 5, type: 'danger', title: 'Negative sentiment detected - Alert sent', time: '5 hours ago', icon: 'fa-exclamation-triangle', color: '#ef4444' },
+    ];
 
-  timeline.innerHTML = activities.map(a => `
-    <div class="timeline-item">
-      <div class="timeline-icon" style="color: ${a.color}">
-        <i class="fas ${a.icon}"></i>
-      </div>
-      <div class="timeline-content">
-        <div class="timeline-title">${a.title}</div>
-        <div class="timeline-time">${a.time}</div>
-      </div>
-    </div>
-  `).join('');
+    timeline.innerHTML = activities.map(a => `
+        <div class="timeline-item">
+            <div class="timeline-icon" style="color: ${a.color};">
+                <i class="fas ${a.icon}"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">${a.title}</div>
+                <div class="timeline-time">${a.time}</div>
+            </div>
+        </div>
+    `).join('');
 }
 
 // ===== LOAD AUTOMATIONS =====
 async function loadAutomations() {
-  const grid = document.getElementById('automation-grid');
-  grid.innerHTML = '<div style="text-align:center;padding:120px;color:#777;"><i class="fas fa-circle-notch fa-spin fa-3x"></i><br>Loading your automations...</div>';
-
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = 'login.html';
-      return;
-    }
-
-    const res = await fetch(`${API_BASE}/automations`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (!res.ok) throw new Error("Load failed");
-
-    automations = await res.json();
-    renderAutomations(automations);
-    updateStats();
+    const grid = document.getElementById('automation-grid');
     
-  } catch (err) {
-    console.error("[LOAD ERROR]", err);
-    grid.innerHTML = `
-      <div style="text-align:center;padding:60px;color:var(--danger);">
-        <i class="fas fa-exclamation-triangle fa-3x"></i>
-        <h3 style="margin:20px 0;">Failed to load automations</h3>
-        <button onclick="loadAutomations()" class="btn-primary">Retry</button>
-      </div>
-    `;
-  }
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Mock data for demo
+        automations = [
+            {
+                id: 1,
+                title: "Welcome Series",
+                icon: "envelope",
+                trigger: "new-lead",
+                action: "email-sequence",
+                enabled: true,
+                live: true,
+                trigger_count: 245,
+                success_rate: 98,
+                leads: 189
+            },
+            {
+                id: 2,
+                title: "Abandoned Cart",
+                icon: "shopping-cart",
+                trigger: "cart-abandoned",
+                action: "email+discount",
+                enabled: true,
+                live: true,
+                trigger_count: 156,
+                success_rate: 92,
+                leads: 98
+            },
+            {
+                id: 3,
+                title: "Review Collector",
+                icon: "star",
+                trigger: "purchase-complete",
+                action: "review-request",
+                enabled: false,
+                live: false,
+                trigger_count: 89,
+                success_rate: 95,
+                leads: 67
+            }
+        ];
+        
+        renderAutomations(automations);
+        updateStats();
+        
+    } catch (err) {
+        console.error("[LOAD ERROR]", err);
+        grid.innerHTML = `
+            <div style="text-align:center;padding:60px;color:var(--danger); grid-column: 1/-1;">
+                <i class="fas fa-exclamation-triangle fa-3x"></i>
+                <h3 style="margin:20px 0;">Failed to load automations</h3>
+                <button onclick="loadAutomations()" class="btn-primary">Retry</button>
+            </div>
+        `;
+    }
 }
 
 // ===== RENDER AUTOMATIONS =====
 function renderAutomations(items) {
-  const grid = document.getElementById('automation-grid');
-  
-  if (items.length === 0) {
-    grid.innerHTML = `
-      <div style="text-align:center;padding:120px;color:#777; grid-column: 1/-1;">
-        <i class="fas fa-robot fa-4x" style="color:var(--primary); opacity:0.5; margin-bottom:20px;"></i>
-        <h3>No automations yet</h3>
-        <p style="margin:20px 0;">Create your first automation to start saving time</p>
-        <button onclick="showCreateModal()" class="btn-primary">Create Automation</button>
-      </div>
-    `;
-    return;
-  }
+    const grid = document.getElementById('automation-grid');
+    
+    if (items.length === 0) {
+        grid.innerHTML = `
+            <div style="text-align:center;padding:120px;color:#777; grid-column: 1/-1;">
+                <i class="fas fa-robot fa-4x" style="color:var(--primary); opacity:0.5; margin-bottom:20px;"></i>
+                <h3>No automations yet</h3>
+                <p style="margin:20px 0;">Create your first automation to start saving time</p>
+                <button onclick="showCreateModal()" class="btn-primary">Create Automation</button>
+            </div>
+        `;
+        return;
+    }
 
-  grid.innerHTML = items.map(item => `
-    <div class="automation-card ${item.live ? 'premium' : ''}">
-      <div class="automation-header">
-        <div class="automation-icon">
-          <i class="fas fa-${item.icon || 'robot'}"></i>
-        </div>
-        <div>
-          <div class="automation-status ${item.live ? 'status-live' : 'status-paused'}">
-            ${item.live ? 'LIVE' : 'PAUSED'}
-          </div>
-        </div>
-      </div>
-      <div class="automation-title">${item.title}</div>
-      
-      <div class="automation-stats">
-        <div class="stat-item">
-          <div class="stat-value">${item.trigger_count || 0}</div>
-          <div class="stat-label">Triggers</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${item.success_rate || 98}%</div>
-          <div class="stat-label">Success</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${item.leads || 0}</div>
-          <div class="stat-label">Leads</div>
-        </div>
-      </div>
+    grid.innerHTML = items.map(item => `
+        <div class="automation-card ${item.live ? 'premium' : ''}">
+            <div class="automation-header">
+                <div class="automation-icon">
+                    <i class="fas fa-${item.icon}"></i>
+                </div>
+                <div>
+                    <span class="automation-status ${item.live ? 'status-live' : 'status-paused'}">
+                        ${item.live ? 'LIVE' : 'PAUSED'}
+                    </span>
+                </div>
+            </div>
+            <div class="automation-title">${item.title}</div>
+            
+            <div class="automation-stats">
+                <div class="stat-item">
+                    <div class="stat-value">${item.trigger_count}</div>
+                    <div class="stat-label">Triggers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${item.success_rate}%</div>
+                    <div class="stat-label">Success</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${item.leads}</div>
+                    <div class="stat-label">Leads</div>
+                </div>
+            </div>
 
-      <div class="trigger">
-        <i class="fas fa-bolt"></i>
-        <span><strong>Trigger:</strong> ${formatTrigger(item.trigger)}</span>
-      </div>
-      
-      <div class="action">
-        <i class="fas fa-play"></i>
-        <span><strong>Action:</strong> ${formatAction(item.action)}</span>
-      </div>
+            <div class="trigger">
+                <i class="fas fa-bolt"></i>
+                <span><strong>Trigger:</strong> ${formatTrigger(item.trigger)}</span>
+            </div>
+            
+            <div class="action">
+                <i class="fas fa-play"></i>
+                <span><strong>Action:</strong> ${formatAction(item.action)}</span>
+            </div>
 
-      <div class="automation-footer">
-        <div style="display:flex; gap:8px;">
-          <button class="btn-icon" onclick="editAutomation(${item.id})" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="btn-icon" onclick="duplicateAutomation(${item.id})" title="Duplicate"><i class="fas fa-copy"></i></button>
-          <button class="btn-icon" onclick="deleteAutomation(${item.id})" title="Delete"><i class="fas fa-trash"></i></button>
+            <div class="automation-footer">
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-icon" onclick="editAutomation(${item.id})" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon" onclick="duplicateAutomation(${item.id})" title="Duplicate"><i class="fas fa-copy"></i></button>
+                    <button class="btn-icon" onclick="deleteAutomation(${item.id})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleAutomation(${item.id}, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleAutomation(${item.id}, this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
 }
 
 function formatTrigger(trigger) {
-  const triggers = {
-    'booking': 'Visitor wants to book',
-    'negative': 'Negative sentiment detected',
-    'price': 'Pricing question',
-    'cancel': 'Cancellation request',
-    'thank': 'Positive feedback',
-    'competitor': 'Competitor mention',
-    'new-lead': 'New lead captured',
-    'cart-abandoned': 'Cart abandoned',
-    'purchase-complete': 'Purchase completed'
-  };
-  return triggers[trigger] || trigger;
+    const triggers = {
+        'new-lead': 'New lead captured',
+        'cart-abandoned': 'Cart abandoned (1h)',
+        'sentiment-negative': 'Negative sentiment detected',
+        'purchase-complete': 'Purchase completed',
+        'booking-request': 'Booking requested',
+        'inactive-7d': 'Customer inactive 7 days',
+        'price-question': 'Price question asked',
+        'competitor-mention': 'Competitor mentioned'
+    };
+    return triggers[trigger] || trigger;
 }
 
 function formatAction(action) {
-  const actions = {
-    'send-booking': 'Send booking link',
-    'send-alert': 'Send alert',
-    'tag-lead': 'Tag as Hot Lead',
-    'handover': 'Handover to human',
-    'ask-review': 'Ask for review',
-    'notify': 'Notify team',
-    'email-sequence': 'Start email sequence',
-    'update-score': 'Update lead score'
-  };
-  return actions[action] || action;
+    const actions = {
+        'email-sequence': 'Send email sequence',
+        'email+discount': 'Send email with discount',
+        'review-request': 'Request review',
+        'send-alert': 'Send alert',
+        'update-score': 'Update lead score',
+        'add-tag': 'Add tag',
+        'slack-notify': 'Slack notification',
+        'sms-reminder': 'SMS reminder'
+    };
+    return actions[action] || action;
 }
 
 function updateStats() {
-  const liveCount = automations.filter(a => a.live).length;
-  document.getElementById('active-count').textContent = liveCount;
-  document.getElementById('hours-saved').textContent = liveCount * 24;
-  document.getElementById('leads-generated').textContent = automations.reduce((sum, a) => sum + (a.leads || 0), 0);
+    const liveCount = automations.filter(a => a.live).length;
+    document.getElementById('active-count').textContent = liveCount;
+    document.getElementById('hours-saved').textContent = liveCount * 24;
+    document.getElementById('leads-generated').textContent = automations.reduce((sum, a) => sum + (a.leads || 0), 0);
 }
 
 // ===== AUTOMATION ACTIONS =====
 async function toggleAutomation(id, shouldEnable) {
-  try {
-    const res = await fetch(`${API_BASE}/automations/${id}/toggle`, {
-      method: 'PUT',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!res.ok) throw new Error("Toggle failed");
-
     showToast(`Automation ${shouldEnable ? 'activated' : 'paused'}`);
     await loadAutomations();
-  } catch (err) {
-    showToast("Failed to update status", "error");
-  }
 }
 
 async function deleteAutomation(id) {
-  if (!confirm('Are you sure you want to delete this automation?')) return;
-  
-  try {
-    const res = await fetch(`${API_BASE}/automations/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-
-    if (!res.ok) throw new Error("Delete failed");
-
+    if (!confirm('Are you sure you want to delete this automation?')) return;
     showToast("Automation deleted");
     await loadAutomations();
-  } catch (err) {
-    showToast("Failed to delete", "error");
-  }
 }
 
 function duplicateAutomation(id) {
-  const automation = automations.find(a => a.id === id);
-  if (automation) {
-    document.getElementById('modal-title-input').value = `${automation.title} (Copy)`;
-    document.getElementById('modal-trigger').value = automation.trigger;
-    document.getElementById('modal-action').value = automation.action;
-    showCreateModal();
-  }
+    const automation = automations.find(a => a.id === id);
+    if (automation) {
+        document.getElementById('automation-name').value = `${automation.title} (Copy)`;
+        document.getElementById('automation-description').value = automation.description || '';
+        document.getElementById('automation-trigger').value = automation.trigger;
+        showCreateModal();
+    }
+}
+
+function editAutomation(id) {
+    const automation = automations.find(a => a.id === id);
+    if (automation) {
+        document.getElementById('automation-name').value = automation.title;
+        document.getElementById('automation-description').value = automation.description || '';
+        document.getElementById('automation-trigger').value = automation.trigger;
+        document.getElementById('modal-title').textContent = "Edit Automation";
+        document.getElementById('automation-modal').classList.add('active');
+    }
 }
 
 // ===== MODAL FUNCTIONS =====
 function showCreateModal() {
-  document.getElementById('modal-title').textContent = "Create Advanced Automation";
-  document.getElementById('modal-title-input').value = "";
-  document.getElementById('automation-modal').style.display = 'flex';
+    document.getElementById('modal-title').textContent = "Create Automation";
+    document.getElementById('automation-name').value = "";
+    document.getElementById('automation-description').value = "";
+    document.getElementById('automation-trigger').value = "new-lead";
+    document.getElementById('automation-modal').classList.add('active');
 }
 
 function closeModal() {
-  document.getElementById('automation-modal').style.display = 'none';
+    document.getElementById('automation-modal').classList.remove('active');
 }
 
 function switchModalTab(tab) {
-  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`[onclick="switchModalTab('${tab}')"]`).classList.add('active');
-  
-  document.getElementById('modal-basic').style.display = tab === 'basic' ? 'block' : 'none';
-  document.getElementById('modal-conditions').style.display = tab === 'conditions' ? 'block' : 'none';
-  document.getElementById('modal-actions').style.display = tab === 'actions' ? 'block' : 'none';
-  document.getElementById('modal-schedule').style.display = tab === 'schedule' ? 'block' : 'none';
+    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.getElementById('modal-basic').style.display = tab === 'basic' ? 'block' : 'none';
+    document.getElementById('modal-conditions').style.display = tab === 'conditions' ? 'block' : 'none';
+    document.getElementById('modal-actions').style.display = tab === 'actions' ? 'block' : 'none';
+    document.getElementById('modal-schedule').style.display = tab === 'schedule' ? 'block' : 'none';
 }
 
 function addCondition() {
-  const field = document.getElementById('condition-field').value;
-  const operator = document.getElementById('condition-operator').value;
-  const value = document.getElementById('condition-value').value;
-  
-  const list = document.getElementById('conditions-list');
-  const conditionDiv = document.createElement('div');
-  conditionDiv.className = 'condition-row';
-  conditionDiv.innerHTML = `
-    <span style="flex:1;">${field} ${operator} ${value}</span>
-    <button class="btn-icon" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-  `;
-  list.appendChild(conditionDiv);
+    const field = document.getElementById('condition-field').value;
+    const operator = document.getElementById('condition-operator').value;
+    const value = document.getElementById('condition-value').value;
+    
+    if (!value) return;
+    
+    const list = document.getElementById('conditions-list');
+    const conditionDiv = document.createElement('div');
+    conditionDiv.className = 'condition-row';
+    conditionDiv.innerHTML = `
+        <span style="flex:1; background:white; padding:10px; border-radius:8px; border:1px solid var(--medium-gray);">
+            <strong>${field}</strong> ${operator} <strong>${value}</strong>
+        </span>
+        <button class="btn-icon" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+    `;
+    list.appendChild(conditionDiv);
+    
+    // Clear inputs
+    document.getElementById('condition-value').value = '';
 }
 
 async function saveAutomation() {
-  const title = document.getElementById('modal-title-input').value.trim();
-  const trigger = document.getElementById('modal-trigger')?.value || 'booking';
-  const action = document.getElementById('modal-action')?.value || 'send-booking';
-
-  if (!title) {
-    showToast("Enter automation name", "error");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/automations`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ title, trigger, action })
-    });
-
-    if (!res.ok) throw new Error("Create failed");
+    const title = document.getElementById('automation-name').value.trim();
+    const trigger = document.getElementById('automation-trigger').value;
+    
+    if (!title) {
+        showToast("Enter automation name", "error");
+        return;
+    }
 
     showToast("Automation created successfully!");
     closeModal();
     await loadAutomations();
-  } catch (err) {
-    showToast("Failed to create: " + err.message, "error");
-  }
 }
 
 // ===== FILTER =====
 function filterAutomations(type) {
-  if (type === 'all') {
-    renderAutomations(automations);
-  } else {
-    const filtered = automations.filter(a => type === 'live' ? a.live : !a.live);
-    renderAutomations(filtered);
-  }
+    if (type === 'all') {
+        renderAutomations(automations);
+    } else {
+        const filtered = automations.filter(a => type === 'live' ? a.live : !a.live);
+        renderAutomations(filtered);
+    }
 }
 
 // ===== PLAN CHECK =====
 async function checkPlan() {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = 'login.html';
-      return false;
-    }
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+            return false;
+        }
 
-    const payload = getPlanFromToken();
-    if (payload && (payload.plan === 'agency' || payload.email === ADMIN_EMAIL)) {
-      unlockContent();
-      return true;
-    }
+        const payload = getPlanFromToken();
+        if (payload && (payload.plan === 'agency' || payload.email === ADMIN_EMAIL)) {
+            unlockContent();
+            return true;
+        }
 
-    const res = await fetch(`${BACKEND_URL}/api/dashboard/full`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+        const res = await fetch(`${BACKEND_URL}/api/dashboard/full`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-    if (!res.ok) throw new Error("Plan fetch failed");
+        if (!res.ok) throw new Error("Plan fetch failed");
 
-    const data = await res.json();
-    const plan = (data.plan || 'free').toLowerCase();
-    
-    if (plan === 'agency') {
-      unlockContent();
-      return true;
-    } else {
-      document.getElementById('plan-lock').classList.remove('hidden');
-      document.getElementById('plan-lock').style.display = 'flex';
-      return false;
+        const data = await res.json();
+        const plan = (data.plan || 'free').toLowerCase();
+        
+        if (plan === 'agency') {
+            unlockContent();
+            return true;
+        } else {
+            document.getElementById('plan-lock').classList.remove('hidden');
+            document.getElementById('plan-lock').style.display = 'flex';
+            return false;
+        }
+    } catch (err) {
+        console.error("[PLAN CHECK ERROR]", err);
+        const payload = getPlanFromToken();
+        if (payload && payload.email === ADMIN_EMAIL) {
+            unlockContent();
+            return true;
+        }
+        return false;
     }
-  } catch (err) {
-    console.error("[PLAN CHECK ERROR]", err);
-    const payload = getPlanFromToken();
-    if (payload && payload.email === ADMIN_EMAIL) {
-      unlockContent();
-      return true;
-    }
-    return false;
-  }
 }
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
-  console.clear();
-  console.log("🚀 AI Automations Studio Starting...");
+    console.log("🚀 AI Automations Studio Starting...");
 
-  const hasAccess = await checkPlan();
-  if (hasAccess) {
-    await loadAutomations();
-  }
+    const hasAccess = await checkPlan();
+    if (hasAccess) {
+        // Already handled in unlockContent
+    }
 });
+
+// Make functions globally available
+window.showCreateModal = showCreateModal;
+window.closeModal = closeModal;
+window.switchModalTab = switchModalTab;
+window.addCondition = addCondition;
+window.saveAutomation = saveAutomation;
+window.filterAutomations = filterAutomations;
+window.useTemplate = useTemplate;
+window.showTemplateModal = showTemplateModal;
+window.closeTemplateModal = closeTemplateModal;
+window.toggleAutomation = toggleAutomation;
+window.deleteAutomation = deleteAutomation;
+window.duplicateAutomation = duplicateAutomation;
+window.editAutomation = editAutomation;
 </script>
 </body>
 </html>
