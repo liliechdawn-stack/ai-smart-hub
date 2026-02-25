@@ -1,5 +1,5 @@
-// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - ALL CRITICAL ISSUES RESOLVED)
-// Features: Vision AI, Apollo Enrichment, Smart Follow-ups, Live Chat, Pixel Face
+// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - CRITICAL UPDATES)
+// Features: Business Identity Integration, Proper Conversation Flow, Professional AI Responses
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -9,8 +9,7 @@
     return;
   }
 
-  // CRITICAL FIX 1: Remove trailing space that breaks all API calls
-  const SERVER_URL = 'https://ai-smart-hub.onrender.com';
+  const SERVER_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
   const WIDGET_KEY = marker.dataset.key || "";
 
   if (!WIDGET_KEY) {
@@ -22,7 +21,8 @@
   let leadCaptured = localStorage.getItem(`ai_lead_captured_${WIDGET_KEY}`) === "true";
   let isMuted = localStorage.getItem(`ai_widget_muted`) === "true";
   let activeSessionId = localStorage.getItem(`ai_widget_session_${WIDGET_KEY}`) || null;
-  let smartSettings = {}; // CRITICAL FIX: Initialize as empty object, not null
+  let smartSettings = {};
+  let businessIdentity = {};
   let isLiveMode = false;
   let customBgColor = localStorage.getItem(`ai_widget_bg_color_${WIDGET_KEY}`) || "#1a1a1a";
   let isProcessing = false;
@@ -37,72 +37,60 @@
   let reconnectAttempts = 0;
   const MAX_RECONNECT_ATTEMPTS = 3;
 
+  // Track conversation history to prevent repetition
+  let conversationHistory = JSON.parse(localStorage.getItem(`ai_conversation_${WIDGET_KEY}`) || '[]');
+  
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
 
-  // ===== FETCH WIDGET CONFIG & SMART SETTINGS TOGETHER =====
+  // ===== FETCH WIDGET CONFIG & BUSINESS IDENTITY =====
   fetch(`${SERVER_URL}/api/public/widget-config/${WIDGET_KEY}`)
     .then(res => res.json())
     .then(async dbConfig => {
       businessPlan = dbConfig.plan || 'free';
       businessName = dbConfig.business_name || marker.getAttribute("data-title") || "AI Assistant";
       
-      // CRITICAL FIX 2: Load smart settings immediately before init
-      await loadSmartSettings(dbConfig);
+      // Store business identity
+      businessIdentity = {
+        business_type: dbConfig.business_type || '',
+        business_description: dbConfig.business_description || ''
+      };
+      
+      // Store smart settings
+      smartSettings = {
+        booking_url: dbConfig.booking_url || '',
+        booking_active: dbConfig.booking_active || false,
+        apollo_active: dbConfig.apollo_active || false,
+        followup_active: dbConfig.followup_active || false,
+        vision_active: dbConfig.vision_active || false,
+        sentiment_active: dbConfig.sentiment_active || false,
+        ai_instructions: dbConfig.ai_instructions || '',
+        ai_temp: dbConfig.ai_temp || '0.7',
+        ...(dbConfig.smart_hub || {})
+      };
+      
+      console.log("[WIDGET] Business Identity:", businessIdentity);
+      console.log("[WIDGET] Smart Hub settings:", smartSettings);
       
       initWidget(dbConfig);
     })
     .catch(err => {
       console.warn("Widget config fetch failed, using fallback", err);
       businessName = marker.getAttribute("data-title") || "AI Assistant";
-      smartSettings = {}; // Ensure it's an object even on error
+      smartSettings = {};
+      businessIdentity = {};
       initWidget({});
     });
 
-  // ===== LOAD SMART SETTINGS - CRITICAL FIX 3: No admin token, use public config only =====
-  async function loadSmartSettings(dbConfig = {}) {
-    try {
-      // CRITICAL: Never use admin token - this was causing the "owner" identification bug
-      // Instead, extract smart settings from the public widget config we already fetched
-      smartSettings = {
-        booking_url: dbConfig.booking_url || dbConfig.smart_hub?.booking_url || '',
-        apollo_active: dbConfig.apollo_active || dbConfig.smart_hub?.apollo_active || false,
-        apollo_key: dbConfig.apollo_key || dbConfig.smart_hub?.apollo_key || '',
-        followup_active: dbConfig.followup_active || dbConfig.smart_hub?.followup_active || false,
-        vision_active: dbConfig.vision_active || dbConfig.smart_hub?.vision_active || false,
-        sentiment_active: dbConfig.sentiment_active || dbConfig.smart_hub?.sentiment_active || false,
-        // Include any other smart hub settings
-        ...(dbConfig.smart_hub || {})
-      };
-      
-      console.log("[WIDGET] Smart Hub settings loaded:", smartSettings);
-      console.log("[WIDGET] Booking URL:", smartSettings.booking_url);
-      
-    } catch (err) {
-      console.warn("[WIDGET] Smart Hub settings load failed", err);
-      smartSettings = {}; // Ensure empty object on error
-    }
-  }
-
-  // ===== ENRICH LEAD WITH APOLLO - CRITICAL FIX 4: Use public endpoint, no admin token =====
+  // ===== ENRICH LEAD WITH APOLLO =====
   async function enrichLeadWithApollo(email, name) {
-    if (!smartSettings?.apollo_active || !smartSettings?.apollo_key) return null;
+    if (!smartSettings?.apollo_active) return null;
     
     try {
-      console.log("[WIDGET] Enriching lead with Apollo:", email);
-      
-      // CRITICAL FIX: Use public endpoint with widget_key, NOT admin token
       const res = await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-          // CRITICAL: Removed Authorization header with admin token
-        },
-        body: JSON.stringify({ 
-          email, 
-          name,
-          widget_key: WIDGET_KEY // Identify via widget key instead
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, widget_key: WIDGET_KEY })
       });
       
       if (res.ok) {
@@ -116,19 +104,18 @@
     return null;
   }
 
-  // ===== SCHEDULE FOLLOW-UP - CRITICAL FIX 5: Use public endpoint =====
+  // ===== SCHEDULE FOLLOW-UP =====
   async function scheduleFollowUp(email, name) {
     if (!smartSettings?.followup_active) return;
     
     try {
-      // CRITICAL FIX: Use public endpoint with widget_key, not admin API
       await fetch(`${SERVER_URL}/api/public/followup/schedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email, 
           name, 
-          widget_key: WIDGET_KEY, // Use widget key for identification
+          widget_key: WIDGET_KEY,
           session_id: activeSessionId
         })
       });
@@ -141,13 +128,13 @@
   function initWidget(dbConfig) {
     const config = {
       key: WIDGET_KEY,
-      primaryColor: dbConfig.widget_color || marker.dataset.primaryColor || "#4285f4",
+      primaryColor: dbConfig.widget_color || marker.dataset.primaryColor || "#d4af37",
       position: marker.dataset.position || "bottom-right",
-      welcome: dbConfig.welcome_message || marker.dataset.welcome || "Hi! I'm your AI assistant. How can I help you today?",
+      welcome: dbConfig.welcome_message || marker.dataset.welcome || `Hi! I'm the ${businessName} AI assistant. How can I help you today?`,
       title: businessName
     };
 
-    // Professional styles with black and white pixel face
+    // Professional styles
     const style = document.createElement('style');
     style.textContent = `
       #ai-widget-container { 
@@ -214,7 +201,6 @@
         border-bottom: 1px solid rgba(255,255,255,0.1); 
       }
       
-      /* Hide input area and messages in live mode */
       .widget-window.live-mode .widget-input-area { 
         display: none; 
       }
@@ -733,7 +719,6 @@
         <button id="lead-submit-btn" class="lead-submit">Start Conversation</button>
       </div>
 
-      <!-- Premium Black and White Pixel Face Container -->
       <div id="pixel-face-container" class="pixel-face-container">
         <div class="live-controls">
           <span class="color-picker-label">Background</span>
@@ -945,8 +930,6 @@
           win.querySelector("#lead-name").focus();
         } else {
           inputField.focus();
-          // CRITICAL FIX: Don't reload settings here, already loaded at init
-          // await loadSmartSettings();
         }
       } else {
         if (recognition && recognitionActive) {
@@ -1013,7 +996,6 @@
           leadForm.style.display = "none";
           inputField.focus();
           
-          // CRITICAL FIX: Settings already loaded, just use them
           if (smartSettings?.apollo_active) {
             enrichLeadWithApollo(email, name);
           }
@@ -1156,12 +1138,12 @@
         .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit;text-decoration:underline;">$1</a>')
         .replace(/(^|\s)(www\.[^\s]+)/g, (m, s, url) => `${s}<a href="https://${url}" target="_blank" style="color:inherit;text-decoration:underline;">${url}</a>`);
 
-      // CRITICAL FIX 6: Safer booking URL check with fallback to dbConfig
-      const bookingUrl = smartSettings?.booking_url || dbConfig?.booking_url || '';
-      if (bookingUrl && bookingUrl !== '') {
-        const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo|cancel|reschedule/i;
+      // Add booking link if applicable
+      const bookingUrl = smartSettings?.booking_url || '';
+      if (bookingUrl && smartSettings?.booking_active) {
+        const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo/i;
         if (bookingKeywords.test(text)) {
-          linkedText += `<br><br>📅 <a href="${bookingUrl}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book an appointment</a>`;
+          linkedText += `<br><br>📅 <a href="${bookingUrl}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book</a>`;
         }
       }
 
@@ -1196,6 +1178,11 @@
 
       msgContainer.appendChild(div);
       msgContainer.scrollTop = msgContainer.scrollHeight;
+      
+      // Save to conversation history
+      conversationHistory.push({ role, text, timestamp: new Date().toISOString() });
+      if (conversationHistory.length > 20) conversationHistory.shift();
+      localStorage.setItem(`ai_conversation_${WIDGET_KEY}`, JSON.stringify(conversationHistory));
     }
 
     async function sendMessage(voiceText = null) {
@@ -1230,37 +1217,30 @@
       isProcessing = true;
       typingInd.style.display = "block";
 
-      // Create a unique request ID for tracking
-      const requestId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-
       try {
         const body = {
           message: currentText || "Please analyze this file.",
           widget_key: WIDGET_KEY,
           client_name: userName || "Visitor",
           client_email: userEmail || null,
-          // CRITICAL FIX 7: Explicitly mark as visitor so backend knows context
           is_visitor: true,
           session_id: activeSessionId,
-          request_id: requestId
+          conversation_history: conversationHistory.slice(-5) // Send last 5 messages for context
         };
 
         if (currentFile) {
           body.file_data = currentFile;
           body.file_name = currentFileName;
           
-          // Check if vision is enabled for images
           if (currentFile.startsWith('data:image/') && smartSettings?.vision_active) {
             body.vision_enabled = true;
-            console.log("[WIDGET] Vision AI enabled for image analysis");
           }
         }
 
         console.log("[WIDGET → SERVER] Sending request:", body);
 
-        // Add timeout to fetch
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch(`${SERVER_URL}/api/public/chat`, {
           method: "POST",
@@ -1274,10 +1254,7 @@
 
         clearTimeout(timeoutId);
 
-        console.log("[WIDGET] Response status:", response.status);
-
         const data = await response.json();
-        console.log("[WIDGET] Response data:", data);
 
         typingInd.style.display = "none";
         isProcessing = false;
@@ -1293,10 +1270,6 @@
             localStorage.setItem(`ai_widget_session_${WIDGET_KEY}`, activeSessionId);
           }
           
-          if (data.sentiment === 'negative' && smartSettings?.sentiment_active) {
-            console.log("[WIDGET] Negative sentiment detected - alert sent");
-          }
-          
           if (!isLiveMode) {
             appendMessage(data.reply, "bot");
             speak(data.reply);
@@ -1305,11 +1278,10 @@
           }
         } else {
           const errorMsg = data.error || "Server returned error";
-          console.error("[WIDGET] Server error:", errorMsg);
           if (!isLiveMode) {
-            appendMessage(`I'm having trouble connecting. Please try again in a moment.`, "bot");
+            appendMessage(`I'm having trouble connecting. Please try again.`, "bot");
           } else {
-            speak("I'm having trouble connecting. Please try again.");
+            speak("Connection error. Please try again.");
             voiceStatus.textContent = "Connection error";
             updateCatExpression('surprised');
             setTimeout(() => {
@@ -1323,11 +1295,7 @@
         isProcessing = false;
         console.error("[WIDGET] Fetch error:", err);
         
-        let errorMessage = "Connection issue. Please check your internet or try again later.";
-        if (err.name === 'AbortError') {
-          errorMessage = "Request timed out. Please try again.";
-        }
-        
+        let errorMessage = "Connection issue. Please try again.";
         if (!isLiveMode) {
           appendMessage(errorMessage, "bot");
         } else {
