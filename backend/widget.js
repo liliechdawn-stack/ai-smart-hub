@@ -1,5 +1,5 @@
-// widget.js - Professional SaaS AI Chat Widget (FULLY FIXED - NO REPETITION)
-// Features: Business Identity Integration, Proper Conversation Flow, Professional AI Responses
+// widget.js - Professional SaaS AI Chat Widget (FIXED: No repeated introductions + real conversation flow)
+// Features: Business Identity Integration, Proper Conversation Memory, Professional AI Responses
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -33,16 +33,16 @@
   let businessPlan = 'free';
   let businessName = '';
   let aiName = ''; // Store AI's name
-  let hasIntroduced = false; // Track if AI has introduced itself
+  let hasIntroduced = localStorage.getItem(`ai_has_introduced_${WIDGET_KEY}`) === "true"; // Persistent across sessions
   let recognition = null;
   let recognitionActive = false;
   let reconnectAttempts = 0;
   const MAX_RECONNECT_ATTEMPTS = 3;
 
-  // Track conversation history to prevent repetition
+  // Track conversation history to prevent repetition & give context
   let conversationHistory = JSON.parse(localStorage.getItem(`ai_conversation_${WIDGET_KEY}`) || '[]');
   let lastResponseText = ''; // Track last response to prevent repetition
-  let messageCount = 0; // Track number of messages in this session
+  let messageCount = conversationHistory.length; // Track number of messages in this session
   
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
@@ -92,13 +92,14 @@
     });
 
   function initWidget(dbConfig) {
-    // Set welcome message WITHOUT introduction if lead already captured
+    // Only show full intro if never introduced before
     let welcomeMessage;
-    if (leadCaptured) {
+    if (hasIntroduced || leadCaptured || messageCount > 0) {
       welcomeMessage = `How can I help you today?`;
-      hasIntroduced = true; // Mark as already introduced
     } else {
       welcomeMessage = dbConfig.welcome_message || marker.dataset.welcome || `Hi! I'm ${aiName}, the AI assistant for ${businessName}. How can I help you today?`;
+      hasIntroduced = true;
+      localStorage.setItem(`ai_has_introduced_${WIDGET_KEY}`, "true");
     }
 
     const config = {
@@ -1254,9 +1255,10 @@
             localStorage.setItem(`ai_widget_session_${WIDGET_KEY}`, activeSessionId);
           }
           
-          // Mark as introduced after first response
+          // Mark as introduced after first real response
           if (!hasIntroduced) {
             hasIntroduced = true;
+            localStorage.setItem(`ai_has_introduced_${WIDGET_KEY}`, "true");
           }
           
           messageCount++;
