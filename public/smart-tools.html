@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Business Hub | AI Intelligence Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Load scripts in correct order -->
     <script src="js/config.js"></script>
@@ -494,7 +495,7 @@
           background: white;
         }
 
-        /* NEW: Business Type Card Styles */
+        /* Business Type Card Styles */
         .business-type-info {
           background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
           padding: 20px;
@@ -516,20 +517,45 @@
           font-size: 0.9rem;
           line-height: 1.8;
         }
+
+        /* Live button styles */
+        .btn-live-status {
+            background: #2ecc71 !important;
+            color: white !important;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
+            border: none !important;
+            font-weight: bold;
+            animation: pulse-live 2s infinite;
+        }
+        
+        @keyframes pulse-live {
+            0% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0); }
+        }
+
+        .btn-inactive {
+            background: #6c757d !important;
+            color: white !important;
+        }
+
+        .btn-inactive:hover {
+            background: #5a6268 !important;
+        }
     </style>
 </head>
 <body>
 
 <nav>
   <div class="nav-container">
-    <a href="index.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
+    <a href="dashboard.html" class="nav-logo"><span>✨</span> AI Smart Hub</a>
     <div class="nav-links">
-      <a href="index.html">Dashboard</a>
+      <a href="dashboard.html">Dashboard</a>
       <a href="ai-automations.html">AI Automations</a>
       <a href="#ai-brain-section">AI Brain</a>
       <a href="#org-section">Team</a>
       <a href="customer-insights.html" class="nav-link">Customer Insights</a>
-      <a href="index.html" class="back-btn">Exit Center</a>
+      <a href="dashboard.html" class="back-btn">Exit Center</a>
     </div>
   </div>
 </nav>
@@ -544,7 +570,7 @@
 
 <div class="container">
 
-  <!-- NEW: Business Identity Section -->
+  <!-- Business Identity Section -->
   <div class="section-header" id="business-identity-section">
     <h2>🏢 Business Identity</h2>
     <div class="section-line"></div>
@@ -554,7 +580,7 @@
     <div class="tool-card wide-card" id="card-business-type">
       <div style="flex: 1;">
         <div class="icon-box">🏢</div>
-        <h3>Business Profile <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+        <h3>Business Profile <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
         <p class="tool-description">Define your business type and industry so the AI can represent you accurately to customers with appropriate tone and terminology.</p>
         
         <div class="input-group">
@@ -584,7 +610,7 @@
           <textarea id="businessDescription" rows="3" placeholder="e.g., We sell premium men's formal wear and accessories, specializing in wedding suits and corporate attire..."></textarea>
         </div>
         
-        <button class="btn-save" onclick="saveSmartTool('business_type', event)">Save Business Identity</button>
+        <button class="btn-save" id="businessTypeBtn" onclick="saveSmartTool('business_type', event)">Save Business Identity</button>
       </div>
       
       <div style="flex: 0.8; background: #fafafa; padding: 25px; border-radius: 14px; border: 1px dashed #ddd;">
@@ -615,7 +641,7 @@
     <div class="tool-card wide-card" id="card-brain">
       <div style="flex: 1.2;">
         <div class="icon-box">📖</div>
-        <h3>System Prompt & Identity <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+        <h3>System Prompt & Identity <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
         <p class="tool-description">Define the core personality and operational constraints of your AI agent. This prompt governs every interaction.</p>
         <div class="input-group">
           <label>Global System Instructions</label>
@@ -737,7 +763,7 @@
     <div class="tool-card" id="card-booking">
       <div>
         <div class="icon-box">📅</div>
-        <h3>Appointment Logic <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+        <h3>Appointment Logic <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
         <p class="tool-description">Direct the AI to identify booking intent and present your scheduling link at the perfect moment.</p>
         <div class="input-group">
           <label>Primary Booking Link</label>
@@ -801,7 +827,7 @@
       <div style="width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
           <div>
-            <h3>Staff Permissions <span class="op-indicator"><span class="pulse-dot"></span> LIVE</span></h3>
+            <h3>Staff Permissions <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
             <p class="tool-description" style="margin-bottom: 0;">Manage who can access the AI logs and dashboard settings.</p>
           </div>
           <button class="btn-save" style="width: auto; padding: 12px 25px; background: var(--dark);" onclick="openInviteModal()">+ Add Team Member</button>
@@ -876,11 +902,17 @@
 
 <!-- Comprehensive fix for all tool types -->
 <script>
+// Tool state management
+const toolStates = JSON.parse(localStorage.getItem('toolStates') || '{}');
+
 // Comprehensive save function for all tool types
 document.addEventListener('DOMContentLoaded', function() {
     console.log("[SMART-TOOLS] Initializing comprehensive tool handlers");
     
-    // Make saveSmartTool globally available - THIS REPLACES THE OLD ONE
+    // Load existing tool states
+    loadToolStates();
+    
+    // Make saveSmartTool globally available
     window.saveSmartTool = function(toolType, event) {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -891,6 +923,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const btn = event?.currentTarget || event?.target;
         const originalText = btn ? btn.innerHTML : '';
         
+        // Check if tool is already LIVE (for deactivation)
+        const isLive = toolStates[toolType] === true;
+        
+        if (isLive) {
+            // Deactivate tool
+            if (confirm(`Are you sure you want to deactivate ${getToolName(toolType)}?`)) {
+                deactivateTool(toolType, btn);
+            }
+            return;
+        }
+        
+        // Activate/save tool
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '⏳ Saving...';
@@ -991,19 +1035,16 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(res => res.json())
         .then(result => {
             if (result.success) {
+                // Mark tool as LIVE
+                toolStates[toolType] = true;
+                localStorage.setItem('toolStates', JSON.stringify(toolStates));
+                
                 if (btn) {
                     btn.innerHTML = '✓ Saved';
                     btn.style.background = '#28a745';
                     
-                    // Update button text based on tool type
-                    let liveText = '● LIVE';
-                    if (toolType === 'booking') liveText = '● LIVE';
-                    else if (toolType === 'brain') liveText = '● LIVE';
-                    else if (toolType === 'business_type') liveText = '● LIVE';
-                    else liveText = '● LIVE';
-                    
                     setTimeout(() => {
-                        btn.innerHTML = liveText;
+                        btn.innerHTML = '● LIVE';
                         btn.classList.add('btn-live-status');
                         btn.disabled = false;
                         btn.style.background = '';
@@ -1043,6 +1084,107 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(`Failed to save: ${err.message}`);
         });
     };
+    
+    // Deactivate tool
+    window.deactivateTool = function(toolType, btn) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("Please log in first");
+            return;
+        }
+        
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Deactivating...';
+        }
+        
+        // Send deactivation to backend
+        fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/deactivate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ toolType })
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                // Mark tool as inactive
+                toolStates[toolType] = false;
+                localStorage.setItem('toolStates', JSON.stringify(toolStates));
+                
+                if (btn) {
+                    btn.innerHTML = '✗ Deactivated';
+                    btn.style.background = '#6c757d';
+                    btn.classList.remove('btn-live-status');
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = 'Activate';
+                        btn.classList.add('btn-inactive');
+                        btn.disabled = false;
+                        btn.style.background = '';
+                    }, 1000);
+                }
+                
+                alert(`${getToolName(toolType)} has been deactivated.`);
+                
+            } else {
+                throw new Error(result.error || "Deactivation failed");
+            }
+        })
+        .catch(err => {
+            console.error(`[${toolType}] Deactivation Error:`, err);
+            if (btn) {
+                btn.innerHTML = '❌ Error';
+                btn.style.background = '#dc3545';
+                setTimeout(() => {
+                    btn.innerHTML = '● LIVE';
+                    btn.style.background = '';
+                    btn.disabled = false;
+                }, 2000);
+            }
+            alert(`Failed to deactivate: ${err.message}`);
+        });
+    };
+    
+    // Get tool name for messages
+    function getToolName(toolType) {
+        const names = {
+            'business_type': 'Business Identity',
+            'brain': 'AI Knowledge Base',
+            'booking': 'Appointment Logic',
+            'apollo': 'Apollo Lead Scraper',
+            'followup': 'AI Email Nurture',
+            'vision': 'AI Vision Hub',
+            'sentiment': 'Crisis Guard',
+            'handover': 'Live Handover',
+            'webhook': 'CRM Webhook'
+        };
+        return names[toolType] || toolType;
+    }
+    
+    // Load tool states from localStorage
+    function loadToolStates() {
+        const saved = localStorage.getItem('toolStates');
+        if (saved) {
+            Object.assign(toolStates, JSON.parse(saved));
+            
+            // Apply states to buttons
+            Object.keys(toolStates).forEach(toolType => {
+                if (toolStates[toolType]) {
+                    const card = document.getElementById(`card-${toolType === 'business_type' ? 'business-type' : toolType}`);
+                    if (card) {
+                        const btn = card.querySelector('.btn-save');
+                        if (btn) {
+                            btn.innerHTML = '● LIVE';
+                            btn.classList.add('btn-live-status');
+                        }
+                    }
+                }
+            });
+        }
+    }
     
     // Load user email
     const token = localStorage.getItem('token');
