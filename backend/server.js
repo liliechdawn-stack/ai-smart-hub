@@ -1147,8 +1147,13 @@ app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
       });
     });
 
+    // Handle business_type separately
     if (toolType === 'business_type') {
-      await saveBusinessIdentity(userId, data.businessType, data.businessDescription);
+      // FIXED: Map frontend field names to what saveBusinessIdentity expects
+      const businessType = data.businessType || data.business_type || '';
+      const businessDescription = data.businessDescription || data.business_description || '';
+      
+      await saveBusinessIdentity(userId, businessType, businessDescription);
       return res.json({ success: true });
     }
     
@@ -1208,6 +1213,62 @@ app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
   }
 });
 
+// ================= SMART HUB DEACTIVATE ENDPOINT =================
+app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
+  try {
+    const { toolType } = req.body;
+    const userId = req.user.id;
+
+    if (!toolType) {
+      return res.status(400).json({ error: "Tool type required" });
+    }
+
+    // Map frontend tool names to database 'active' columns
+    const activeColumnMap = {
+      'brain': 'brain_active',
+      'booking': 'booking_active',
+      'sentiment': 'sentiment_active',
+      'handover': 'handover_active',
+      'webhook': 'webhook_active',
+      'apollo': 'apollo_active',
+      'enrichment': 'apollo_active',
+      'followup': 'followup_active',
+      'vision': 'vision_active',
+      'business_type': null // Business type is stored in users table
+    };
+
+    const activeColumn = activeColumnMap[toolType];
+
+    if (!activeColumn && toolType !== 'business_type') {
+      return res.status(400).json({ error: "Invalid tool type" });
+    }
+
+    if (toolType === 'business_type') {
+      // Business type can't be deactivated, just return success
+      return res.json({ success: true, message: "Business type remains active" });
+    }
+
+    // Deactivate the tool by setting active flag to 0
+    await new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE smart_hub_settings SET ${activeColumn} = 0 WHERE user_id = ?`,
+        [userId],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+
+    console.log(`[SMART-HUB] Tool deactivated: ${toolType} for user ${userId}`);
+    res.json({ success: true, message: "Tool deactivated successfully" });
+
+  } catch (err) {
+    console.error("❌ Deactivation Error:", err.message);
+    res.status(500).json({ success: false, error: "Database error during deactivation" });
+  }
+});
+
 // ================= SMART HUB GET SETTINGS =================
 app.get("/api/smart-hub/settings", auth, async (req, res) => {
   try {
@@ -1235,6 +1296,22 @@ app.get("/api/smart-hub/settings", auth, async (req, res) => {
 
   } catch (err) {
     console.error("Smart hub get error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= SMART HUB TOOL STATE ENDPOINT =================
+app.post("/api/smart-hub/tool-state", auth, async (req, res) => {
+  try {
+    const { toolType, isActive } = req.body;
+    const userId = req.user.id;
+
+    // This endpoint is optional - we're using localStorage for state
+    // You could implement database sync here if needed
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Tool state error:", err);
     res.status(500).json({ error: err.message });
   }
 });
