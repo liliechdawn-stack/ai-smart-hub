@@ -1,10 +1,10 @@
 /**
  * Admin Panel JavaScript
- * Fixed version - compatible with admin.html
+ * FULLY FIXED - Added /api/ prefix to all endpoints
  */
 
-// CRITICAL FIX: Define API_URL directly (no trailing space!)
-const API_URL = 'https://ai-smart-hub.onrender.com';
+// CRITICAL FIX: Use window.BACKEND_URL from config.js
+const API_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 
 // ================= AUTH =================
 const token = localStorage.getItem("token");
@@ -41,13 +41,22 @@ const logoutBtn = document.getElementById("logoutBtn");
 const navUsers = document.getElementById("navUsers");
 const navActivities = document.getElementById("navActivities");
 
-// CRITICAL FIX: Use correct element IDs that match HTML
+// Use correct element IDs that match HTML
 const usersSection = document.getElementById("usersSection");
 const activitiesSection = document.getElementById("activitiesSection");
 
 const usersTableBody = document.getElementById("usersTableBody");
 const userSearch = document.getElementById("userSearch");
 const activitiesTableBody = document.getElementById("activitiesTableBody");
+
+// Stats elements
+const statTotalUsers = document.getElementById("stat-total-users");
+const statTotalMessages = document.getElementById("stat-total-messages");
+const statTotalAgencies = document.getElementById("stat-total-agencies");
+
+// Loading elements
+const usersLoading = document.getElementById("usersLoading");
+const activitiesLoading = document.getElementById("activitiesLoading");
 
 // ================= LOGOUT =================
 if (logoutBtn) {
@@ -66,7 +75,7 @@ if (navActivities) {
 }
 
 function showView(view) {
-  // CRITICAL FIX: Use correct section IDs
+  // Use correct section IDs
   if (usersSection) usersSection.style.display = view === "users" ? "block" : "none";
   if (activitiesSection) activitiesSection.style.display = view === "activities" ? "block" : "none";
 
@@ -81,28 +90,44 @@ function showView(view) {
 let allUsers = [];
 
 async function loadUsers() {
-  const usersLoading = document.getElementById("usersLoading");
   if (usersLoading) usersLoading.classList.remove("hidden");
-  if (usersTableBody) usersTableBody.innerHTML = "";
+  if (usersTableBody) {
+    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;">Loading users...</td></tr>`;
+  }
   
   try {
-    const res = await fetch(`${API_URL}/admin/users`, {
+    console.log("[ADMIN] Fetching users from:", `${API_URL}/api/admin/users`);
+    
+    // FIXED: Added /api/ prefix
+    const res = await fetch(`${API_URL}/api/admin/users`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     
-    // CRITICAL FIX: Check for HTTP errors
+    // Check for HTTP errors
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Server error: ${res.status} - ${errorText}`);
+      if (res.status === 403) {
+        throw new Error("Access denied - Admin privileges required");
+      } else if (res.status === 401) {
+        throw new Error("Session expired - Please login again");
+      } else {
+        const errorText = await res.text();
+        throw new Error(`Server error (${res.status}): ${errorText.substring(0, 100)}`);
+      }
     }
 
     allUsers = await res.json();
+    console.log("[ADMIN] Loaded users:", allUsers.length);
+    
     updateStats(allUsers);
     renderUserTable(allUsers);
   } catch (err) {
-    console.error("Load Users Error:", err);
+    console.error("[ADMIN] Load Users Error:", err);
     if (usersTableBody) {
-      usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ff4d4d;padding:20px;">Error loading users: ${err.message}</td></tr>`;
+      usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ff4d4d;padding:40px;">
+        <strong>Error loading users</strong><br>
+        ${err.message}<br>
+        <button onclick="loadUsers()" style="margin-top:15px;padding:8px 20px;background:#d4af37;color:black;border:none;border-radius:6px;cursor:pointer;">Retry</button>
+      </td></tr>`;
     }
   }
   
@@ -110,11 +135,7 @@ async function loadUsers() {
 }
 
 function updateStats(users) {
-  const totalUsersEl = document.getElementById("stat-total-users");
-  const totalMessagesEl = document.getElementById("stat-total-messages");
-  const totalAgenciesEl = document.getElementById("stat-total-agencies");
-  
-  if (totalUsersEl) totalUsersEl.textContent = users.length;
+  if (statTotalUsers) statTotalUsers.textContent = users.length;
   
   let msgs = 0;
   let agencies = 0;
@@ -123,8 +144,19 @@ function updateStats(users) {
     if (u.plan === 'agency') agencies++;
   });
   
-  if (totalMessagesEl) totalMessagesEl.textContent = msgs.toLocaleString();
-  if (totalAgenciesEl) totalAgenciesEl.textContent = agencies;
+  if (statTotalMessages) statTotalMessages.textContent = msgs.toLocaleString();
+  if (statTotalAgencies) statTotalAgencies.textContent = agencies;
+}
+
+// Helper to escape HTML
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function renderUserTable(users) {
@@ -133,20 +165,20 @@ function renderUserTable(users) {
   usersTableBody.innerHTML = "";
   
   if (users.length === 0) {
-    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;">No users found</td></tr>`;
+    usersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;">No users found</td></tr>`;
     return;
   }
 
   users.forEach(u => {
     const tr = document.createElement("tr");
     
-    const displayName = u.business_name || u.name || "Unnamed Business";
+    const displayName = u.business_name || u.name || u.email?.split('@')[0] || "Unnamed Business";
     const isVerified = u.is_verified === 1 || u.is_verified === true;
     
     tr.innerHTML = `
       <td>
-        <div style="font-weight:600; color:#d4af37">${displayName}</div>
-        <div style="font-size:0.8rem; color:#aaaaaa">${u.email}</div>
+        <div style="font-weight:600; color:#d4af37">${escapeHtml(displayName)}</div>
+        <div style="font-size:0.8rem; color:#aaaaaa">${escapeHtml(u.email)}</div>
       </td>
       <td>
         <select id="plan-${u.id}" style="margin-bottom: 5px; display: block;">
@@ -158,7 +190,7 @@ function renderUserTable(users) {
         <span class="status-badge ${isVerified ? 'status-verified' : 'status-pending'}">
             ${isVerified ? 'VERIFIED' : 'PENDING'}
         </span>
-        <select id="verify-${u.id}" style="width: 80px; font-size: 10px; padding: 2px;">
+        <select id="verify-${u.id}" style="width: 80px; font-size: 10px; padding: 2px; margin-top:5px;">
             <option value="1" ${isVerified ? 'selected' : ''}>Verify</option>
             <option value="0" ${!isVerified ? 'selected' : ''}>Unverify</option>
         </select>
@@ -178,11 +210,14 @@ function renderUserTable(users) {
 window.updateUser = async function(userId) {
   const plan = document.getElementById(`plan-${userId}`).value;
   const is_verified = parseInt(document.getElementById(`verify-${userId}`).value);
-  const messages_used = parseInt(document.getElementById(`msg-${userId}`).value);
-  const leads_used = parseInt(document.getElementById(`lead-${userId}`).value);
+  const messages_used = parseInt(document.getElementById(`msg-${userId}`).value) || 0;
+  const leads_used = parseInt(document.getElementById(`lead-${userId}`).value) || 0;
 
   try {
-    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    console.log("[ADMIN] Updating user:", userId, {plan, is_verified, messages_used, leads_used});
+    
+    // FIXED: Added /api/ prefix
+    const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -205,10 +240,13 @@ window.updateUser = async function(userId) {
 
 // Admin Delete Function (made global for onclick)
 window.deleteUser = async function(userId) {
-  if (!confirm("PERMANENT ACTION: Delete this business and all its chat logs/leads?")) return;
+  if (!confirm("⚠️ PERMANENT ACTION: Delete this business and all its data? This cannot be undone.")) return;
 
   try {
-    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    console.log("[ADMIN] Deleting user:", userId);
+    
+    // FIXED: Added /api/ prefix
+    const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -230,7 +268,7 @@ if (userSearch) {
   userSearch.addEventListener("input", () => {
     const term = userSearch.value.toLowerCase();
     const filtered = allUsers.filter(u => 
-      u.email.toLowerCase().includes(term) || 
+      (u.email && u.email.toLowerCase().includes(term)) || 
       (u.business_name && u.business_name.toLowerCase().includes(term)) ||
       (u.name && u.name.toLowerCase().includes(term))
     );
@@ -240,12 +278,16 @@ if (userSearch) {
 
 // ================= LOAD ACTIVITIES =================
 async function loadActivities() {
-  const activitiesLoading = document.getElementById("activitiesLoading");
   if (activitiesLoading) activitiesLoading.classList.remove("hidden");
-  if (activitiesTableBody) activitiesTableBody.innerHTML = "";
+  if (activitiesTableBody) {
+    activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;">Loading activities...</td></tr>`;
+  }
   
   try {
-    const res = await fetch(`${API_URL}/admin/activities`, {
+    console.log("[ADMIN] Fetching activities from:", `${API_URL}/api/admin/activities`);
+    
+    // FIXED: Added /api/ prefix
+    const res = await fetch(`${API_URL}/api/admin/activities`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     
@@ -254,29 +296,34 @@ async function loadActivities() {
     }
 
     const activities = await res.json();
+    console.log("[ADMIN] Loaded activities:", activities.length);
+    
+    if (!activitiesTableBody) return;
+    activitiesTableBody.innerHTML = "";
     
     if (activities.length === 0) {
-      if (activitiesTableBody) {
-        activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;">No activities found</td></tr>`;
-      }
+      activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;">No activities found</td></tr>`;
       return;
     }
 
     activities.forEach(a => {
-      if (activitiesTableBody) {
-        activitiesTableBody.innerHTML += `
-          <tr>
-            <td>${a.client_name || "Visitor"}</td>
-            <td>${a.message}</td>
-            <td>${a.response}</td>
-            <td>${new Date(a.created_at).toLocaleString()}</td>
-          </tr>`;
-      }
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${escapeHtml(a.client_name || "Visitor")}</td>
+        <td>${escapeHtml(a.message || '')}</td>
+        <td>${escapeHtml(a.response || '')}</td>
+        <td>${a.created_at ? new Date(a.created_at).toLocaleString() : 'Unknown'}</td>
+      `;
+      activitiesTableBody.appendChild(row);
     });
   } catch (err) {
-    console.error("Load Activities Error:", err);
+    console.error("[ADMIN] Load Activities Error:", err);
     if (activitiesTableBody) {
-      activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#ff4d4d;padding:20px;">Error loading activities: ${err.message}</td></tr>`;
+      activitiesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#ff4d4d;padding:40px;">
+        <strong>Error loading activities</strong><br>
+        ${err.message}<br>
+        <button onclick="loadActivities()" style="margin-top:15px;padding:8px 20px;background:#d4af37;color:black;border:none;border-radius:6px;cursor:pointer;">Retry</button>
+      </td></tr>`;
     }
   }
   
@@ -289,6 +336,10 @@ const refreshActivitiesBtn = document.getElementById("refreshActivitiesBtn");
 
 if (refreshUsersBtn) refreshUsersBtn.addEventListener("click", loadUsers);
 if (refreshActivitiesBtn) refreshActivitiesBtn.addEventListener("click", loadActivities);
+
+// Make functions globally available
+window.loadUsers = loadUsers;
+window.loadActivities = loadActivities;
 
 // Start
 loadUsers();
