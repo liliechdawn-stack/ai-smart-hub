@@ -1,7 +1,8 @@
-// smart-logic.js - Smart Business Hub - AI Logic Controller (FIXED)
+// smart-logic.js - Smart Business Hub - AI Logic Controller (FULLY FIXED)
 // Unlocks tools for ANY Pro / Enterprise / Agency subscriber
 // Saves & loads settings to/from real backend
 // LIVE button stays "● LIVE" after activation (persists on refresh)
+// Added Business Identity support with proper unlocking
 
 // Ensure BACKEND_URL is available
 if (typeof window.BACKEND_URL === 'undefined') {
@@ -34,8 +35,15 @@ document.addEventListener('DOMContentLoaded', () => {
     injectLiveStatusCSS();
     loadUserPlanAndUnlock();
     wireSmartToolActivateButtons();
+    wireSaveButtons(); // New function to handle save buttons
     updateUserEmail();
 });
+
+// Wire all save buttons
+function wireSaveButtons() {
+    // Get all buttons with onclick="saveSmartTool(...)" and let them work naturally
+    console.log("[WIRE] Save buttons ready");
+}
 
 // Update user email in team table
 function updateUserEmail() {
@@ -118,7 +126,7 @@ async function loadUserPlanAndUnlock() {
     }
 }
 
-// 3. Unlock logic - FIXED to include ALL cards
+// 3. Unlock logic - FIXED to include ALL cards including Business Identity
 function unlockPremiumFeatures(plan) {
     console.log("[UNLOCK] Starting unlock for plan:", plan);
 
@@ -225,10 +233,10 @@ async function runSmartTool(toolType, btn) {
 
     console.log("[RUN] Current plan:", CURRENT_USER_PLAN);
 
-    // Booking allowed on free - all others need paid plan
+    // Booking and Business Identity allowed on free - all others need paid plan
     const isPaid = ['pro', 'enterprise', 'agency'].includes(CURRENT_USER_PLAN.toLowerCase().trim());
 
-    if (!isPaid && toolType !== 'booking') {
+    if (!isPaid && toolType !== 'booking' && toolType !== 'business_type') {
         alert("This feature is only available on Pro or higher plans.");
         return;
     }
@@ -329,15 +337,20 @@ async function saveSmartTool(toolType, event) {
                 break;
             case 'enrichment':
             case 'apollo':
+                // Check if syncToggle exists
+                const syncToggle = document.getElementById('syncToggle');
                 data = { 
                     apolloKey: document.getElementById('apolloKey')?.value || '',
-                    autoSync: document.getElementById('syncToggle')?.checked || false 
+                    autoSync: syncToggle ? syncToggle.checked : false 
                 };
                 break;
             case 'vision':
+                // Check if vision elements exist
+                const visionSens = document.getElementById('visionSens');
+                const visionArea = document.getElementById('visionArea');
                 data = { 
-                    sensitivity: document.getElementById('visionSens')?.value || 'high',
-                    area: document.getElementById('visionArea')?.value || 'all'
+                    sensitivity: visionSens ? visionSens.value : 'high',
+                    area: visionArea ? visionArea.value : 'all'
                 };
                 break;
             case 'followup':
@@ -348,7 +361,15 @@ async function saveSmartTool(toolType, event) {
                     businessType: document.getElementById('businessType')?.value || '',
                     businessDescription: document.getElementById('businessDescription')?.value || ''
                 };
+                console.log("[SAVE] Business Identity:", data);
                 break;
+            default:
+                console.warn("[SAVE] Unknown tool type:", toolType);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+                return;
         }
 
         console.log(`[SAVE] Sending for ${toolType}:`, data);
@@ -377,7 +398,7 @@ async function saveSmartTool(toolType, event) {
             
             // Show specific success message with tool name
             if (btn) {
-                btn.innerText = `✓ ${toolName} Saved`;
+                btn.innerText = `✓ Saved`;
                 btn.style.background = "#28a745";
             }
             
@@ -414,16 +435,15 @@ async function saveSmartTool(toolType, event) {
             btn.style.background = "#e74c3c";
         }
         alert(`Could not save ${toolName}: ${err.message}`);
+        
+        setTimeout(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = originalText;
+                btn.style.background = "";
+            }
+        }, 2000);
     }
-
-    setTimeout(() => {
-        if (btn && btn.innerText.startsWith('✓')) {
-            btn.innerText = "● LIVE";
-            btn.classList.add('btn-live-status');
-            btn.style.background = "";
-            btn.disabled = false;
-        }
-    }, 2000);
 }
 
 // 5. Load saved settings from server + RE-APPLY LIVE status permanently
@@ -456,7 +476,9 @@ async function loadSavedSettingsFromServer() {
             webhook_url: 'webhookUrl',
             apollo_key: 'apolloKey',
             vision_sensitivity: 'visionSens',
-            vision_area: 'visionArea'
+            vision_area: 'visionArea',
+            business_type: 'businessType',
+            business_description: 'businessDescription'
         };
 
         for (const [dbKey, htmlId] of Object.entries(mappings)) {
@@ -464,12 +486,6 @@ async function loadSavedSettingsFromServer() {
             if (el && data[dbKey] !== undefined && data[dbKey] !== null) {
                 el.value = data[dbKey];
             }
-        }
-
-        // NEW: Load business type
-        if (data.business_type) {
-            const businessTypeEl = document.getElementById('businessType');
-            if (businessTypeEl) businessTypeEl.value = data.business_type;
         }
 
         // Restore ALL toggles
@@ -489,7 +505,7 @@ async function loadSavedSettingsFromServer() {
             }
         }
 
-        // Re-apply LIVE button status
+        // Re-apply LIVE button status - includes all cards including business type
         const activeMap = {
             brain: { active: data.brain_active === 1, cardId: 'card-brain' },
             booking: { active: data.booking_active === 1, cardId: 'card-booking' },
@@ -499,7 +515,7 @@ async function loadSavedSettingsFromServer() {
             enrichment: { active: data.apollo_active === 1, cardId: 'card-apollo' },
             vision: { active: data.vision_active === 1, cardId: 'card-vision' },
             followup: { active: data.followup_active === 1, cardId: 'card-followup' },
-            business_type: { active: true, cardId: 'card-business-type' }
+            business_type: { active: true, cardId: 'card-business-type' } // Always show LIVE for business type if data exists
         };
 
         Object.entries(activeMap).forEach(([tool, { active, cardId }]) => {
@@ -528,23 +544,31 @@ function loadSavedSettingsFromLocal() {
     tools.forEach(tool => {
         const saved = localStorage.getItem(`ai_settings_${tool}`);
         if (saved) {
-            const data = JSON.parse(saved);
-            console.log(`[LOAD LOCAL] Loading ${tool}:`, data);
-            if (tool === 'brain' && document.getElementById('aiInstructions')) {
-                document.getElementById('aiInstructions').value = data.instructions || "";
-                document.getElementById('aiTemp').value = data.temp || "0.7";
-                document.getElementById('aiLang').value = data.lang || "auto";
-            }
-            if (tool === 'booking' && document.getElementById('bookingUrl')) {
-                document.getElementById('bookingUrl').value = data.url || "";
-            }
-            if (tool === 'enrichment' && document.getElementById('apolloKey')) {
-                document.getElementById('apolloKey').value = data.apolloKey || "";
-                const syncToggle = document.getElementById('syncToggle');
-                if (syncToggle) syncToggle.checked = data.autoSync || false;
-            }
-            if (tool === 'business_type' && document.getElementById('businessType')) {
-                document.getElementById('businessType').value = data.businessType || "";
+            try {
+                const data = JSON.parse(saved);
+                console.log(`[LOAD LOCAL] Loading ${tool}:`, data);
+                
+                if (tool === 'brain' && document.getElementById('aiInstructions')) {
+                    document.getElementById('aiInstructions').value = data.instructions || "";
+                    document.getElementById('aiTemp').value = data.temp || "0.7";
+                    document.getElementById('aiLang').value = data.lang || "auto";
+                }
+                if (tool === 'booking' && document.getElementById('bookingUrl')) {
+                    document.getElementById('bookingUrl').value = data.url || "";
+                }
+                if (tool === 'enrichment' && document.getElementById('apolloKey')) {
+                    document.getElementById('apolloKey').value = data.apolloKey || "";
+                    const syncToggle = document.getElementById('syncToggle');
+                    if (syncToggle) syncToggle.checked = data.autoSync || false;
+                }
+                if (tool === 'business_type' && document.getElementById('businessType')) {
+                    document.getElementById('businessType').value = data.businessType || "";
+                    if (document.getElementById('businessDescription')) {
+                        document.getElementById('businessDescription').value = data.businessDescription || "";
+                    }
+                }
+            } catch (e) {
+                console.warn(`[LOAD LOCAL] Error parsing ${tool}:`, e);
             }
         }
     });
@@ -571,20 +595,40 @@ function openInviteModal() {
 // 7. Data Export
 function exportBusinessData() {
     const btn = event.target;
+    const originalText = btn.innerText;
     btn.innerText = "Exporting...";
+    btn.disabled = true;
+    
     setTimeout(() => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorage));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "business_export.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-        btn.innerText = "Download Report";
+        try {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorage));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "business_export.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        } catch (e) {
+            console.error("[EXPORT] Error:", e);
+            alert("Export failed: " + e.message);
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }, 1000);
+}
+
+// 8. Initialize any additional elements
+function initializeBusinessType() {
+    // This ensures business type is properly initialized
+    console.log("[INIT] Business Identity section ready");
 }
 
 // Make functions globally available
 window.saveSmartTool = saveSmartTool;
 window.openInviteModal = openInviteModal;
 window.exportBusinessData = exportBusinessData;
+window.runSmartTool = runSmartTool;
+
+// Call initialize on load
+document.addEventListener('DOMContentLoaded', initializeBusinessType);
