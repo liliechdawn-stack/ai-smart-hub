@@ -777,10 +777,25 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
   });
 });
 
-// ================= PUBLIC WIDGET CHAT - CRITICAL FIXES =================
+// ================= PUBLIC WIDGET CHAT - FIXED REPETITION =================
 app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res) => {
-  // CRITICAL FIX: Extract is_visitor flag from request
-  const { message, image_data, file_data, file_name, widget_key, client_name, session_id, is_visitor } = req.body;
+  // Extract all fields
+  const { 
+    message, 
+    image_data, 
+    file_data, 
+    file_name, 
+    widget_key, 
+    client_name, 
+    session_id, 
+    is_visitor,
+    conversation_history,
+    has_introduced,
+    message_count,
+    business_name,
+    ai_name
+  } = req.body;
+  
   const activeSession = session_id || "pub_" + Date.now();
 
   if (!message && !image_data && !file_data) {
@@ -801,18 +816,21 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
       const knowledge = await getKnowledgeByUser(user.id);
       const context = knowledge.map(k => k.content).join("\n");
 
-      // CRITICAL FIX: Get ALL smart settings including booking URL
+      // Get ALL smart settings
       const smartSettings = await new Promise((resolve) => {
         db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
       });
 
       // Get business identity
-      const identity = await getBusinessIdentity(user.id).catch(() => ({ business_type: '', business_description: '' }));
+      const identity = await getBusinessIdentity(user.id).catch(() => ({ 
+        business_type: '', 
+        business_description: '' 
+      }));
 
       let reply = "";
       let fileContent = "";
 
-      // CRITICAL FIX: Build professional system prompt
+      // FIXED: Build system prompt that prevents repetition
       const buildSystemPrompt = () => {
         const basePrompt = smartSettings.ai_instructions || 
           `You are the AI assistant for ${user.business_name || 'our business'}.`;
@@ -820,27 +838,40 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
         const businessContext = identity.business_type ? 
           `Business Type: ${identity.business_type}. ${identity.business_description || ''}` : '';
         
+        // FIXED: Don't reintroduce if already introduced
+        const introductionRule = has_introduced 
+          ? "IMPORTANT: Do NOT introduce yourself again. Continue the conversation naturally based on the history."
+          : `Introduce yourself as ${ai_name || 'the AI assistant'} for ${user.business_name || 'our business'} ONLY in the first message.`;
+        
         const visitorContext = is_visitor 
-          ? `You are chatting with a website visitor named ${client_name || 'Guest'}. Be helpful, professional, and guide them to take action.`
+          ? `You are chatting with a website visitor named ${client_name || 'Guest'}.`
           : `You are assisting the business owner.`;
         
         const bookingContext = smartSettings.booking_url && smartSettings.booking_active
           ? `When visitors want to book, schedule, or make appointments, provide this booking link: ${smartSettings.booking_url}`
           : '';
         
+        // FIXED: Add conversation history context
+        const historyContext = conversation_history && conversation_history.length > 0
+          ? `\nPrevious conversation:\n${conversation_history.map(msg => `${msg.role}: ${msg.text}`).join('\n')}`
+          : '';
+        
         return `${basePrompt}
 ${businessContext}
 ${visitorContext}
 ${bookingContext}
+${introductionRule}
 Business Context:
 ${context || 'No additional context provided.'}
 
-IMPORTANT INSTRUCTIONS:
+CRITICAL INSTRUCTIONS:
 - Always identify yourself as ${user.business_name || 'our'} AI assistant, NEVER as "a language model" or "AI"
-- Be concise but helpful (2-3 sentences max for simple questions)
-- If you don't know something specific about the business, say "Let me connect you with the team" rather than making things up
-- Use the booking link when visitors show interest in meetings/appointments
-- Today's date: ${new Date().toLocaleDateString()}`;
+- Be concise and professional (2-3 sentences for simple questions, up to 5 for complex ones)
+- NEVER repeat yourself or use the same phrasing twice
+- If you don't know something specific, say "Let me connect you with our team"
+- Keep responses natural and conversational like a real business assistant
+- Today's date: ${new Date().toLocaleDateString()}
+${historyContext}`;
       };
 
       if (image_data) {
@@ -852,7 +883,6 @@ IMPORTANT INSTRUCTIONS:
         const userPrompt = message || "Please describe what you see in this image in detail.";
         const systemContext = buildSystemPrompt();
 
-        // CRITICAL FIX: Remove space in Cloudflare URL
         const cfRes = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
           {
@@ -895,7 +925,6 @@ IMPORTANT INSTRUCTIONS:
           
           const systemContext = buildSystemPrompt();
           
-          // CRITICAL FIX: Remove space in Cloudflare URL
           const cfRes = await fetch(
             `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
             {
@@ -909,7 +938,7 @@ IMPORTANT INSTRUCTIONS:
                   { role: "system", content: systemContext },
                   { 
                     role: "user", 
-                    content: `Here is the content of the file "${file_name}":\n\n${fileContent}\n\nUser question: ${message || "Please summarize this document and extract key information."}` 
+                    content: `Here is the content of the file "${file_name}":\n\n${fileContent}\n\nUser question: ${message || "Please summarize this document."}` 
                   }
                 ]
               })
@@ -934,11 +963,10 @@ IMPORTANT INSTRUCTIONS:
         
         const systemContext = buildSystemPrompt();
         
-        // CRITICAL FIX: Check for booking intent and inject link if needed
+        // Check for booking intent
         const bookingKeywords = /book|appointment|schedule|meeting|reserve|consultation|demo/i;
         const hasBookingIntent = bookingKeywords.test(message);
         
-        // CRITICAL FIX: Remove space in Cloudflare URL
         const cfRes = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
           {
@@ -964,17 +992,33 @@ IMPORTANT INSTRUCTIONS:
           const cfData = await cfRes.json();
           reply = cfData.result?.response || "I couldn't generate a response.";
           
-          // CRITICAL FIX: If booking intent detected and we have URL but AI didn't include it, append it
+          // FIXED: Only append booking link if not already included and intent detected
           if (hasBookingIntent && smartSettings.booking_url && smartSettings.booking_active && !reply.includes(smartSettings.booking_url)) {
             reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
           }
         }
       }
 
+      // FIXED: Remove any repeated introductions from the response
+      if (has_introduced && message_count > 1) {
+        // Remove common introduction patterns
+        reply = reply
+          .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
+          .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
+          .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
+          .replace(/^Nice\s+to\s+meet\s+you[!,\s]+i'?m?\s+[^,.]*[,.\s]+/i, '')
+          .trim();
+      }
+
       await saveChat(uuidv4(), user.id, activeSession, client_name || "Web Visitor", message || "[File/Image Sent]", reply);
       await incrementMessagesUsed(user.id);
 
-      res.json({ success: true, reply, session_id: activeSession });
+      res.json({ 
+        success: true, 
+        reply, 
+        session_id: activeSession,
+        sentiment: 'neutral' // You can add sentiment analysis here
+      });
     } catch (e) {
       console.error("❌ Public Chat Error:", e.message);
       res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
@@ -1149,7 +1193,6 @@ app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
 
     // Handle business_type separately
     if (toolType === 'business_type') {
-      // FIXED: Map frontend field names to what saveBusinessIdentity expects
       const businessType = data.businessType || data.business_type || '';
       const businessDescription = data.businessDescription || data.business_description || '';
       
@@ -1234,7 +1277,7 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
       'enrichment': 'apollo_active',
       'followup': 'followup_active',
       'vision': 'vision_active',
-      'business_type': null // Business type is stored in users table
+      'business_type': null
     };
 
     const activeColumn = activeColumnMap[toolType];
@@ -1244,11 +1287,9 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
     }
 
     if (toolType === 'business_type') {
-      // Business type can't be deactivated, just return success
       return res.json({ success: true, message: "Business type remains active" });
     }
 
-    // Deactivate the tool by setting active flag to 0
     await new Promise((resolve, reject) => {
       db.run(
         `UPDATE smart_hub_settings SET ${activeColumn} = 0 WHERE user_id = ?`,
@@ -1274,7 +1315,6 @@ app.get("/api/smart-hub/settings", auth, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Get smart hub settings
     const settings = await new Promise((resolve, reject) => {
       db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [userId], (err, row) => {
         if (err) reject(err);
@@ -1282,10 +1322,7 @@ app.get("/api/smart-hub/settings", auth, async (req, res) => {
       });
     });
 
-    // Get business identity
     const identity = await getBusinessIdentity(userId).catch(() => ({}));
-
-    // Get user for booking_url
     const user = await getUserById(userId);
 
     res.json({
@@ -1303,13 +1340,7 @@ app.get("/api/smart-hub/settings", auth, async (req, res) => {
 // ================= SMART HUB TOOL STATE ENDPOINT =================
 app.post("/api/smart-hub/tool-state", auth, async (req, res) => {
   try {
-    const { toolType, isActive } = req.body;
-    const userId = req.user.id;
-
-    // This endpoint is optional - we're using localStorage for state
-    // You could implement database sync here if needed
     res.json({ success: true });
-
   } catch (err) {
     console.error("Tool state error:", err);
     res.status(500).json({ error: err.message });
@@ -1382,7 +1413,6 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
   }
 
   try {
-    // Send email to support
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -1407,7 +1437,6 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
       </html>
     `;
 
-    // Send using Resend
     if (resend) {
       await resend.emails.send({
         from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
@@ -1416,7 +1445,6 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
         html: emailHtml,
       });
 
-      // Send copy to user if requested
       if (copyMe) {
         await resend.emails.send({
           from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
