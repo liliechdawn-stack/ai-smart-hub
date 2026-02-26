@@ -9,7 +9,7 @@
     return;
   }
 
-  const SERVER_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
+  const SERVER_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com  ';
   const WIDGET_KEY = marker.dataset.key || "";
 
   if (!WIDGET_KEY) {
@@ -1167,6 +1167,46 @@
       localStorage.setItem(`ai_conversation_${WIDGET_KEY}`, JSON.stringify(conversationHistory));
     }
 
+    // ===== CRITICAL FIX: Strip introductions from AI responses =====
+    function cleanAIResponse(text) {
+      if (!text) return text;
+      
+      // Patterns that indicate self-introduction
+      const introPatterns = [
+        /^(hi|hello|hey|greetings)[!,\s]+i'?m?\s+\w+[,.\s]+/i,
+        /^(hi|hello|hey|greetings)[!,\s]+this\s+is\s+\w+[,.\s]+/i,
+        /^(hi|hello|hey|greetings)[!,\s]+i\s+am\s+\w+[,.\s]+/i,
+        /^i'?m?\s+\w+[,.\s]+(the\s+)?ai\s+assistant/i,
+        /^(hi|hello|hey)[!,\s]+i'?m?\s+(the\s+)?ai\s+assistant/i,
+        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+(the\s+)?ai\s+assistant\s+(for|of)/i,
+        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+(your\s+)?ai\s+assistant/i,
+        /^(hi|hello|hey)[!,\s]+welcome\s+to.*i'?m?\s+\w+/i,
+        /^(hi|hello|hey)[!,\s]+i'?m?\s+thrilled\s+to\s+introduce/i,
+        /^hello\s+visitor[!,\s]+i'?m?\s+\w+/i,
+        /^hello\s+there[!,\s]+i'?m?\s+\w+/i,
+        /i'?m?\s+\w+[,.\s]+the\s+ai\s+assistant\s+(for|of)/i,
+        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+(and\s+)?i'?m?\s+thrilled/i,
+        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+welcome\s+to/i
+      ];
+      
+      let cleaned = text;
+      
+      // Remove introduction patterns
+      for (const pattern of introPatterns) {
+        cleaned = cleaned.replace(pattern, '');
+      }
+      
+      // Clean up any leading punctuation or whitespace
+      cleaned = cleaned.replace(/^[,\s.!?]+/, '').trim();
+      
+      // If the response is now empty or too short, return original
+      if (cleaned.length < 10) {
+        return text;
+      }
+      
+      return cleaned;
+    }
+
     async function sendMessage(voiceText = null) {
       if (isProcessing) return;
       
@@ -1210,7 +1250,8 @@
           conversation_history: conversationHistory.slice(-5), // Send last 5 messages for context
           business_name: businessName,
           ai_name: aiName,
-          has_introduced: hasIntroduced // CRITICAL: Tell backend if we've already introduced
+          has_introduced: hasIntroduced, // CRITICAL: Tell backend if we've already introduced
+          message_count: messageCount // Send message count to help backend understand conversation state
         };
 
         if (currentFile) {
@@ -1263,15 +1304,27 @@
           
           messageCount++;
           
-          // Prevent repetition - don't show if it's the same as last response
-          if (data.reply !== lastResponseText || messageCount === 1) {
-            if (!isLiveMode) {
-              appendMessage(data.reply, "bot");
-              speak(data.reply);
-            } else {
-              speak(data.reply);
+          // ===== CRITICAL FIX: Clean the response to remove introductions =====
+          let cleanReply = data.reply;
+          
+          // Only clean if we've already had at least one exchange
+          if (messageCount > 1 || hasIntroduced) {
+            cleanReply = cleanAIResponse(data.reply);
+            // If cleaning removed everything, use original
+            if (!cleanReply || cleanReply.length < 5) {
+              cleanReply = data.reply;
             }
-            lastResponseText = data.reply;
+          }
+          
+          // Prevent repetition - don't show if it's the same as last response
+          if (cleanReply !== lastResponseText || messageCount === 1) {
+            if (!isLiveMode) {
+              appendMessage(cleanReply, "bot");
+              speak(cleanReply);
+            } else {
+              speak(cleanReply);
+            }
+            lastResponseText = cleanReply;
           }
         } else {
           const errorMsg = data.error || "Server returned error";
