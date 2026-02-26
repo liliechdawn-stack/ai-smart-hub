@@ -1,5 +1,5 @@
-// widget.js - Professional SaaS AI Chat Widget (FIXED: No repeated introductions + real conversation flow + Mobile Support)
-// Features: Business Identity Integration, Proper Conversation Memory, Professional AI Responses, Mobile-First Live Chat
+// widget.js - Professional SaaS AI Chat Widget (FIXED: Professional responses + No repetition + Mobile Support)
+// Features: Natural conversation flow, Business identity, Proper visitor handling, Mobile-optimized
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -39,11 +39,11 @@
   let reconnectAttempts = 0;
   const MAX_RECONNECT_ATTEMPTS = 3;
   let isMobile = window.matchMedia("(max-width: 768px)").matches;
+  let messageCount = 0;
 
   // Track conversation history
   let conversationHistory = JSON.parse(localStorage.getItem(`ai_conversation_${WIDGET_KEY}`) || '[]');
-  let lastResponseText = '';
-  let messageCount = conversationHistory.length;
+  messageCount = conversationHistory.filter(m => m.role === 'user').length;
   
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
@@ -92,10 +92,10 @@
     });
 
   function initWidget(dbConfig) {
-    // Determine welcome message
+    // Determine welcome message - NEVER re-introduce
     let welcomeMessage;
     if (hasIntroduced || leadCaptured || messageCount > 0) {
-      welcomeMessage = `How can I help you today?`;
+      welcomeMessage = `Hi there! How can I help you today?`;
     } else {
       welcomeMessage = dbConfig.welcome_message || marker.dataset.welcome || `Hi! I'm ${aiName}, the AI assistant for ${businessName}. How can I help you today?`;
       hasIntroduced = true;
@@ -110,7 +110,7 @@
       title: businessName
     };
 
-    // ===== STYLES =====
+    // ===== STYLES with mobile optimization =====
     const style = document.createElement('style');
     style.textContent = `
       #ai-widget-container { 
@@ -145,7 +145,7 @@
         stroke: var(--primary-color); 
       }
 
-      /* Mobile bubble positioning */
+      /* Mobile bubble */
       @media (max-width: 768px) {
         .widget-bubble {
           bottom: 15px;
@@ -178,19 +178,19 @@
         transition: transform 0.3s ease, opacity 0.3s ease; 
       }
       
-      /* Mobile widget window */
+      /* Mobile widget window - full screen */
       @media (max-width: 768px) {
         .widget-window {
           position: fixed;
           bottom: 0;
           right: 0;
           left: 0;
-          top: auto;
+          top: 0;
           width: 100vw;
           max-width: 100vw;
           height: 100vh;
           max-height: 100vh;
-          border-radius: 20px 20px 0 0;
+          border-radius: 0;
           animation: slideUpMobile 0.3s ease;
         }
         .widget-window.open {
@@ -204,14 +204,8 @@
 
       .widget-window.open { 
         display: flex; 
-        animation: showWindow 0.3s ease; 
       }
       
-      @keyframes showWindow { 
-        from { opacity: 0; transform: translateY(20px); } 
-        to { opacity: 1; transform: translateY(0); } 
-      }
-
       .widget-window.live-mode { 
         background: ${customBgColor}; 
         color: white; 
@@ -233,25 +227,6 @@
       }
       .widget-window.live-mode .pixel-face-container { 
         display: flex !important; 
-      }
-
-      /* Mobile live mode adjustments */
-      @media (max-width: 768px) {
-        .widget-window.live-mode .pixel-face {
-          width: 180px;
-          height: 180px;
-        }
-        .widget-window.live-mode .pixel-eyes {
-          gap: 30px;
-        }
-        .widget-window.live-mode .pixel-eye {
-          width: 35px;
-          height: 35px;
-        }
-        .widget-window.live-mode .pupil {
-          width: 18px;
-          height: 18px;
-        }
       }
 
       .widget-header { 
@@ -512,15 +487,6 @@
         border-bottom-right-radius: 4px; 
       }
       
-      /* Enhanced Image and File Styling */
-      .message .file-attachment {
-        margin-top: 10px;
-        border-radius: 12px;
-        overflow: hidden;
-        background: white;
-        border: 1px solid rgba(0,0,0,0.1);
-      }
-      
       .message img { 
         max-width: 100%; 
         max-height: 300px;
@@ -543,26 +509,6 @@
         .message iframe {
           height: 300px;
         }
-      }
-      
-      .file-download-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        background: white;
-        border: 1px solid #dadce0;
-        border-radius: 20px;
-        color: #1a73e8;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 13px;
-        margin-top: 8px;
-        transition: all 0.2s;
-      }
-      .file-download-btn:hover {
-        background: #f1f3f4;
-        border-color: #1a73e8;
       }
 
       @keyframes msgIn { 
@@ -621,9 +567,6 @@
       .lead-submit:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      }
-      .lead-submit:active {
-        transform: translateY(0);
       }
 
       .file-preview-bar { 
@@ -710,6 +653,11 @@
         font-size: 14px; 
         min-width: 0;
       }
+      @media (max-width: 768px) {
+        .input-bar input {
+          font-size: 16px; /* Prevents zoom on iOS */
+        }
+      }
 
       .typing-indicator { 
         padding: 0 24px 10px; 
@@ -732,18 +680,6 @@
         100% { box-shadow: 0 0 0 0 rgba(217,48,37,0); }
       }
       
-      /* Mobile touch improvements */
-      @media (max-width: 768px) {
-        .circle-btn {
-          width: 40px;
-          height: 40px;
-        }
-        .input-bar input {
-          font-size: 16px; /* Prevents zoom on iOS */
-        }
-      }
-      
-      /* Image lightbox */
       .image-lightbox {
         position: fixed;
         top: 0;
@@ -859,8 +795,6 @@
         <div class="voice-status" id="voice-status">
           Live chat activated - start speaking
         </div>
-        
-        ${isMobile ? '<button id="mobile-mic-btn" class="lead-submit" style="margin-top:20px; background:linear-gradient(135deg, #d93025, #b31412);">🎤 Hold to Speak</button>' : ''}
       </div>
 
       <div class="widget-messages" id="widget-msgs-container">
@@ -910,21 +844,17 @@
     const aiStatus = win.querySelector("#ai-status");
     const voiceStatus = win.querySelector("#voice-status");
     const voiceWave = win.querySelector("#voice-wave");
-    const mobileMicBtn = win.querySelector("#mobile-mic-btn");
 
     // ===== SPEECH RECOGNITION SETUP =====
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
         console.warn("[WIDGET] Speech recognition not supported");
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.style.display = 'none';
-        }
         return null;
       }
       
       const recog = new SpeechRecognition();
-      recog.continuous = !isMobile; // Single utterance on mobile for better UX
+      recog.continuous = !isMobile;
       recog.interimResults = true;
       recog.lang = 'en-US';
       recog.maxAlternatives = 1;
@@ -934,12 +864,11 @@
     
     recognition = initSpeechRecognition();
     
-    let finalTranscript = '';
-    let interimTranscript = '';
-    
     if (recognition) {
+      let finalTranscript = '';
+      
       recognition.onresult = (e) => {
-        interimTranscript = '';
+        let interimTranscript = '';
         
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const transcript = e.results[i][0].transcript;
@@ -960,7 +889,6 @@
             updateCatExpression('thinking');
             const textToSend = finalTranscript.trim();
             finalTranscript = '';
-            interimTranscript = '';
             sendMessage(textToSend);
           }
         } else {
@@ -974,23 +902,14 @@
       };
       
       recognition.onend = () => {
-        console.log("[WIDGET] Recognition ended");
         voiceBtn.classList.remove("mic-active");
         
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.textContent = '🎤 Hold to Speak';
-          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
-        }
-        
-        if (isLiveMode && recognitionActive) {
-          // On mobile, don't auto-restart to save battery
-          if (!isMobile) {
-            setTimeout(() => {
-              if (isLiveMode && recognitionActive) {
-                try { recognition.start(); } catch (e) {}
-              }
-            }, 300);
-          }
+        if (isLiveMode && recognitionActive && !isMobile) {
+          setTimeout(() => {
+            if (isLiveMode && recognitionActive) {
+              try { recognition.start(); } catch (e) {}
+            }
+          }, 300);
         } else {
           voiceWave.style.display = "none";
           if (isLiveMode) {
@@ -1001,14 +920,8 @@
       };
       
       recognition.onstart = () => {
-        console.log("[WIDGET] Recognition started");
         recognitionActive = true;
         reconnectAttempts = 0;
-        
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.textContent = '🔴 Listening...';
-          mobileMicBtn.style.background = '#1a73e8';
-        }
         
         if (isLiveMode) {
           voiceWave.style.display = "flex";
@@ -1018,32 +931,19 @@
       };
       
       recognition.onerror = (e) => {
-        console.error("[WIDGET] Speech recognition error:", e.error);
-        
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.textContent = '🎤 Hold to Speak';
-          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
-        }
-        
-        if (e.error === 'no-speech' || e.error === 'audio-capture') {
-          if (isLiveMode && recognitionActive && !isMobile) {
-            setTimeout(() => { try { recognition.start(); } catch (err) {} }, 500);
-          }
-        } else if (e.error === 'not-allowed') {
-          voiceStatus.textContent = "Microphone access denied";
-          recognitionActive = false;
-          alert("Please allow microphone access to use voice features.");
-        } else if (e.error === 'network') {
-          reconnectAttempts++;
-          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isMobile) {
-            setTimeout(() => {
-              if (isLiveMode && recognitionActive) {
-                try { recognition.start(); } catch (err) {}
-              }
-            }, 1000 * reconnectAttempts);
-          } else {
-            voiceStatus.textContent = "Network error - tap to retry";
+        if (isLiveMode) {
+          if (e.error === 'not-allowed') {
+            voiceStatus.textContent = "Microphone access denied";
             recognitionActive = false;
+          } else if (e.error === 'network') {
+            reconnectAttempts++;
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isMobile) {
+              setTimeout(() => {
+                if (isLiveMode && recognitionActive) {
+                  try { recognition.start(); } catch (err) {}
+                }
+              }, 1000 * reconnectAttempts);
+            }
           }
         }
       };
@@ -1052,31 +952,6 @@
     function updateCatExpression(expression) {
       pixelFace.classList.remove('smiling', 'listening', 'thinking', 'surprised', 'happy');
       pixelFace.classList.add(expression);
-    }
-
-    // Mobile mic button handlers
-    if (isMobile && mobileMicBtn && recognition) {
-      mobileMicBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (!recognitionActive) {
-          finalTranscript = '';
-          interimTranscript = '';
-          try {
-            recognition.start();
-          } catch (e) {
-            console.warn("[WIDGET] Could not start recognition:", e);
-          }
-        }
-      });
-      
-      mobileMicBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        if (recognitionActive) {
-          try {
-            recognition.stop();
-          } catch (e) {}
-        }
-      });
     }
 
     bubble.onclick = () => {
@@ -1110,7 +985,7 @@
       }
     };
 
-    // ===== FIXED LEAD SUBMISSION =====
+    // ===== LEAD SUBMISSION =====
     win.querySelector("#lead-submit-btn").onclick = async () => {
       const nameInput = win.querySelector("#lead-name");
       const emailInput = win.querySelector("#lead-email");
@@ -1130,7 +1005,6 @@
         return;
       }
 
-      // Show loading state
       submitBtn.disabled = true;
       submitBtn.textContent = "Starting...";
       submitBtn.style.opacity = "0.7";
@@ -1140,9 +1014,8 @@
       userName = name;
       userEmail = email;
 
-      // Check for duplicate email locally first
+      // Check for duplicate
       if (capturedEmails.has(email)) {
-        console.log("[WIDGET] Duplicate email detected (local):", email);
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
@@ -1156,8 +1029,6 @@
       }
 
       try {
-        console.log("[WIDGET] Submitting lead:", { name, email, widget_key: WIDGET_KEY });
-        
         const res = await fetch(`${SERVER_URL}/api/public/leads`, {
           method: "POST",
           headers: { 
@@ -1173,11 +1044,8 @@
           })
         });
 
-        console.log("[WIDGET] Lead submission response status:", res.status);
-
         if (res.ok) {
           const data = await res.json();
-          console.log("[WIDGET] Lead submission success:", data);
           
           capturedEmails.add(email);
           localStorage.setItem(`ai_captured_emails_${WIDGET_KEY}`, JSON.stringify(Array.from(capturedEmails)));
@@ -1199,15 +1067,8 @@
           }
         } else {
           const errorData = await res.json().catch(() => ({}));
-          console.error("[WIDGET] Lead submission failed:", errorData);
           
-          // Handle specific error cases
-          if (errorData.error && (
-            errorData.error.includes("duplicate") || 
-            errorData.error.includes("already exists") ||
-            res.status === 409
-          )) {
-            // Treat as success - user already exists
+          if (errorData.error && errorData.error.includes("duplicate")) {
             capturedEmails.add(email);
             localStorage.setItem(`ai_captured_emails_${WIDGET_KEY}`, JSON.stringify(Array.from(capturedEmails)));
             localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
@@ -1217,15 +1078,16 @@
             hasIntroduced = true;
             appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
           } else {
-            throw new Error(errorData.error || `Server error: ${res.status}`);
+            // Graceful fallback - allow chat anyway
+            leadCaptured = true;
+            localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
+            leadForm.style.display = "none";
+            inputField.focus();
+            hasIntroduced = true;
           }
         }
       } catch (e) {
-        console.error("[WIDGET] Lead submission error:", e);
-        
-        // Graceful degradation - allow chat even if lead save fails
-        alert("Connection issue. Starting chat in guest mode.");
-        
+        // Network error - still allow chat
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
@@ -1243,16 +1105,14 @@
       if (isLiveMode) {
         win.classList.add("live-mode");
         aiStatus.textContent = "● Live Mode";
-        voiceStatus.textContent = isMobile ? "Tap and hold the button below to speak" : "Live chat activated - start speaking";
+        voiceStatus.textContent = isMobile ? "Tap the mic button to speak" : "Live chat activated - start speaking";
         updateCatExpression('smiling');
         
         if (!isMobile) {
           recognitionActive = true;
           if (recognition) {
             setTimeout(() => {
-              try { recognition.start(); } catch (e) {
-                console.warn("[WIDGET] Could not start recognition:", e);
-              }
+              try { recognition.start(); } catch (e) {}
             }, 500);
           }
         }
@@ -1290,7 +1150,6 @@
         recognitionActive = true;
         voiceBtn.classList.add("mic-active");
         try { recognition.start(); } catch (e) {
-          console.warn("[WIDGET] Could not start recognition:", e);
           voiceBtn.classList.remove("mic-active");
           recognitionActive = false;
         }
@@ -1331,9 +1190,6 @@
         previewBar.style.display = "flex";
         inputField.placeholder = `Ask about this ${isImage ? 'image' : 'file'}...`;
         inputField.focus();
-      };
-      reader.onerror = () => {
-        alert("Error reading file. Please try again.");
       };
       reader.readAsDataURL(file);
     };
@@ -1376,9 +1232,6 @@
       div.innerHTML = `<div>${linkedText}</div>`;
 
       if (fileData) {
-        const fileWrapper = document.createElement("div");
-        fileWrapper.className = "file-attachment";
-        
         if (fileData.startsWith('data:image/')) {
           const img = document.createElement("img");
           img.src = fileData;
@@ -1387,22 +1240,14 @@
             lightbox.querySelector('img').src = fileData;
             lightbox.classList.add('active');
           };
-          fileWrapper.appendChild(img);
+          div.appendChild(img);
         } else if (fileData.startsWith('data:application/pdf')) {
-          // For PDFs on mobile, show download button instead of iframe
-          if (isMobile) {
-            const downloadBtn = document.createElement("a");
-            downloadBtn.href = fileData;
-            downloadBtn.download = fileName || "document.pdf";
-            downloadBtn.className = "file-download-btn";
-            downloadBtn.innerHTML = `📄 Download PDF`;
-            fileWrapper.appendChild(downloadBtn);
-          } else {
-            const iframe = document.createElement("iframe");
-            iframe.src = fileData;
-            iframe.title = "PDF Preview";
-            fileWrapper.appendChild(iframe);
-          }
+          const downloadBtn = document.createElement("a");
+          downloadBtn.href = fileData;
+          downloadBtn.download = fileName || "document.pdf";
+          downloadBtn.className = "file-download-btn";
+          downloadBtn.innerHTML = `📄 Download PDF`;
+          div.appendChild(downloadBtn);
         } else {
           const downloadBtn = document.createElement("a");
           downloadBtn.href = fileData;
@@ -1410,10 +1255,8 @@
           downloadBtn.className = "file-download-btn";
           const fileExt = fileName ? fileName.split('.').pop().toUpperCase() : 'FILE';
           downloadBtn.innerHTML = `📎 Download ${fileExt}`;
-          fileWrapper.appendChild(downloadBtn);
+          div.appendChild(downloadBtn);
         }
-        
-        div.appendChild(fileWrapper);
       }
 
       msgContainer.appendChild(div);
@@ -1422,38 +1265,7 @@
       conversationHistory.push({ role, text, timestamp: new Date().toISOString() });
       if (conversationHistory.length > 20) conversationHistory.shift();
       localStorage.setItem(`ai_conversation_${WIDGET_KEY}`, JSON.stringify(conversationHistory));
-    }
-
-    function cleanAIResponse(text) {
-      if (!text) return text;
-      
-      const introPatterns = [
-        /^(hi|hello|hey|greetings)[!,\s]+i'?m?\s+\w+[,.\s]+/i,
-        /^(hi|hello|hey|greetings)[!,\s]+this\s+is\s+\w+[,.\s]+/i,
-        /^(hi|hello|hey|greetings)[!,\s]+i\s+am\s+\w+[,.\s]+/i,
-        /^i'?m?\s+\w+[,.\s]+(the\s+)?ai\s+assistant/i,
-        /^(hi|hello|hey)[!,\s]+i'?m?\s+(the\s+)?ai\s+assistant/i,
-        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+(the\s+)?ai\s+assistant\s+(for|of)/i,
-        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+(your\s+)?ai\s+assistant/i,
-        /^(hi|hello|hey)[!,\s]+welcome\s+to.*i'?m?\s+\w+/i,
-        /^(hi|hello|hey)[!,\s]+i'?m?\s+thrilled\s+to\s+introduce/i,
-        /^hello\s+visitor[!,\s]+i'?m?\s+\w+/i,
-        /^hello\s+there[!,\s]+i'?m?\s+\w+/i,
-        /i'?m?\s+\w+[,.\s]+the\s+ai\s+assistant\s+(for|of)/i,
-        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+(and\s+)?i'?m?\s+thrilled/i,
-        /^(hi|hello|hey)[!,\s]+i'?m?\s+\w+[,.\s]+welcome\s+to/i
-      ];
-      
-      let cleaned = text;
-      for (const pattern of introPatterns) {
-        cleaned = cleaned.replace(pattern, '');
-      }
-      
-      cleaned = cleaned.replace(/^[,\s.!?]+/, '').trim();
-      
-      if (cleaned.length < 10) return text;
-      
-      return cleaned;
+      messageCount++;
     }
 
     async function sendMessage(voiceText = null) {
@@ -1493,7 +1305,7 @@
           client_email: userEmail || null,
           is_visitor: true,
           session_id: activeSessionId,
-          conversation_history: conversationHistory.slice(-5),
+          conversation_history: conversationHistory.slice(-3), // Send last 3 messages for context
           business_name: businessName,
           ai_name: aiName,
           has_introduced: hasIntroduced,
@@ -1508,8 +1320,6 @@
             body.vision_enabled = true;
           }
         }
-
-        console.log("[WIDGET → SERVER] Sending message");
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -1533,7 +1343,7 @@
 
         if (isLiveMode) {
           updateCatExpression('smiling');
-          voiceStatus.textContent = isMobile ? "Tap and hold to speak" : "Live chat activated - start speaking";
+          voiceStatus.textContent = isMobile ? "Tap mic to speak" : "Live chat activated - start speaking";
         }
 
         if (response.ok && data.success && data.reply) {
@@ -1547,36 +1357,33 @@
             localStorage.setItem(`ai_has_introduced_${WIDGET_KEY}`, "true");
           }
           
-          messageCount++;
-          
+          // Clean the response - remove any introductions if already introduced
           let cleanReply = data.reply;
           if (messageCount > 1 || hasIntroduced) {
-            cleanReply = cleanAIResponse(data.reply);
-            if (!cleanReply || cleanReply.length < 5) cleanReply = data.reply;
+            // Remove common introduction patterns
+            cleanReply = cleanReply
+              .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
+              .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
+              .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
+              .trim();
           }
           
-          if (cleanReply !== lastResponseText || messageCount === 1) {
-            if (!isLiveMode) {
-              appendMessage(cleanReply, "bot");
-            }
-            speak(cleanReply);
-            lastResponseText = cleanReply;
+          if (!isLiveMode) {
+            appendMessage(cleanReply, "bot");
           }
+          speak(cleanReply);
         } else {
-          const errorMsg = data.error || "Server error";
-          console.error("[WIDGET] Chat error:", errorMsg);
           if (!isLiveMode) {
             appendMessage(`I'm having trouble right now. Please try again in a moment.`, "bot");
           } else {
             speak("I'm having trouble connecting. Please try again.");
-            voiceStatus.textContent = "Connection error - tap to retry";
+            voiceStatus.textContent = "Connection error";
             updateCatExpression('surprised');
           }
         }
       } catch (err) {
         typingInd.style.display = "none";
         isProcessing = false;
-        console.error("[WIDGET] Fetch error:", err);
         
         if (!isLiveMode) {
           appendMessage("Connection issue. Please check your internet and try again.", "bot");
@@ -1667,17 +1474,11 @@
     if (!smartSettings?.apollo_active) return null;
     
     try {
-      const res = await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
+      await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, widget_key: WIDGET_KEY })
       });
-      
-      if (res.ok) {
-        const data = await res.json();
-        console.log("[WIDGET] Apollo enrichment result:", data);
-        return data;
-      }
     } catch (err) {
       console.warn("[WIDGET] Apollo enrichment failed:", err);
     }
@@ -1699,7 +1500,6 @@
           session_id: activeSessionId
         })
       });
-      console.log("[WIDGET] Follow-up scheduled for:", email);
     } catch (err) {
       console.warn("[WIDGET] Follow-up scheduling failed:", err);
     }
