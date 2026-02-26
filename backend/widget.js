@@ -1,5 +1,5 @@
-// widget.js - Professional SaaS AI Chat Widget (FIXED: Professional responses + No repetition + Mobile Support)
-// Features: Natural conversation flow, Business identity, Proper visitor handling, Mobile-optimized
+// widget.js - Professional SaaS AI Chat Widget (FIXED: Lead capturing restored + Mobile mic working)
+// Features: Lead capture form, Professional responses, Business identity, Mobile-optimized with working mic
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -30,6 +30,7 @@
   let pendingFileName = '';
   let userEmail = localStorage.getItem(`ai_user_email_${WIDGET_KEY}`) || '';
   let userName = localStorage.getItem(`ai_user_name_${WIDGET_KEY}`) || '';
+  let userPhone = localStorage.getItem(`ai_user_phone_${WIDGET_KEY}`) || '';
   let businessPlan = 'free';
   let businessName = '';
   let aiName = '';
@@ -762,11 +763,13 @@
         </div>
       </div>
 
+      <!-- LEAD CAPTURE FORM - RESTORED -->
       <div id="lead-form" class="lead-overlay" style="${leadCaptured ? 'display:none' : 'display:flex'}">
         <h3 style="margin-bottom:8px;">Welcome to ${config.title}!</h3>
         <p style="font-size:14px; color:#5f6368; margin-bottom:24px;">Please tell us who you are to start.</p>
         <input type="text" id="lead-name" class="lead-field" placeholder="Your Name" value="${userName}" required />
         <input type="email" id="lead-email" class="lead-field" placeholder="Email Address" value="${userEmail}" required />
+        <input type="tel" id="lead-phone" class="lead-field" placeholder="Phone Number (Optional)" value="${userPhone}" />
         <button id="lead-submit-btn" class="lead-submit">Start Conversation</button>
         <p style="font-size:12px; color:#9aa0a6; margin-top:16px;">🔒 Your information is secure and encrypted</p>
       </div>
@@ -795,6 +798,9 @@
         <div class="voice-status" id="voice-status">
           Live chat activated - start speaking
         </div>
+        
+        <!-- Mobile microphone button -->
+        ${isMobile ? '<button id="mobile-mic-btn" class="lead-submit" style="margin-top:20px; background:linear-gradient(135deg, #d93025, #b31412);">🎤 Tap to Speak</button>' : ''}
       </div>
 
       <div class="widget-messages" id="widget-msgs-container">
@@ -844,17 +850,19 @@
     const aiStatus = win.querySelector("#ai-status");
     const voiceStatus = win.querySelector("#voice-status");
     const voiceWave = win.querySelector("#voice-wave");
+    const mobileMicBtn = win.querySelector("#mobile-mic-btn");
 
     // ===== SPEECH RECOGNITION SETUP =====
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
         console.warn("[WIDGET] Speech recognition not supported");
+        if (mobileMicBtn) mobileMicBtn.style.display = 'none';
         return null;
       }
       
       const recog = new SpeechRecognition();
-      recog.continuous = !isMobile;
+      recog.continuous = !isMobile; // Single utterance on mobile for better UX
       recog.interimResults = true;
       recog.lang = 'en-US';
       recog.maxAlternatives = 1;
@@ -866,9 +874,11 @@
     
     if (recognition) {
       let finalTranscript = '';
+      let interimTranscript = '';
+      let isListening = false;
       
       recognition.onresult = (e) => {
-        let interimTranscript = '';
+        interimTranscript = '';
         
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const transcript = e.results[i][0].transcript;
@@ -889,6 +899,7 @@
             updateCatExpression('thinking');
             const textToSend = finalTranscript.trim();
             finalTranscript = '';
+            interimTranscript = '';
             sendMessage(textToSend);
           }
         } else {
@@ -902,12 +913,22 @@
       };
       
       recognition.onend = () => {
+        console.log("[WIDGET] Recognition ended");
         voiceBtn.classList.remove("mic-active");
+        isListening = false;
+        
+        if (mobileMicBtn) {
+          mobileMicBtn.textContent = '🎤 Tap to Speak';
+          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
+        }
         
         if (isLiveMode && recognitionActive && !isMobile) {
           setTimeout(() => {
             if (isLiveMode && recognitionActive) {
-              try { recognition.start(); } catch (e) {}
+              try { 
+                recognition.start(); 
+                isListening = true;
+              } catch (e) {}
             }
           }, 300);
         } else {
@@ -920,8 +941,15 @@
       };
       
       recognition.onstart = () => {
+        console.log("[WIDGET] Recognition started");
         recognitionActive = true;
+        isListening = true;
         reconnectAttempts = 0;
+        
+        if (mobileMicBtn) {
+          mobileMicBtn.textContent = '🔴 Listening...';
+          mobileMicBtn.style.background = '#1a73e8';
+        }
         
         if (isLiveMode) {
           voiceWave.style.display = "flex";
@@ -931,10 +959,19 @@
       };
       
       recognition.onerror = (e) => {
+        console.error("[WIDGET] Speech recognition error:", e.error);
+        
+        if (mobileMicBtn) {
+          mobileMicBtn.textContent = '🎤 Tap to Speak';
+          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
+        }
+        
         if (isLiveMode) {
           if (e.error === 'not-allowed') {
             voiceStatus.textContent = "Microphone access denied";
             recognitionActive = false;
+            isListening = false;
+            // Request permission again on next attempt
           } else if (e.error === 'network') {
             reconnectAttempts++;
             if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isMobile) {
@@ -947,6 +984,31 @@
           }
         }
       };
+      
+      // Mobile mic button handler
+      if (mobileMicBtn) {
+        mobileMicBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          
+          if (!recognition) {
+            alert("Voice recognition is not supported in your browser.");
+            return;
+          }
+          
+          if (isListening) {
+            try {
+              recognition.stop();
+              isListening = false;
+            } catch (e) {}
+          } else {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.warn("[WIDGET] Could not start recognition:", e);
+            }
+          }
+        });
+      }
     }
 
     function updateCatExpression(expression) {
@@ -989,8 +1051,10 @@
     win.querySelector("#lead-submit-btn").onclick = async () => {
       const nameInput = win.querySelector("#lead-name");
       const emailInput = win.querySelector("#lead-email");
+      const phoneInput = win.querySelector("#lead-phone");
       const name = nameInput.value.trim();
       const email = emailInput.value.trim().toLowerCase();
+      const phone = phoneInput ? phoneInput.value.trim() : '';
       const submitBtn = win.querySelector("#lead-submit-btn");
 
       if (!name || !email) {
@@ -1011,8 +1075,11 @@
 
       localStorage.setItem(`ai_user_name_${WIDGET_KEY}`, name);
       localStorage.setItem(`ai_user_email_${WIDGET_KEY}`, email);
+      if (phone) localStorage.setItem(`ai_user_phone_${WIDGET_KEY}`, phone);
+      
       userName = name;
       userEmail = email;
+      userPhone = phone;
 
       // Check for duplicate
       if (capturedEmails.has(email)) {
@@ -1038,7 +1105,7 @@
           body: JSON.stringify({ 
             name, 
             email, 
-            phone: "N/A", 
+            phone: phone || "N/A", 
             widget_key: WIDGET_KEY,
             source: window.location.href
           })
@@ -1108,13 +1175,13 @@
         voiceStatus.textContent = isMobile ? "Tap the mic button to speak" : "Live chat activated - start speaking";
         updateCatExpression('smiling');
         
-        if (!isMobile) {
-          recognitionActive = true;
-          if (recognition) {
-            setTimeout(() => {
+        recognitionActive = true;
+        if (recognition && !isMobile) {
+          setTimeout(() => {
+            if (recognitionActive) {
               try { recognition.start(); } catch (e) {}
-            }, 500);
-          }
+            }
+          }, 500);
         }
       } else {
         win.classList.remove("live-mode");
@@ -1152,6 +1219,7 @@
         try { recognition.start(); } catch (e) {
           voiceBtn.classList.remove("mic-active");
           recognitionActive = false;
+          alert("Could not access microphone. Please check permissions.");
         }
       }
     };
@@ -1305,7 +1373,7 @@
           client_email: userEmail || null,
           is_visitor: true,
           session_id: activeSessionId,
-          conversation_history: conversationHistory.slice(-3), // Send last 3 messages for context
+          conversation_history: conversationHistory.slice(-3),
           business_name: businessName,
           ai_name: aiName,
           has_introduced: hasIntroduced,
@@ -1360,13 +1428,14 @@
           // Clean the response - remove any introductions if already introduced
           let cleanReply = data.reply;
           if (messageCount > 1 || hasIntroduced) {
-            // Remove common introduction patterns
             cleanReply = cleanReply
               .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
               .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
               .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
               .trim();
           }
+          
+          if (!cleanReply || cleanReply.length < 5) cleanReply = data.reply;
           
           if (!isLiveMode) {
             appendMessage(cleanReply, "bot");
