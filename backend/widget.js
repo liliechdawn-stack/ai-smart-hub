@@ -1,4 +1,4 @@
-// widget.js - Professional SaaS AI Chat Widget (FIXED: Lead capturing restored + Mobile mic working)
+// widget.js - Professional SaaS AI Chat Widget (FIXED: Mobile lead capture working + Mic fixed)
 // Features: Lead capture form, Professional responses, Business identity, Mobile-optimized with working mic
 (function () {
   if (document.getElementById("ai-widget-container")) return;
@@ -763,7 +763,7 @@
         </div>
       </div>
 
-      <!-- LEAD CAPTURE FORM - RESTORED -->
+      <!-- LEAD CAPTURE FORM - ALWAYS SHOW ON MOBILE UNTIL CAPTURED -->
       <div id="lead-form" class="lead-overlay" style="${leadCaptured ? 'display:none' : 'display:flex'}">
         <h3 style="margin-bottom:8px;">Welcome to ${config.title}!</h3>
         <p style="font-size:14px; color:#5f6368; margin-bottom:24px;">Please tell us who you are to start.</p>
@@ -799,8 +799,7 @@
           Live chat activated - start speaking
         </div>
         
-        <!-- Mobile microphone button -->
-        ${isMobile ? '<button id="mobile-mic-btn" class="lead-submit" style="margin-top:20px; background:linear-gradient(135deg, #d93025, #b31412);">🎤 Tap to Speak</button>' : ''}
+        <!-- Mobile microphone button - only show in live mode -->
       </div>
 
       <div class="widget-messages" id="widget-msgs-container">
@@ -850,19 +849,17 @@
     const aiStatus = win.querySelector("#ai-status");
     const voiceStatus = win.querySelector("#voice-status");
     const voiceWave = win.querySelector("#voice-wave");
-    const mobileMicBtn = win.querySelector("#mobile-mic-btn");
 
     // ===== SPEECH RECOGNITION SETUP =====
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
         console.warn("[WIDGET] Speech recognition not supported");
-        if (mobileMicBtn) mobileMicBtn.style.display = 'none';
         return null;
       }
       
       const recog = new SpeechRecognition();
-      recog.continuous = !isMobile; // Single utterance on mobile for better UX
+      recog.continuous = false; // Changed to false for better mobile support
       recog.interimResults = true;
       recog.lang = 'en-US';
       recog.maxAlternatives = 1;
@@ -875,7 +872,6 @@
     if (recognition) {
       let finalTranscript = '';
       let interimTranscript = '';
-      let isListening = false;
       
       recognition.onresult = (e) => {
         interimTranscript = '';
@@ -915,26 +911,18 @@
       recognition.onend = () => {
         console.log("[WIDGET] Recognition ended");
         voiceBtn.classList.remove("mic-active");
-        isListening = false;
         
-        if (mobileMicBtn) {
-          mobileMicBtn.textContent = '🎤 Tap to Speak';
-          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
-        }
-        
-        if (isLiveMode && recognitionActive && !isMobile) {
+        if (isLiveMode && recognitionActive) {
+          // Don't auto-restart on mobile, let user tap again
           setTimeout(() => {
-            if (isLiveMode && recognitionActive) {
-              try { 
-                recognition.start(); 
-                isListening = true;
-              } catch (e) {}
+            if (isLiveMode && recognitionActive && !isMobile) {
+              try { recognition.start(); } catch (e) {}
             }
           }, 300);
         } else {
           voiceWave.style.display = "none";
           if (isLiveMode) {
-            voiceStatus.textContent = "Live chat activated - start speaking";
+            voiceStatus.textContent = "Live chat activated - tap mic to speak";
             updateCatExpression('smiling');
           }
         }
@@ -943,13 +931,7 @@
       recognition.onstart = () => {
         console.log("[WIDGET] Recognition started");
         recognitionActive = true;
-        isListening = true;
         reconnectAttempts = 0;
-        
-        if (mobileMicBtn) {
-          mobileMicBtn.textContent = '🔴 Listening...';
-          mobileMicBtn.style.background = '#1a73e8';
-        }
         
         if (isLiveMode) {
           voiceWave.style.display = "flex";
@@ -961,17 +943,11 @@
       recognition.onerror = (e) => {
         console.error("[WIDGET] Speech recognition error:", e.error);
         
-        if (mobileMicBtn) {
-          mobileMicBtn.textContent = '🎤 Tap to Speak';
-          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
-        }
-        
         if (isLiveMode) {
           if (e.error === 'not-allowed') {
             voiceStatus.textContent = "Microphone access denied";
             recognitionActive = false;
-            isListening = false;
-            // Request permission again on next attempt
+            alert("Please allow microphone access to use voice features.");
           } else if (e.error === 'network') {
             reconnectAttempts++;
             if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isMobile) {
@@ -984,31 +960,6 @@
           }
         }
       };
-      
-      // Mobile mic button handler
-      if (mobileMicBtn) {
-        mobileMicBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          
-          if (!recognition) {
-            alert("Voice recognition is not supported in your browser.");
-            return;
-          }
-          
-          if (isListening) {
-            try {
-              recognition.stop();
-              isListening = false;
-            } catch (e) {}
-          } else {
-            try {
-              recognition.start();
-            } catch (e) {
-              console.warn("[WIDGET] Could not start recognition:", e);
-            }
-          }
-        });
-      }
     }
 
     function updateCatExpression(expression) {
@@ -1016,13 +967,20 @@
       pixelFace.classList.add(expression);
     }
 
+    // Modified bubble click to ensure lead form shows on mobile
     bubble.onclick = () => {
       win.classList.toggle("open");
       if (win.classList.contains("open")) {
+        // CRITICAL FIX: Always check leadCaptured state
         if (!leadCaptured) {
-          setTimeout(() => win.querySelector("#lead-name").focus(), 100);
+          // Force lead form to be visible
+          leadForm.style.display = 'flex';
+          leadForm.style.opacity = '1';
+          leadForm.style.visibility = 'visible';
+          leadForm.style.zIndex = '100001';
+          setTimeout(() => win.querySelector("#lead-name").focus(), 300);
         } else {
-          setTimeout(() => inputField.focus(), 100);
+          setTimeout(() => inputField.focus(), 300);
         }
       } else {
         if (recognition && recognitionActive) {
@@ -1176,12 +1134,15 @@
         updateCatExpression('smiling');
         
         recognitionActive = true;
-        if (recognition && !isMobile) {
-          setTimeout(() => {
-            if (recognitionActive) {
-              try { recognition.start(); } catch (e) {}
-            }
-          }, 500);
+        if (recognition) {
+          // On mobile, wait for mic button press
+          if (!isMobile) {
+            setTimeout(() => {
+              if (recognitionActive) {
+                try { recognition.start(); } catch (e) {}
+              }
+            }, 500);
+          }
         }
       } else {
         win.classList.remove("live-mode");
@@ -1189,7 +1150,7 @@
         voiceWave.style.display = "none";
         voiceStatus.textContent = "Live chat activated - start speaking";
         
-        if (recognition) {
+        if (recognition && recognitionActive) {
           recognitionActive = false;
           try { recognition.stop(); } catch (e) {}
         }
@@ -1206,6 +1167,11 @@
     voiceBtn.onclick = () => {
       if (!recognition) {
         alert("Voice recognition is not supported in your browser.");
+        return;
+      }
+      
+      if (!isLiveMode) {
+        alert("Please activate Live Mode first to use voice.");
         return;
       }
       
