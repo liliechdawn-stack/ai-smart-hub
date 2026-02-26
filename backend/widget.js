@@ -763,7 +763,7 @@
         </div>
       </div>
 
-      <!-- LEAD CAPTURE FORM - ALWAYS SHOW ON MOBILE UNTIL CAPTURED -->
+      <!-- LEAD CAPTURE FORM - ALWAYS SHOW UNTIL CAPTURED -->
       <div id="lead-form" class="lead-overlay" style="${leadCaptured ? 'display:none' : 'display:flex'}">
         <h3 style="margin-bottom:8px;">Welcome to ${config.title}!</h3>
         <p style="font-size:14px; color:#5f6368; margin-bottom:24px;">Please tell us who you are to start.</p>
@@ -859,7 +859,7 @@
       }
       
       const recog = new SpeechRecognition();
-      recog.continuous = false; // Changed to false for better mobile support
+      recog.continuous = false;
       recog.interimResults = true;
       recog.lang = 'en-US';
       recog.maxAlternatives = 1;
@@ -872,6 +872,7 @@
     if (recognition) {
       let finalTranscript = '';
       let interimTranscript = '';
+      let isListening = false;
       
       recognition.onresult = (e) => {
         interimTranscript = '';
@@ -911,11 +912,16 @@
       recognition.onend = () => {
         console.log("[WIDGET] Recognition ended");
         voiceBtn.classList.remove("mic-active");
+        isListening = false;
         
-        if (isLiveMode && recognitionActive) {
-          // Don't auto-restart on mobile, let user tap again
+        if (isMobile && mobileMicBtn) {
+          mobileMicBtn.textContent = '🎤 Tap to Speak';
+          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
+        }
+        
+        if (isLiveMode && recognitionActive && !isMobile) {
           setTimeout(() => {
-            if (isLiveMode && recognitionActive && !isMobile) {
+            if (isLiveMode && recognitionActive) {
               try { recognition.start(); } catch (e) {}
             }
           }, 300);
@@ -931,7 +937,13 @@
       recognition.onstart = () => {
         console.log("[WIDGET] Recognition started");
         recognitionActive = true;
+        isListening = true;
         reconnectAttempts = 0;
+        
+        if (isMobile && mobileMicBtn) {
+          mobileMicBtn.textContent = '🔴 Listening...';
+          mobileMicBtn.style.background = '#1a73e8';
+        }
         
         if (isLiveMode) {
           voiceWave.style.display = "flex";
@@ -943,23 +955,51 @@
       recognition.onerror = (e) => {
         console.error("[WIDGET] Speech recognition error:", e.error);
         
+        if (isMobile && mobileMicBtn) {
+          mobileMicBtn.textContent = '🎤 Tap to Speak';
+          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
+        }
+        
         if (isLiveMode) {
           if (e.error === 'not-allowed') {
             voiceStatus.textContent = "Microphone access denied";
             recognitionActive = false;
             alert("Please allow microphone access to use voice features.");
-          } else if (e.error === 'network') {
-            reconnectAttempts++;
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isMobile) {
-              setTimeout(() => {
-                if (isLiveMode && recognitionActive) {
-                  try { recognition.start(); } catch (err) {}
-                }
-              }, 1000 * reconnectAttempts);
-            }
           }
         }
       };
+    }
+
+    // Create mobile mic button if needed
+    const mobileMicBtn = document.createElement('button');
+    if (isMobile) {
+      mobileMicBtn.id = 'mobile-mic-btn';
+      mobileMicBtn.className = 'lead-submit';
+      mobileMicBtn.style.cssText = 'margin-top:20px; background:linear-gradient(135deg, #d93025, #b31412);';
+      mobileMicBtn.textContent = '🎤 Tap to Speak';
+      pixelFace.parentElement.appendChild(mobileMicBtn);
+      
+      mobileMicBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        if (!recognition) {
+          alert("Voice recognition is not supported in your browser.");
+          return;
+        }
+        
+        if (!isLiveMode) {
+          alert("Please activate Live Mode first to use voice.");
+          return;
+        }
+        
+        if (recognitionActive) {
+          try { recognition.stop(); } catch (e) {}
+        } else {
+          try { recognition.start(); } catch (e) {
+            console.warn("[WIDGET] Could not start recognition:", e);
+          }
+        }
+      });
     }
 
     function updateCatExpression(expression) {
@@ -967,19 +1007,35 @@
       pixelFace.classList.add(expression);
     }
 
-    // Modified bubble click to ensure lead form shows on mobile
+    // CRITICAL FIX: Modified bubble click to ensure lead form shows properly
     bubble.onclick = () => {
       win.classList.toggle("open");
       if (win.classList.contains("open")) {
-        // CRITICAL FIX: Always check leadCaptured state
+        // CRITICAL: Check leadCaptured state and force lead form visibility
         if (!leadCaptured) {
-          // Force lead form to be visible
+          // Force lead form to be visible with proper styles
           leadForm.style.display = 'flex';
           leadForm.style.opacity = '1';
           leadForm.style.visibility = 'visible';
+          leadForm.style.pointerEvents = 'auto';
           leadForm.style.zIndex = '100001';
-          setTimeout(() => win.querySelector("#lead-name").focus(), 300);
+          
+          // Hide other sections
+          msgContainer.style.display = 'none';
+          win.querySelector('.widget-input-area').style.display = 'none';
+          win.querySelector('.pixel-face-container').style.display = 'none';
+          
+          // Focus on name input after a short delay
+          setTimeout(() => {
+            const nameInput = win.querySelector("#lead-name");
+            if (nameInput) nameInput.focus();
+          }, 300);
         } else {
+          // Lead already captured - show chat interface
+          leadForm.style.display = 'none';
+          msgContainer.style.display = 'flex';
+          win.querySelector('.widget-input-area').style.display = 'block';
+          win.querySelector('.pixel-face-container').style.display = 'none';
           setTimeout(() => inputField.focus(), 300);
         }
       } else {
@@ -1044,6 +1100,8 @@
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
+        msgContainer.style.display = 'flex';
+        win.querySelector('.widget-input-area').style.display = 'block';
         inputField.focus();
         appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
         hasIntroduced = true;
@@ -1070,19 +1128,18 @@
         });
 
         if (res.ok) {
-          const data = await res.json();
-          
           capturedEmails.add(email);
           localStorage.setItem(`ai_captured_emails_${WIDGET_KEY}`, JSON.stringify(Array.from(capturedEmails)));
           
           localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
           leadCaptured = true;
           leadForm.style.display = "none";
+          msgContainer.style.display = 'flex';
+          win.querySelector('.widget-input-area').style.display = 'block';
           inputField.focus();
           
           hasIntroduced = true;
           
-          // Trigger enrichments
           if (smartSettings?.apollo_active) {
             enrichLeadWithApollo(email, name);
           }
@@ -1099,6 +1156,8 @@
             localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
             leadCaptured = true;
             leadForm.style.display = "none";
+            msgContainer.style.display = 'flex';
+            win.querySelector('.widget-input-area').style.display = 'block';
             inputField.focus();
             hasIntroduced = true;
             appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
@@ -1107,6 +1166,8 @@
             leadCaptured = true;
             localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
             leadForm.style.display = "none";
+            msgContainer.style.display = 'flex';
+            win.querySelector('.widget-input-area').style.display = 'block';
             inputField.focus();
             hasIntroduced = true;
           }
@@ -1116,6 +1177,8 @@
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
+        msgContainer.style.display = 'flex';
+        win.querySelector('.widget-input-area').style.display = 'block';
         inputField.focus();
         hasIntroduced = true;
       } finally {
@@ -1133,22 +1196,29 @@
         voiceStatus.textContent = isMobile ? "Tap the mic button to speak" : "Live chat activated - start speaking";
         updateCatExpression('smiling');
         
+        // Show pixel face container, hide messages and input
+        win.querySelector('.pixel-face-container').style.display = 'flex';
+        msgContainer.style.display = 'none';
+        win.querySelector('.widget-input-area').style.display = 'none';
+        
         recognitionActive = true;
-        if (recognition) {
-          // On mobile, wait for mic button press
-          if (!isMobile) {
-            setTimeout(() => {
-              if (recognitionActive) {
-                try { recognition.start(); } catch (e) {}
-              }
-            }, 500);
-          }
+        if (recognition && !isMobile) {
+          setTimeout(() => {
+            if (recognitionActive) {
+              try { recognition.start(); } catch (e) {}
+            }
+          }, 500);
         }
       } else {
         win.classList.remove("live-mode");
         aiStatus.textContent = "● Online Assistant";
         voiceWave.style.display = "none";
         voiceStatus.textContent = "Live chat activated - start speaking";
+        
+        // Hide pixel face container, show messages and input
+        win.querySelector('.pixel-face-container').style.display = 'none';
+        msgContainer.style.display = 'flex';
+        win.querySelector('.widget-input-area').style.display = 'block';
         
         if (recognition && recognitionActive) {
           recognitionActive = false;
