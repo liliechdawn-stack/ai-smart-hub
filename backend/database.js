@@ -18,7 +18,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // INITIALIZE / MIGRATE TABLES
 // ===============================
 db.serialize(() => {
-  // USERS (Businesses)
+  // USERS (Businesses) - FIXED: Added business_type column
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,6 +26,7 @@ db.serialize(() => {
       password TEXT NOT NULL,
       business_id TEXT UNIQUE NOT NULL,
       business_name TEXT, 
+      business_type TEXT DEFAULT 'retail',
       plan TEXT DEFAULT 'free',
       messages_used INTEGER DEFAULT 0,
       leads_used INTEGER DEFAULT 0,
@@ -292,9 +293,10 @@ db.serialize(() => {
 
   // ==================== BACKWARD COMPATIBILITY MIGRATIONS ====================
   
-  // Users table migrations
+  // Users table migrations - FIXED: Added business_type column
   const userColumns = [
     { name: "business_name", type: "TEXT" },
+    { name: "business_type", type: "TEXT DEFAULT 'retail'" },  // FIXED: Added missing business_type
     { name: "plan", type: "TEXT DEFAULT 'free'" },
     { name: "messages_used", type: "INTEGER DEFAULT 0" },
     { name: "leads_used", type: "INTEGER DEFAULT 0" },
