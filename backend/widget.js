@@ -1,5 +1,5 @@
-// widget.js - Professional SaaS AI Chat Widget (FIXED: Mobile lead capture working + Mic fixed)
-// Features: Lead capture form, Professional responses, Business identity, Mobile-optimized with working mic
+// widget.js - Professional SaaS AI Chat Widget (UPDATED: All new features + Business Identity + Automations)
+// Features: Business Identity Integration, Proper Conversation Memory, Professional AI Responses, Apollo Enrichment, Follow-ups
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -39,22 +39,18 @@
   let recognitionActive = false;
   let reconnectAttempts = 0;
   const MAX_RECONNECT_ATTEMPTS = 3;
-  let isMobile = window.matchMedia("(max-width: 768px)").matches;
-  let messageCount = 0;
 
   // Track conversation history
   let conversationHistory = JSON.parse(localStorage.getItem(`ai_conversation_${WIDGET_KEY}`) || '[]');
-  messageCount = conversationHistory.filter(m => m.role === 'user').length;
+  let lastResponseText = '';
+  let messageCount = conversationHistory.length;
   
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
 
-  // ===== FETCH WIDGET CONFIG =====
+  // ===== FETCH WIDGET CONFIG & BUSINESS IDENTITY =====
   fetch(`${SERVER_URL}/api/public/widget-config/${WIDGET_KEY}`)
-    .then(res => {
-      if (!res.ok) throw new Error('Config fetch failed');
-      return res.json();
-    })
+    .then(res => res.json())
     .then(async dbConfig => {
       businessPlan = dbConfig.plan || 'free';
       businessName = dbConfig.business_name || marker.getAttribute("data-title") || "our store";
@@ -77,11 +73,14 @@
         ...(dbConfig.smart_hub || {})
       };
       
-      console.log("[WIDGET] Config loaded:", { businessName, aiName });
+      console.log("[WIDGET] Business Name:", businessName);
+      console.log("[WIDGET] Smart Hub settings:", smartSettings);
+      console.log("[WIDGET] Business Identity:", businessIdentity);
+      
       initWidget(dbConfig);
     })
     .catch(err => {
-      console.warn("[WIDGET] Config fetch failed, using fallback:", err);
+      console.warn("Widget config fetch failed, using fallback", err);
       businessName = marker.getAttribute("data-title") || "our store";
       aiName = "AI Assistant";
       smartSettings = {};
@@ -93,7 +92,7 @@
     });
 
   function initWidget(dbConfig) {
-    // Determine welcome message - NEVER re-introduce
+    // Determine welcome message
     let welcomeMessage;
     if (hasIntroduced || leadCaptured || messageCount > 0) {
       welcomeMessage = `Hi there! How can I help you today?`;
@@ -111,7 +110,7 @@
       title: businessName
     };
 
-    // ===== STYLES with mobile optimization =====
+    // Professional styles
     const style = document.createElement('style');
     style.textContent = `
       #ai-widget-container { 
@@ -146,20 +145,6 @@
         stroke: var(--primary-color); 
       }
 
-      /* Mobile bubble */
-      @media (max-width: 768px) {
-        .widget-bubble {
-          bottom: 15px;
-          right: 15px;
-          width: 56px;
-          height: 56px;
-        }
-        .widget-bubble svg {
-          width: 24px;
-          height: 24px;
-        }
-      }
-
       .widget-window { 
         position: fixed; 
         z-index: 100000; 
@@ -178,35 +163,10 @@
         border: 1px solid rgba(0,0,0,0.05); 
         transition: transform 0.3s ease, opacity 0.3s ease; 
       }
-      
-      /* Mobile widget window - full screen */
-      @media (max-width: 768px) {
-        .widget-window {
-          position: fixed;
-          bottom: 0;
-          right: 0;
-          left: 0;
-          top: 0;
-          width: 100vw;
-          max-width: 100vw;
-          height: 100vh;
-          max-height: 100vh;
-          border-radius: 0;
-          animation: slideUpMobile 0.3s ease;
-        }
-        .widget-window.open {
-          animation: slideUpMobile 0.3s ease;
-        }
-        @keyframes slideUpMobile {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      }
-
       .widget-window.open { 
         display: flex; 
+        animation: showWindow 0.3s ease; 
       }
-      
       .widget-window.live-mode { 
         background: ${customBgColor}; 
         color: white; 
@@ -238,15 +198,7 @@
         background: white; 
         border-bottom: 1px solid #f0f0f0; 
         transition: background 0.3s ease; 
-        flex-shrink: 0;
       }
-      
-      @media (max-width: 768px) {
-        .widget-header {
-          padding: 15px 20px;
-        }
-      }
-
       .header-info { 
         display: flex; 
         align-items: center; 
@@ -264,7 +216,8 @@
         font-size: 20px; 
         font-weight: bold; 
       }
-
+      
+      /* Black and White Pixel Face */
       .pixel-face-container {
         display: none;
         flex-direction: column;
@@ -273,7 +226,6 @@
         padding: 20px;
         flex: 1;
         background: transparent;
-        overflow-y: auto;
       }
       
       .pixel-face {
@@ -290,7 +242,6 @@
         margin-bottom: 20px;
         box-shadow: 0 10px 0 #000000, 0 20px 30px rgba(0,0,0,0.2);
         transition: all 0.3s ease;
-        flex-shrink: 0;
       }
       
       .pixel-face::before,
@@ -304,10 +255,18 @@
         clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
       }
       
-      .pixel-face::before { left: 20px; transform: rotate(-15deg); }
-      .pixel-face::after { right: 20px; transform: rotate(15deg); }
+      .pixel-face::before {
+        left: 20px;
+        transform: rotate(-15deg);
+      }
       
-      .ear-inner-left, .ear-inner-right {
+      .pixel-face::after {
+        right: 20px;
+        transform: rotate(15deg);
+      }
+      
+      .ear-inner-left,
+      .ear-inner-right {
         position: absolute;
         width: 30px;
         height: 30px;
@@ -316,10 +275,21 @@
         clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
         z-index: 2;
       }
-      .ear-inner-left { left: 30px; }
-      .ear-inner-right { right: 30px; }
       
-      .pixel-eyes { display: flex; gap: 40px; margin-top: 20px; }
+      .ear-inner-left {
+        left: 30px;
+      }
+      
+      .ear-inner-right {
+        right: 30px;
+      }
+      
+      .pixel-eyes {
+        display: flex;
+        gap: 40px;
+        margin-top: 20px;
+      }
+      
       .pixel-eye {
         width: 40px;
         height: 40px;
@@ -331,6 +301,7 @@
         position: relative;
         transition: all 0.3s ease;
       }
+      
       .pupil {
         width: 20px;
         height: 20px;
@@ -338,6 +309,7 @@
         border-radius: 50%;
         transition: all 0.3s ease;
       }
+      
       .nose {
         width: 25px;
         height: 20px;
@@ -346,7 +318,9 @@
         margin: 15px 0 10px;
         position: relative;
       }
-      .nose::before, .nose::after {
+      
+      .nose::before,
+      .nose::after {
         content: '';
         position: absolute;
         width: 4px;
@@ -354,8 +328,16 @@
         background: #000000;
         bottom: -8px;
       }
-      .nose::before { left: 4px; transform: rotate(-15deg); }
-      .nose::after { right: 4px; transform: rotate(15deg); }
+      
+      .nose::before {
+        left: 4px;
+        transform: rotate(-15deg);
+      }
+      
+      .nose::after {
+        right: 4px;
+        transform: rotate(15deg);
+      }
       
       .mouth {
         width: 50px;
@@ -366,13 +348,47 @@
         transition: all 0.3s ease;
       }
       
-      .pixel-face.smiling .mouth { border-bottom: 6px solid #000000; width: 55px; }
-      .pixel-face.listening .mouth { border-top: 4px solid #000000; border-bottom: none; border-radius: 30px 30px 0 0; }
-      .pixel-face.listening .pupil { transform: scale(1.2); background: #000000; }
-      .pixel-face.thinking .pupil { width: 10px; height: 10px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #000000; }
-      .pixel-face.surprised .pupil { width: 25px; height: 25px; background: #ffffff; }
-      .pixel-face.surprised .mouth { width: 30px; height: 30px; border: 4px solid #000000; border-radius: 50%; }
-      .pixel-face.happy .pupil { transform: scale(0.8); }
+      .pixel-face.smiling .mouth {
+        border-bottom: 6px solid #000000;
+        width: 55px;
+      }
+      
+      .pixel-face.listening .mouth {
+        border-top: 4px solid #000000;
+        border-bottom: none;
+        border-radius: 30px 30px 0 0;
+      }
+      
+      .pixel-face.listening .pupil {
+        transform: scale(1.2);
+        background: #000000;
+      }
+      
+      .pixel-face.thinking .pupil {
+        width: 10px;
+        height: 10px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        background: #000000;
+      }
+      
+      .pixel-face.surprised .pupil {
+        width: 25px;
+        height: 25px;
+        background: #ffffff;
+      }
+      
+      .pixel-face.surprised .mouth {
+        width: 30px;
+        height: 30px;
+        border: 4px solid #000000;
+        border-radius: 50%;
+        border-bottom-color: #000000;
+      }
+      
+      .pixel-face.happy .pupil {
+        transform: scale(0.8);
+      }
       
       .voice-wave {
         display: flex;
@@ -382,6 +398,7 @@
         margin: 20px 0;
         height: 40px;
       }
+      
       .voice-wave span {
         width: 8px;
         height: 8px;
@@ -389,6 +406,7 @@
         border-radius: 4px;
         animation: wave 1s infinite ease-in-out;
       }
+      
       .voice-wave span:nth-child(2) { animation-delay: 0.1s; }
       .voice-wave span:nth-child(3) { animation-delay: 0.2s; }
       .voice-wave span:nth-child(4) { animation-delay: 0.3s; }
@@ -406,7 +424,6 @@
         color: rgba(255,255,255,0.95);
         margin: 15px 0;
         letter-spacing: 0.3px;
-        padding: 0 20px;
       }
       
       .live-controls {
@@ -418,10 +435,14 @@
         background: rgba(0,0,0,0.2);
         border-radius: 30px;
         backdrop-filter: blur(10px);
-        flex-shrink: 0;
       }
       
-      .color-picker-label { font-size: 14px; font-weight: 500; color: white; }
+      .color-picker-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: white;
+      }
+      
       .color-picker {
         width: 40px;
         height: 40px;
@@ -431,10 +452,20 @@
         padding: 0;
         background: transparent;
       }
-      .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
-      .color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
+      
+      .color-picker::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+      
+      .color-picker::-webkit-color-swatch {
+        border: none;
+        border-radius: 50%;
+      }
 
-      .header-actions { display: flex; gap: 8px; }
+      .header-actions { 
+        display: flex; 
+        gap: 8px; 
+      }
       
       .circle-btn { 
         width: 36px; 
@@ -449,11 +480,18 @@
         justify-content: center; 
         transition: all 0.2s; 
         font-size: 16px; 
-        flex-shrink: 0;
       }
-      .circle-btn:hover { background: #e8eaed; transform: scale(1.1); }
-      .live-mode .circle-btn { background: rgba(255,255,255,0.2); color: white; }
-      .live-mode .circle-btn:hover { background: rgba(255,255,255,0.3); }
+      .circle-btn:hover { 
+        background: #e8eaed; 
+        transform: scale(1.1); 
+      }
+      .live-mode .circle-btn { 
+        background: rgba(255,255,255,0.2); 
+        color: white; 
+      }
+      .live-mode .circle-btn:hover { 
+        background: rgba(255,255,255,0.3); 
+      }
 
       .widget-messages { 
         flex: 1; 
@@ -462,7 +500,6 @@
         display: flex; 
         flex-direction: column; 
         gap: 16px; 
-        min-height: 0;
       }
       
       .message { 
@@ -473,7 +510,6 @@
         border-radius: 18px; 
         position: relative; 
         animation: msgIn 0.3s ease; 
-        word-wrap: break-word;
       }
       .message.bot { 
         align-self: flex-start; 
@@ -487,34 +523,10 @@
         color: white; 
         border-bottom-right-radius: 4px; 
       }
-      
-      .message img { 
+      .message img, .message iframe { 
         max-width: 100%; 
-        max-height: 300px;
         border-radius: 12px; 
-        display: block;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .message img:hover { transform: scale(1.02); }
-      
-      .message iframe { 
-        width: 100%; 
-        height: 400px; 
-        border-radius: 12px; 
-        border: none;
-        background: #f8f9fa;
-      }
-      
-      @media (max-width: 768px) {
-        .message iframe {
-          height: 300px;
-        }
-      }
-
-      @keyframes msgIn { 
-        from { opacity: 0; transform: translateY(10px); } 
-        to { opacity: 1; transform: translateY(0); } 
+        margin-top: 10px; 
       }
 
       .lead-overlay { 
@@ -526,16 +538,7 @@
         flex-direction: column; 
         justify-content: center; 
         padding: 40px; 
-        text-align: center;
-        overflow-y: auto;
-      }
-      
-      @media (max-width: 768px) {
-        .lead-overlay {
-          padding: 30px 20px;
-          justify-content: flex-start;
-          padding-top: 60px;
-        }
+        text-align: center; 
       }
       
       .lead-field { 
@@ -546,7 +549,6 @@
         border-radius: 12px; 
         outline: none; 
         font-size: 15px; 
-        box-sizing: border-box;
       }
       .lead-field:focus { 
         border-color: var(--primary-color); 
@@ -562,12 +564,6 @@
         font-weight: 600; 
         font-size: 16px; 
         margin-top: 10px; 
-        width: 100%;
-        transition: transform 0.2s, box-shadow 0.2s;
-      }
-      .lead-submit:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       }
 
       .file-preview-bar { 
@@ -577,59 +573,38 @@
         border-top: 1px solid #f1f3f4; 
         align-items: center; 
         gap: 12px; 
-        flex-shrink: 0;
       }
       
       .preview-thumb { 
         width: 44px; 
         height: 44px; 
         border-radius: 8px; 
-        object-fit: cover; 
+        object-fit: contain; 
         border: 2px solid var(--primary-color); 
         background: #fff; 
         display: flex; 
         align-items: center; 
         justify-content: center; 
         font-size: 24px; 
-        overflow: hidden;
-        flex-shrink: 0;
       }
       
       .preview-info { 
         flex: 1; 
         font-size: 12px; 
         color: #5f6368; 
-        min-width: 0;
-      }
-      .preview-info strong {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
       
       .preview-cancel { 
         cursor: pointer; 
         color: #d93025; 
         font-weight: bold; 
-        font-size: 24px; 
-        line-height: 1;
-        padding: 0 4px;
-        flex-shrink: 0;
+        font-size: 18px; 
       }
 
       .widget-input-area { 
         padding: 20px; 
         background: white; 
         border-top: 1px solid #f1f3f4; 
-        flex-shrink: 0;
-      }
-      
-      @media (max-width: 768px) {
-        .widget-input-area {
-          padding: 15px;
-          padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-        }
       }
       
       .input-bar { 
@@ -639,7 +614,6 @@
         align-items: center; 
         padding: 4px 12px; 
         border: 2px solid transparent; 
-        gap: 4px;
       }
       .input-bar:focus-within { 
         background: white; 
@@ -649,15 +623,9 @@
         flex: 1; 
         border: none; 
         background: transparent; 
-        padding: 12px 8px; 
+        padding: 12px; 
         outline: none; 
         font-size: 14px; 
-        min-width: 0;
-      }
-      @media (max-width: 768px) {
-        .input-bar input {
-          font-size: 16px; /* Prevents zoom on iOS */
-        }
       }
 
       .typing-indicator { 
@@ -666,7 +634,16 @@
         color: #70757a; 
         display: none; 
         font-style: italic; 
-        flex-shrink: 0;
+      }
+
+      @keyframes showWindow { 
+        from { opacity: 0; transform: translateY(20px); } 
+        to { opacity: 1; transform: translateY(0); } 
+      }
+      
+      @keyframes msgIn { 
+        from { opacity: 0; transform: translateY(10px); } 
+        to { opacity: 1; transform: translateY(0); } 
       }
       
       .mic-active { 
@@ -680,61 +657,8 @@
         70% { box-shadow: 0 0 0 10px rgba(217,48,37,0); }
         100% { box-shadow: 0 0 0 0 rgba(217,48,37,0); }
       }
-      
-      .image-lightbox {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.9);
-        z-index: 100002;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      .image-lightbox.active {
-        display: flex;
-      }
-      .image-lightbox img {
-        max-width: 100%;
-        max-height: 90vh;
-        border-radius: 8px;
-      }
-      .image-lightbox .close-lightbox {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        color: white;
-        font-size: 30px;
-        cursor: pointer;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255,255,255,0.1);
-        border-radius: 50%;
-      }
     `;
     document.head.appendChild(style);
-
-    // Create lightbox for images
-    const lightbox = document.createElement('div');
-    lightbox.className = 'image-lightbox';
-    lightbox.innerHTML = `
-      <div class="close-lightbox">×</div>
-      <img src="" alt="Full size">
-    `;
-    document.body.appendChild(lightbox);
-    
-    lightbox.querySelector('.close-lightbox').onclick = () => {
-      lightbox.classList.remove('active');
-    };
-    lightbox.onclick = (e) => {
-      if (e.target === lightbox) lightbox.classList.remove('active');
-    };
 
     const container = document.createElement("div");
     container.id = "ai-widget-container";
@@ -763,7 +687,6 @@
         </div>
       </div>
 
-      <!-- LEAD CAPTURE FORM - ALWAYS SHOW UNTIL CAPTURED -->
       <div id="lead-form" class="lead-overlay" style="${leadCaptured ? 'display:none' : 'display:flex'}">
         <h3 style="margin-bottom:8px;">Welcome to ${config.title}!</h3>
         <p style="font-size:14px; color:#5f6368; margin-bottom:24px;">Please tell us who you are to start.</p>
@@ -798,8 +721,6 @@
         <div class="voice-status" id="voice-status">
           Live chat activated - start speaking
         </div>
-        
-        <!-- Mobile microphone button - only show in live mode -->
       </div>
 
       <div class="widget-messages" id="widget-msgs-container">
@@ -808,7 +729,7 @@
 
       <div class="file-preview-bar" id="file-preview-bar">
         <div class="preview-thumb" id="file-preview-icon">📄</div>
-        <div class="preview-info"><strong id="file-name-display"></strong><br><span id="file-size-display"></span></div>
+        <div class="preview-info"><strong id="file-name-display"></strong><br>Type a question about it below.</div>
         <div class="preview-cancel" id="file-preview-cancel">×</div>
       </div>
 
@@ -816,7 +737,7 @@
 
       <div class="widget-input-area">
         <div class="input-bar">
-          <input type="file" id="widget-file-input" style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.jpg,.jpeg,.png,.gif,.webp" />
+          <input type="file" id="widget-file-input" style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.jpg,.jpeg,.png,.gif" />
           <button class="circle-btn" id="widget-upload-btn" title="Attach File" style="background:transparent">📎</button>
           <button class="circle-btn" id="widget-voice-btn" title="Voice Input" style="background:transparent">🎤</button>
           <input type="text" id="widget-input-field" placeholder="Type a message..." autocomplete="off" />
@@ -828,7 +749,6 @@
     `;
     container.appendChild(win);
 
-    // Element references
     const msgContainer = win.querySelector("#widget-msgs-container");
     const inputField = win.querySelector("#widget-input-field");
     const sendBtn = win.querySelector("#widget-send-btn");
@@ -843,7 +763,6 @@
     const previewIcon = win.querySelector("#file-preview-icon");
     const previewCancel = win.querySelector("#file-preview-cancel");
     const fileNameDisplay = win.querySelector("#file-name-display");
-    const fileSizeDisplay = win.querySelector("#file-size-display");
     const pixelFace = win.querySelector("#pixel-face");
     const bgColorPicker = win.querySelector("#bg-color-picker");
     const aiStatus = win.querySelector("#ai-status");
@@ -859,7 +778,7 @@
       }
       
       const recog = new SpeechRecognition();
-      recog.continuous = false;
+      recog.continuous = true;
       recog.interimResults = true;
       recog.lang = 'en-US';
       recog.maxAlternatives = 1;
@@ -871,40 +790,40 @@
     
     if (recognition) {
       let finalTranscript = '';
-      let interimTranscript = '';
-      let isListening = false;
+      let timeoutId = null;
       
       recognition.onresult = (e) => {
-        interimTranscript = '';
+        let interimTranscript = '';
         
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const transcript = e.results[i][0].transcript;
           if (e.results[i].isFinal) {
             finalTranscript += transcript + ' ';
+            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+            
+            timeoutId = setTimeout(() => {
+              if (finalTranscript.trim()) {
+                if (isLiveMode) {
+                  voiceWave.style.display = "none";
+                  voiceStatus.textContent = "Processing...";
+                  updateCatExpression('thinking');
+                  sendMessage(finalTranscript.trim());
+                } else {
+                  inputField.value = finalTranscript.trim();
+                }
+                finalTranscript = '';
+                timeoutId = null;
+              }
+            }, 800);
           } else {
             interimTranscript += transcript;
-          }
-        }
-        
-        if (isLiveMode) {
-          if (interimTranscript) {
-            voiceStatus.textContent = `Listening: ${interimTranscript}`;
-          }
-          if (finalTranscript.trim()) {
-            voiceWave.style.display = "none";
-            voiceStatus.textContent = "Processing...";
-            updateCatExpression('thinking');
-            const textToSend = finalTranscript.trim();
-            finalTranscript = '';
-            interimTranscript = '';
-            sendMessage(textToSend);
-          }
-        } else {
-          if (finalTranscript.trim()) {
-            inputField.value = finalTranscript.trim();
-            finalTranscript = '';
-          } else if (interimTranscript) {
-            inputField.value = interimTranscript;
+            if (isLiveMode) {
+              voiceStatus.textContent = `Listening: ${interimTranscript}`;
+            }
           }
         }
       };
@@ -912,23 +831,22 @@
       recognition.onend = () => {
         console.log("[WIDGET] Recognition ended");
         voiceBtn.classList.remove("mic-active");
-        isListening = false;
         
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.textContent = '🎤 Tap to Speak';
-          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
-        }
-        
-        if (isLiveMode && recognitionActive && !isMobile) {
+        if (isLiveMode && recognitionActive) {
           setTimeout(() => {
             if (isLiveMode && recognitionActive) {
-              try { recognition.start(); } catch (e) {}
+              try {
+                recognition.start();
+                console.log("[WIDGET] Recognition restarted");
+              } catch (e) {
+                console.warn("[WIDGET] Could not restart recognition:", e);
+              }
             }
           }, 300);
         } else {
           voiceWave.style.display = "none";
           if (isLiveMode) {
-            voiceStatus.textContent = "Live chat activated - tap mic to speak";
+            voiceStatus.textContent = "Live chat activated - start speaking";
             updateCatExpression('smiling');
           }
         }
@@ -937,13 +855,7 @@
       recognition.onstart = () => {
         console.log("[WIDGET] Recognition started");
         recognitionActive = true;
-        isListening = true;
         reconnectAttempts = 0;
-        
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.textContent = '🔴 Listening...';
-          mobileMicBtn.style.background = '#1a73e8';
-        }
         
         if (isLiveMode) {
           voiceWave.style.display = "flex";
@@ -955,51 +867,33 @@
       recognition.onerror = (e) => {
         console.error("[WIDGET] Speech recognition error:", e.error);
         
-        if (isMobile && mobileMicBtn) {
-          mobileMicBtn.textContent = '🎤 Tap to Speak';
-          mobileMicBtn.style.background = 'linear-gradient(135deg, #d93025, #b31412)';
-        }
-        
-        if (isLiveMode) {
-          if (e.error === 'not-allowed') {
-            voiceStatus.textContent = "Microphone access denied";
+        if (e.error === 'no-speech' || e.error === 'audio-capture') {
+          if (isLiveMode && recognitionActive) {
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch (err) {}
+            }, 500);
+          }
+        } else if (e.error === 'not-allowed') {
+          voiceStatus.textContent = "Microphone access denied";
+          recognitionActive = false;
+        } else if (e.error === 'network') {
+          reconnectAttempts++;
+          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            setTimeout(() => {
+              if (isLiveMode && recognitionActive) {
+                try {
+                  recognition.start();
+                } catch (err) {}
+              }
+            }, 1000 * reconnectAttempts);
+          } else {
+            voiceStatus.textContent = "Network error - please refresh";
             recognitionActive = false;
-            alert("Please allow microphone access to use voice features.");
           }
         }
       };
-    }
-
-    // Create mobile mic button if needed
-    const mobileMicBtn = document.createElement('button');
-    if (isMobile) {
-      mobileMicBtn.id = 'mobile-mic-btn';
-      mobileMicBtn.className = 'lead-submit';
-      mobileMicBtn.style.cssText = 'margin-top:20px; background:linear-gradient(135deg, #d93025, #b31412);';
-      mobileMicBtn.textContent = '🎤 Tap to Speak';
-      pixelFace.parentElement.appendChild(mobileMicBtn);
-      
-      mobileMicBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        
-        if (!recognition) {
-          alert("Voice recognition is not supported in your browser.");
-          return;
-        }
-        
-        if (!isLiveMode) {
-          alert("Please activate Live Mode first to use voice.");
-          return;
-        }
-        
-        if (recognitionActive) {
-          try { recognition.stop(); } catch (e) {}
-        } else {
-          try { recognition.start(); } catch (e) {
-            console.warn("[WIDGET] Could not start recognition:", e);
-          }
-        }
-      });
     }
 
     function updateCatExpression(expression) {
@@ -1007,41 +901,20 @@
       pixelFace.classList.add(expression);
     }
 
-    // CRITICAL FIX: Modified bubble click to ensure lead form shows properly
-    bubble.onclick = () => {
+    bubble.onclick = async () => {
       win.classList.toggle("open");
       if (win.classList.contains("open")) {
-        // CRITICAL: Check leadCaptured state and force lead form visibility
         if (!leadCaptured) {
-          // Force lead form to be visible with proper styles
-          leadForm.style.display = 'flex';
-          leadForm.style.opacity = '1';
-          leadForm.style.visibility = 'visible';
-          leadForm.style.pointerEvents = 'auto';
-          leadForm.style.zIndex = '100001';
-          
-          // Hide other sections
-          msgContainer.style.display = 'none';
-          win.querySelector('.widget-input-area').style.display = 'none';
-          win.querySelector('.pixel-face-container').style.display = 'none';
-          
-          // Focus on name input after a short delay
-          setTimeout(() => {
-            const nameInput = win.querySelector("#lead-name");
-            if (nameInput) nameInput.focus();
-          }, 300);
+          win.querySelector("#lead-name").focus();
         } else {
-          // Lead already captured - show chat interface
-          leadForm.style.display = 'none';
-          msgContainer.style.display = 'flex';
-          win.querySelector('.widget-input-area').style.display = 'block';
-          win.querySelector('.pixel-face-container').style.display = 'none';
-          setTimeout(() => inputField.focus(), 300);
+          inputField.focus();
         }
       } else {
         if (recognition && recognitionActive) {
-          recognitionActive = false;
-          try { recognition.stop(); } catch (e) {}
+          try {
+            recognitionActive = false;
+            recognition.stop();
+          } catch (e) {}
         }
       }
     };
@@ -1050,7 +923,9 @@
       win.classList.remove("open");
       if (recognition && recognitionActive) {
         recognitionActive = false;
-        try { recognition.stop(); } catch (e) {}
+        try {
+          recognition.stop();
+        } catch (e) {}
       }
       
       if (activeSessionId && leadCaptured) {
@@ -1061,70 +936,37 @@
       }
     };
 
-    // ===== LEAD SUBMISSION =====
     win.querySelector("#lead-submit-btn").onclick = async () => {
-      const nameInput = win.querySelector("#lead-name");
-      const emailInput = win.querySelector("#lead-email");
-      const phoneInput = win.querySelector("#lead-phone");
-      const name = nameInput.value.trim();
-      const email = emailInput.value.trim().toLowerCase();
-      const phone = phoneInput ? phoneInput.value.trim() : '';
-      const submitBtn = win.querySelector("#lead-submit-btn");
+      const name = win.querySelector("#lead-name").value.trim();
+      const email = win.querySelector("#lead-email").value.trim().toLowerCase();
+      const phone = win.querySelector("#lead-phone")?.value.trim() || '';
 
-      if (!name || !email) {
-        alert("Please provide your name and email.");
-        return;
-      }
-
-      // Email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        alert("Please enter a valid email address.");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Starting...";
-      submitBtn.style.opacity = "0.7";
+      if (!name || !email) return alert("Please provide your name and email.");
 
       localStorage.setItem(`ai_user_name_${WIDGET_KEY}`, name);
       localStorage.setItem(`ai_user_email_${WIDGET_KEY}`, email);
       if (phone) localStorage.setItem(`ai_user_phone_${WIDGET_KEY}`, phone);
-      
       userName = name;
       userEmail = email;
       userPhone = phone;
 
-      // Check for duplicate
       if (capturedEmails.has(email)) {
+        console.log("[WIDGET] Duplicate email detected:", email);
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
-        msgContainer.style.display = 'flex';
-        win.querySelector('.widget-input-area').style.display = 'block';
         inputField.focus();
+        
         appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
         hasIntroduced = true;
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Start Conversation";
-        submitBtn.style.opacity = "1";
         return;
       }
 
       try {
         const res = await fetch(`${SERVER_URL}/api/public/leads`, {
           method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({ 
-            name, 
-            email, 
-            phone: phone || "N/A", 
-            widget_key: WIDGET_KEY,
-            source: window.location.href
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, phone: phone || "N/A", widget_key: WIDGET_KEY })
         });
 
         if (res.ok) {
@@ -1134,11 +976,19 @@
           localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
           leadCaptured = true;
           leadForm.style.display = "none";
-          msgContainer.style.display = 'flex';
-          win.querySelector('.widget-input-area').style.display = 'block';
           inputField.focus();
           
           hasIntroduced = true;
+          
+          // Trigger AI Automations - send event to backend
+          fetch(`${SERVER_URL}/api/automations/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              eventType: 'new-lead', 
+              data: { email, name, phone, widget_key: WIDGET_KEY } 
+            })
+          }).catch(() => {});
           
           if (smartSettings?.apollo_active) {
             enrichLeadWithApollo(email, name);
@@ -1148,43 +998,25 @@
             scheduleFollowUp(email, name);
           }
         } else {
-          const errorData = await res.json().catch(() => ({}));
-          
-          if (errorData.error && errorData.error.includes("duplicate")) {
-            capturedEmails.add(email);
-            localStorage.setItem(`ai_captured_emails_${WIDGET_KEY}`, JSON.stringify(Array.from(capturedEmails)));
-            localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
+          const error = await res.json();
+          if (error.error && error.error.includes("duplicate")) {
             leadCaptured = true;
+            localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
             leadForm.style.display = "none";
-            msgContainer.style.display = 'flex';
-            win.querySelector('.widget-input-area').style.display = 'block';
             inputField.focus();
             hasIntroduced = true;
-            appendMessage(`Welcome back, ${name}! 👋 How can I help you today?`, "bot");
           } else {
-            // Graceful fallback - allow chat anyway
-            leadCaptured = true;
-            localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
-            leadForm.style.display = "none";
-            msgContainer.style.display = 'flex';
-            win.querySelector('.widget-input-area').style.display = 'block';
-            inputField.focus();
-            hasIntroduced = true;
+            alert("Failed to save your info. Please try again.");
           }
         }
       } catch (e) {
-        // Network error - still allow chat
+        console.error("Lead submission error:", e);
+        // Still allow chat even if lead save fails
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
-        msgContainer.style.display = 'flex';
-        win.querySelector('.widget-input-area').style.display = 'block';
         inputField.focus();
         hasIntroduced = true;
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Start Conversation";
-        submitBtn.style.opacity = "1";
       }
     };
 
@@ -1193,19 +1025,16 @@
       if (isLiveMode) {
         win.classList.add("live-mode");
         aiStatus.textContent = "● Live Mode";
-        voiceStatus.textContent = isMobile ? "Tap the mic button to speak" : "Live chat activated - start speaking";
+        voiceStatus.textContent = "Live chat activated - start speaking";
         updateCatExpression('smiling');
-        
-        // Show pixel face container, hide messages and input
-        win.querySelector('.pixel-face-container').style.display = 'flex';
-        msgContainer.style.display = 'none';
-        win.querySelector('.widget-input-area').style.display = 'none';
-        
         recognitionActive = true;
-        if (recognition && !isMobile) {
+        
+        if (recognition) {
           setTimeout(() => {
-            if (recognitionActive) {
-              try { recognition.start(); } catch (e) {}
+            try {
+              recognition.start();
+            } catch (e) {
+              console.warn("[WIDGET] Could not start recognition:", e);
             }
           }, 500);
         }
@@ -1215,14 +1044,11 @@
         voiceWave.style.display = "none";
         voiceStatus.textContent = "Live chat activated - start speaking";
         
-        // Hide pixel face container, show messages and input
-        win.querySelector('.pixel-face-container').style.display = 'none';
-        msgContainer.style.display = 'flex';
-        win.querySelector('.widget-input-area').style.display = 'block';
-        
-        if (recognition && recognitionActive) {
+        if (recognition) {
           recognitionActive = false;
-          try { recognition.stop(); } catch (e) {}
+          try {
+            recognition.stop();
+          } catch (e) {}
         }
         updateCatExpression('smiling');
       }
@@ -1240,22 +1066,19 @@
         return;
       }
       
-      if (!isLiveMode) {
-        alert("Please activate Live Mode first to use voice.");
-        return;
-      }
-      
       if (recognitionActive) {
         recognitionActive = false;
-        try { recognition.stop(); } catch (e) {}
+        try {
+          recognition.stop();
+        } catch (e) {}
         voiceBtn.classList.remove("mic-active");
       } else {
         recognitionActive = true;
         voiceBtn.classList.add("mic-active");
-        try { recognition.start(); } catch (e) {
-          voiceBtn.classList.remove("mic-active");
-          recognitionActive = false;
-          alert("Could not access microphone. Please check permissions.");
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn("[WIDGET] Could not start recognition:", e);
         }
       }
     };
@@ -1284,27 +1107,18 @@
 
         const isImage = file.type.startsWith('image/');
         if (isImage) {
-          previewIcon.innerHTML = `<img src="${pendingFileData}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`;
+          previewIcon.innerHTML = `<img src="${pendingFileData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
         } else {
           previewIcon.innerHTML = '📄';
         }
         
         fileNameDisplay.textContent = pendingFileName;
-        fileSizeDisplay.textContent = formatFileSize(file.size);
         previewBar.style.display = "flex";
-        inputField.placeholder = `Ask about this ${isImage ? 'image' : 'file'}...`;
+        inputField.placeholder = `Optional message about file...`;
         inputField.focus();
       };
       reader.readAsDataURL(file);
     };
-
-    function formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
 
     previewCancel.onclick = () => {
       pendingFileData = null;
@@ -1340,26 +1154,25 @@
           const img = document.createElement("img");
           img.src = fileData;
           img.alt = "Uploaded image";
-          img.onclick = () => {
-            lightbox.querySelector('img').src = fileData;
-            lightbox.classList.add('active');
-          };
           div.appendChild(img);
         } else if (fileData.startsWith('data:application/pdf')) {
-          const downloadBtn = document.createElement("a");
-          downloadBtn.href = fileData;
-          downloadBtn.download = fileName || "document.pdf";
-          downloadBtn.className = "file-download-btn";
-          downloadBtn.innerHTML = `📄 Download PDF`;
-          div.appendChild(downloadBtn);
+          const iframe = document.createElement("iframe");
+          iframe.src = fileData;
+          iframe.style.width = "100%";
+          iframe.style.height = "400px";
+          iframe.style.border = "none";
+          iframe.title = "PDF Preview";
+          div.appendChild(iframe);
         } else {
-          const downloadBtn = document.createElement("a");
-          downloadBtn.href = fileData;
-          downloadBtn.download = fileName || "download";
-          downloadBtn.className = "file-download-btn";
-          const fileExt = fileName ? fileName.split('.').pop().toUpperCase() : 'FILE';
-          downloadBtn.innerHTML = `📎 Download ${fileExt}`;
-          div.appendChild(downloadBtn);
+          const link = document.createElement("a");
+          link.href = fileData;
+          link.download = fileName;
+          link.textContent = `📥 Download ${fileName}`;
+          link.style.color = "#1a73e8";
+          link.style.fontWeight = "500";
+          link.style.display = "block";
+          link.style.marginTop = "10px";
+          div.appendChild(link);
         }
       }
 
@@ -1376,9 +1189,12 @@
       if (isProcessing) return;
       
       let text = voiceText || inputField.value.trim();
+
       if (!text && !pendingFileData) return;
 
-      if (isLiveMode) updateCatExpression('thinking');
+      if (isLiveMode) {
+        updateCatExpression('thinking');
+      }
 
       const currentFile = pendingFileData;
       const currentFileName = pendingFileName;
@@ -1409,7 +1225,7 @@
           client_email: userEmail || null,
           is_visitor: true,
           session_id: activeSessionId,
-          conversation_history: conversationHistory.slice(-3),
+          conversation_history: conversationHistory.slice(-5),
           business_name: businessName,
           ai_name: aiName,
           has_introduced: hasIntroduced,
@@ -1424,6 +1240,8 @@
             body.vision_enabled = true;
           }
         }
+
+        console.log("[WIDGET → SERVER] Sending request:", body);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -1447,7 +1265,7 @@
 
         if (isLiveMode) {
           updateCatExpression('smiling');
-          voiceStatus.textContent = isMobile ? "Tap mic to speak" : "Live chat activated - start speaking";
+          voiceStatus.textContent = "Live chat activated - start speaking";
         }
 
         if (response.ok && data.success && data.reply) {
@@ -1461,41 +1279,56 @@
             localStorage.setItem(`ai_has_introduced_${WIDGET_KEY}`, "true");
           }
           
-          // Clean the response - remove any introductions if already introduced
+          messageCount++;
+          
+          // Remove any accidental introductions in follow-up messages
           let cleanReply = data.reply;
           if (messageCount > 1 || hasIntroduced) {
             cleanReply = cleanReply
-              .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
-              .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
-              .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
+              .replace(/^(Hi|Hello|Hey)[!,\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
+              .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+/i, '')
               .trim();
           }
           
-          if (!cleanReply || cleanReply.length < 5) cleanReply = data.reply;
-          
-          if (!isLiveMode) {
-            appendMessage(cleanReply, "bot");
+          if (cleanReply !== lastResponseText || messageCount === 1) {
+            if (!isLiveMode) {
+              appendMessage(cleanReply, "bot");
+              speak(cleanReply);
+            } else {
+              speak(cleanReply);
+            }
+            lastResponseText = cleanReply;
           }
-          speak(cleanReply);
         } else {
+          const errorMsg = data.error || "Server returned error";
           if (!isLiveMode) {
-            appendMessage(`I'm having trouble right now. Please try again in a moment.`, "bot");
+            appendMessage(`I'm having trouble connecting. Please try again.`, "bot");
           } else {
-            speak("I'm having trouble connecting. Please try again.");
+            speak("Connection error. Please try again.");
             voiceStatus.textContent = "Connection error";
             updateCatExpression('surprised');
+            setTimeout(() => {
+              voiceStatus.textContent = "Live chat activated - start speaking";
+              updateCatExpression('smiling');
+            }, 2000);
           }
         }
       } catch (err) {
         typingInd.style.display = "none";
         isProcessing = false;
+        console.error("[WIDGET] Fetch error:", err);
         
+        let errorMessage = "Connection issue. Please try again.";
         if (!isLiveMode) {
-          appendMessage("Connection issue. Please check your internet and try again.", "bot");
+          appendMessage(errorMessage, "bot");
         } else {
           speak("Connection error. Please try again.");
           voiceStatus.textContent = "Connection error";
           updateCatExpression('surprised');
+          setTimeout(() => {
+            voiceStatus.textContent = "Live chat activated - start speaking";
+            updateCatExpression('smiling');
+          }, 2000);
         }
       }
     }
@@ -1521,7 +1354,7 @@
       
       const msg = new SpeechSynthesisUtterance(cleanText);
       
-      msg.rate = isMobile ? 1.0 : 0.85;
+      msg.rate = 0.85;
       msg.pitch = 1.25;
       msg.volume = 0.95;
       
@@ -1574,23 +1407,29 @@
     }
   }
 
-  // ===== APOLLO ENRICHMENT =====
+  // ===== ENRICH LEAD WITH APOLLO =====
   async function enrichLeadWithApollo(email, name) {
     if (!smartSettings?.apollo_active) return null;
     
     try {
-      await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
+      const res = await fetch(`${SERVER_URL}/api/public/apollo/enrich`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, widget_key: WIDGET_KEY })
       });
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log("[WIDGET] Apollo enrichment result:", data);
+        return data;
+      }
     } catch (err) {
       console.warn("[WIDGET] Apollo enrichment failed:", err);
     }
     return null;
   }
 
-  // ===== FOLLOW-UP SCHEDULING =====
+  // ===== SCHEDULE FOLLOW-UP =====
   async function scheduleFollowUp(email, name) {
     if (!smartSettings?.followup_active) return;
     
@@ -1605,6 +1444,7 @@
           session_id: activeSessionId
         })
       });
+      console.log("[WIDGET] Follow-up scheduled for:", email);
     } catch (err) {
       console.warn("[WIDGET] Follow-up scheduling failed:", err);
     }
