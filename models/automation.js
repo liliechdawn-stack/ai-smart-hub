@@ -1,4 +1,4 @@
-﻿const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 
 class AutomationModel {
     static async create(userId, data) {
@@ -7,3 +7,4 @@ class AutomationModel {
 }
 
 module.exports = AutomationModel;
+

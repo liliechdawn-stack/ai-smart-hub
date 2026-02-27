@@ -1,4 +1,4 @@
-﻿class IntegrationService {
+class IntegrationService {
     constructor() {
         this.apis = {};
     }
@@ -13,3 +13,4 @@
 }
 
 module.exports = new IntegrationService();
+

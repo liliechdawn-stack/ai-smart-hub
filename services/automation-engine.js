@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { db } = require('../database');
+const { db } = require('../../database');
 const { v4: uuidv4 } = require('uuid');
 
 class AutomationEngine {
@@ -15,4 +15,5 @@ class AutomationEngine {
 }
 
 module.exports = new AutomationEngine();
+
 
