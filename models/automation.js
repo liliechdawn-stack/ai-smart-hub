@@ -8,3 +8,4 @@ class AutomationModel {
 
 module.exports = AutomationModel;
 
+
