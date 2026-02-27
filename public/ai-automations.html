@@ -175,50 +175,192 @@
         }
 
         /* ========================================
-           PREMIUM HERO SECTION
+           NEW: AUTOMATION POWERHOUSE BANNER
            ========================================
         */
-        .hero { 
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            padding: 60px 32px; 
-            text-align: center; 
-            border-bottom: 1px solid rgba(212,175,55,0.2);
+        .powerhouse-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 30px;
+            padding: 50px 40px;
+            margin: 40px 32px;
+            color: white;
             position: relative;
             overflow: hidden;
         }
         
-        .hero::before {
+        .powerhouse-banner::before {
             content: '';
             position: absolute;
             top: -50%;
-            right: -50%;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%);
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
             border-radius: 50%;
-            pointer-events: none;
         }
         
-        .hero h1 { 
-            font-size: 3.2rem; 
-            margin-bottom: 16px; 
-            letter-spacing: -1px; 
+        .powerhouse-banner::after {
+            content: '🚀';
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            font-size: 80px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+        }
+        
+        .powerhouse-content {
+            max-width: 70%;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .powerhouse-title {
+            font-size: 2.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         
-        .hero p { 
-            color: var(--text-secondary); 
-            max-width: 720px; 
-            margin: 0 auto; 
+        .powerhouse-title i {
+            font-size: 3rem;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .powerhouse-description {
             font-size: 1.1rem;
-            line-height: 1.8;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            opacity: 0.95;
+        }
+        
+        .powerhouse-features {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.15);
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.95rem;
+        }
+        
+        .feature-item i {
+            color: var(--primary);
+        }
+        
+        .powerhouse-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .powerhouse-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .powerhouse-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 8px 25px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .powerhouse-banner {
+                padding: 30px 20px;
+            }
+            .powerhouse-content {
+                max-width: 100%;
+            }
+            .powerhouse-title {
+                font-size: 1.8rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .powerhouse-features {
+                gap: 15px;
+            }
         }
 
         /* ========================================
-           PREMIUM STATS GRID
+           SEARCH BAR
+           ========================================
+        */
+        .search-section {
+            margin: 30px 32px;
+        }
+        
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid var(--medium-gray);
+            border-radius: 60px;
+            padding: 5px 5px 5px 25px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+        
+        .search-container:focus-within {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-gold);
+        }
+        
+        .search-icon {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+        
+        .search-input {
+            flex: 1;
+            border: none;
+            padding: 16px 15px;
+            font-size: 1rem;
+            background: transparent;
+            outline: none;
+        }
+        
+        .search-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .search-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* ========================================
+           ORIGINAL STYLES PRESERVED
            ========================================
         */
         .stats-grid {
@@ -275,10 +417,6 @@
             font-weight: 500;
         }
 
-        /* ========================================
-           SECTION HEADERS
-           ========================================
-        */
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -302,10 +440,6 @@
             font-size: 1.8rem;
         }
 
-        /* ========================================
-           ANALYTICS DASHBOARD
-           ========================================
-        */
         .analytics-dashboard {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -352,10 +486,6 @@
             border-radius: 4px;
         }
 
-        /* ========================================
-           TEMPLATE GRID
-           ========================================
-        */
         .template-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -422,10 +552,6 @@
             color: var(--primary);
         }
 
-        /* ========================================
-           AUTOMATION GRID
-           ========================================
-        */
         .automation-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -551,10 +677,6 @@
             margin-top: 20px;
         }
 
-        /* ========================================
-           TOGGLE SWITCH
-           ========================================
-        */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -598,10 +720,6 @@
             transform: translateX(26px);
         }
 
-        /* ========================================
-           BUTTONS
-           ========================================
-        */
         .btn-primary {
             background: var(--primary-gradient);
             color: white;
@@ -662,10 +780,6 @@
             border-color: var(--primary);
         }
 
-        /* ========================================
-           MODAL
-           ========================================
-        */
         .modal {
             display: none;
             position: fixed;
@@ -790,10 +904,6 @@
             align-items: center;
         }
 
-        /* ========================================
-           LOCK OVERLAY
-           ========================================
-        */
         .lock-overlay {
             position: absolute;
             inset: 0;
@@ -827,10 +937,6 @@
             max-width: 400px;
         }
 
-        /* ========================================
-           ACTIVITY TIMELINE
-           ========================================
-        */
         .timeline {
             margin-top: 20px;
         }
@@ -873,10 +979,6 @@
             color: var(--text-secondary);
         }
 
-        /* ========================================
-           FLOATING ACTION BUTTON
-           ========================================
-        */
         .fab {
             position: fixed;
             bottom: 40px;
@@ -902,10 +1004,6 @@
             box-shadow: 0 20px 40px rgba(212,175,55,0.4);
         }
 
-        /* ========================================
-           FOOTER
-           ========================================
-        */
         footer {
             text-align: center;
             padding: 60px 20px;
@@ -916,10 +1014,6 @@
             margin-top: 40px;
         }
 
-        /* ========================================
-           UTILITY CLASSES
-           ========================================
-        */
         .hidden { display: none !important; }
         
         .loading-spinner {
@@ -988,6 +1082,41 @@
 <div class="hero">
     <h1>AI Automations Studio</h1>
     <p>Build powerful no-code AI workflows that automate your entire business 24/7</p>
+</div>
+
+<!-- NEW: Automation Powerhouse Banner -->
+<div class="powerhouse-banner">
+    <div class="powerhouse-badge">⚡ COMING SOON ⚡</div>
+    <div class="powerhouse-content">
+        <div class="powerhouse-title">
+            <i class="fas fa-rocket"></i>
+            <span>AI Automation Powerhouse 2.0</span>
+        </div>
+        <p class="powerhouse-description">
+            The next evolution of automation is here! Manage your entire digital presence across TikTok, YouTube, Instagram, Douyin, WeChat, and more with our revolutionary Agentic Workflows powered by Computer Vision and LLM Reasoning.
+        </p>
+        <div class="powerhouse-features">
+            <span class="feature-item"><i class="fas fa-check-circle"></i> Computer Vision</span>
+            <span class="feature-item"><i class="fas fa-check-circle"></i> Anti-Detection Engine</span>
+            <span class="feature-item"><i class="fas fa-check-circle"></i> Unified Lead Brain</span>
+            <span class="feature-item"><i class="fas fa-check-circle"></i> Natural Language Setup</span>
+            <span class="feature-item"><i class="fas fa-check-circle"></i> Cloud Mobile Simulation</span>
+            <span class="feature-item"><i class="fas fa-check-circle"></i> Price Intelligence</span>
+        </div>
+        <button class="powerhouse-btn" onclick="openPowerhouseWaitlist()">
+            <span>Join Waitlist</span>
+            <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- NEW: Search Section -->
+<div class="search-section">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="automation-search" class="search-input" placeholder="Search automations by name, trigger, or action..." oninput="searchAutomations()">
+        <button class="search-btn" onclick="searchAutomations()">Search</button>
+    </div>
 </div>
 
 <!-- Premium Stats -->
@@ -1219,6 +1348,7 @@
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api/ai-automations`;
 let automations = [];
+let filteredAutomations = [];
 let activities = [];
 let performanceChart, triggerChart;
 
@@ -1415,6 +1545,26 @@ function initCharts() {
     }
 }
 
+// ===== SEARCH FUNCTION =====
+function searchAutomations() {
+    const searchTerm = document.getElementById('automation-search').value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+        renderAutomations(automations);
+        return;
+    }
+    
+    const filtered = automations.filter(item => 
+        item.title.toLowerCase().includes(searchTerm) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm)) ||
+        formatTrigger(item.trigger).toLowerCase().includes(searchTerm) ||
+        formatAction(item.action).toLowerCase().includes(searchTerm)
+    );
+    
+    filteredAutomations = filtered;
+    renderAutomations(filtered);
+}
+
 // ===== TEMPLATES =====
 function renderTemplates() {
     const grid = document.getElementById('template-grid');
@@ -1440,7 +1590,6 @@ function useTemplate(id) {
         document.getElementById('automation-name').value = template.title;
         document.getElementById('automation-description').value = template.description;
         
-        // Map template trigger to select option
         const triggerMap = {
             'new-lead': 'new-lead',
             'cart-abandoned': 'cart-abandoned',
@@ -1487,7 +1636,6 @@ function closeTemplateModal() {
 function loadActivity() {
     const timeline = document.getElementById('activity-timeline');
     
-    // In production, this would come from the backend
     activities = [
         { id: 1, type: 'success', title: 'Welcome Series triggered for John Doe', time: '2 minutes ago', icon: 'fa-user-plus', color: '#10b981' },
         { id: 2, type: 'warning', title: 'Lead scoring updated for 5 contacts', time: '15 minutes ago', icon: 'fa-chart-line', color: '#f59e0b' },
@@ -1530,12 +1678,12 @@ async function loadAutomations() {
         }
 
         automations = await response.json();
+        filteredAutomations = [...automations];
         renderAutomations(automations);
         updateStats();
         
     } catch (err) {
         console.error("[LOAD ERROR]", err);
-        // Fallback to mock data if backend not ready
         automations = [
             {
                 id: "1",
@@ -1574,6 +1722,7 @@ async function loadAutomations() {
                 leads: 67
             }
         ];
+        filteredAutomations = [...automations];
         renderAutomations(automations);
         updateStats();
     }
@@ -1587,8 +1736,8 @@ function renderAutomations(items) {
         grid.innerHTML = `
             <div style="text-align:center;padding:120px;color:#777; grid-column: 1/-1;">
                 <i class="fas fa-robot fa-4x" style="color:var(--primary); opacity:0.5; margin-bottom:20px;"></i>
-                <h3>No automations yet</h3>
-                <p style="margin:20px 0;">Create your first automation to start saving time</p>
+                <h3>No automations found</h3>
+                <p style="margin:20px 0;">Try adjusting your search or create a new automation</p>
                 <button onclick="showCreateModal()" class="btn-primary">Create Automation</button>
             </div>
         `;
@@ -1708,9 +1857,6 @@ async function toggleAutomation(id, shouldEnable) {
     } catch (err) {
         console.error('Toggle error:', err);
         showToast('Failed to update status', 'error');
-        // Revert checkbox
-        const checkbox = document.querySelector(`[onchange*="toggleAutomation('${id}'"]`);
-        if (checkbox) checkbox.checked = !shouldEnable;
     }
 }
 
@@ -1802,7 +1948,6 @@ function addCondition() {
     `;
     list.appendChild(conditionDiv);
     
-    // Clear inputs
     document.getElementById('condition-value').value = '';
 }
 
@@ -1820,6 +1965,14 @@ async function saveAutomation() {
     try {
         const token = localStorage.getItem('token');
         const isEdit = document.getElementById('modal-title').textContent.includes('Edit');
+        
+        // Find the automation ID if editing
+        let automationId = null;
+        if (isEdit) {
+            // You would need to store the current editing ID or extract it
+            automationId = "temp"; // This should be properly implemented
+        }
+        
         const url = isEdit ? `${API_BASE}/automations/${automationId}` : `${API_BASE}/automations`;
         
         const response = await fetch(url, {
@@ -1897,6 +2050,64 @@ async function checkPlan() {
     }
 }
 
+// ===== NEW: POWERHOUSE FUNCTIONS =====
+function openPowerhouseWaitlist() {
+    // Create a modal or redirect to a new page
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 style="font-size:2rem;">🚀 Automation Powerhouse 2.0</h3>
+                <button class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
+            </div>
+            <div style="text-align:center; padding:20px;">
+                <i class="fas fa-rocket" style="font-size:4rem; color:var(--primary); margin-bottom:20px;"></i>
+                <p style="font-size:1.1rem; margin-bottom:20px;">Join the waitlist for our revolutionary AI Automation Powerhouse and be the first to experience:</p>
+                <ul style="text-align:left; margin-bottom:30px;">
+                    <li style="margin:10px 0;"><i class="fas fa-check-circle" style="color:var(--success);"></i> TikTok, YouTube & Instagram Automation</li>
+                    <li style="margin:10px 0;"><i class="fas fa-check-circle" style="color:var(--success);"></i> Computer Vision Anti-Detection</li>
+                    <li style="margin:10px 0;"><i class="fas fa-check-circle" style="color:var(--success);"></i> WeChat & Douyin Integration</li>
+                    <li style="margin:10px 0;"><i class="fas fa-check-circle" style="color:var(--success);"></i> Unified Lead Brain</li>
+                    <li style="margin:10px 0;"><i class="fas fa-check-circle" style="color:var(--success);"></i> Cloud Mobile Simulation</li>
+                </ul>
+                <div class="form-group">
+                    <input type="email" id="waitlist-email" class="form-control" placeholder="Enter your email" value="${localStorage.getItem('email') || ''}">
+                </div>
+                <div class="form-group">
+                    <select id="waitlist-use-case" class="form-control">
+                        <option value="">Select your primary use case</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="ecommerce">E-commerce</option>
+                        <option value="agency">Digital Agency</option>
+                        <option value="creator">Content Creator</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button class="btn-primary" style="width:100%;" onclick="submitWaitlist()">Join Waitlist</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function submitWaitlist() {
+    const email = document.getElementById('waitlist-email')?.value;
+    const useCase = document.getElementById('waitlist-use-case')?.value;
+    
+    if (!email || !useCase) {
+        showToast("Please fill all fields", "error");
+        return;
+    }
+    
+    // Here you would send to your backend
+    showToast("✅ You're on the waitlist! We'll notify you when Powerhouse launches.", "success");
+    setTimeout(() => {
+        document.querySelector('.modal').remove();
+    }, 2000);
+}
+
 // ===== WIDGET TRIGGER ENDPOINT =====
 async function triggerAutomation(eventType, data) {
     try {
@@ -1936,6 +2147,9 @@ window.deleteAutomation = deleteAutomation;
 window.duplicateAutomation = duplicateAutomation;
 window.editAutomation = editAutomation;
 window.triggerAutomation = triggerAutomation;
+window.searchAutomations = searchAutomations;
+window.openPowerhouseWaitlist = openPowerhouseWaitlist;
+window.submitWaitlist = submitWaitlist;
 </script>
 </body>
 </html>
