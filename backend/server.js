@@ -168,7 +168,7 @@ app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 
 // ================= SERVE STATIC HTML FILES =================
 // Serve static files from the public directory
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ================= ROUTES =================
 app.use('/api/smart-hub', require('./smart-hub'));
