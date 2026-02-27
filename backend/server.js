@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
@@ -67,7 +67,7 @@ app.set("socketio", io);
 io.on("connection", (socket) => {
   socket.on("join", (userId) => {
     socket.join(userId);
-    console.log(`👤 User joined socket room: ${userId}`);
+    console.log(`ðŸ‘¤ User joined socket room: ${userId}`);
   });
 });
 
@@ -84,9 +84,9 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 let resend = null;
 if (process.env.RESEND_API_KEY) {
   resend = new Resend(process.env.RESEND_API_KEY);
-  console.log("✅ Resend configured for reliable email delivery");
+  console.log("âœ… Resend configured for reliable email delivery");
 } else {
-  console.warn("⚠️ RESEND_API_KEY not found. Using nodemailer fallback.");
+  console.warn("âš ï¸ RESEND_API_KEY not found. Using nodemailer fallback.");
 }
 
 // Fallback to Nodemailer
@@ -118,10 +118,10 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
         throw new Error(error.message);
       }
 
-      console.log(`✅ Resend email sent to: ${to}`);
+      console.log(`âœ… Resend email sent to: ${to}`);
       return { success: true, method: 'resend' };
     } catch (err) {
-      console.error(`❌ Resend failed for ${to}:`, err.message);
+      console.error(`âŒ Resend failed for ${to}:`, err.message);
       // Fall through to nodemailer
     }
   }
@@ -135,10 +135,10 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
       html,
       text: text || html.replace(/<[^>]*>/g, '')
     });
-    console.log(`✅ Nodemailer email sent to: ${to}`);
+    console.log(`âœ… Nodemailer email sent to: ${to}`);
     return { success: true, method: 'nodemailer' };
   } catch (err) {
-    console.error(`❌ Both email methods failed for ${to}:`, err.message);
+    console.error(`âŒ Both email methods failed for ${to}:`, err.message);
     return { success: false, error: err.message };
   }
 }
@@ -174,7 +174,7 @@ app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 
 // ================= SERVE STATIC HTML FILES =================
 // Serve static files from the public directory
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ================= ROUTES =================
 app.use('/api/smart-hub', require('./smart-hub'));
@@ -188,9 +188,9 @@ app.get('/healthz', (req, res) => {
 let customerRouter;
 try {
   customerRouter = require('./customer-insights');
-  console.log("✅ SUCCESS: customer-insights.js LOADED correctly");
+  console.log("âœ… SUCCESS: customer-insights.js LOADED correctly");
 } catch (err) {
-  console.error("❌ FAILED to load customer-insights.js:", err.message);
+  console.error("âŒ FAILED to load customer-insights.js:", err.message);
   customerRouter = express.Router();
 }
 app.use('/api/customer-insights', customerRouter);
@@ -636,7 +636,7 @@ app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) =
         
         res.json({
           success: true,
-          message: `✅ ${platform} account connected successfully!`,
+          message: `âœ… ${platform} account connected successfully!`,
           account_id: this.lastID
         });
       }
@@ -646,7 +646,7 @@ app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) =
     console.error("Connection error:", error);
     res.json({
       success: true,
-      message: "✅ Account connected successfully! (Demo mode)"
+      message: "âœ… Account connected successfully! (Demo mode)"
     });
   }
 });
@@ -741,7 +741,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `, (err) => {
-    if (!err) console.log("✅ Broadcasts table ready");
+    if (!err) console.log("âœ… Broadcasts table ready");
   });
 
   // ================= NEW: INCIDENTS TABLE FOR STATUS PAGE =================
@@ -755,7 +755,7 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `, (err) => {
-    if (!err) console.log("✅ Incidents table ready");
+    if (!err) console.log("âœ… Incidents table ready");
   });
 
   // ================= NEW: STATUS SUBSCRIBERS TABLE =================
@@ -766,7 +766,7 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `, (err) => {
-    if (!err) console.log("✅ Status subscribers table ready");
+    if (!err) console.log("âœ… Status subscribers table ready");
   });
 
   // ================= NEW: AUTOMATIONS TABLES =================
@@ -791,7 +791,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Automations table ready");
+    if (!err) console.log("âœ… Automations table ready");
   });
 
   db.run(`
@@ -809,7 +809,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Connected accounts table ready");
+    if (!err) console.log("âœ… Connected accounts table ready");
   });
 
   db.run(`
@@ -822,7 +822,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Platform metrics table ready");
+    if (!err) console.log("âœ… Platform metrics table ready");
   });
 
   db.run(`
@@ -840,7 +840,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Automation runs table ready");
+    if (!err) console.log("âœ… Automation runs table ready");
   });
 
   db.run(`
@@ -856,7 +856,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Vision results table ready");
+    if (!err) console.log("âœ… Vision results table ready");
   });
 
   db.run(`
@@ -871,7 +871,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Activity log table ready");
+    if (!err) console.log("âœ… Activity log table ready");
   });
 
   db.run(`
@@ -887,7 +887,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Price history table ready");
+    if (!err) console.log("âœ… Price history table ready");
   });
 
   db.run(`
@@ -904,7 +904,7 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Inventory alerts table ready");
+    if (!err) console.log("âœ… Inventory alerts table ready");
   });
 
   db.run(`
@@ -919,7 +919,7 @@ db.serialize(() => {
       FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
     )
   `, (err) => {
-    if (!err) console.log("✅ Lead scores table ready");
+    if (!err) console.log("âœ… Lead scores table ready");
   });
 
   // Insert sample incident if none exist
@@ -985,7 +985,7 @@ app.post("/api/auth/resend-verification", bodyParser.json(), async (req, res) =>
           <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
               <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0;">✨ AI Smart Hub</h1>
+                <h1 style="color: white; margin: 0;">âœ¨ AI Smart Hub</h1>
                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
               </div>
               <div style="padding: 40px;">
@@ -1052,7 +1052,7 @@ app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
             <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
               <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
                 <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
+                  <h1 style="color: white; margin: 0;">âœ¨ Welcome to AI Smart Hub</h1>
                 </div>
                 <div style="padding: 40px;">
                   <h2 style="color: #333;">Verify Your Email</h2>
@@ -1398,7 +1398,7 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
 
       res.json({ success: true, reply, session_id: activeSession });
     } catch (err) {
-      console.error("❌ AI Error:", err.message);
+      console.error("âŒ AI Error:", err.message);
       res.status(500).json({ error: "AI server error" });
     }
   });
@@ -1621,7 +1621,7 @@ ${historyContext}`;
           
           // FIXED: Only append booking link if not already included and intent detected
           if (hasBookingIntent && smartSettings.booking_url && smartSettings.booking_active && !reply.includes(smartSettings.booking_url)) {
-            reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
+            reply += `\n\nðŸ“… You can book here: ${smartSettings.booking_url}`;
           }
         }
       }
@@ -1647,7 +1647,7 @@ ${historyContext}`;
         sentiment: 'neutral' // You can add sentiment analysis here
       });
     } catch (e) {
-      console.error("❌ Public Chat Error:", e.message);
+      console.error("âŒ Public Chat Error:", e.message);
       res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
     }
   });
@@ -1685,7 +1685,7 @@ app.post("/api/public/leads", bodyParser.json(), (req, res) => {
 
     db.get(`SELECT id FROM leads WHERE user_id = ? AND email = ?`, [user.id, email.toLowerCase().trim()], (err, existingLead) => {
       if (err) {
-        console.error("❌ Lead check error:", err);
+        console.error("âŒ Lead check error:", err);
         return res.status(500).json({ error: "Database error" });
       }
 
@@ -1704,7 +1704,7 @@ app.post("/api/public/leads", bodyParser.json(), (req, res) => {
           res.json({ success: true, message: "Lead captured!" });
         })
         .catch(err => {
-          console.error("❌ Lead Save Error:", err);
+          console.error("âŒ Lead Save Error:", err);
           res.status(500).json({ error: "Database save failed" });
         });
     });
@@ -1932,7 +1932,7 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
     res.json({ success: true, message: "Tool deactivated successfully" });
 
   } catch (err) {
-    console.error("❌ Deactivation Error:", err.message);
+    console.error("âŒ Deactivation Error:", err.message);
     res.status(500).json({ success: false, error: "Database error during deactivation" });
   }
 });
@@ -2046,7 +2046,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
       <head><meta charset="UTF-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">📬 New Contact Form Submission</h1>
+          <h1 style="color: white; margin: 0;">ðŸ“¬ New Contact Form Submission</h1>
         </div>
         <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
           <p><strong>Name:</strong> ${name}</p>
@@ -2083,7 +2083,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
             <head><meta charset="UTF-8"></head>
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px;">
-                <h1 style="color: white; margin: 0;">✅ Thank You for Contacting AI Smart Hub</h1>
+                <h1 style="color: white; margin: 0;">âœ… Thank You for Contacting AI Smart Hub</h1>
               </div>
               <div style="background: white; padding: 30px; margin-top: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
                 <p>We've received your message and will respond within 24 hours.</p>
@@ -2099,7 +2099,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
         });
       }
 
-      console.log(`✅ Contact form message sent from: ${email}`);
+      console.log(`âœ… Contact form message sent from: ${email}`);
     }
 
     res.json({ success: true, message: "Message sent successfully" });
@@ -2150,7 +2150,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
           <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
             <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">✨ ${user.business_name || 'AI Smart Hub'}</h1>
+                <h1 style="color: white; margin: 0; font-size: 28px;">âœ¨ ${user.business_name || 'AI Smart Hub'}</h1>
                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">Customer Update</p>
               </div>
               <div style="padding: 30px; background: white;">
@@ -2191,7 +2191,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
     const method = resend ? 'Resend' : 'Nodemailer';
     res.json({ 
       success: true, 
-      message: `✅ [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
+      message: `âœ… [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
       stats: results
     });
 
@@ -2213,7 +2213,7 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
     const user = await getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    console.log(`📧 Sending test email to: ${user.email}`);
+    console.log(`ðŸ“§ Sending test email to: ${user.email}`);
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -2222,17 +2222,17 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
         <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <div style="background: #f8f9fa; padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">
-            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">🔔 TEST MODE</span>
+            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">ðŸ”” TEST MODE</span>
           </div>
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">✨ ${user.business_name || 'AI Smart Hub'}</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">âœ¨ ${user.business_name || 'AI Smart Hub'}</h1>
           </div>
           <div style="padding: 30px;">
             ${content.replace(/\n/g, '<br>')}
           </div>
           <div style="background: #fff3cd; padding: 20px; text-align: center; border-top: 2px solid #ffc107;">
             <p style="color: #856404; margin: 0; font-size: 14px;">
-              ⚠️ This was a test email from your AI Smart Hub dashboard. 
+              âš ï¸ This was a test email from your AI Smart Hub dashboard. 
               <strong>No customers received this message.</strong>
             </p>
           </div>
@@ -2249,7 +2249,7 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
     );
 
     if (result.success) {
-      res.json({ success: true, message: `✅ Test email sent via ${result.method}! Check your inbox.` });
+      res.json({ success: true, message: `âœ… Test email sent via ${result.method}! Check your inbox.` });
     } else {
       throw new Error(result.error);
     }
@@ -2296,6 +2296,7 @@ app.post("/api/widget/regenerate-key", auth, (req, res) => {
 });
 
 // ================= START SERVER =================
-server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`ðŸš€ Server running on http://localhost:${PORT}`));
+
 
 
