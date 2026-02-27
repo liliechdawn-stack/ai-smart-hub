@@ -47,8 +47,8 @@ const { authenticateToken } = require("./auth-middleware");
 
 // Import new automation modules
 const automationRoutes = require('../api/automations-routes');
-const AutomationEngine = require('./services/automation-engine');
-const IntegrationService = require('./services/integrations');
+const AutomationEngine = require('../services/automation-engine');
+const IntegrationService = require('../services/integrations');
 
 const app = express();
 
@@ -2297,3 +2297,4 @@ app.post("/api/widget/regenerate-key", auth, (req, res) => {
 
 // ================= START SERVER =================
 server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+
