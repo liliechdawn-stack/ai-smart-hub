@@ -45,6 +45,11 @@ const {
 const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
+// Import new automation modules
+const automationRoutes = require('./api/automations-routes');
+const AutomationEngine = require('./services/automation-engine');
+const IntegrationService = require('./services/integrations');
+
 const app = express();
 
 // ================= MIDDLEWARE =================
@@ -73,6 +78,7 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const CLOUDFLARE_AI_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
 // ================= RESEND CONFIGURATION =================
 let resend = null;
@@ -168,7 +174,7 @@ app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 
 // ================= SERVE STATIC HTML FILES =================
 // Serve static files from the public directory
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ================= ROUTES =================
 app.use('/api/smart-hub', require('./smart-hub'));
@@ -195,6 +201,9 @@ app.get('/api/customer-insights/debug', (req, res) => {
 
 // AI Automations
 app.use('/api/ai-automations', require('./ai-automations'));
+
+// ================= NEW: AUTOMATION POWERHOUSE ROUTES =================
+app.use('/api/automations', automationRoutes);
 
 // ================= AI AUTOMATION POWERHOUSE ENDPOINTS =================
 // These endpoints power the AI Powerhouse 2.0 page with Cloudflare AI
@@ -297,6 +306,13 @@ app.post("/api/automations/vision/analyze", auth, bodyParser.json(), async (req,
     const cfData = await cfRes.json();
     const frames = Math.floor(Math.random() * 500) + 1000;
 
+    // Store vision result
+    const visionId = uuidv4();
+    db.run(
+      `INSERT INTO vision_results (id, user_id, image_url, analysis, created_at) VALUES (?, ?, ?, ?, ?)`,
+      [visionId, userId, image_url, cfData.result?.response || "Analysis complete", new Date().toISOString()]
+    );
+
     res.json({
       success: true,
       frames: frames,
@@ -327,8 +343,8 @@ app.post("/api/automations/anti-detection/rotate", auth, async (req, res) => {
     }
 
     // Log rotation for analytics
-    db.run(`INSERT INTO activity_log (user_id, action, timestamp) VALUES (?, ?, ?)`,
-      [userId, 'fingerprint_rotated', new Date().toISOString()]);
+    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
+      [userId, 'fingerprint_rotated', 'Fingerprint rotated', new Date().toISOString()]);
 
     res.json({
       success: true,
@@ -437,6 +453,13 @@ app.post("/api/automations/leads/enrich", auth, bodyParser.json(), async (req, r
         if (analysis.includes("medium intent")) intent = 75;
         if (analysis.includes("budget")) budget = "$10-20k";
       }
+
+      // Store lead score
+      const scoreId = uuidv4();
+      db.run(
+        `INSERT INTO lead_scores (id, user_id, lead_id, score, criteria, scored_at) VALUES (?, ?, ?, ?, ?, ?)`,
+        [scoreId, userId, lead.id, intent, JSON.stringify({ budget, readiness }), new Date().toISOString()]
+      );
 
       enriched.push({
         ...lead,
@@ -593,14 +616,23 @@ app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) =
       return res.status(403).json({ error: "Pro or Agency plan required" });
     }
 
-    // Store connected account (you'd want to create a table for this)
+    // Encrypt API key
+    const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
+    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    // Store connected account
     db.run(`INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, status, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, platform, accountName, crypto.createHash('sha256').update(apiKey).digest('hex'), 'active', new Date().toISOString()],
+      [userId, platform, accountName, encrypted, 'active', new Date().toISOString()],
       function(err) {
         if (err) {
           console.error("Account connection error:", err);
           return res.status(500).json({ error: "Failed to save account" });
         }
+        
+        // Log activity
+        db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
+          [userId, 'account_connected', `${platform} account connected`, new Date().toISOString()]);
         
         res.json({
           success: true,
@@ -737,7 +769,31 @@ db.serialize(() => {
     if (!err) console.log("✅ Status subscribers table ready");
   });
 
-  // ================= NEW: CONNECTED ACCOUNTS TABLE =================
+  // ================= NEW: AUTOMATIONS TABLES =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS automations (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      name TEXT,
+      description TEXT,
+      trigger_type TEXT,
+      trigger_config TEXT,
+      action_type TEXT,
+      action_config TEXT,
+      schedule TEXT,
+      status TEXT DEFAULT 'active',
+      trigger_count INTEGER DEFAULT 0,
+      success_count INTEGER DEFAULT 0,
+      avg_duration INTEGER DEFAULT 0,
+      last_run DATETIME,
+      created_at DATETIME,
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Automations table ready");
+  });
+
   db.run(`
     CREATE TABLE IF NOT EXISTS connected_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -745,26 +801,125 @@ db.serialize(() => {
       platform TEXT,
       account_name TEXT,
       api_key_encrypted TEXT,
+      account_info TEXT,
       status TEXT DEFAULT 'active',
+      last_sync DATETIME,
       created_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
     if (!err) console.log("✅ Connected accounts table ready");
   });
 
-  // ================= NEW: ACTIVITY LOG TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS platform_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      platform TEXT,
+      metrics TEXT,
+      collected_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Platform metrics table ready");
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS automation_runs (
+      id TEXT PRIMARY KEY,
+      automation_id TEXT,
+      user_id INTEGER,
+      status TEXT,
+      result TEXT,
+      duration INTEGER,
+      error TEXT,
+      started_at DATETIME,
+      completed_at DATETIME,
+      FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Automation runs table ready");
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS vision_results (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      image_url TEXT,
+      analysis TEXT,
+      objects_detected TEXT,
+      sentiment TEXT,
+      confidence REAL,
+      created_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Vision results table ready");
+  });
+
   db.run(`
     CREATE TABLE IF NOT EXISTS activity_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
       action TEXT,
       details TEXT,
+      icon TEXT,
+      type TEXT DEFAULT 'info',
       timestamp DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `, (err) => {
     if (!err) console.log("✅ Activity log table ready");
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      product_id TEXT,
+      product_name TEXT,
+      competitor TEXT,
+      price REAL,
+      currency TEXT,
+      detected_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Price history table ready");
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inventory_alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      product_id TEXT,
+      product_name TEXT,
+      current_quantity INTEGER,
+      threshold INTEGER,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME,
+      resolved_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Inventory alerts table ready");
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS lead_scores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      lead_id INTEGER,
+      score INTEGER,
+      criteria TEXT,
+      scored_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Lead scores table ready");
   });
 
   // Insert sample incident if none exist

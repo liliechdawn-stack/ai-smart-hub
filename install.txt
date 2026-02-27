@@ -1,0 +1,1 @@
+﻿npm install node-cron axios shopify-api-node stripe @mailchimp/mailchimp_marketing @slack/web-api
