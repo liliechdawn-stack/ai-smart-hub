@@ -1,4 +1,4 @@
-﻿const cron = require('node-cron');
+const cron = require('node-cron');
 const { db } = require('../database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -9,9 +9,10 @@ class AutomationEngine {
     }
 
     async executeAutomation(id, userId) {
-        console.log(Executing automation  for user );
+        console.log("Executing automation  for user ");
         return { success: true };
     }
 }
 
 module.exports = new AutomationEngine();
+
