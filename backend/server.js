@@ -46,7 +46,7 @@ const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
 // Import new automation modules
-const automationRoutes = require('./api/automations-routes');
+const automationRoutes = require('../api/automations-routes');
 const AutomationEngine = require('./services/automation-engine');
 const IntegrationService = require('./services/integrations');
 
