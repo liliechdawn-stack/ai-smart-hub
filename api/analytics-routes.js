@@ -1,4 +1,6 @@
 // api/analytics-routes.js
+const dbModule = require('../backend/database');
+const { db } = dbModule;
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../backend/auth');
