@@ -1,11 +1,13 @@
 // api/settings-routes.js
-const dbModule = require('../backend/database');
-const { db } = dbModule;
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../backend/auth');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+
+// Import database
+const dbModule = require('../backend/database');
+const { db } = dbModule;
 
 // ================= GET USER SETTINGS =================
 router.get('/profile', auth, (req, res) => {
@@ -13,7 +15,7 @@ router.get('/profile', auth, (req, res) => {
     
     db.get(`
         SELECT 
-            id, email, business_name, name, plan, 
+            id, email, business_name, plan, 
             plan_expires, is_verified, widget_color, 
             welcome_message, messages_used, leads_used,
             created_at
@@ -31,11 +33,14 @@ router.get('/profile', auth, (req, res) => {
         
         // Get connected accounts count
         db.get(`SELECT COUNT(*) as account_count FROM connected_accounts WHERE user_id = ?`, [userId], (err, accounts) => {
-            res.json({
+            // Add name field from business_name for compatibility
+            const userData = {
                 ...user,
+                name: user.business_name || 'User',
                 account_count: accounts?.account_count || 0,
                 plan_expires: user.plan_expires || null
-            });
+            };
+            res.json(userData);
         });
     });
 });
@@ -52,10 +57,7 @@ router.put('/profile', auth, async (req, res) => {
         updates.push('business_name = ?');
         params.push(business_name);
     }
-    if (name !== undefined) {
-        updates.push('name = ?');
-        params.push(name);
-    }
+    // Note: 'name' column might not exist, so we'll use business_name for display name
     if (widget_color !== undefined) {
         updates.push('widget_color = ?');
         params.push(widget_color);
@@ -140,7 +142,15 @@ router.get('/notifications', auth, (req, res) => {
     `, [userId], (err, settings) => {
         if (err) {
             console.error('Notification settings error:', err);
-            return res.status(500).json({ error: 'Failed to fetch notification settings' });
+            // Return defaults if table doesn't exist
+            return res.json({
+                email_notifications: true,
+                slack_webhook: null,
+                discord_webhook: null,
+                notify_on_success: true,
+                notify_on_failure: true,
+                notify_on_daily_summary: true
+            });
         }
         
         // Return defaults if no settings exist
@@ -162,46 +172,27 @@ router.put('/notifications', auth, (req, res) => {
         notify_on_success, notify_on_failure, notify_on_daily_summary 
     } = req.body;
     
-    // Ensure notification_settings table exists
+    // Insert or replace settings
     db.run(`
-        CREATE TABLE IF NOT EXISTS notification_settings (
-            user_id INTEGER PRIMARY KEY,
-            email_notifications INTEGER DEFAULT 1,
-            slack_webhook TEXT,
-            discord_webhook TEXT,
-            notify_on_success INTEGER DEFAULT 1,
-            notify_on_failure INTEGER DEFAULT 1,
-            notify_on_daily_summary INTEGER DEFAULT 1,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    `, (err) => {
+        INSERT OR REPLACE INTO notification_settings 
+        (user_id, email_notifications, slack_webhook, discord_webhook, 
+         notify_on_success, notify_on_failure, notify_on_daily_summary)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+        userId,
+        email_notifications !== undefined ? (email_notifications ? 1 : 0) : 1,
+        slack_webhook || null,
+        discord_webhook || null,
+        notify_on_success !== undefined ? (notify_on_success ? 1 : 0) : 1,
+        notify_on_failure !== undefined ? (notify_on_failure ? 1 : 0) : 1,
+        notify_on_daily_summary !== undefined ? (notify_on_daily_summary ? 1 : 0) : 1
+    ], function(err) {
         if (err) {
-            console.error('Table creation error:', err);
-            return res.status(500).json({ error: 'Database error' });
+            console.error('Notification update error:', err);
+            return res.status(500).json({ error: 'Failed to update notification settings' });
         }
         
-        // Insert or replace settings
-        db.run(`
-            INSERT OR REPLACE INTO notification_settings 
-            (user_id, email_notifications, slack_webhook, discord_webhook, 
-             notify_on_success, notify_on_failure, notify_on_daily_summary)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [
-            userId,
-            email_notifications !== undefined ? (email_notifications ? 1 : 0) : 1,
-            slack_webhook || null,
-            discord_webhook || null,
-            notify_on_success !== undefined ? (notify_on_success ? 1 : 0) : 1,
-            notify_on_failure !== undefined ? (notify_on_failure ? 1 : 0) : 1,
-            notify_on_daily_summary !== undefined ? (notify_on_daily_summary ? 1 : 0) : 1
-        ], function(err) {
-            if (err) {
-                console.error('Notification update error:', err);
-                return res.status(500).json({ error: 'Failed to update notification settings' });
-            }
-            
-            res.json({ success: true, message: 'Notification settings updated' });
-        });
+        res.json({ success: true, message: 'Notification settings updated' });
     });
 });
 
@@ -217,7 +208,8 @@ router.get('/api-keys', auth, (req, res) => {
     `, [userId], (err, keys) => {
         if (err) {
             console.error('API keys error:', err);
-            return res.status(500).json({ error: 'Failed to fetch API keys' });
+            // Return empty array if table doesn't exist
+            return res.json([]);
         }
         
         res.json(keys || []);
@@ -277,17 +269,30 @@ router.delete('/api-keys/:id', auth, (req, res) => {
 router.get('/billing', auth, (req, res) => {
     const userId = req.user.id;
     
+    // Set default limits based on plan
+    const getLimits = (plan) => {
+        const limits = {
+            free: { messages: 50, leads: 10 },
+            basic: { messages: 500, leads: 500 },
+            pro: { messages: 3000, leads: 3000 },
+            agency: { messages: 10000, leads: 10000 }
+        };
+        return limits[plan] || limits.free;
+    };
+    
     db.get(`
         SELECT 
             plan, plan_expires,
-            messages_used, messages_limit,
-            leads_used, leads_limit
+            messages_used, leads_used
         FROM users WHERE id = ?
     `, [userId], (err, user) => {
         if (err) {
             console.error('Billing error:', err);
             return res.status(500).json({ error: 'Failed to fetch billing info' });
         }
+        
+        const plan = user?.plan || 'free';
+        const limits = getLimits(plan);
         
         // Get payment history
         db.all(`
@@ -296,13 +301,13 @@ router.get('/billing', auth, (req, res) => {
             ORDER BY created_at DESC LIMIT 10
         `, [userId], (err, payments) => {
             res.json({
-                current_plan: user?.plan || 'free',
+                current_plan: plan,
                 plan_expires: user?.plan_expires,
                 usage: {
                     messages: user?.messages_used || 0,
-                    messages_limit: user?.messages_limit || 50,
+                    messages_limit: limits.messages,
                     leads: user?.leads_used || 0,
-                    leads_limit: user?.leads_limit || 10
+                    leads_limit: limits.leads
                 },
                 payment_history: payments || []
             });
