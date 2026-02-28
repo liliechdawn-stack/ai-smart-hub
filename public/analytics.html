@@ -393,6 +393,7 @@
             <a href="ai-powerhouse.html">Automations</a>
             <a href="#" class="active">Analytics</a>
             <a href="settings.html">Settings</a>
+            <a href="about.html">About</a>
             <a href="ai-automations.html" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
@@ -552,20 +553,28 @@ async function loadAnalytics() {
         updateTopAutomations(data.topAutomations);
         updatePlatformDistribution(data.platformStats);
         updateRecentRuns(data.recentRuns);
-        updateCharts(data.performance);
+        if (data.performance) {
+            updateCharts(data.performance);
+        }
         
     } catch (error) {
         console.error('Error loading analytics:', error);
         showToast('Failed to load analytics data', 'error');
+        
+        // Show fallback UI
+        document.getElementById('totalAutomations').textContent = '0';
+        document.getElementById('totalRuns').textContent = '0';
+        document.getElementById('successRate').textContent = '0%';
+        document.getElementById('avgDuration').textContent = '0s';
     }
 }
 
 // Update stats cards
 function updateStats(stats) {
-    document.getElementById('totalAutomations').textContent = stats.total_automations || 0;
-    document.getElementById('totalRuns').textContent = (stats.total_triggers || 0).toLocaleString();
-    document.getElementById('successRate').textContent = (stats.avg_success_rate || 0).toFixed(1) + '%';
-    document.getElementById('avgDuration').textContent = '1.2s'; // Placeholder, calculate from actual data
+    document.getElementById('totalAutomations').textContent = stats?.total_automations || 0;
+    document.getElementById('totalRuns').textContent = (stats?.total_triggers || 0).toLocaleString();
+    document.getElementById('successRate').textContent = (stats?.avg_success_rate || 0).toFixed(1) + '%';
+    document.getElementById('avgDuration').textContent = '1.2s';
 }
 
 // Update top automations list
@@ -580,7 +589,7 @@ function updateTopAutomations(automations) {
     container.innerHTML = automations.map(a => `
         <div class="automation-item">
             <div class="automation-info">
-                <h4>${a.name}</h4>
+                <h4>${a.name || 'Unnamed Automation'}</h4>
                 <p>${a.trigger_count || 0} triggers</p>
             </div>
             <div class="automation-stats">
@@ -603,11 +612,11 @@ function updatePlatformDistribution(platforms) {
     container.innerHTML = platforms.map(p => `
         <div class="automation-item">
             <div class="automation-info">
-                <h4>${p.platform}</h4>
-                <p>${p.active_accounts} active accounts</p>
+                <h4>${p.platform || 'Unknown'}</h4>
+                <p>${p.active_accounts || 0} active accounts</p>
             </div>
             <div class="automation-stats">
-                <div class="success-rate">${p.account_count}</div>
+                <div class="success-rate">${p.account_count || 0}</div>
                 <div class="trigger-count">total</div>
             </div>
         </div>
@@ -626,14 +635,14 @@ function updateRecentRuns(runs) {
     container.innerHTML = runs.map(r => `
         <div class="automation-item">
             <div class="automation-info">
-                <h4>${r.automation_name}</h4>
-                <p>${new Date(r.completed_at).toLocaleString()}</p>
+                <h4>${r.automation_name || 'Automation'}</h4>
+                <p>${r.completed_at ? new Date(r.completed_at).toLocaleString() : 'Unknown date'}</p>
             </div>
             <div class="automation-stats">
                 <div class="success-rate" style="color: ${r.status === 'success' ? 'var(--success)' : 'var(--danger)'}">
                     ${r.status === 'success' ? '✓ Success' : '✗ Failed'}
                 </div>
-                <div class="trigger-count">${(r.duration / 1000).toFixed(2)}s</div>
+                <div class="trigger-count">${r.duration ? (r.duration / 1000).toFixed(2) : '0'}s</div>
             </div>
         </div>
     `).join('');
@@ -641,72 +650,76 @@ function updateRecentRuns(runs) {
 
 // Initialize charts
 function initCharts() {
-    const perfCtx = document.getElementById('performanceChart').getContext('2d');
-    const successCtx = document.getElementById('successChart').getContext('2d');
+    const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
+    const successCtx = document.getElementById('successChart')?.getContext('2d');
     
-    performanceChart = new Chart(perfCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Total Runs',
-                    data: [],
-                    borderColor: '#d4af37',
-                    backgroundColor: 'rgba(212,175,55,0.1)',
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Successful',
-                    data: [],
-                    borderColor: '#059669',
-                    backgroundColor: 'rgba(5,150,105,0.1)',
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            }
-        }
-    });
-    
-    successChart = new Chart(successCtx, {
-        type: 'doughnut',
-        data: {
-            labels: [],
-            datasets: [{
-                data: [],
-                backgroundColor: [
-                    '#d4af37',
-                    '#10b981',
-                    '#3b82f6',
-                    '#8b5cf6',
-                    '#ec4899'
+    if (perfCtx) {
+        performanceChart = new Chart(perfCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Total Runs',
+                        data: [],
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212,175,55,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Successful',
+                        data: [],
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5,150,105,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
                 ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-                legend: { position: 'bottom' }
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
             }
-        }
-    });
+        });
+    }
+    
+    if (successCtx) {
+        successChart = new Chart(successCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#d4af37',
+                        '#10b981',
+                        '#3b82f6',
+                        '#8b5cf6',
+                        '#ec4899'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
 }
 
 // Update charts with real data
 function updateCharts(performance) {
-    if (!performance || performance.length === 0) return;
+    if (!performance || performance.length === 0 || !performanceChart) return;
     
-    const labels = performance.map(p => p.date);
+    const labels = performance.map(p => p.date || 'Unknown');
     const runs = performance.map(p => p.runs || 0);
     const successes = performance.map(p => p.successes || 0);
     
@@ -715,7 +728,7 @@ function updateCharts(performance) {
     performanceChart.data.datasets[1].data = successes;
     performanceChart.update();
     
-    // Update success chart with top automations (we'll fetch separately)
+    // Update success chart with top automations
     loadSuccessRates();
 }
 
@@ -732,9 +745,11 @@ async function loadSuccessRates() {
         const data = await response.json();
         const top5 = data.slice(0, 5);
         
-        successChart.data.labels = top5.map(a => a.name);
-        successChart.data.datasets[0].data = top5.map(a => a.success_rate || 0);
-        successChart.update();
+        if (successChart) {
+            successChart.data.labels = top5.map(a => a.name || 'Unnamed');
+            successChart.data.datasets[0].data = top5.map(a => a.success_rate || 0);
+            successChart.update();
+        }
         
     } catch (error) {
         console.error('Error loading success rates:', error);
@@ -760,7 +775,9 @@ async function setDateRange(days) {
         if (!response.ok) throw new Error('Failed to load performance data');
         
         const data = await response.json();
-        updateCharts(data);
+        if (performanceChart) {
+            updateCharts(data);
+        }
         
     } catch (error) {
         console.error('Error loading performance data:', error);
