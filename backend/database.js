@@ -291,6 +291,73 @@ db.serialize(() => {
     }
   });
 
+  // ==================== NOTIFICATION SETTINGS TABLE (for Settings page) ====================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS notification_settings (
+      user_id INTEGER PRIMARY KEY,
+      email_notifications INTEGER DEFAULT 1,
+      slack_webhook TEXT,
+      discord_webhook TEXT,
+      notify_on_success INTEGER DEFAULT 1,
+      notify_on_failure INTEGER DEFAULT 1,
+      notify_on_daily_summary INTEGER DEFAULT 1,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Error creating notification_settings table:", err.message);
+    } else {
+      console.log("✅ Notification settings table ready");
+    }
+  });
+
+  // ==================== API KEYS TABLE (for Settings page) ====================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      name TEXT,
+      platform TEXT,
+      api_key TEXT UNIQUE,
+      last_used DATETIME,
+      created_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Error creating api_keys table:", err.message);
+    } else {
+      console.log("✅ API keys table ready");
+    }
+  });
+
+  // Create index for api_keys
+  db.run(`CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);`, (err) => {
+    if (err && !err.message.includes('already exists')) {
+      console.error("Error creating api_keys index:", err.message);
+    }
+  });
+
+  // ==================== PAYMENTS TABLE ====================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      plan TEXT,
+      amount REAL,
+      reference TEXT,
+      status TEXT,
+      created_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Error creating payments table:", err.message);
+    } else {
+      console.log("✅ Payments table ready");
+    }
+  });
+
   // ==================== BACKWARD COMPATIBILITY MIGRATIONS ====================
   
   // Users table migrations - FIXED: Added business_type column
@@ -849,6 +916,131 @@ function getChatsBySession(session_id, user_id) {
 }
 
 // ===============================
+// NOTIFICATION SETTINGS FUNCTIONS (for Settings page)
+// ===============================
+async function getNotificationSettings(userId) {
+    return new Promise((resolve, reject) => {
+        db.get(
+            `SELECT * FROM notification_settings WHERE user_id = ?`,
+            [userId],
+            (err, row) => {
+                if (err) reject(err);
+                else resolve(row || {
+                    user_id: userId,
+                    email_notifications: 1,
+                    slack_webhook: null,
+                    discord_webhook: null,
+                    notify_on_success: 1,
+                    notify_on_failure: 1,
+                    notify_on_daily_summary: 1
+                });
+            }
+        );
+    });
+}
+
+async function saveNotificationSettings(userId, settings) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT OR REPLACE INTO notification_settings 
+            (user_id, email_notifications, slack_webhook, discord_webhook, 
+             notify_on_success, notify_on_failure, notify_on_daily_summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                userId,
+                settings.email_notifications ? 1 : 0,
+                settings.slack_webhook || null,
+                settings.discord_webhook || null,
+                settings.notify_on_success ? 1 : 0,
+                settings.notify_on_failure ? 1 : 0,
+                settings.notify_on_daily_summary ? 1 : 0
+            ],
+            function(err) {
+                if (err) reject(err);
+                else resolve({ success: true, changes: this.changes });
+            }
+        );
+    });
+}
+
+// ===============================
+// API KEYS FUNCTIONS (for Settings page)
+// ===============================
+async function createApiKey(userId, name, platform) {
+    const { v4: uuidv4 } = require('uuid');
+    const id = uuidv4();
+    const apiKey = `ak_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+    const now = new Date().toISOString();
+    
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT INTO api_keys (id, user_id, name, platform, api_key, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, userId, name, platform, apiKey, now],
+            function(err) {
+                if (err) reject(err);
+                else resolve({ id, api_key: apiKey, name, platform, created_at: now });
+            }
+        );
+    });
+}
+
+async function getApiKeys(userId) {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `SELECT id, name, platform, api_key, last_used, created_at 
+             FROM api_keys 
+             WHERE user_id = ? 
+             ORDER BY created_at DESC`,
+            [userId],
+            (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows || []);
+            }
+        );
+    });
+}
+
+async function deleteApiKey(keyId, userId) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `DELETE FROM api_keys WHERE id = ? AND user_id = ?`,
+            [keyId, userId],
+            function(err) {
+                if (err) reject(err);
+                else resolve({ success: true, changes: this.changes });
+            }
+        );
+    });
+}
+
+async function updateApiKeyLastUsed(keyId) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `UPDATE api_keys SET last_used = ? WHERE id = ?`,
+            [new Date().toISOString(), keyId],
+            function(err) {
+                if (err) reject(err);
+                else resolve({ success: true });
+            }
+        );
+    });
+}
+
+async function validateApiKey(apiKey) {
+    return new Promise((resolve, reject) => {
+        db.get(
+            `SELECT * FROM api_keys WHERE api_key = ?`,
+            [apiKey],
+            (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            }
+        );
+    });
+}
+
+// ===============================
 // ADMIN INITIALIZATION
 // ===============================
 function createAdminIfNotExists(email, hashedPassword) {
@@ -1126,6 +1318,15 @@ module.exports = {
   saveChat,
   getChatsByUser,
   getChatsBySession,
+  // New notification settings functions
+  getNotificationSettings,
+  saveNotificationSettings,
+  // New API keys functions
+  createApiKey,
+  getApiKeys,
+  deleteApiKey,
+  updateApiKeyLastUsed,
+  validateApiKey,
   createAdminIfNotExists,
   createAutomation,
   getAutomationsByUser,
