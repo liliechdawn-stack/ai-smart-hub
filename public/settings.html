@@ -186,7 +186,8 @@
         }
         
         .form-group input, 
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid var(--border-color);
@@ -197,7 +198,8 @@
         }
         
         .form-group input:focus, 
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: var(--primary);
         }
@@ -637,7 +639,7 @@ async function loadProfile() {
         const data = await response.json();
         
         document.getElementById('businessName').value = data.business_name || '';
-        document.getElementById('displayName').value = data.name || '';
+        document.getElementById('displayName').value = data.name || data.business_name || '';
         document.getElementById('email').value = data.email || '';
         document.getElementById('plan').value = (data.plan || 'free').toUpperCase();
         document.getElementById('widgetColor').value = data.widget_color || '#d4af37';
@@ -746,22 +748,22 @@ async function loadApiKeys() {
             return;
         }
         
-        container.innerHTML = keys.map(key => `
+        container.innerHTML = keys.map(key => {
+            // Handle case where api_key might not be returned for security
+            const displayKey = key.api_key ? key.api_key.substring(0, 8) + '...' : '••••••••';
+            return `
             <div class="api-key-item">
                 <div class="api-key-info">
                     <h4>${key.name}</h4>
                     <p>${key.platform} • Created: ${new Date(key.created_at).toLocaleDateString()}</p>
+                    <p style="font-family: monospace; font-size: 0.8rem;">${displayKey}</p>
                 </div>
                 <div class="api-key-actions">
-                    <button class="icon-btn" onclick="copyApiKey('${key.api_key}')" title="Copy">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="icon-btn" onclick="deleteApiKey('${key.id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    ${key.api_key ? `<button class="icon-btn" onclick="copyApiKey('${key.api_key}')" title="Copy"><i class="fas fa-copy"></i></button>` : ''}
+                    <button class="icon-btn" onclick="deleteApiKey('${key.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
         
     } catch (error) {
         console.error('Error loading API keys:', error);
@@ -805,7 +807,7 @@ async function createApiKey() {
         
         const data = await response.json();
         
-        showToast(`API Key created: ${data.api_key}`, 'success');
+        showToast(`API Key created successfully`, 'success');
         closeApiKeyModal();
         await loadApiKeys();
         
@@ -839,8 +841,11 @@ async function deleteApiKey(id) {
 
 // Copy API key to clipboard
 function copyApiKey(key) {
-    navigator.clipboard.writeText(key);
-    showToast('API key copied to clipboard', 'success');
+    navigator.clipboard.writeText(key).then(() => {
+        showToast('API key copied to clipboard', 'success');
+    }).catch(() => {
+        showToast('Failed to copy', 'error');
+    });
 }
 
 // Load billing information
