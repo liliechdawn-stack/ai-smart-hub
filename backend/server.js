@@ -143,6 +143,13 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
   }
 }
 
+// ================= ANALYTICS AND SETTINGS ROUTES =================
+const analyticsRoutes = require('./api/analytics-routes');
+const settingsRoutes = require('./api/settings-routes');
+
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/settings', settingsRoutes);
+
 // ================= FILE PROCESSING =================
 async function extractTextFromFile(fileData, fileName, mimeType) {
   try {
