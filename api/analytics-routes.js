@@ -1,7 +1,7 @@
 // api/analytics-routes.js
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../auth');
+const { auth } = require('../backend/auth');
 
 // ================= DASHBOARD ANALYTICS =================
 router.get('/dashboard', auth, (req, res) => {

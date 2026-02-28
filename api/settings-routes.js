@@ -1,7 +1,7 @@
 // api/settings-routes.js
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../auth');
+const { auth } = require('../backend/auth');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 
