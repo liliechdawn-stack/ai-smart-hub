@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -988,8 +988,8 @@
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
             <a href="#" class="active">Automations</a>
-            <a href="#" onclick="window.location.href='/analytics'">Analytics</a>
-            <a href="#" onclick="window.location.href='/settings'">Settings</a>
+            <a href="analytics.html">Analytics</a>
+            <a href="settings.html">Settings</a>
             <a href="ai-automations.html" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
@@ -1001,7 +1001,7 @@
     <!-- Welcome Header -->
     <div class="welcome-header">
         <div class="welcome-title">
-            <h1>Welcome back, <span id="userName">loading...</span> 👋</h1>
+            <h1>Welcome back, <span id="userName">loading...</span> ðŸ‘‹</h1>
             <p>Your AI automation hub is running 24/7 with <span id="activeAgentsDisplay">0</span> active agents</p>
         </div>
         <div class="date-badge">
@@ -1591,7 +1591,7 @@ async function checkAccess() {
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 AI Automation Powerhouse 2.0 Starting...');
+    console.log('ðŸš€ AI Automation Powerhouse 2.0 Starting...');
     
     const hasAccess = await checkAccess();
     if (!hasAccess) {
@@ -1623,7 +1623,7 @@ async function loadAllData() {
         
     } catch (error) {
         console.error('Error loading data:', error);
-        showToast('⚠️ Failed to load some data. Please refresh.', 'error');
+        showToast('âš ï¸ Failed to load some data. Please refresh.', 'error');
     }
 }
 
@@ -1812,14 +1812,14 @@ async function loadConnectedAccounts() {
                 
                 let metrics = 'Connected';
                 if (accountInfo) {
-                    if (account.platform === 'shopify') metrics = `${accountInfo.orders || 0} orders • $${accountInfo.revenue || 0}`;
-                    else if (account.platform === 'stripe') metrics = `$${accountInfo.revenue || 0} revenue • ${accountInfo.customers || 0} customers`;
-                    else if (account.platform === 'mailchimp') metrics = `${accountInfo.subscribers || 0} subscribers • ${accountInfo.campaigns || 0} campaigns`;
-                    else if (account.platform === 'slack') metrics = `${accountInfo.members || 0} members • ${accountInfo.channels || 0} channels`;
-                    else if (account.platform === 'salesforce') metrics = `${accountInfo.leads || 0} leads • ${accountInfo.opportunities || 0} opportunities`;
-                    else if (account.platform === 'hubspot') metrics = `${accountInfo.contacts || 0} contacts • ${accountInfo.deals || 0} deals`;
-                    else if (accountInfo.followers) metrics = `${accountInfo.followers} followers • ${accountInfo.engagement || 0} engagement`;
-                    else if (accountInfo.orders) metrics = `${accountInfo.orders} orders • $${accountInfo.revenue || 0}`;
+                    if (account.platform === 'shopify') metrics = `${accountInfo.orders || 0} orders â€¢ $${accountInfo.revenue || 0}`;
+                    else if (account.platform === 'stripe') metrics = `$${accountInfo.revenue || 0} revenue â€¢ ${accountInfo.customers || 0} customers`;
+                    else if (account.platform === 'mailchimp') metrics = `${accountInfo.subscribers || 0} subscribers â€¢ ${accountInfo.campaigns || 0} campaigns`;
+                    else if (account.platform === 'slack') metrics = `${accountInfo.members || 0} members â€¢ ${accountInfo.channels || 0} channels`;
+                    else if (account.platform === 'salesforce') metrics = `${accountInfo.leads || 0} leads â€¢ ${accountInfo.opportunities || 0} opportunities`;
+                    else if (account.platform === 'hubspot') metrics = `${accountInfo.contacts || 0} contacts â€¢ ${accountInfo.deals || 0} deals`;
+                    else if (accountInfo.followers) metrics = `${accountInfo.followers} followers â€¢ ${accountInfo.engagement || 0} engagement`;
+                    else if (accountInfo.orders) metrics = `${accountInfo.orders} orders â€¢ $${accountInfo.revenue || 0}`;
                     else if (accountInfo.revenue) metrics = `$${accountInfo.revenue} revenue`;
                 }
                 
@@ -1834,7 +1834,7 @@ async function loadConnectedAccounts() {
                             </div>
                             <div class="account-details">
                                 <h4>${accountName}</h4>
-                                <p>${platform.name} • ${metrics}</p>
+                                <p>${platform.name} â€¢ ${metrics}</p>
                                 <small style="color: var(--text-muted); font-size: 0.7rem;">Last sync: ${lastSync}</small>
                             </div>
                         </div>
@@ -1891,7 +1891,7 @@ function searchPlatforms() {
         card.style.display = text.includes(searchTerm) ? 'block' : 'none';
     });
     
-    showToast(`🔍 Searching for "${searchTerm}"`, 'info');
+    showToast(`ðŸ” Searching for "${searchTerm}"`, 'info');
 }
 
 // ===== FILTER FEATURES =====
@@ -2517,7 +2517,7 @@ function renderFeatures() {
 
 // ===== AUTOMATION FUNCTIONS =====
 async function runInventoryCheck() { 
-    showToast('📦 Checking inventory across all connected platforms...', 'info');
+    showToast('ðŸ“¦ Checking inventory across all connected platforms...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/inventory/check`, {
@@ -2526,16 +2526,16 @@ async function runInventoryCheck() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`📦 Found ${data.lowStock || 0} low stock items`, 'success');
+            showToast(`ðŸ“¦ Found ${data.lowStock || 0} low stock items`, 'success');
             await loadActivityLog();
         }
     } catch (error) {
-        showToast('📦 Inventory check started', 'info');
+        showToast('ðŸ“¦ Inventory check started', 'info');
     }
 }
 
 async function recoverCarts() { 
-    showToast('🛒 Starting cart recovery...', 'info');
+    showToast('ðŸ›’ Starting cart recovery...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/carts/recover`, {
@@ -2544,16 +2544,16 @@ async function recoverCarts() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`🛒 Recovered ${data.count || 0} carts`, 'success');
+            showToast(`ðŸ›’ Recovered ${data.count || 0} carts`, 'success');
             await loadActivityLog();
         }
     } catch (error) {
-        showToast('🛒 Cart recovery started', 'info');
+        showToast('ðŸ›’ Cart recovery started', 'info');
     }
 }
 
 async function scoreLeads() { 
-    showToast('📊 Scoring leads...', 'info');
+    showToast('ðŸ“Š Scoring leads...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/leads/score`, {
@@ -2562,116 +2562,116 @@ async function scoreLeads() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`📊 Found ${data.hotLeads || 0} hot leads`, 'success');
+            showToast(`ðŸ“Š Found ${data.hotLeads || 0} hot leads`, 'success');
             await loadActivityLog();
         }
     } catch (error) {
-        showToast('📊 Lead scoring started', 'info');
+        showToast('ðŸ“Š Lead scoring started', 'info');
     }
 }
 
 async function createSequence() { 
-    showToast('📧 Creating email sequence...', 'info');
-    setTimeout(() => showToast('📧 Email sequence created', 'success'), 1500);
+    showToast('ðŸ“§ Creating email sequence...', 'info');
+    setTimeout(() => showToast('ðŸ“§ Email sequence created', 'success'), 1500);
 }
 
 async function processTasks() { 
-    showToast('✅ Processing tasks...', 'info');
-    setTimeout(() => showToast('✅ Tasks processed', 'success'), 1500);
+    showToast('âœ… Processing tasks...', 'info');
+    setTimeout(() => showToast('âœ… Tasks processed', 'success'), 1500);
 }
 
 async function schedulePosts() { 
-    showToast('📅 Scheduling posts...', 'info');
-    setTimeout(() => showToast('📅 Posts scheduled', 'success'), 1500);
+    showToast('ðŸ“… Scheduling posts...', 'info');
+    setTimeout(() => showToast('ðŸ“… Posts scheduled', 'success'), 1500);
 }
 
 async function analyzeAds() { 
-    showToast('📈 Analyzing ads...', 'info');
-    setTimeout(() => showToast('📈 Analysis complete', 'success'), 2000);
+    showToast('ðŸ“ˆ Analyzing ads...', 'info');
+    setTimeout(() => showToast('ðŸ“ˆ Analysis complete', 'success'), 2000);
 }
 
 async function checkSEO() { 
-    showToast('🔍 Checking SEO...', 'info');
-    setTimeout(() => showToast('🔍 SEO check complete', 'success'), 2000);
+    showToast('ðŸ” Checking SEO...', 'info');
+    setTimeout(() => showToast('ðŸ” SEO check complete', 'success'), 2000);
 }
 
 async function routeTickets() { 
-    showToast('🎫 Routing tickets...', 'info');
-    setTimeout(() => showToast('🎫 Tickets routed', 'success'), 1500);
+    showToast('ðŸŽ« Routing tickets...', 'info');
+    setTimeout(() => showToast('ðŸŽ« Tickets routed', 'success'), 1500);
 }
 
 async function enableAutoReply() { 
-    showToast('🤖 Enabling auto-reply...', 'info');
-    setTimeout(() => showToast('🤖 Auto-reply enabled', 'success'), 1500);
+    showToast('ðŸ¤– Enabling auto-reply...', 'info');
+    setTimeout(() => showToast('ðŸ¤– Auto-reply enabled', 'success'), 1500);
 }
 
 async function sendSurveys() { 
-    showToast('📋 Sending surveys...', 'info');
-    setTimeout(() => showToast('📋 Surveys sent', 'success'), 1500);
+    showToast('ðŸ“‹ Sending surveys...', 'info');
+    setTimeout(() => showToast('ðŸ“‹ Surveys sent', 'success'), 1500);
 }
 
 async function processInvoices() { 
-    showToast('💰 Processing invoices...', 'info');
-    setTimeout(() => showToast('💰 Invoices processed', 'success'), 2000);
+    showToast('ðŸ’° Processing invoices...', 'info');
+    setTimeout(() => showToast('ðŸ’° Invoices processed', 'success'), 2000);
 }
 
 async function scanExpenses() { 
-    showToast('🧾 Scanning expenses...', 'info');
-    setTimeout(() => showToast('🧾 Expenses scanned', 'success'), 2000);
+    showToast('ðŸ§¾ Scanning expenses...', 'info');
+    setTimeout(() => showToast('ðŸ§¾ Expenses scanned', 'success'), 2000);
 }
 
 async function processPayroll() { 
-    showToast('💵 Processing payroll...', 'info');
-    setTimeout(() => showToast('💵 Payroll processed', 'success'), 2000);
+    showToast('ðŸ’µ Processing payroll...', 'info');
+    setTimeout(() => showToast('ðŸ’µ Payroll processed', 'success'), 2000);
 }
 
 async function processLeave() { 
-    showToast('🏖️ Processing leave...', 'info');
-    setTimeout(() => showToast('🏖️ Leave processed', 'success'), 1500);
+    showToast('ðŸ–ï¸ Processing leave...', 'info');
+    setTimeout(() => showToast('ðŸ–ï¸ Leave processed', 'success'), 1500);
 }
 
 async function startOnboarding() { 
-    showToast('👋 Starting onboarding...', 'info');
-    setTimeout(() => showToast('👋 Onboarding started', 'success'), 1500);
+    showToast('ðŸ‘‹ Starting onboarding...', 'info');
+    setTimeout(() => showToast('ðŸ‘‹ Onboarding started', 'success'), 1500);
 }
 
 async function scheduleReviews() { 
-    showToast('📋 Scheduling reviews...', 'info');
-    setTimeout(() => showToast('📋 Reviews scheduled', 'success'), 1500);
+    showToast('ðŸ“‹ Scheduling reviews...', 'info');
+    setTimeout(() => showToast('ðŸ“‹ Reviews scheduled', 'success'), 1500);
 }
 
 async function assignTasks() { 
-    showToast('✅ Assigning tasks...', 'info');
-    setTimeout(() => showToast('✅ Tasks assigned', 'success'), 1500);
+    showToast('âœ… Assigning tasks...', 'info');
+    setTimeout(() => showToast('âœ… Tasks assigned', 'success'), 1500);
 }
 
 async function checkDeadlines() { 
-    showToast('⏰ Checking deadlines...', 'info');
-    setTimeout(() => showToast('⏰ Deadlines checked', 'success'), 1500);
+    showToast('â° Checking deadlines...', 'info');
+    setTimeout(() => showToast('â° Deadlines checked', 'success'), 1500);
 }
 
 async function generateReport() { 
-    showToast('📊 Generating report...', 'info');
-    setTimeout(() => showToast('📊 Report generated', 'success'), 2000);
+    showToast('ðŸ“Š Generating report...', 'info');
+    setTimeout(() => showToast('ðŸ“Š Report generated', 'success'), 2000);
 }
 
 async function createContent() { 
-    showToast('✍️ Creating content...', 'info');
-    setTimeout(() => showToast('✍️ Content created', 'success'), 2000);
+    showToast('âœï¸ Creating content...', 'info');
+    setTimeout(() => showToast('âœï¸ Content created', 'success'), 2000);
 }
 
 async function trackEngagement() { 
-    showToast('❤️ Tracking engagement...', 'info');
-    setTimeout(() => showToast('❤️ Engagement tracked', 'success'), 1500);
+    showToast('â¤ï¸ Tracking engagement...', 'info');
+    setTimeout(() => showToast('â¤ï¸ Engagement tracked', 'success'), 1500);
 }
 
 async function trackInfluencers() { 
-    showToast('🌟 Tracking influencers...', 'info');
-    setTimeout(() => showToast('🌟 Influencers tracked', 'success'), 1500);
+    showToast('ðŸŒŸ Tracking influencers...', 'info');
+    setTimeout(() => showToast('ðŸŒŸ Influencers tracked', 'success'), 1500);
 }
 
 async function analyzeWithVision() { 
-    showToast('🔍 Vision analysis started...', 'info');
+    showToast('ðŸ” Vision analysis started...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/vision/analyze`, {
@@ -2680,25 +2680,25 @@ async function analyzeWithVision() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`🔍 Analyzed ${data.frames || 0} frames`, 'success');
+            showToast(`ðŸ” Analyzed ${data.frames || 0} frames`, 'success');
             await loadStats();
         }
     } catch (error) {
-        showToast('🔍 Vision analysis unavailable', 'error');
+        showToast('ðŸ” Vision analysis unavailable', 'error');
     }
 }
 
 async function rotateFingerprint() { 
-    showToast('🛡️ Rotating fingerprint...', 'info');
+    showToast('ðŸ›¡ï¸ Rotating fingerprint...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/anti-detection/rotate`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) showToast('🛡️ Fingerprint rotated', 'success');
+        if (response.ok) showToast('ðŸ›¡ï¸ Fingerprint rotated', 'success');
     } catch (error) {
-        showToast('🛡️ Rotation failed', 'error');
+        showToast('ðŸ›¡ï¸ Rotation failed', 'error');
     }
 }
 
@@ -2710,15 +2710,15 @@ async function showProxyStats() {
         });
         if (response.ok) {
             const stats = await response.json();
-            showToast(`📊 ${stats.proxies || 0} active proxies`, 'info');
+            showToast(`ðŸ“Š ${stats.proxies || 0} active proxies`, 'info');
         }
     } catch (error) {
-        showToast('📊 Proxy stats unavailable', 'error');
+        showToast('ðŸ“Š Proxy stats unavailable', 'error');
     }
 }
 
 async function enrichLeads() { 
-    showToast('⚡ Enriching leads...', 'info');
+    showToast('âš¡ Enriching leads...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/leads/enrich`, {
@@ -2727,20 +2727,20 @@ async function enrichLeads() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`⚡ Found ${data.discovered || 0} insights`, 'success');
+            showToast(`âš¡ Found ${data.discovered || 0} insights`, 'success');
             await loadStats();
         }
     } catch (error) {
-        showToast('⚡ Enrichment started', 'info');
+        showToast('âš¡ Enrichment started', 'info');
     }
 }
 
 function viewLeadDatabase() { 
-    showToast(`📊 ${totalLeads} total leads`, 'info'); 
+    showToast(`ðŸ“Š ${totalLeads} total leads`, 'info'); 
 }
 
 async function spawnInstance() { 
-    showToast('📱 Spawning instance...', 'info');
+    showToast('ðŸ“± Spawning instance...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/mobile/spawn`, {
@@ -2749,38 +2749,38 @@ async function spawnInstance() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`📱 ${data.instances || 0} instances spawned`, 'success');
+            showToast(`ðŸ“± ${data.instances || 0} instances spawned`, 'success');
             await loadStats();
         }
     } catch (error) {
-        showToast('📱 Spawn started', 'info');
+        showToast('ðŸ“± Spawn started', 'info');
     }
 }
 
 function manageInstances() { 
-    showToast('☁️ Cloud Console', 'info'); 
+    showToast('â˜ï¸ Cloud Console', 'info'); 
 }
 
 async function scanPrices() { 
-    showToast('💰 Scanning prices...', 'info');
+    showToast('ðŸ’° Scanning prices...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/prices/scan`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) showToast('💰 Scan complete', 'success');
+        if (response.ok) showToast('ðŸ’° Scan complete', 'success');
     } catch (error) {
-        showToast('💰 Scan started', 'info');
+        showToast('ðŸ’° Scan started', 'info');
     }
 }
 
 function viewPriceAlerts() { 
-    showToast('🔔 Checking alerts...', 'info'); 
+    showToast('ðŸ”” Checking alerts...', 'info'); 
 }
 
 async function deployAgent() { 
-    showToast('🤖 Deploying agent...', 'info');
+    showToast('ðŸ¤– Deploying agent...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/agents/deploy`, {
@@ -2789,25 +2789,25 @@ async function deployAgent() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`🤖 ${data.agentType || 'Agent'} deployed`, 'success');
+            showToast(`ðŸ¤– ${data.agentType || 'Agent'} deployed`, 'success');
             await loadStats();
         }
     } catch (error) {
-        showToast('🤖 Deployment started', 'info');
+        showToast('ðŸ¤– Deployment started', 'info');
     }
     setTimeout(loadActivityLog, 2000);
 }
 
 function viewAgents() { 
-    showToast(`🤖 ${activeAgents} active agents`, 'info'); 
+    showToast(`ðŸ¤– ${activeAgents} active agents`, 'info'); 
 }
 
 function configureAccount(platform) { 
-    showToast(`⚙️ Configuring ${platform}...`, 'info'); 
+    showToast(`âš™ï¸ Configuring ${platform}...`, 'info'); 
 }
 
 function configureFeature(feature) { 
-    showToast(`⚙️ Configuring ${feature}...`, 'info'); 
+    showToast(`âš™ï¸ Configuring ${feature}...`, 'info'); 
 }
 
 async function connectAccount() {
@@ -2879,7 +2879,7 @@ async function connectAccount() {
         });
         
         if (response.ok) {
-            showToast('✅ Account connected successfully!', 'success');
+            showToast('âœ… Account connected successfully!', 'success');
             closeModal();
             await loadConnectedAccounts();
             await loadActivityLog();
