@@ -2297,6 +2297,42 @@ app.post("/api/widget/regenerate-key", auth, (req, res) => {
 
 // ================= START SERVER =================
 server.listen(PORT, () => console.log(`ðŸš€ Server running on http://localhost:${PORT}`));
+// ===== FIX: Add missing accounts endpoint =====
+app.get("/api/automations/accounts", auth, (req, res) => {
+    const userId = req.user.id;
+    
+    db.all(
+        SELECT id, platform, account_name, account_info, status, created_at, last_sync 
+         FROM connected_accounts 
+         WHERE user_id = ? AND status = 'active'
+         ORDER BY created_at DESC,
+        [userId],
+        (err, rows) => {
+            if (err) {
+                console.error("Error fetching accounts:", err);
+                return res.status(500).json({ error: "Database error" });
+            }
+            
+            const accounts = (rows || []).map(row => {
+                try {
+                    return {
+                        ...row,
+                        account_info: row.account_info ? JSON.parse(row.account_info) : null
+                    };
+                } catch (e) {
+                    return {
+                        ...row,
+                        account_info: null
+                    };
+                }
+            });
+            
+            res.json(accounts);
+        }
+    );
+});
 
-
-
+// ===== Test endpoint =====
+app.get("/api/test", (req, res) => {
+    res.json({ status: "ok", message: "API is working", timestamp: new Date().toISOString() });
+});
