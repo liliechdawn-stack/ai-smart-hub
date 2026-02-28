@@ -605,9 +605,10 @@ app.post("/api/automations/agents/deploy", auth, async (req, res) => {
   }
 });
 
-// Connect platform account
+// ================= ENHANCED CONNECT PLATFORM ACCOUNT ENDPOINT =================
+// This now handles additional fields and updates existing accounts
 app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) => {
-  const { platform, accountName, apiKey } = req.body;
+  const { platform, accountName, apiKey, ...additionalFields } = req.body;
   const userId = req.user.id;
   
   try {
@@ -621,34 +622,201 @@ app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) =
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    // Store connected account
-    db.run(`INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, status, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, platform, accountName, encrypted, 'active', new Date().toISOString()],
-      function(err) {
+    // Store all account data including additional fields
+    const accountInfo = JSON.stringify({
+      ...additionalFields,
+      connected_at: new Date().toISOString(),
+      last_sync: new Date().toISOString()
+    });
+
+    // Check if account already exists
+    db.get(
+      `SELECT id FROM connected_accounts WHERE user_id = ? AND platform = ? AND account_name = ?`,
+      [userId, platform, accountName],
+      (err, existing) => {
         if (err) {
-          console.error("Account connection error:", err);
-          return res.status(500).json({ error: "Failed to save account" });
+          console.error("Error checking existing account:", err);
+          return res.status(500).json({ error: "Database error" });
         }
-        
-        // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-          [userId, 'account_connected', `${platform} account connected`, new Date().toISOString()]);
-        
-        res.json({
-          success: true,
-          message: `✅ ${platform} account connected successfully!`,
-          account_id: this.lastID
-        });
+
+        if (existing) {
+          // Update existing account
+          db.run(
+            `UPDATE connected_accounts 
+             SET api_key_encrypted = ?, account_info = ?, status = 'active', last_sync = ?, updated_at = ? 
+             WHERE id = ?`,
+            [encrypted, accountInfo, new Date().toISOString(), new Date().toISOString(), existing.id],
+            function(err) {
+              if (err) {
+                console.error("Error updating account:", err);
+                return res.status(500).json({ error: "Failed to update account" });
+              }
+
+              // Log activity
+              db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
+                [userId, 'account_updated', `${platform} account updated`, new Date().toISOString()]);
+
+              res.json({
+                success: true,
+                message: `✅ ${platform} account updated successfully!`,
+                account_id: existing.id
+              });
+            }
+          );
+        } else {
+          // Insert new account
+          db.run(
+            `INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, account_info, status, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, platform, accountName, encrypted, accountInfo, 'active', new Date().toISOString(), new Date().toISOString()],
+            function(err) {
+              if (err) {
+                console.error("Account connection error:", err);
+                return res.status(500).json({ error: "Failed to save account" });
+              }
+
+              // Log activity
+              db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
+                [userId, 'account_connected', `${platform} account connected`, new Date().toISOString()]);
+
+              res.json({
+                success: true,
+                message: `✅ ${platform} account connected successfully!`,
+                account_id: this.lastID
+              });
+            }
+          );
+        }
       }
     );
 
   } catch (error) {
     console.error("Connection error:", error);
-    res.json({
-      success: true,
-      message: "✅ Account connected successfully! (Demo mode)"
-    });
+    res.status(500).json({ error: "Server error during connection" });
   }
+});
+
+// ===== ACCOUNTS ENDPOINT =====
+app.get("/api/automations/accounts", auth, (req, res) => {
+  const userId = req.user.id;
+  
+  const query = "SELECT id, platform, account_name, account_info, status, created_at, last_sync FROM connected_accounts WHERE user_id = ? ORDER BY created_at DESC";
+  
+  db.all(query, [userId], (err, rows) => {
+    if (err) {
+      console.error("Error fetching accounts:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    const accounts = (rows || []).map(row => {
+      try {
+        return {
+          ...row,
+          account_info: row.account_info ? JSON.parse(row.account_info) : null
+        };
+      } catch (e) {
+        return {
+          ...row,
+          account_info: null
+        };
+      }
+    });
+    
+    res.json(accounts);
+  });
+});
+
+// ===== SYNC ACCOUNT ENDPOINT =====
+app.post("/api/automations/accounts/:id/sync", auth, async (req, res) => {
+  const accountId = req.params.id;
+  const userId = req.user.id;
+
+  try {
+    // Get account details
+    const account = await new Promise((resolve, reject) => {
+      db.get(
+        `SELECT * FROM connected_accounts WHERE id = ? AND user_id = ?`,
+        [accountId, userId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+
+    if (!account) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    // Decrypt API key
+    const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
+    let decrypted = decipher.update(account.api_key_encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    // Here you would make API calls to the platform to fetch real data
+    // This is a placeholder for actual platform API integration
+    const syncResult = {
+      last_sync: new Date().toISOString(),
+      status: 'success',
+      message: `Synced ${account.platform} account`
+    };
+
+    // Update last_sync timestamp
+    db.run(
+      `UPDATE connected_accounts SET last_sync = ? WHERE id = ?`,
+      [new Date().toISOString(), accountId],
+      (err) => {
+        if (err) {
+          console.error("Error updating sync time:", err);
+          return res.status(500).json({ error: "Failed to update sync time" });
+        }
+
+        // Log activity
+        db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
+          [userId, 'account_synced', `${account.platform} account synced`, new Date().toISOString()]);
+
+        res.json({
+          success: true,
+          message: `✅ ${account.platform} account synced successfully`,
+          last_sync: new Date().toISOString()
+        });
+      }
+    );
+
+  } catch (error) {
+    console.error("Sync error:", error);
+    res.status(500).json({ error: "Failed to sync account" });
+  }
+});
+
+// ===== DISCONNECT ACCOUNT ENDPOINT =====
+app.delete("/api/automations/accounts/:id", auth, (req, res) => {
+  const accountId = req.params.id;
+  const userId = req.user.id;
+
+  db.run(
+    `DELETE FROM connected_accounts WHERE id = ? AND user_id = ?`,
+    [accountId, userId],
+    function(err) {
+      if (err) {
+        console.error("Error deleting account:", err);
+        return res.status(500).json({ error: "Failed to delete account" });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+
+      // Log activity
+      db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
+        [userId, 'account_disconnected', `Account disconnected`, new Date().toISOString()]);
+
+      res.json({
+        success: true,
+        message: "✅ Account disconnected successfully"
+      });
+    }
+  );
 });
 
 // Get user profile
@@ -2293,36 +2461,6 @@ app.post("/api/widget/regenerate-key", auth, (req, res) => {
   setWidgetKey(req.user.id, newKey)
     .then(() => res.json({ key: newKey, message: "New key generated successfully" }))
     .catch(err => res.status(500).json({ error: "Failed to regenerate key" }));
-});
-
-// ===== CORRECTED ACCOUNTS ENDPOINT (SINGLE COPY) =====
-app.get("/api/automations/accounts", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  const query = "SELECT id, platform, account_name, account_info, status, created_at, last_sync FROM connected_accounts WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC";
-  
-  db.all(query, [userId], (err, rows) => {
-    if (err) {
-      console.error("Error fetching accounts:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    
-    const accounts = (rows || []).map(row => {
-      try {
-        return {
-          ...row,
-          account_info: row.account_info ? JSON.parse(row.account_info) : null
-        };
-      } catch (e) {
-        return {
-          ...row,
-          account_info: null
-        };
-      }
-    });
-    
-    res.json(accounts);
-  });
 });
 
 // ===== TEST ENDPOINT =====
