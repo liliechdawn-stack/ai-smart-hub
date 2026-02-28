@@ -2336,3 +2336,4 @@ app.get("/api/automations/accounts", auth, (req, res) => {
 app.get("/api/test", (req, res) => {
     res.json({ status: "ok", message: "API is working", timestamp: new Date().toISOString() });
 });
+
