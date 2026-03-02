@@ -10,6 +10,69 @@ const { db, getUserById } = dbModule;
 // Encryption key from environment (should match server.js)
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here';
 
+// ===== HELPER FUNCTIONS FOR ACTION EXECUTION =====
+// Moved to the top so they're available when needed
+
+async function executeVisionAction(userId, config) {
+    // Implementation for Vision Agent
+    return {
+        action: 'vision_analysis',
+        status: 'completed',
+        results: {
+            images_analyzed: Math.floor(Math.random() * 10) + 1,
+            objects_detected: Math.floor(Math.random() * 20) + 5
+        }
+    };
+}
+
+async function executeLeadAction(userId, config) {
+    // Implementation for Lead Agent
+    return {
+        action: 'lead_scoring',
+        status: 'completed',
+        results: {
+            leads_scored: Math.floor(Math.random() * 50) + 10,
+            hot_leads: Math.floor(Math.random() * 10) + 1
+        }
+    };
+}
+
+async function executeContentAction(userId, config) {
+    // Implementation for Content Agent
+    return {
+        action: 'content_generation',
+        status: 'completed',
+        results: {
+            posts_created: Math.floor(Math.random() * 5) + 1,
+            platforms: ['twitter', 'linkedin', 'facebook']
+        }
+    };
+}
+
+async function executeEngagementAction(userId, config) {
+    // Implementation for Engagement Agent
+    return {
+        action: 'engagement_tracking',
+        status: 'completed',
+        results: {
+            interactions: Math.floor(Math.random() * 100) + 20,
+            new_followers: Math.floor(Math.random() * 50) + 5
+        }
+    };
+}
+
+async function executeAnalyticsAction(userId, config) {
+    // Implementation for Analytics Agent
+    return {
+        action: 'analytics_report',
+        status: 'completed',
+        results: {
+            report_generated: true,
+            metrics: ['sales', 'traffic', 'conversions']
+        }
+    };
+}
+
 // ================= REAL SAAS AUTOMATION ENDPOINTS =================
 // All endpoints fetch/store REAL data - NO SIMULATIONS
 
@@ -705,67 +768,5 @@ router.post('/import', authenticateToken, express.json(), (req, res) => {
         });
     });
 });
-
-// ===== HELPER FUNCTIONS FOR ACTION EXECUTION =====
-
-async function executeVisionAction(userId, config) {
-    // Implementation for Vision Agent
-    return {
-        action: 'vision_analysis',
-        status: 'completed',
-        results: {
-            images_analyzed: Math.floor(Math.random() * 10) + 1,
-            objects_detected: Math.floor(Math.random() * 20) + 5
-        }
-    };
-}
-
-async function executeLeadAction(userId, config) {
-    // Implementation for Lead Agent
-    return {
-        action: 'lead_scoring',
-        status: 'completed',
-        results: {
-            leads_scored: Math.floor(Math.random() * 50) + 10,
-            hot_leads: Math.floor(Math.random() * 10) + 1
-        }
-    };
-}
-
-async function executeContentAction(userId, config) {
-    // Implementation for Content Agent
-    return {
-        action: 'content_generation',
-        status: 'completed',
-        results: {
-            posts_created: Math.floor(Math.random() * 5) + 1,
-            platforms: ['twitter', 'linkedin', 'facebook']
-        }
-    };
-}
-
-async function executeEngagementAction(userId, config) {
-    // Implementation for Engagement Agent
-    return {
-        action: 'engagement_tracking',
-        status: 'completed',
-        results: {
-            interactions: Math.floor(Math.random() * 100) + 20,
-            new_followers: Math.floor(Math.random() * 50) + 5
-        }
-    };
-}
-
-async function executeAnalyticsAction(userId, config) {
-    // Implementation for Analytics Agent
-    return {
-        action: 'analytics_report',
-        status: 'completed',
-        results: {
-            report_generated: true,
-            metrics: ['sales', 'traffic', 'conversions']
-        }
-    };
-}
 
 module.exports = router;
