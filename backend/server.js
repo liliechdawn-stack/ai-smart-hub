@@ -62,6 +62,10 @@ const automationRoutes = require('../api/automations-routes');
 const AutomationEngine = require('../services/automation-engine');
 const IntegrationService = require('../services/integrations');
 
+// Import analytics and settings routes
+const analyticsRoutes = require('../api/analytics-routes');
+const settingsRoutes = require('../api/settings-routes');
+
 const app = express();
 
 // ================= MIDDLEWARE =================
@@ -222,638 +226,9 @@ app.use('/api/ai-automations', require('./ai-automations'));
 // ================= NEW: AUTOMATION POWERHOUSE ROUTES =================
 app.use('/api/automations', automationRoutes);
 
-// ================= AI AUTOMATION POWERHOUSE ENDPOINTS =================
-// These endpoints power the AI Powerhouse 2.0 page with Cloudflare AI
-
-// Get automation stats
-app.get("/api/automations/stats", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  db.get(`SELECT 
-    (SELECT COUNT(*) FROM users WHERE plan IN ('pro', 'agency')) as activeAgents,
-    (SELECT COUNT(*) FROM chats WHERE date(created_at) = date('now')) as imagesProcessed,
-    (SELECT COUNT(*) FROM leads WHERE date(created_at) = date('now')) as totalLeads,
-    (SELECT SUM(messages_used) FROM users) as hoursSaved
-  `, (err, stats) => {
-    if (err) {
-      return res.json({
-        activeAgents: 247,
-        imagesProcessed: 1245789,
-        totalLeads: 45892,
-        hoursSaved: 1247
-      });
-    }
-    res.json(stats);
-  });
-});
-
-// Get recent activity
-app.get("/api/automations/activity", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  db.all(`SELECT 
-    'fa-' || CASE ABS(RANDOM() % 5) 
-      WHEN 0 THEN 'eye' 
-      WHEN 1 THEN 'shield-alt'
-      WHEN 2 THEN 'brain'
-      WHEN 3 THEN 'cloud'
-      ELSE 'robot' END as icon,
-    message as title,
-    strftime('%s', 'now') - strftime('%s', created_at) || ' min ago' as time
-  FROM chats 
-  WHERE user_id = ? 
-  ORDER BY created_at DESC 
-  LIMIT 5`, [userId], (err, activities) => {
-    if (err || activities.length === 0) {
-      return res.json([
-        { icon: 'fa-eye', title: 'Vision AI analyzed TikTok videos', time: '2 min ago' },
-        { icon: 'fa-shield-alt', title: 'Anti-detection rotated fingerprints', time: '5 min ago' },
-        { icon: 'fa-brain', title: 'Lead Brain enriched 23 leads', time: '12 min ago' },
-        { icon: 'fa-cloud', title: 'Spawned mobile instances', time: '18 min ago' },
-        { icon: 'fa-robot', title: 'Agentic workflow completed', time: '25 min ago' }
-      ]);
-    }
-    res.json(activities);
-  });
-});
-
-// Computer Vision Analysis with Cloudflare
-app.post("/api/automations/vision/analyze", auth, bodyParser.json(), async (req, res) => {
-  const { image_url, platform } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    // Check if user has pro/agency plan
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    // Use Cloudflare AI for computer vision
-    const cfRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "system",
-              content: "You are a computer vision AI analyzing social media content. Detect objects, faces, text, and sentiment."
-            },
-            {
-              role: "user",
-              content: [
-                { type: "image_url", image_url: image_url || "https://example.com/sample.jpg" },
-                { type: "text", text: `Analyze this ${platform || 'social media'} content in detail. Detect any products, logos, faces, and overall sentiment.` }
-              ]
-            }
-          ]
-        })
-      }
-    );
-
-    if (!cfRes.ok) {
-      throw new Error("Cloudflare Vision API failed");
-    }
-
-    const cfData = await cfRes.json();
-    const frames = Math.floor(Math.random() * 500) + 1000;
-
-    // Store vision result
-    const visionId = uuidv4();
-    db.run(
-      `INSERT INTO vision_results (id, user_id, image_url, analysis, created_at) VALUES (?, ?, ?, ?, ?)`,
-      [visionId, userId, image_url, cfData.result?.response || "Analysis complete", new Date().toISOString()]
-    );
-
-    res.json({
-      success: true,
-      frames: frames,
-      analysis: cfData.result?.response || "Analysis complete",
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error("Vision analysis error:", error);
-    // Fallback response
-    res.json({
-      success: true,
-      frames: 1247,
-      analysis: "Detected: Product placement, 3 faces, brand logos visible, sentiment: 94% positive",
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Anti-Detection Engine - Rotate fingerprint
-app.post("/api/automations/anti-detection/rotate", auth, async (req, res) => {
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    // Log rotation for analytics
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'fingerprint_rotated', 'Fingerprint rotated', new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      message: "Fingerprint rotated successfully",
-      fingerprint: {
-        canvas: "16x16px",
-        webgl: "NVIDIA RTX 4080",
-        timezone: "GMT-5",
-        language: "en-US",
-        ip: "45." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255)
-      }
-    });
-
-  } catch (error) {
-    console.error("Rotation error:", error);
-    res.json({
-      success: true,
-      fingerprint: {
-        canvas: "16x16px",
-        webgl: "NVIDIA RTX 4080",
-        timezone: "GMT-5",
-        language: "en-US",
-        ip: "45.123.45.67"
-      }
-    });
-  }
-});
-
-// Get proxy stats
-app.get("/api/automations/proxy-stats", auth, (req, res) => {
-  res.json({
-    proxies: "10,247",
-    successRate: "99.97",
-    rotation: "24/7",
-    active: 10247
-  });
-});
-
-// Lead enrichment with Cloudflare AI
-app.post("/api/automations/leads/enrich", auth, bodyParser.json(), async (req, res) => {
-  const { lead_id, lead_data } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    let leadsToEnrich = [];
-    
-    if (lead_id) {
-      // Enrich specific lead
-      leadsToEnrich = await new Promise((resolve, reject) => {
-        db.all(`SELECT * FROM leads WHERE id = ? AND user_id = ?`, [lead_id, userId], (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
-        });
-      });
-    } else {
-      // Enrich recent leads
-      leadsToEnrich = await new Promise((resolve, reject) => {
-        db.all(`SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`, [userId], (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
-        });
-      });
-    }
-
-    const enriched = [];
-    for (const lead of leadsToEnrich) {
-      // Use Cloudflare AI to enrich lead data
-      const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content: "You are a lead enrichment AI. Analyze lead information and provide insights about intent, budget, and readiness."
-              },
-              {
-                role: "user",
-                content: `Analyze this lead: Name: ${lead.name}, Email: ${lead.email}. Provide intent score (0-100), estimated budget range, and readiness level.`
-              }
-            ]
-          })
-        }
-      );
-
-      let intent = 92;
-      let budget = "$5-10k";
-      let readiness = "Ready to buy (next 24h)";
-
-      if (cfRes.ok) {
-        const cfData = await cfRes.json();
-        const analysis = cfData.result?.response || "";
-        
-        // Parse AI response (simplified)
-        if (analysis.includes("high intent")) intent = 95;
-        if (analysis.includes("medium intent")) intent = 75;
-        if (analysis.includes("budget")) budget = "$10-20k";
-      }
-
-      // Store lead score
-      const scoreId = uuidv4();
-      db.run(
-        `INSERT INTO lead_scores (id, user_id, lead_id, score, criteria, scored_at) VALUES (?, ?, ?, ?, ?, ?)`,
-        [scoreId, userId, lead.id, intent, JSON.stringify({ budget, readiness }), new Date().toISOString()]
-      );
-
-      enriched.push({
-        ...lead,
-        enriched: true,
-        intent_score: intent,
-        budget_range: budget,
-        readiness: readiness,
-        similar_to_past: Math.floor(Math.random() * 5) + 1
-      });
-    }
-
-    const discovered = enriched.length * Math.floor(Math.random() * 3) + 5;
-
-    res.json({
-      success: true,
-      discovered: discovered,
-      leads: enriched
-    });
-
-  } catch (error) {
-    console.error("Lead enrichment error:", error);
-    res.json({
-      success: true,
-      discovered: 23,
-      message: "Lead enrichment complete"
-    });
-  }
-});
-
-// Spawn mobile cloud instance
-app.post("/api/automations/mobile/spawn", auth, async (req, res) => {
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    const instances = Math.floor(Math.random() * 5) + 1;
-    
-    // Log instance spawn
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'mobile_instance_spawned', `${instances} instances`, new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      instances: instances,
-      fleet: {
-        total: 1247 + instances,
-        models: 156,
-        uptime: "99.9%"
-      }
-    });
-
-  } catch (error) {
-    console.error("Spawn error:", error);
-    res.json({
-      success: true,
-      instances: 3,
-      fleet: {
-        total: 1247,
-        models: 156,
-        uptime: "99.9%"
-      }
-    });
-  }
-});
-
-// Price intelligence scan
-app.post("/api/automations/prices/scan", auth, async (req, res) => {
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    const drops = Math.floor(Math.random() * 10) + 5;
-    const opportunities = Math.floor(Math.random() * 8) + 3;
-
-    // Log price scan
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'price_scan', `${drops} drops found`, new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      competitors_analyzed: 124,
-      price_drops: drops,
-      opportunities: opportunities,
-      products_scanned: 1200000
-    });
-
-  } catch (error) {
-    console.error("Price scan error:", error);
-    res.json({
-      success: true,
-      competitors_analyzed: 124,
-      price_drops: 7,
-      opportunities: 12,
-      products_scanned: 1200000
-    });
-  }
-});
-
-// Deploy agentic AI agent
-app.post("/api/automations/agents/deploy", auth, async (req, res) => {
-  const { agent_type, config } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    const agentId = Math.floor(Math.random() * 100);
-    const agentTypes = ['VisionAgent', 'LeadAgent', 'ContentAgent', 'EngagementAgent', 'AnalyticsAgent'];
-    const type = agent_type || agentTypes[Math.floor(Math.random() * agentTypes.length)];
-
-    // Log agent deployment
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'agent_deployed', `${type}-${agentId}`, new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      agentId: agentId,
-      agentType: type,
-      message: `${type}-${agentId} deployed and active`,
-      tasks: Math.floor(Math.random() * 20) + 5
-    });
-
-  } catch (error) {
-    console.error("Agent deploy error:", error);
-    res.json({
-      success: true,
-      agentId: Math.floor(Math.random() * 100),
-      agentType: "Agent",
-      message: "New agent deployed and active",
-      tasks: 12
-    });
-  }
-});
-
-// ================= ENHANCED CONNECT PLATFORM ACCOUNT ENDPOINT =================
-// This now handles additional fields and updates existing accounts
-app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) => {
-  const { platform, accountName, apiKey, ...additionalFields } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    // Encrypt API key
-    const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
-    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    // Store all account data including additional fields
-    const accountInfo = JSON.stringify({
-      ...additionalFields,
-      connected_at: new Date().toISOString(),
-      last_sync: new Date().toISOString()
-    });
-
-    // Check if account already exists
-    db.get(
-      `SELECT id FROM connected_accounts WHERE user_id = ? AND platform = ? AND account_name = ?`,
-      [userId, platform, accountName],
-      (err, existing) => {
-        if (err) {
-          console.error("Error checking existing account:", err);
-          return res.status(500).json({ error: "Database error" });
-        }
-
-        if (existing) {
-          // Update existing account
-          db.run(
-            `UPDATE connected_accounts 
-             SET api_key_encrypted = ?, account_info = ?, status = 'active', last_sync = ?, updated_at = ? 
-             WHERE id = ?`,
-            [encrypted, accountInfo, new Date().toISOString(), new Date().toISOString(), existing.id],
-            function(err) {
-              if (err) {
-                console.error("Error updating account:", err);
-                return res.status(500).json({ error: "Failed to update account" });
-              }
-
-              // Log activity
-              db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-                [userId, 'account_updated', `${platform} account updated`, new Date().toISOString()]);
-
-              res.json({
-                success: true,
-                message: `✅ ${platform} account updated successfully!`,
-                account_id: existing.id
-              });
-            }
-          );
-        } else {
-          // Insert new account
-          db.run(
-            `INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, account_info, status, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, platform, accountName, encrypted, accountInfo, 'active', new Date().toISOString(), new Date().toISOString()],
-            function(err) {
-              if (err) {
-                console.error("Account connection error:", err);
-                return res.status(500).json({ error: "Failed to save account" });
-              }
-
-              // Log activity
-              db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-                [userId, 'account_connected', `${platform} account connected`, new Date().toISOString()]);
-
-              res.json({
-                success: true,
-                message: `✅ ${platform} account connected successfully!`,
-                account_id: this.lastID
-              });
-            }
-          );
-        }
-      }
-    );
-
-  } catch (error) {
-    console.error("Connection error:", error);
-    res.status(500).json({ error: "Server error during connection" });
-  }
-});
-
-// ===== ACCOUNTS ENDPOINT =====
-app.get("/api/automations/accounts", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  const query = "SELECT id, platform, account_name, account_info, status, created_at, last_sync FROM connected_accounts WHERE user_id = ? ORDER BY created_at DESC";
-  
-  db.all(query, [userId], (err, rows) => {
-    if (err) {
-      console.error("Error fetching accounts:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    
-    const accounts = (rows || []).map(row => {
-      try {
-        return {
-          ...row,
-          account_info: row.account_info ? JSON.parse(row.account_info) : null
-        };
-      } catch (e) {
-        return {
-          ...row,
-          account_info: null
-        };
-      }
-    });
-    
-    res.json(accounts);
-  });
-});
-
-// ===== SYNC ACCOUNT ENDPOINT =====
-app.post("/api/automations/accounts/:id/sync", auth, async (req, res) => {
-  const accountId = req.params.id;
-  const userId = req.user.id;
-
-  try {
-    // Get account details
-    const account = await new Promise((resolve, reject) => {
-      db.get(
-        `SELECT * FROM connected_accounts WHERE id = ? AND user_id = ?`,
-        [accountId, userId],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
-
-    if (!account) {
-      return res.status(404).json({ error: "Account not found" });
-    }
-
-    // Decrypt API key
-    const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
-    let decrypted = decipher.update(account.api_key_encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    // Here you would make API calls to the platform to fetch real data
-    // This is a placeholder for actual platform API integration
-    const syncResult = {
-      last_sync: new Date().toISOString(),
-      status: 'success',
-      message: `Synced ${account.platform} account`
-    };
-
-    // Update last_sync timestamp
-    db.run(
-      `UPDATE connected_accounts SET last_sync = ? WHERE id = ?`,
-      [new Date().toISOString(), accountId],
-      (err) => {
-        if (err) {
-          console.error("Error updating sync time:", err);
-          return res.status(500).json({ error: "Failed to update sync time" });
-        }
-
-        // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-          [userId, 'account_synced', `${account.platform} account synced`, new Date().toISOString()]);
-
-        res.json({
-          success: true,
-          message: `✅ ${account.platform} account synced successfully`,
-          last_sync: new Date().toISOString()
-        });
-      }
-    );
-
-  } catch (error) {
-    console.error("Sync error:", error);
-    res.status(500).json({ error: "Failed to sync account" });
-  }
-});
-
-// ===== DISCONNECT ACCOUNT ENDPOINT =====
-app.delete("/api/automations/accounts/:id", auth, (req, res) => {
-  const accountId = req.params.id;
-  const userId = req.user.id;
-
-  db.run(
-    `DELETE FROM connected_accounts WHERE id = ? AND user_id = ?`,
-    [accountId, userId],
-    function(err) {
-      if (err) {
-        console.error("Error deleting account:", err);
-        return res.status(500).json({ error: "Failed to delete account" });
-      }
-
-      if (this.changes === 0) {
-        return res.status(404).json({ error: "Account not found" });
-      }
-
-      // Log activity
-      db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-        [userId, 'account_disconnected', `Account disconnected`, new Date().toISOString()]);
-
-      res.json({
-        success: true,
-        message: "✅ Account disconnected successfully"
-      });
-    }
-  );
-});
-
-// Get user profile
-app.get("/api/user/profile", auth, (req, res) => {
-  getUserById(req.user.id).then(user => {
-    if (!user) return res.status(404).json({ error: "User not found" });
-    
-    res.json({
-      id: user.id,
-      name: user.business_name || user.name || "User",
-      email: user.email,
-      business_name: user.business_name,
-      plan: user.plan,
-      is_verified: user.is_verified
-    });
-  }).catch(err => {
-    console.error("Profile error:", err);
-    res.status(500).json({ error: "Server error" });
-  });
-});
+// ================= NEW: ANALYTICS AND SETTINGS ROUTES =================
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // ================= PLAN LIMITS =================
 const PLAN_LIMITS = {
@@ -929,7 +304,111 @@ db.serialize(() => {
     if (!err) console.log("✅ Broadcasts table ready");
   });
 
-  // ================= NEW: INCIDENTS TABLE FOR STATUS PAGE =================
+  // ================= NEW: GOVERNANCE SETTINGS TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS governance_settings (
+      user_id INTEGER PRIMARY KEY,
+      gpt4_policy TEXT DEFAULT 'Marketing Team Only',
+      claude_policy TEXT DEFAULT 'All Teams',
+      gemini_policy TEXT DEFAULT 'Executives Only',
+      monthly_cap INTEGER DEFAULT 5000,
+      used_amount INTEGER DEFAULT 0,
+      per_user_limit INTEGER DEFAULT 200,
+      cap_type TEXT DEFAULT 'soft',
+      pii_redaction INTEGER DEFAULT 1,
+      hipaa_mode INTEGER DEFAULT 0,
+      gdpr INTEGER DEFAULT 1,
+      salesforce_status TEXT DEFAULT 'connected',
+      hubspot_status TEXT DEFAULT 'connected',
+      shopify_status TEXT DEFAULT 'requires_auth',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Governance settings table ready");
+  });
+
+  // ================= NEW: ALERTS TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      type TEXT,
+      severity TEXT,
+      title TEXT,
+      description TEXT,
+      resolved INTEGER DEFAULT 0,
+      created_at DATETIME,
+      resolved_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Alerts table ready");
+  });
+
+  // ================= NEW: USAGE LOGS TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS usage_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      provider TEXT,
+      model TEXT,
+      cost REAL,
+      tokens INTEGER,
+      timestamp DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Usage logs table ready");
+  });
+
+  // ================= NEW: AGENT PERFORMANCE TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS agent_performance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      name TEXT,
+      success_rate REAL,
+      avg_latency INTEGER,
+      total_runs INTEGER,
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Agent performance table ready");
+  });
+
+  // ================= NEW: MOBILE INSTANCES TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS mobile_instances (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME,
+      last_active DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Mobile instances table ready");
+  });
+
+  // ================= NEW: PROXY USAGE TABLE =================
+  db.run(`
+    CREATE TABLE IF NOT EXISTS proxy_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      ip TEXT,
+      success_rate REAL,
+      requests INTEGER,
+      used_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (!err) console.log("✅ Proxy usage table ready");
+  });
+
+  // ================= EXISTING TABLES =================
   db.run(`
     CREATE TABLE IF NOT EXISTS incidents (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -943,7 +422,6 @@ db.serialize(() => {
     if (!err) console.log("✅ Incidents table ready");
   });
 
-  // ================= NEW: STATUS SUBSCRIBERS TABLE =================
   db.run(`
     CREATE TABLE IF NOT EXISTS status_subscribers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -954,7 +432,6 @@ db.serialize(() => {
     if (!err) console.log("✅ Status subscribers table ready");
   });
 
-  // ================= NEW: AUTOMATIONS TABLES =================
   db.run(`
     CREATE TABLE IF NOT EXISTS automations (
       id TEXT PRIMARY KEY,
@@ -987,6 +464,8 @@ db.serialize(() => {
       account_name TEXT,
       api_key_encrypted TEXT,
       account_info TEXT,
+      gateway_url TEXT,
+      connection_type TEXT DEFAULT 'direct',
       status TEXT DEFAULT 'active',
       last_sync DATETIME,
       created_at DATETIME,
@@ -1021,6 +500,7 @@ db.serialize(() => {
       error TEXT,
       started_at DATETIME,
       completed_at DATETIME,
+      estimated_hours INTEGER DEFAULT 0,
       FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
@@ -1034,7 +514,7 @@ db.serialize(() => {
       user_id INTEGER,
       image_url TEXT,
       analysis TEXT,
-      objects_detected TEXT,
+      objects_detected INTEGER DEFAULT 0,
       sentiment TEXT,
       confidence REAL,
       created_at DATETIME,
@@ -1229,6 +709,9 @@ app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
           const widgetKey = uuidv4();
           setWidgetKey(userId, widgetKey);
 
+          // Initialize governance settings for new user
+          db.run(`INSERT OR IGNORE INTO governance_settings (user_id) VALUES (?)`, [userId]);
+
           // Send verification email
           const emailHtml = `
             <!DOCTYPE html>
@@ -1380,6 +863,10 @@ app.delete("/api/admin/users/delete-account", auth, (req, res) => {
     db.run(`DELETE FROM leads WHERE user_id = ?`, [userId]);
     db.run(`DELETE FROM chats WHERE user_id = ?`, [userId]);
     db.run(`DELETE FROM support_tickets WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM connected_accounts WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM automations WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM activity_log WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM governance_settings WHERE user_id = ?`, [userId]);
     db.run(`DELETE FROM users WHERE id = ?`, [userId], function(err) {
       if (err) return res.status(500).json({ error: "Failed to delete account" });
       res.json({ success: true, message: "Account deleted permanently" });
@@ -1461,7 +948,7 @@ app.get("/api/chat/session/:session_id", auth, (req, res) => {
   );
 });
 
-// ================= WIDGET CONFIG - CRITICAL FIX: Return all smart settings =================
+// ================= WIDGET CONFIG =================
 app.get("/api/public/widget-config/:key", (req, res) => {
   const widgetKey = req.params.key;
   
@@ -1482,7 +969,7 @@ app.get("/api/public/widget-config/:key", (req, res) => {
           // Business identity
           business_type: identity.business_type || '',
           business_description: identity.business_description || '',
-          // CRITICAL FIX: Include all smart hub settings for the widget
+          // Include all smart hub settings
           booking_url: settings.booking_url || '',
           booking_active: settings.booking_active || 0,
           apollo_active: settings.apollo_active || 0,
@@ -1492,7 +979,7 @@ app.get("/api/public/widget-config/:key", (req, res) => {
           sentiment_active: settings.sentiment_active || 0,
           ai_instructions: settings.ai_instructions || '',
           ai_temp: settings.ai_temp || '0.7',
-          smart_hub: settings // Include full settings object
+          smart_hub: settings
         });
       }).catch(() => {
         res.json({
@@ -1544,7 +1031,6 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
       const businessContext = identity.business_type ? 
         `Business Type: ${identity.business_type}\nBusiness Description: ${identity.business_description || 'Not provided'}\n` : '';
 
-      // CRITICAL FIX: Stronger system prompt that establishes AI persona
       const systemPrompt = smartSettings.ai_instructions || 
         `You are the AI assistant for ${user.business_name || 'this business'}. 
          ${businessContext}
@@ -1552,7 +1038,6 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
          Always represent yourself as the business assistant, never as a generic AI.
          Current date: ${new Date().toLocaleDateString()}`;
 
-      // CRITICAL FIX: Remove space in Cloudflare URL
       const aiRes = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
         {
@@ -1581,6 +1066,10 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
       await saveChat(uuidv4(), user.id, activeSession, client_name || "Guest", message, reply);
       await incrementMessagesUsed(user.id);
 
+      // Log activity
+      db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
+        [user.id, 'chat_message', 'Sent message via dashboard chat', 'chat', new Date().toISOString()]);
+
       res.json({ success: true, reply, session_id: activeSession });
     } catch (err) {
       console.error("❌ AI Error:", err.message);
@@ -1589,9 +1078,8 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
   });
 });
 
-// ================= PUBLIC WIDGET CHAT - FIXED REPETITION =================
+// ================= PUBLIC WIDGET CHAT =================
 app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res) => {
-  // Extract all fields
   const { 
     message, 
     image_data, 
@@ -1628,12 +1116,10 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
       const knowledge = await getKnowledgeByUser(user.id);
       const context = knowledge.map(k => k.content).join("\n");
 
-      // Get ALL smart settings
       const smartSettings = await new Promise((resolve) => {
         db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
       });
 
-      // Get business identity
       const identity = await getBusinessIdentity(user.id).catch(() => ({ 
         business_type: '', 
         business_description: '' 
@@ -1642,7 +1128,6 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
       let reply = "";
       let fileContent = "";
 
-      // FIXED: Build system prompt that prevents repetition
       const buildSystemPrompt = () => {
         const basePrompt = smartSettings.ai_instructions || 
           `You are the AI assistant for ${user.business_name || 'our business'}.`;
@@ -1650,7 +1135,6 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
         const businessContext = identity.business_type ? 
           `Business Type: ${identity.business_type}. ${identity.business_description || ''}` : '';
         
-        // FIXED: Don't reintroduce if already introduced
         const introductionRule = has_introduced 
           ? "IMPORTANT: Do NOT introduce yourself again. Continue the conversation naturally based on the history."
           : `Introduce yourself as ${ai_name || 'the AI assistant'} for ${user.business_name || 'our business'} ONLY in the first message.`;
@@ -1663,7 +1147,6 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
           ? `When visitors want to book, schedule, or make appointments, provide this booking link: ${smartSettings.booking_url}`
           : '';
         
-        // FIXED: Add conversation history context
         const historyContext = conversation_history && conversation_history.length > 0
           ? `\nPrevious conversation:\n${conversation_history.map(msg => `${msg.role}: ${msg.text}`).join('\n')}`
           : '';
@@ -1725,6 +1208,10 @@ ${historyContext}`;
         } else {
           const cfData = await cfRes.json();
           reply = cfData.result?.response || "I couldn't analyze this image.";
+          
+          // Log vision usage
+          db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
+            [user.id, 'vision_analysis', 'Analyzed image via widget', 'vision', new Date().toISOString()]);
         }
       } 
       else if (file_data) {
@@ -1775,7 +1262,6 @@ ${historyContext}`;
         
         const systemContext = buildSystemPrompt();
         
-        // Check for booking intent
         const bookingKeywords = /book|appointment|schedule|meeting|reserve|consultation|demo/i;
         const hasBookingIntent = bookingKeywords.test(message);
         
@@ -1804,16 +1290,13 @@ ${historyContext}`;
           const cfData = await cfRes.json();
           reply = cfData.result?.response || "I couldn't generate a response.";
           
-          // FIXED: Only append booking link if not already included and intent detected
           if (hasBookingIntent && smartSettings.booking_url && smartSettings.booking_active && !reply.includes(smartSettings.booking_url)) {
             reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
           }
         }
       }
 
-      // FIXED: Remove any repeated introductions from the response
       if (has_introduced && message_count > 1) {
-        // Remove common introduction patterns
         reply = reply
           .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
           .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
@@ -1829,7 +1312,7 @@ ${historyContext}`;
         success: true, 
         reply, 
         session_id: activeSession,
-        sentiment: 'neutral' // You can add sentiment analysis here
+        sentiment: 'neutral'
       });
     } catch (e) {
       console.error("❌ Public Chat Error:", e.message);
@@ -1886,6 +1369,11 @@ app.post("/api/public/leads", bodyParser.json(), (req, res) => {
           incrementLeadsUsed(user.id);
           const io = req.app.get("socketio");
           io.to(user.id).emit("new_lead", { name, email });
+          
+          // Log activity
+          db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
+            [user.id, 'lead_captured', `New lead: ${name}`, 'lead', new Date().toISOString()]);
+            
           res.json({ success: true, message: "Lead captured!" });
         })
         .catch(err => {
@@ -1904,6 +1392,11 @@ app.delete("/api/leads/:id", auth, (req, res) => {
     db.run(`DELETE FROM leads WHERE id = ?`, [leadId], err => {
       if (err) return res.status(500).json({ error: "Failed to delete" });
       db.run(`UPDATE users SET leads_used = leads_used - 1 WHERE id = ? AND leads_used > 0`, [req.user.id]);
+      
+      // Log activity
+      db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, 'lead_deleted', `Deleted lead: ${lead.name}`, 'lead', new Date().toISOString()]);
+        
       res.json({ success: true, message: "Lead deleted" });
     });
   });
@@ -1920,6 +1413,11 @@ app.post("/api/support/ticket", auth, bodyParser.json(), (req, res) => {
     [ticketId, req.user.id, subject || "General Support", message, priority || "medium", "open", new Date().toISOString()],
     (err) => {
       if (err) return res.status(500).json({ error: "Failed to submit ticket" });
+      
+      // Log activity
+      db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, 'ticket_created', `Support ticket: ${subject || 'General'}`, 'support', new Date().toISOString()]);
+        
       res.json({ success: true, message: "Support ticket created successfully." });
     }
   );
@@ -1977,12 +1475,16 @@ app.delete("/api/admin/users/:id", auth, isAdminMiddleware, (req, res) => {
     db.run(`DELETE FROM users WHERE id = ?`, [userId]);
     db.run(`DELETE FROM chats WHERE user_id = ?`, [userId]);
     db.run(`DELETE FROM leads WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM connected_accounts WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM automations WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM activity_log WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM governance_settings WHERE user_id = ?`, [userId]);
     res.json({ success: true, message: "User and all data deleted" });
   });
 });
 
 app.get("/api/admin/activities", auth, isAdminMiddleware, (req, res) => {
-  db.all(`SELECT * FROM chats ORDER BY created_at DESC LIMIT 100`, (_, rows) => {
+  db.all(`SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 100`, (_, rows) => {
     res.json(rows || []);
   });
 });
@@ -2078,7 +1580,6 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
       return res.status(400).json({ error: "Tool type required" });
     }
 
-    // Map frontend tool names to database 'active' columns
     const activeColumnMap = {
       'brain': 'brain_active',
       'booking': 'booking_active',
@@ -2372,6 +1873,10 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
 
     const broadcastId = uuidv4();
     await saveBroadcast(broadcastId, userId, subject, recipients.length, results.sent, results.failed);
+
+    // Log activity
+    db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
+      [userId, 'broadcast_sent', `Broadcast sent to ${results.sent} leads`, 'email', new Date().toISOString()]);
 
     const method = resend ? 'Resend' : 'Nodemailer';
     res.json({ 
