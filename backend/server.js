@@ -17,16 +17,16 @@ const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 // ================= IMPORT NEW SERVICES (ADDED - KEEPS ALL ORIGINAL CODE) =================
-const CloudflareGateway = require('./services/cloudflare-gateway');
-const PlatformClients = require('./services/platform-clients');
-const EncryptionService = require('./services/encryption');
-const MetricsService = require('./services/metrics');
+const CloudflareGateway = require('../services/cloudflare-gateway');
+const PlatformClients = require('../services/platform-clients');
+const EncryptionService = require('../services/encryption');
+const MetricsService = require('../services/metrics');
 
 // ================= IMPORT MODELS (ADDED - KEEPS ALL ORIGINAL CODE) =================
-const AccountModel = require('./models/Account');
-const ActivityModel = require('./models/Activity');
-const GovernanceModel = require('./models/Governance');
-const AlertModel = require('./models/Alert');
+const AccountModel = require('../models/Account');
+const ActivityModel = require('../models/Activity');
+const GovernanceModel = require('../models/Governance');
+const AlertModel = require('../models/Alert');
 
 // ================= INITIALIZE SERVICES (ADDED - KEEPS ALL ORIGINAL CODE) =================
 const encryptionService = new EncryptionService(ENCRYPTION_KEY);
