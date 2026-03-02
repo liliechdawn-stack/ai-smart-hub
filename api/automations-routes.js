@@ -2,6 +2,7 @@
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const fetch = require('node-fetch'); // Add this if not already imported
 const dbModule = require('../backend/database.js');
 const { authenticateToken } = require('../backend/auth-middleware.js');
 
@@ -11,10 +12,7 @@ const { db, getUserById } = dbModule;
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here';
 
 // ===== HELPER FUNCTIONS FOR ACTION EXECUTION =====
-// Moved to the top so they're available when needed
-
 async function executeVisionAction(userId, config) {
-    // Implementation for Vision Agent
     return {
         action: 'vision_analysis',
         status: 'completed',
@@ -26,7 +24,6 @@ async function executeVisionAction(userId, config) {
 }
 
 async function executeLeadAction(userId, config) {
-    // Implementation for Lead Agent
     return {
         action: 'lead_scoring',
         status: 'completed',
@@ -38,7 +35,6 @@ async function executeLeadAction(userId, config) {
 }
 
 async function executeContentAction(userId, config) {
-    // Implementation for Content Agent
     return {
         action: 'content_generation',
         status: 'completed',
@@ -50,7 +46,6 @@ async function executeContentAction(userId, config) {
 }
 
 async function executeEngagementAction(userId, config) {
-    // Implementation for Engagement Agent
     return {
         action: 'engagement_tracking',
         status: 'completed',
@@ -62,7 +57,6 @@ async function executeEngagementAction(userId, config) {
 }
 
 async function executeAnalyticsAction(userId, config) {
-    // Implementation for Analytics Agent
     return {
         action: 'analytics_report',
         status: 'completed',
@@ -72,9 +66,6 @@ async function executeAnalyticsAction(userId, config) {
         }
     };
 }
-
-// ================= REAL SAAS AUTOMATION ENDPOINTS =================
-// All endpoints fetch/store REAL data - NO SIMULATIONS
 
 // ===== 1. GET ALL AUTOMATIONS =====
 router.get('/', authenticateToken, (req, res) => {
@@ -114,7 +105,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // ===== 3. CREATE AUTOMATION =====
-router.post('/', authenticateToken, express.json(), (req, res) => {
+router.post('/', authenticateToken, (req, res) => {
     const { name, description, trigger_type, trigger_config, action_type, action_config, schedule } = req.body;
     const userId = req.user.id;
     
@@ -152,12 +143,11 @@ router.post('/', authenticateToken, express.json(), (req, res) => {
 });
 
 // ===== 4. UPDATE AUTOMATION =====
-router.put('/:id', authenticateToken, express.json(), (req, res) => {
+router.put('/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
     const { name, description, trigger_config, action_config, schedule, status } = req.body;
     const userId = req.user.id;
     
-    // First check if automation exists and belongs to user
     db.get(`SELECT * FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, automation) => {
         if (err) {
             console.error("Error checking automation:", err);
@@ -190,7 +180,6 @@ router.put('/:id', authenticateToken, express.json(), (req, res) => {
                 return res.status(500).json({ error: "Failed to update automation" });
             }
             
-            // Log activity
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, 'automation_updated', `Updated automation: ${name || automation.name}`, 'automation', now]);
             
@@ -207,7 +196,6 @@ router.delete('/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     
-    // First get automation name for logging
     db.get(`SELECT name FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, automation) => {
         if (err) {
             console.error("Error checking automation:", err);
@@ -223,7 +211,6 @@ router.delete('/:id', authenticateToken, (req, res) => {
                 return res.status(500).json({ error: "Failed to delete automation" });
             }
             
-            // Log activity
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, 'automation_deleted', `Deleted automation: ${automation.name}`, 'automation', new Date().toISOString()]);
             
@@ -252,7 +239,6 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
         const runId = 'run_' + uuidv4().substring(0, 8);
         const startedAt = new Date().toISOString();
         
-        // Log run start
         db.run(`
             INSERT INTO automation_runs (id, automation_id, user_id, status, started_at) 
             VALUES (?, ?, ?, ?, ?)
@@ -263,11 +249,9 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
         });
         
         try {
-            // Parse configs
             const triggerConfig = JSON.parse(automation.trigger_config || '{}');
             const actionConfig = JSON.parse(automation.action_config || '{}');
             
-            // Execute based on action type
             let result = {};
             let success = true;
             let errorMsg = null;
@@ -295,7 +279,6 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
             const completedAt = new Date().toISOString();
             const duration = Math.floor((new Date(completedAt) - new Date(startedAt)) / 1000);
             
-            // Update run with success
             db.run(`
                 UPDATE automation_runs SET 
                     status = ?, 
@@ -305,7 +288,6 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
                 WHERE id = ?
             `, ['completed', JSON.stringify(result), duration, completedAt, runId]);
             
-            // Update automation stats
             db.run(`
                 UPDATE automations SET 
                     trigger_count = trigger_count + 1,
@@ -315,7 +297,6 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
                 WHERE id = ?
             `, [duration, completedAt, id]);
             
-            // Log activity
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, 'automation_run', `Automation ${automation.name} completed`, 'automation', completedAt]);
             
@@ -332,7 +313,6 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
             
             const completedAt = new Date().toISOString();
             
-            // Update run with failure
             db.run(`
                 UPDATE automation_runs SET 
                     status = ?, 
@@ -499,7 +479,6 @@ router.post('/:id/duplicate', authenticateToken, (req, res) => {
                 return res.status(500).json({ error: "Failed to duplicate automation" });
             }
             
-            // Log activity
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, 'automation_duplicated', `Duplicated automation: ${automation.name}`, 'automation', now]);
             
@@ -513,7 +492,7 @@ router.post('/:id/duplicate', authenticateToken, (req, res) => {
 });
 
 // ===== 11. BULK UPDATE AUTOMATIONS =====
-router.post('/bulk/update', authenticateToken, express.json(), (req, res) => {
+router.post('/bulk/update', authenticateToken, (req, res) => {
     const { automation_ids, action } = req.body;
     const userId = req.user.id;
     
@@ -535,7 +514,6 @@ router.post('/bulk/update', authenticateToken, express.json(), (req, res) => {
                 return res.status(500).json({ error: "Failed to delete automations" });
             }
             
-            // Log activity
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, 'automations_bulk_deleted', `Deleted ${automation_ids.length} automations`, 'automation', new Date().toISOString()]);
             
@@ -555,7 +533,6 @@ router.post('/bulk/update', authenticateToken, express.json(), (req, res) => {
                 return res.status(500).json({ error: "Failed to update automations" });
             }
             
-            // Log activity
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, `automations_bulk_${status}`, `Set ${automation_ids.length} automations to ${status}`, 'automation', new Date().toISOString()]);
             
@@ -599,7 +576,7 @@ router.get('/:id/logs', authenticateToken, (req, res) => {
 });
 
 // ===== 13. TEST AUTOMATION CONNECTION =====
-router.post('/test-connection', authenticateToken, express.json(), async (req, res) => {
+router.post('/test-connection', authenticateToken, async (req, res) => {
     const { platform, credentials } = req.body;
     const userId = req.user.id;
     
@@ -612,7 +589,6 @@ router.post('/test-connection', authenticateToken, express.json(), async (req, r
         
         switch(platform) {
             case 'shopify':
-                // Test Shopify connection
                 const shopifyRes = await fetch(`https://${credentials.shop}.myshopify.com/admin/api/2024-01/shop.json`, {
                     headers: { 'X-Shopify-Access-Token': credentials.apiKey }
                 });
@@ -621,7 +597,6 @@ router.post('/test-connection', authenticateToken, express.json(), async (req, r
                 break;
                 
             case 'stripe':
-                // Test Stripe connection
                 const stripeRes = await fetch('https://api.stripe.com/v1/balance', {
                     headers: { 'Authorization': `Bearer ${credentials.apiKey}` }
                 });
@@ -630,7 +605,6 @@ router.post('/test-connection', authenticateToken, express.json(), async (req, r
                 break;
                 
             case 'cloudflare':
-                // Test Cloudflare Gateway
                 const gatewayUrl = `https://gateway.ai.cloudflare.com/v1/${credentials.accountId}/${credentials.gatewayName}`;
                 const cfRes = await fetch(`${gatewayUrl}/models`, {
                     headers: { 'Authorization': `Bearer ${credentials.apiToken}` }
@@ -645,7 +619,6 @@ router.post('/test-connection', authenticateToken, express.json(), async (req, r
         }
         
         if (testResult.success) {
-            // Log successful test
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
                 [userId, 'connection_tested', `Successfully tested ${platform} connection`, 'integration', new Date().toISOString()]);
         }
@@ -712,7 +685,6 @@ router.get('/:id/export', authenticateToken, (req, res) => {
             return res.status(404).json({ error: "Automation not found" });
         }
         
-        // Remove sensitive/internal fields
         const exportData = {
             name: automation.name,
             description: automation.description,
@@ -730,7 +702,7 @@ router.get('/:id/export', authenticateToken, (req, res) => {
 });
 
 // ===== 16. IMPORT AUTOMATION CONFIG =====
-router.post('/import', authenticateToken, express.json(), (req, res) => {
+router.post('/import', authenticateToken, (req, res) => {
     const { config } = req.body;
     const userId = req.user.id;
     
@@ -757,7 +729,6 @@ router.post('/import', authenticateToken, express.json(), (req, res) => {
             return res.status(500).json({ error: "Failed to import automation" });
         }
         
-        // Log activity
         db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
             [userId, 'automation_imported', `Imported automation: ${config.name}`, 'automation', now]);
         
