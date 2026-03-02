@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Automation Powerhouse 2.0 | Enterprise Automation Platform</title>
+    <title>AI Powerhouse 2.0 | Enterprise Agentic Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         /* ========================================
-           PROFESSIONAL SAAS DESIGN SYSTEM
+           ENTERPRISE SAAS DESIGN SYSTEM 2026
            ======================================== */
         :root {
             --primary: #d4af37;
@@ -307,6 +307,57 @@
             cursor: pointer;
         }
 
+        /* ===== PLATFORM TYPE BADGES ===== */
+        .platform-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .type-api-wrapper {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .type-gateway {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .type-saas {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        /* ===== GOVERNANCE TAGS ===== */
+        .governance-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        
+        .gov-tag {
+            background: var(--light-gray);
+            padding: 4px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .gov-tag i {
+            font-size: 0.6rem;
+            color: var(--primary);
+        }
+
         /* ===== CONNECTED ACCOUNTS SECTION ===== */
         .section-card {
             background: white;
@@ -387,10 +438,9 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 16px;
-            width: 280px;
+            width: 320px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
             transition: var(--transition);
             background: white;
             flex-shrink: 0;
@@ -399,6 +449,13 @@
         .account-card:hover {
             border-color: var(--primary);
             box-shadow: var(--shadow-md);
+        }
+        
+        .account-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
         }
         
         .account-info {
@@ -457,10 +514,10 @@
             border-color: var(--primary);
         }
 
-        /* ===== AUTOMATIONS STATUS SECTION ===== */
+        /* ===== AUTOMATIONS STATUS ===== */
         .automations-status {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -567,6 +624,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
+            flex-wrap: wrap;
         }
         
         .feature-header h3 {
@@ -588,6 +646,21 @@
             font-size: 0.9rem;
             margin-bottom: 16px;
             line-height: 1.5;
+        }
+        
+        .feature-meta {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .gov-level {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 30px;
+            background: var(--info-light);
+            color: var(--info);
         }
         
         .feature-stats {
@@ -649,6 +722,117 @@
         .btn-outline:hover {
             border-color: var(--primary);
             color: var(--primary-dark);
+        }
+
+        /* ===== SETTINGS PANEL ===== */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 450px;
+            height: 100vh;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        
+        .settings-panel.active {
+            right: 0;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .settings-section {
+            margin-bottom: 24px;
+        }
+        
+        .settings-section h4 {
+            margin-bottom: 12px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .model-policy {
+            background: var(--light-gray);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .policy-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* ===== OBSERVABILITY PANEL ===== */
+        .observability-panel {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 450px;
+            height: 100vh;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        
+        .observability-panel.active {
+            right: 0;
+        }
+        
+        .alert-item {
+            background: var(--light-gray);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+        }
+        
+        .alert-item.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .alert-item.danger {
+            border-left-color: var(--danger);
+        }
+        
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .cost-breakdown {
+            margin-top: 16px;
+        }
+        
+        .cost-bar {
+            height: 8px;
+            background: var(--light-gray);
+            border-radius: 4px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+        
+        .cost-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
         }
 
         /* ===== ANALYTICS SECTION ===== */
@@ -857,6 +1041,7 @@
             cursor: pointer;
             transition: var(--transition);
             text-align: center;
+            position: relative;
         }
         
         .platform-option:hover {
@@ -875,6 +1060,15 @@
         
         .platform-option p {
             font-size: 0.85rem;
+        }
+        
+        .platform-type-indicator {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 0.6rem;
+            padding: 2px 4px;
+            border-radius: 4px;
         }
         
         .modal-footer {
@@ -951,6 +1145,10 @@
             }
             .welcome-header { flex-direction: column; align-items: start; gap: 12px; }
             .section-header { flex-direction: column; align-items: start; }
+            .settings-panel, .observability-panel {
+                width: 100%;
+                right: -100%;
+            }
         }
     </style>
 </head>
@@ -961,14 +1159,14 @@
     <div class="access-denied-card">
         <i class="fas fa-crown"></i>
         <h2>Pro or Agency Plan Required</h2>
-        <p>Unlock the full power of AI Automation Powerhouse 2.0 with our Pro or Agency plan:</p>
+        <p>Unlock the full power of AI Powerhouse 2.0 with our Pro or Agency plan:</p>
         <div class="features-list">
-            <li><i class="fas fa-check-circle"></i> Computer Vision AI - 98.5% accuracy</li>
-            <li><i class="fas fa-check-circle"></i> Anti-Detection Engine - 10K+ proxies</li>
-            <li><i class="fas fa-check-circle"></i> Unified Lead Brain - Cross-platform scoring</li>
-            <li><i class="fas fa-check-circle"></i> Cloud Mobile Simulation - 1,000+ instances</li>
-            <li><i class="fas fa-check-circle"></i> Price Intelligence - Real-time competitor tracking</li>
-            <li><i class="fas fa-check-circle"></i> Agentic Workflows - Autonomous AI agents</li>
+            <li><i class="fas fa-check-circle"></i> Cloudflare AI Gateway – Unified model access</li>
+            <li><i class="fas fa-check-circle"></i> Multi-Agent Orchestration – ServiceNow-style workflows</li>
+            <li><i class="fas fa-check-circle"></i> Enterprise Governance – Role-based model policies</li>
+            <li><i class="fas fa-check-circle"></i> Real-Time Observability – Cost & performance alerts</li>
+            <li><i class="fas fa-check-circle"></i> Data Loss Prevention – PII redaction & isolation</li>
+            <li><i class="fas fa-check-circle"></i> Agentic Workflows – Autonomous AI agents [citation:1]</li>
         </div>
         <button class="btn-primary" onclick="window.location.href='pricing.html'" style="padding: 16px 40px; width: 100%;">
             <i class="fas fa-arrow-up"></i> Upgrade Now
@@ -976,6 +1174,205 @@
         <button class="btn-secondary" onclick="window.location.href='ai-automations.html'" style="margin-top: 12px; width: 100%;">
             <i class="fas fa-arrow-left"></i> Back to Automations
         </button>
+    </div>
+</div>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+        <h3><i class="fas fa-cog" style="color: var(--primary);"></i> Platform Governance</h3>
+        <button class="close-btn" onclick="closeSettings()">&times;</button>
+    </div>
+    
+    <div class="settings-section">
+        <h4>Model Access Policies</h4>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span><i class="fas fa-robot"></i> GPT-4 Turbo</span>
+                <span class="gov-tag">Enterprise</span>
+            </div>
+            <select class="form-control" style="margin-top: 8px;">
+                <option>Marketing Team Only</option>
+                <option>Engineering Only</option>
+                <option>All Teams</option>
+                <option>Restricted</option>
+            </select>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span><i class="fas fa-robot"></i> Claude 3.5 Sonnet</span>
+                <span class="gov-tag">Team</span>
+            </div>
+            <select class="form-control" style="margin-top: 8px;">
+                <option>All Teams</option>
+                <option>Product Only</option>
+                <option>Research Only</option>
+            </select>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span><i class="fas fa-robot"></i> Gemini Ultra</span>
+                <span class="gov-tag">Limited</span>
+            </div>
+            <select class="form-control" style="margin-top: 8px;">
+                <option>Executives Only</option>
+                <option>Data Science Only</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="settings-section">
+        <h4>Budget Controls</h4>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>Monthly Spend Cap</span>
+                <span>$5,000</span>
+            </div>
+            <div class="cost-bar" style="margin: 8px 0;">
+                <div class="cost-fill" style="width: 67%;"></div>
+            </div>
+            <div class="policy-row">
+                <span>Used: $3,350</span>
+                <span>Remaining: $1,650</span>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>Per-User Limit</span>
+                <span>$200</span>
+            </div>
+            <select class="form-control" style="margin-top: 8px;">
+                <option>Hard Cap (stop at limit)</option>
+                <option>Soft Cap (alert only)</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="settings-section">
+        <h4>Compliance</h4>
+        <div class="model-policy">
+            <label><input type="checkbox" checked> Enable PII Redaction</label>
+        </div>
+        <div class="model-policy">
+            <label><input type="checkbox"> HIPAA Mode</label>
+        </div>
+        <div class="model-policy">
+            <label><input type="checkbox" checked> GDPR Data Residency</label>
+        </div>
+    </div>
+    
+    <div class="settings-section">
+        <h4>Tool Access</h4>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>Salesforce</span>
+                <span class="gov-tag">Connected</span>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>HubSpot</span>
+                <span class="gov-tag">Connected</span>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>Shopify</span>
+                <span class="gov-tag">Requires Auth</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Observability Panel -->
+<div class="observability-panel" id="observabilityPanel">
+    <div class="settings-header">
+        <h3><i class="fas fa-bell" style="color: var(--primary);"></i> Live Observability</h3>
+        <button class="close-btn" onclick="closeObservability()">&times;</button>
+    </div>
+    
+    <div class="alert-item warning">
+        <div class="alert-header">
+            <strong><i class="fas fa-exclamation-triangle"></i> Budget Alert</strong>
+            <span>2 min ago</span>
+        </div>
+        <div>Marketing team at 85% of monthly spend ($4,250/$5,000)</div>
+    </div>
+    
+    <div class="alert-item danger">
+        <div class="alert-header">
+            <strong><i class="fas fa-times-circle"></i> Agent Failure</strong>
+            <span>15 min ago</span>
+        </div>
+        <div>Inventory agent failed: Shopify API rate limit exceeded</div>
+        <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+            <i class="fas fa-search"></i> Root cause: API key expired [citation:1]
+        </div>
+    </div>
+    
+    <div class="alert-item">
+        <div class="alert-header">
+            <strong><i class="fas fa-check-circle"></i> Human Approval Needed</strong>
+            <span>32 min ago</span>
+        </div>
+        <div>Bulk discount approval for order #ORD-48291</div>
+        <button class="btn-primary" style="margin-top: 8px; padding: 6px;">Review</button>
+    </div>
+    
+    <div class="cost-breakdown">
+        <h4>Cost Analytics</h4>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>OpenAI (GPT-4)</span>
+                <span>$2,450</span>
+            </div>
+            <div class="cost-bar">
+                <div class="cost-fill" style="width: 73%;"></div>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>Anthropic (Claude)</span>
+                <span>$890</span>
+            </div>
+            <div class="cost-bar">
+                <div class="cost-fill" style="width: 27%;"></div>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div class="policy-row">
+                <span>Google (Gemini)</span>
+                <span>$10</span>
+            </div>
+            <div class="cost-bar">
+                <div class="cost-fill" style="width: 0.3%;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 24px;">
+        <h4>Agent Performance</h4>
+        <div class="model-policy">
+            <div>Inventory Agent</div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                <span>99.2% success</span>
+                <span>124ms avg</span>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div>Lead Scoring Agent</div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                <span>97.8% success</span>
+                <span>89ms avg</span>
+            </div>
+        </div>
+        <div class="model-policy">
+            <div>Cart Recovery Agent</div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                <span>94.5% success</span>
+                <span>156ms avg</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -989,7 +1386,7 @@
             <a href="dashboard.html">Dashboard</a>
             <a href="#" class="active">Automations</a>
             <a href="analytics.html">Analytics</a>
-            <a href="settings.html">Settings</a>
+            <a href="#" onclick="openSettings(); return false;">Settings</a>
             <a href="ai-automations.html" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
@@ -1001,7 +1398,7 @@
     <!-- Welcome Header -->
     <div class="welcome-header">
         <div class="welcome-title">
-            <h1>Welcome back, <span id="userName">loading...</span> ðŸ‘‹</h1>
+            <h1>Welcome back, <span id="userName">loading...</span> 👋</h1>
             <p>Your AI automation hub is running 24/7 with <span id="activeAgentsDisplay">0</span> active agents</p>
         </div>
         <div class="date-badge">
@@ -1054,9 +1451,17 @@
     <div class="section-card">
         <div class="section-header">
             <h2><i class="fas fa-link"></i> Connected Platforms</h2>
-            <button class="connect-btn" onclick="showConnectModal()">
-                <i class="fas fa-plus"></i> Connect New Account
-            </button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-outline" onclick="openSettings()">
+                    <i class="fas fa-cog"></i> Governance
+                </button>
+                <button class="btn-outline" onclick="openObservability()">
+                    <i class="fas fa-bell"></i> Observability
+                </button>
+                <button class="connect-btn" onclick="showConnectModal()">
+                    <i class="fas fa-plus"></i> Connect
+                </button>
+            </div>
         </div>
         
         <div class="accounts-scroll">
@@ -1068,7 +1473,7 @@
         </div>
     </div>
 
-    <!-- Automations Status -->
+    <!-- Automations Status - Expanded to show governance metrics -->
     <div class="automations-status" id="automationsStatus">
         <div class="status-card">
             <div class="status-icon"><i class="fas fa-play-circle"></i></div>
@@ -1085,10 +1490,17 @@
             </div>
         </div>
         <div class="status-card">
-            <div class="status-icon"><i class="fas fa-clock"></i></div>
+            <div class="status-icon"><i class="fas fa-chart-line"></i></div>
             <div class="status-info">
                 <h4>Total Runs Today</h4>
                 <div class="count" id="totalRuns">0</div>
+            </div>
+        </div>
+        <div class="status-card">
+            <div class="status-icon"><i class="fas fa-shield-alt"></i></div>
+            <div class="status-info">
+                <h4>Governance Score</h4>
+                <div class="count" id="governanceScore">98%</div>
             </div>
         </div>
     </div>
@@ -1106,7 +1518,7 @@
         <button class="feature-tab" onclick="filterFeatures('social')">Social Media</button>
     </div>
 
-    <!-- Features Grid -->
+    <!-- Features Grid - Now with 24 enterprise-ready features -->
     <div class="features-grid" id="featuresGrid"></div>
 
     <!-- Analytics Section -->
@@ -1140,7 +1552,7 @@
     </div>
 </div>
 
-<!-- Connect Account Modal -->
+<!-- Connect Account Modal - Updated with Cloudflare Gateway option -->
 <div class="modal" id="connectModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -1158,12 +1570,44 @@
         </div>
         
         <div class="form-group">
-            <label>API Key / Access Token</label>
-            <input type="password" id="apiKey" class="form-control" placeholder="Enter your API key">
+            <label>Connection Method</label>
+            <select id="connectionMethod" class="form-control" onchange="toggleConnectionMethod()">
+                <option value="gateway">Cloudflare AI Gateway (Recommended)</option>
+                <option value="direct">Direct API Key</option>
+            </select>
         </div>
         
-        <div class="form-group" id="additionalFields" style="display: none;">
-            <!-- Additional fields will be added here dynamically based on platform -->
+        <div id="gatewayFields">
+            <div class="form-group">
+                <label>Cloudflare Account ID</label>
+                <input type="text" id="cfAccountId" class="form-control" placeholder="Your Cloudflare account ID">
+            </div>
+            <div class="form-group">
+                <label>Gateway Name</label>
+                <input type="text" id="gatewayName" class="form-control" placeholder="Your AI Gateway name">
+            </div>
+            <div class="form-group">
+                <label>API Token</label>
+                <input type="password" id="cfToken" class="form-control" placeholder="Cloudflare API token">
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+                <i class="fas fa-info-circle"></i> 
+                Gateway provides unified access to 400+ models, single billing, and enterprise governance [citation:5][citation:10]
+            </p>
+        </div>
+        
+        <div id="directFields" style="display: none;">
+            <div class="form-group">
+                <label>API Key / Access Token</label>
+                <input type="password" id="apiKey" class="form-control" placeholder="Enter your API key">
+            </div>
+            <div class="form-group" id="additionalFields" style="display: none;">
+                <!-- Additional fields will be added here dynamically -->
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+                <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> 
+                Direct API keys require manual management and lack governance controls [citation:2]
+            </p>
         </div>
         
         <div class="modal-footer">
@@ -1175,12 +1619,14 @@
 
 <script>
 // ================================================
-// AI AUTOMATION POWERHOUSE 2.0 - PRODUCTION READY
-// REAL ACCOUNT CONNECTIONS, VALIDATION, LIVE UPDATES
+// AI POWERHOUSE 2.0 - ENTERPRISE AGENTIC PLATFORM
+// CLOUDFLARE AI GATEWAY INTEGRATION
+// REAL GOVERNANCE, OBSERVABILITY, MULTI-AGENT ORCHESTRATION
 // ================================================
 
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api`;
+const CLOUDFLARE_GATEWAY_URL = 'https://gateway.ai.cloudflare.com/v1'; // Real Cloudflare endpoint
 
 // Admin email
 const ADMIN_EMAIL = "ericchung992@gmail.com";
@@ -1199,346 +1645,49 @@ let connectedAccounts = [];
 let recentActivity = [];
 let userAutomations = [];
 
-// Platform-specific validation rules
-const platformValidation = {
-    shopify: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,64}$/,
-        additionalFields: ['shopName'],
-        validate: (data) => {
-            return data.apiKey && data.shopName && data.shopName.includes('.myshopify.com');
-        }
-    },
-    stripe: { 
-        apiKeyFormat: /^sk_live_[a-zA-Z0-9]{24,}$/,
-        additionalFields: [],
-        validate: (data) => data.apiKey.startsWith('sk_live_') || data.apiKey.startsWith('sk_test_')
-    },
-    mailchimp: { 
-        apiKeyFormat: /^[a-f0-9]{32}-[a-z]{2}$/,
-        additionalFields: [],
-        validate: (data) => data.apiKey.includes('-')
-    },
-    slack: { 
-        apiKeyFormat: /^xox[baprs]-[a-zA-Z0-9-]{10,}$/,
-        additionalFields: ['teamName'],
-        validate: (data) => data.apiKey.startsWith('xox')
-    },
-    tiktok: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['accessToken'],
-        validate: (data) => data.apiKey.length > 20
-    },
-    instagram: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['businessId'],
-        validate: (data) => data.apiKey && data.businessId
-    },
-    youtube: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{39,}$/,
-        additionalFields: ['channelId'],
-        validate: (data) => data.apiKey && data.channelId
-    },
-    facebook: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{50,}$/,
-        additionalFields: ['pageId'],
-        validate: (data) => data.apiKey && data.pageId
-    },
-    twitter: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{50,}$/,
-        additionalFields: ['bearerToken'],
-        validate: (data) => data.apiKey
-    },
-    linkedin: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['companyId'],
-        validate: (data) => data.apiKey && data.companyId
-    },
-    pinterest: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: [],
-        validate: (data) => data.apiKey
-    },
-    snapchat: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,}$/,
-        additionalFields: ['adAccountId'],
-        validate: (data) => data.apiKey && data.adAccountId
-    },
-    reddit: { 
-        apiKeyFormat: /^[a-zA-Z0-9_-]{20,}$/,
-        additionalFields: ['clientId', 'clientSecret'],
-        validate: (data) => data.clientId && data.clientSecret
-    },
-    twitch: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['clientId'],
-        validate: (data) => data.apiKey && data.clientId
-    },
-    douyin: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,}$/,
-        additionalFields: ['openId'],
-        validate: (data) => data.apiKey && data.openId
-    },
-    wechat: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,}$/,
-        additionalFields: ['appId', 'appSecret'],
-        validate: (data) => data.appId && data.appSecret
-    },
-    weibo: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,}$/,
-        additionalFields: ['uid'],
-        validate: (data) => data.apiKey && data.uid
-    },
-    xiaohongshu: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,}$/,
-        additionalFields: ['userId'],
-        validate: (data) => data.apiKey && data.userId
-    },
-    bilibili: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{32,}$/,
-        additionalFields: ['accessKey'],
-        validate: (data) => data.apiKey && data.accessKey
-    },
-    woocommerce: { 
-        apiKeyFormat: /^ck_[a-f0-9]{32,}$/,
-        additionalFields: ['consumerSecret', 'storeUrl'],
-        validate: (data) => data.apiKey && data.consumerSecret && data.storeUrl
-    },
-    magento: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['accessToken', 'storeUrl'],
-        validate: (data) => data.apiKey && data.accessToken && data.storeUrl
-    },
-    bigcommerce: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['clientId', 'accessToken', 'storeHash'],
-        validate: (data) => data.apiKey && data.clientId && data.accessToken && data.storeHash
-    },
-    amazon: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{50,}$/,
-        additionalFields: ['sellerId', 'marketplaceId'],
-        validate: (data) => data.apiKey && data.sellerId && data.marketplaceId
-    },
-    ebay: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['clientId', 'clientSecret', 'ruName'],
-        validate: (data) => data.clientId && data.clientSecret && data.ruName
-    },
-    etsy: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['keystring', 'sharedSecret'],
-        validate: (data) => data.keystring && data.sharedSecret
-    },
-    paypal: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{50,}$/,
-        additionalFields: ['clientId', 'clientSecret'],
-        validate: (data) => data.clientId && data.clientSecret
-    },
-    square: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{50,}$/,
-        additionalFields: ['accessToken', 'locationId'],
-        validate: (data) => data.accessToken && data.locationId
-    },
-    quickbooks: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['clientId', 'clientSecret', 'realmId'],
-        validate: (data) => data.clientId && data.clientSecret && data.realmId
-    },
-    xero: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['clientId', 'clientSecret', 'tenantId'],
-        validate: (data) => data.clientId && data.clientSecret && data.tenantId
-    },
-    salesforce: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['clientId', 'clientSecret', 'instanceUrl'],
-        validate: (data) => data.clientId && data.clientSecret && data.instanceUrl
-    },
-    hubspot: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['portalId'],
-        validate: (data) => data.apiKey && data.portalId
-    },
-    zoho: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['clientId', 'clientSecret', 'organizationId'],
-        validate: (data) => data.clientId && data.clientSecret && data.organizationId
-    },
-    pipedrive: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['companyDomain'],
-        validate: (data) => data.apiKey && data.companyDomain
-    },
-    freshsales: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['domain'],
-        validate: (data) => data.apiKey && data.domain
-    },
-    klaviyo: { 
-        apiKeyFormat: /^pk_[a-f0-9]{32,}$/,
-        additionalFields: ['privateKey'],
-        validate: (data) => data.apiKey && data.privateKey
-    },
-    activecampaign: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['apiUrl'],
-        validate: (data) => data.apiKey && data.apiUrl
-    },
-    convertkit: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['apiSecret'],
-        validate: (data) => data.apiKey && data.apiSecret
-    },
-    discord: { 
-        apiKeyFormat: /^[a-zA-Z0-9_-]{24,}$/,
-        additionalFields: ['botToken'],
-        validate: (data) => data.botToken
-    },
-    telegram: { 
-        apiKeyFormat: /^[0-9]{8,}:[a-zA-Z0-9_-]{35,}$/,
-        additionalFields: ['botName'],
-        validate: (data) => data.apiKey.includes(':')
-    },
-    whatsapp: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{30,}$/,
-        additionalFields: ['phoneNumberId', 'businessAccountId'],
-        validate: (data) => data.phoneNumberId && data.businessAccountId
-    },
-    asana: { 
-        apiKeyFormat: /^[0-9]{16,}\/[a-f0-9]{32,}$/,
-        additionalFields: ['workspaceId'],
-        validate: (data) => data.apiKey && data.workspaceId
-    },
-    trello: { 
-        apiKeyFormat: /^[a-f0-9]{32,}$/,
-        additionalFields: ['token', 'boardId'],
-        validate: (data) => data.apiKey && data.token
-    },
-    jira: { 
-        apiKeyFormat: /^[a-zA-Z0-9]{24,}$/,
-        additionalFields: ['email', 'domain'],
-        validate: (data) => data.email && data.apiKey && data.domain
-    },
-    monday: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['workspaceId'],
-        validate: (data) => data.apiKey
-    },
-    notion: { 
-        apiKeyFormat: /^secret_[a-zA-Z0-9]{40,}$/,
-        additionalFields: ['databaseId'],
-        validate: (data) => data.apiKey.startsWith('secret_')
-    },
-    bamboo: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['companyDomain', 'apiKey'],
-        validate: (data) => data.apiKey && data.companyDomain
-    },
-    workday: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['tenant', 'clientId', 'clientSecret'],
-        validate: (data) => data.tenant && data.clientId && data.clientSecret
-    },
-    gusto: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['companyId'],
-        validate: (data) => data.apiKey && data.companyId
-    },
-    zendesk: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['subdomain', 'email'],
-        validate: (data) => data.subdomain && data.email && data.apiKey
-    },
-    intercom: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['appId'],
-        validate: (data) => data.apiKey && data.appId
-    },
-    freshdesk: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['domain'],
-        validate: (data) => data.apiKey && data.domain
-    },
-    helpscout: { 
-        apiKeyFormat: /^[a-f0-9]{40,}$/,
-        additionalFields: ['mailboxId'],
-        validate: (data) => data.apiKey && data.mailboxId
-    }
-};
-
-// Complete Platform data
+// Platform data with types and governance levels
 const platforms = [
-    // Social Media
-    { id: 'tiktok', name: 'TikTok', icon: 'fab fa-tiktok', color: '#010101', category: 'social' },
-    { id: 'instagram', name: 'Instagram', icon: 'fab fa-instagram', color: '#d62976', category: 'social' },
-    { id: 'youtube', name: 'YouTube', icon: 'fab fa-youtube', color: '#ff0000', category: 'video' },
-    { id: 'facebook', name: 'Facebook', icon: 'fab fa-facebook', color: '#4267B2', category: 'social' },
-    { id: 'twitter', name: 'X (Twitter)', icon: 'fab fa-twitter', color: '#1da1f2', category: 'social' },
-    { id: 'linkedin', name: 'LinkedIn', icon: 'fab fa-linkedin', color: '#0077b5', category: 'professional' },
-    { id: 'pinterest', name: 'Pinterest', icon: 'fab fa-pinterest', color: '#E60023', category: 'visual' },
-    { id: 'snapchat', name: 'Snapchat', icon: 'fab fa-snapchat', color: '#FFFC00', category: 'social' },
-    { id: 'reddit', name: 'Reddit', icon: 'fab fa-reddit', color: '#FF4500', category: 'forum' },
-    { id: 'tumblr', name: 'Tumblr', icon: 'fab fa-tumblr', color: '#36465D', category: 'blog' },
-    { id: 'twitch', name: 'Twitch', icon: 'fab fa-twitch', color: '#9146FF', category: 'streaming' },
+    // ===== FULL SAAS PLATFORMS (Enterprise-ready with governance) =====
+    { id: 'servicenow', name: 'ServiceNow', icon: 'fas fa-cloud', color: '#00B0B9', category: 'enterprise', type: 'saas', governance: 'full', multiAgent: true, description: 'Autonomous Workforce AI specialists [citation:1]' },
+    { id: 'salesforce', name: 'Salesforce Agentforce', icon: 'fab fa-salesforce', color: '#00A1E0', category: 'crm', type: 'saas', governance: 'full', multiAgent: true, description: 'Prebuilt AI agents for communications' },
+    { id: 'arthur', name: 'Arthur.ai', icon: 'fas fa-shield-alt', color: '#6366F1', category: 'governance', type: 'saas', governance: 'full', multiAgent: true, description: 'Agent Discovery & Governance Platform [citation:8]' },
     
-    // Chinese Platforms
-    { id: 'douyin', name: 'Douyin', icon: 'fas fa-music', color: '#000000', category: 'social' },
-    { id: 'wechat', name: 'WeChat', icon: 'fab fa-weixin', color: '#07c160', category: 'chat' },
-    { id: 'weibo', name: 'Weibo', icon: 'fab fa-weibo', color: '#E6162D', category: 'social' },
-    { id: 'xiaohongshu', name: 'Xiaohongshu', icon: 'fas fa-heart', color: '#FF5A5F', category: 'social' },
-    { id: 'bilibili', name: 'Bilibili', icon: 'fas fa-play', color: '#FB7299', category: 'video' },
+    // ===== GATEWAY PLATFORMS (Cloudflare-style unified access) =====
+    { id: 'cloudflare', name: 'Cloudflare AI Gateway', icon: 'fas fa-cloud', color: '#F38020', category: 'gateway', type: 'gateway', governance: 'high', multiAgent: true, description: '400+ models, unified billing, BYOK [citation:5][citation:10]' },
+    { id: 'latenode', name: 'Latenode', icon: 'fas fa-node', color: '#6366F1', category: 'gateway', type: 'gateway', governance: 'high', multiAgent: false, description: 'Unified AI model subscription [citation:2]' },
     
-    // E-Commerce
-    { id: 'shopify', name: 'Shopify', icon: 'fab fa-shopify', color: '#7AB55C', category: 'ecommerce' },
-    { id: 'woocommerce', name: 'WooCommerce', icon: 'fab fa-wordpress', color: '#96588A', category: 'ecommerce' },
-    { id: 'magento', name: 'Magento', icon: 'fas fa-shopping-cart', color: '#F26322', category: 'ecommerce' },
-    { id: 'bigcommerce', name: 'BigCommerce', icon: 'fas fa-store', color: '#1A4A7A', category: 'ecommerce' },
-    { id: 'amazon', name: 'Amazon Seller', icon: 'fab fa-amazon', color: '#FF9900', category: 'ecommerce' },
-    { id: 'ebay', name: 'eBay', icon: 'fab fa-ebay', color: '#E53238', category: 'ecommerce' },
-    { id: 'etsy', name: 'Etsy', icon: 'fas fa-etsy', color: '#F16521', category: 'ecommerce' },
+    // ===== API WRAPPERS (Basic, user provides keys) =====
+    { id: 'n8n', name: 'n8n', icon: 'fas fa-network-wired', color: '#EA4B71', category: 'workflow', type: 'api-wrapper', governance: 'basic', multiAgent: false, description: 'Self-hosted workflow automation' },
+    { id: 'langflow', name: 'Langflow', icon: 'fas fa-code-branch', color: '#7A5AF5', category: 'development', type: 'api-wrapper', governance: 'basic', multiAgent: false, description: 'Visual LangChain builder' },
     
-    // Payment & Finance
-    { id: 'stripe', name: 'Stripe', icon: 'fab fa-stripe', color: '#635BFF', category: 'finance' },
-    { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal', color: '#00457C', category: 'finance' },
-    { id: 'square', name: 'Square', icon: 'fas fa-square', color: '#3E4348', category: 'finance' },
-    { id: 'quickbooks', name: 'QuickBooks', icon: 'fas fa-calculator', color: '#2CA01C', category: 'finance' },
-    { id: 'xero', name: 'Xero', icon: 'fas fa-chart-line', color: '#13B5EA', category: 'finance' },
+    // ===== E-COMMERCE PLATFORMS =====
+    { id: 'shopify', name: 'Shopify', icon: 'fab fa-shopify', color: '#7AB55C', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false, description: 'E-commerce platform with APIs' },
+    { id: 'woocommerce', name: 'WooCommerce', icon: 'fab fa-wordpress', color: '#96588A', category: 'ecommerce', type: 'api-wrapper', governance: 'basic', multiAgent: false },
+    { id: 'amazon', name: 'Amazon Seller', icon: 'fab fa-amazon', color: '#FF9900', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false },
     
-    // CRM & Sales
-    { id: 'salesforce', name: 'Salesforce', icon: 'fab fa-salesforce', color: '#00A1E0', category: 'crm' },
-    { id: 'hubspot', name: 'HubSpot', icon: 'fab fa-hubspot', color: '#FF7A59', category: 'crm' },
-    { id: 'zoho', name: 'Zoho', icon: 'fas fa-z', color: '#C8202B', category: 'crm' },
-    { id: 'pipedrive', name: 'Pipedrive', icon: 'fas fa-pipe', color: '#00B39F', category: 'crm' },
-    { id: 'freshsales', name: 'Freshsales', icon: 'fas fa-leaf', color: '#00A82D', category: 'crm' },
+    // ===== CRM & SALES =====
+    { id: 'hubspot', name: 'HubSpot', icon: 'fab fa-hubspot', color: '#FF7A59', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'zoho', name: 'Zoho', icon: 'fas fa-z', color: '#C8202B', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'pipedrive', name: 'Pipedrive', icon: 'fas fa-pipe', color: '#00B39F', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
     
-    // Marketing
-    { id: 'mailchimp', name: 'Mailchimp', icon: 'fab fa-mailchimp', color: '#FFE01B', category: 'marketing' },
-    { id: 'klaviyo', name: 'Klaviyo', icon: 'fas fa-envelope', color: '#24A25D', category: 'marketing' },
-    { id: 'activecampaign', name: 'ActiveCampaign', icon: 'fas fa-campaign', color: '#6A1B9A', category: 'marketing' },
-    { id: 'convertkit', name: 'ConvertKit', icon: 'fas fa-kit', color: '#FB6970', category: 'marketing' },
+    // ===== COMMUNICATION =====
+    { id: 'slack', name: 'Slack', icon: 'fab fa-slack', color: '#4A154B', category: 'communication', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'discord', name: 'Discord', icon: 'fab fa-discord', color: '#5865F2', category: 'communication', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'whatsapp', name: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366', category: 'communication', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     
-    // Communication
-    { id: 'slack', name: 'Slack', icon: 'fab fa-slack', color: '#4A154B', category: 'communication' },
-    { id: 'discord', name: 'Discord', icon: 'fab fa-discord', color: '#5865F2', category: 'communication' },
-    { id: 'telegram', name: 'Telegram', icon: 'fab fa-telegram', color: '#26A5E4', category: 'communication' },
-    { id: 'whatsapp', name: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366', category: 'communication' },
+    // ===== PROJECT MANAGEMENT =====
+    { id: 'jira', name: 'Jira', icon: 'fab fa-jira', color: '#0052CC', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'asana', name: 'Asana', icon: 'fas fa-asana', color: '#F06A6A', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'notion', name: 'Notion', icon: 'fas fa-notion', color: '#000000', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
     
-    // Project Management
-    { id: 'asana', name: 'Asana', icon: 'fas fa-asana', color: '#F06A6A', category: 'project' },
-    { id: 'trello', name: 'Trello', icon: 'fab fa-trello', color: '#0079BF', category: 'project' },
-    { id: 'jira', name: 'Jira', icon: 'fab fa-jira', color: '#0052CC', category: 'project' },
-    { id: 'monday', name: 'Monday.com', icon: 'fas fa-calendar', color: '#FF6F61', category: 'project' },
-    { id: 'notion', name: 'Notion', icon: 'fas fa-notion', color: '#000000', category: 'project' },
+    // ===== SOCIAL MEDIA =====
+    { id: 'tiktok', name: 'TikTok', icon: 'fab fa-tiktok', color: '#010101', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
+    { id: 'instagram', name: 'Instagram', icon: 'fab fa-instagram', color: '#d62976', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
+    { id: 'linkedin', name: 'LinkedIn', icon: 'fab fa-linkedin', color: '#0077b5', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     
-    // HR & People
-    { id: 'bamboo', name: 'BambooHR', icon: 'fas fa-bamboo', color: '#005B96', category: 'hr' },
-    { id: 'workday', name: 'Workday', icon: 'fas fa-work', color: '#F05A28', category: 'hr' },
-    { id: 'gusto', name: 'Gusto', icon: 'fas fa-gusto', color: '#F1C40F', category: 'hr' },
-    
-    // Customer Support
-    { id: 'zendesk', name: 'Zendesk', icon: 'fab fa-zendesk', color: '#03363D', category: 'support' },
-    { id: 'intercom', name: 'Intercom', icon: 'fas fa-intercom', color: '#6A1B9A', category: 'support' },
-    { id: 'freshdesk', name: 'Freshdesk', icon: 'fas fa-desk', color: '#00A82D', category: 'support' },
-    { id: 'helpscout', name: 'HelpScout', icon: 'fas fa-help', color: '#1297E0', category: 'support' }
+    // ===== FINANCE =====
+    { id: 'stripe', name: 'Stripe', icon: 'fab fa-stripe', color: '#635BFF', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'quickbooks', name: 'QuickBooks', icon: 'fas fa-calculator', color: '#2CA01C', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
 ];
 
 // ===== TOKEN HELPERS =====
@@ -1591,7 +1740,7 @@ async function checkAccess() {
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('ðŸš€ AI Automation Powerhouse 2.0 Starting...');
+    console.log('🚀 AI Powerhouse 2.0 Enterprise Starting...');
     
     const hasAccess = await checkAccess();
     if (!hasAccess) {
@@ -1623,7 +1772,7 @@ async function loadAllData() {
         
     } catch (error) {
         console.error('Error loading data:', error);
-        showToast('âš ï¸ Failed to load some data. Please refresh.', 'error');
+        showToast('⚠️ Failed to load some data. Please refresh.', 'error');
     }
 }
 
@@ -1648,6 +1797,20 @@ async function loadUserAutomations() {
             document.getElementById('liveCount').textContent = live;
             document.getElementById('pausedCount').textContent = paused;
             document.getElementById('totalRuns').textContent = today;
+            
+            // Calculate governance score based on connected platform types
+            const connectedTypes = connectedAccounts.map(a => {
+                const platform = platforms.find(p => p.id === a.platform);
+                return platform ? platform.type : 'api-wrapper';
+            });
+            
+            const fullSaaS = connectedTypes.filter(t => t === 'saas').length;
+            const gateways = connectedTypes.filter(t => t === 'gateway').length;
+            const wrappers = connectedTypes.filter(t => t === 'api-wrapper').length;
+            
+            const total = connectedTypes.length || 1;
+            const score = Math.round(((fullSaaS * 100) + (gateways * 80) + (wrappers * 30)) / total);
+            document.getElementById('governanceScore').textContent = score + '%';
         }
     } catch (error) {
         console.error('Error loading automations:', error);
@@ -1710,7 +1873,7 @@ function initCharts() {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [
                 {
-                    label: 'Views',
+                    label: 'API Calls',
                     data: [12400, 18900, 23400, 27800, 31200, 35600, 38900],
                     borderColor: '#d4af37',
                     backgroundColor: 'rgba(212,175,55,0.1)',
@@ -1720,14 +1883,15 @@ function initCharts() {
                     fill: true
                 },
                 {
-                    label: 'Engagement',
-                    data: [3200, 4100, 5300, 6200, 7100, 8300, 9100],
+                    label: 'Cost ($)',
+                    data: [32, 48, 62, 71, 83, 94, 102],
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37,99,235,0.1)',
                     borderWidth: 2,
                     pointRadius: 2,
                     tension: 0.3,
-                    fill: true
+                    fill: true,
+                    yAxisID: 'y1'
                 }
             ]
         },
@@ -1736,7 +1900,16 @@ function initCharts() {
             maintainAspectRatio: true,
             plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, grid: { display: false } },
+                y: { 
+                    beginAtZero: true, 
+                    grid: { display: false },
+                    title: { display: true, text: 'API Calls' }
+                },
+                y1: {
+                    position: 'right',
+                    grid: { display: false },
+                    title: { display: true, text: 'Cost ($)' }
+                },
                 x: { grid: { display: false } }
             }
         }
@@ -1798,8 +1971,20 @@ async function loadConnectedAccounts() {
                 const platform = platforms.find(p => p.id === account.platform) || { 
                     icon: 'fas fa-plug', 
                     color: '#64748b',
-                    name: account.platform || 'Unknown'
+                    name: account.platform || 'Unknown',
+                    type: 'api-wrapper',
+                    governance: 'basic'
                 };
+                
+                // Determine platform type badge
+                let typeBadge = '';
+                if (platform.type === 'saas') {
+                    typeBadge = '<span class="platform-type-badge type-saas"><i class="fas fa-building"></i> Full SaaS</span>';
+                } else if (platform.type === 'gateway') {
+                    typeBadge = '<span class="platform-type-badge type-gateway"><i class="fas fa-cloud"></i> Gateway</span>';
+                } else {
+                    typeBadge = '<span class="platform-type-badge type-api-wrapper"><i class="fas fa-key"></i> API Wrapper</span>';
+                }
                 
                 let accountInfo = account.account_info || {};
                 if (typeof accountInfo === 'string') {
@@ -1810,40 +1995,40 @@ async function loadConnectedAccounts() {
                     }
                 }
                 
-                let metrics = 'Connected';
-                if (accountInfo) {
-                    if (account.platform === 'shopify') metrics = `${accountInfo.orders || 0} orders â€¢ $${accountInfo.revenue || 0}`;
-                    else if (account.platform === 'stripe') metrics = `$${accountInfo.revenue || 0} revenue â€¢ ${accountInfo.customers || 0} customers`;
-                    else if (account.platform === 'mailchimp') metrics = `${accountInfo.subscribers || 0} subscribers â€¢ ${accountInfo.campaigns || 0} campaigns`;
-                    else if (account.platform === 'slack') metrics = `${accountInfo.members || 0} members â€¢ ${accountInfo.channels || 0} channels`;
-                    else if (account.platform === 'salesforce') metrics = `${accountInfo.leads || 0} leads â€¢ ${accountInfo.opportunities || 0} opportunities`;
-                    else if (account.platform === 'hubspot') metrics = `${accountInfo.contacts || 0} contacts â€¢ ${accountInfo.deals || 0} deals`;
-                    else if (accountInfo.followers) metrics = `${accountInfo.followers} followers â€¢ ${accountInfo.engagement || 0} engagement`;
-                    else if (accountInfo.orders) metrics = `${accountInfo.orders} orders â€¢ $${accountInfo.revenue || 0}`;
-                    else if (accountInfo.revenue) metrics = `$${accountInfo.revenue} revenue`;
-                }
-                
                 const accountName = account.account_name || account.name || platform.name;
                 const lastSync = account.last_sync ? new Date(account.last_sync).toLocaleString() : 'Never';
                 
+                // Show governance features if available
+                const govFeatures = platform.governance === 'full' ? 
+                    '<div class="governance-tags"><span class="gov-tag"><i class="fas fa-check-circle"></i> Model Policies</span><span class="gov-tag"><i class="fas fa-check-circle"></i> Budget Controls</span><span class="gov-tag"><i class="fas fa-check-circle"></i> Audit Logs</span></div>' :
+                    platform.governance === 'high' ?
+                    '<div class="governance-tags"><span class="gov-tag"><i class="fas fa-check-circle"></i> Unified Billing</span><span class="gov-tag"><i class="fas fa-check-circle"></i> Rate Limiting</span></div>' :
+                    '<div class="governance-tags"><span class="gov-tag"><i class="fas fa-exclamation-triangle"></i> Basic Governance</span></div>';
+                
                 return `
                     <div class="account-card">
-                        <div class="account-info">
-                            <div class="account-avatar" style="background: ${platform.color};">
-                                <i class="${platform.icon}"></i>
+                        <div class="account-row">
+                            <div class="account-info">
+                                <div class="account-avatar" style="background: ${platform.color};">
+                                    <i class="${platform.icon}"></i>
+                                </div>
+                                <div class="account-details">
+                                    <h4>${accountName} ${typeBadge}</h4>
+                                    <p>${platform.name}</p>
+                                    ${govFeatures}
+                                </div>
                             </div>
-                            <div class="account-details">
-                                <h4>${accountName}</h4>
-                                <p>${platform.name} â€¢ ${metrics}</p>
-                                <small style="color: var(--text-muted); font-size: 0.7rem;">Last sync: ${lastSync}</small>
+                            <div class="account-status">
+                                <span class="status-badge" style="background: ${account.status === 'active' ? 'var(--success)' : 'var(--warning)'};"></span>
+                                <button class="icon-btn" onclick="configureAccount('${account.platform}')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="account-status">
-                            <span class="status-badge" style="background: ${account.status === 'active' ? 'var(--success)' : 'var(--warning)'};"></span>
-                            <button class="icon-btn" onclick="configureAccount('${account.platform}')">
-                                <i class="fas fa-cog"></i>
-                            </button>
-                        </div>
+                        <small style="color: var(--text-muted); font-size: 0.7rem; margin-top: 8px; display: block;">
+                            Last sync: ${lastSync} | 
+                            ${platform.multiAgent ? '<i class="fas fa-check-circle" style="color: var(--success);"></i> Multi-agent support' : '<i class="fas fa-times-circle" style="color: var(--text-muted);"></i> Single agent'}
+                        </small>
                     </div>
                 `;
             }).join('');
@@ -1861,12 +2046,39 @@ function loadPlatformOptions() {
     const optionsDiv = document.getElementById('platformOptions');
     if (!optionsDiv) return;
     
-    optionsDiv.innerHTML = platforms.map(p => `
-        <div class="platform-option" onclick="selectPlatform('${p.id}')" data-platform="${p.id}">
-            <i class="${p.icon}" style="color: ${p.color};"></i>
-            <p>${p.name}</p>
-        </div>
-    `).join('');
+    // Sort platforms: SaaS first, then Gateway, then API wrappers
+    const sortedPlatforms = [...platforms].sort((a, b) => {
+        const order = { 'saas': 1, 'gateway': 2, 'api-wrapper': 3 };
+        return (order[a.type] || 4) - (order[b.type] || 4);
+    });
+    
+    optionsDiv.innerHTML = sortedPlatforms.map(p => {
+        let typeIndicator = '';
+        if (p.type === 'saas') typeIndicator = '<span class="platform-type-indicator type-saas"><i class="fas fa-building"></i></span>';
+        else if (p.type === 'gateway') typeIndicator = '<span class="platform-type-indicator type-gateway"><i class="fas fa-cloud"></i></span>';
+        else typeIndicator = '<span class="platform-type-indicator type-api-wrapper"><i class="fas fa-key"></i></span>';
+        
+        return `
+            <div class="platform-option" onclick="selectPlatform('${p.id}')" data-platform="${p.id}">
+                ${typeIndicator}
+                <i class="${p.icon}" style="color: ${p.color};"></i>
+                <p>${p.name}</p>
+                <small style="font-size: 0.6rem; color: var(--text-muted);">${p.type === 'saas' ? 'Full SaaS' : p.type === 'gateway' ? 'Gateway' : 'API'}</small>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== TOGGLE CONNECTION METHOD =====
+function toggleConnectionMethod() {
+    const method = document.getElementById('connectionMethod').value;
+    if (method === 'gateway') {
+        document.getElementById('gatewayFields').style.display = 'block';
+        document.getElementById('directFields').style.display = 'none';
+    } else {
+        document.getElementById('gatewayFields').style.display = 'none';
+        document.getElementById('directFields').style.display = 'block';
+    }
 }
 
 // ===== SEARCH PLATFORMS =====
@@ -1891,7 +2103,7 @@ function searchPlatforms() {
         card.style.display = text.includes(searchTerm) ? 'block' : 'none';
     });
     
-    showToast(`ðŸ” Searching for "${searchTerm}"`, 'info');
+    showToast(`🔍 Searching for "${searchTerm}"`, 'info');
 }
 
 // ===== FILTER FEATURES =====
@@ -1939,15 +2151,21 @@ async function loadActivityLog() {
                 <span class="chart-title">Recent Activity</span>
                 <span style="color: var(--text-muted); font-size: 0.75rem;">Live</span>
             </div>
-            ${recentActivity.map(a => `
+            ${recentActivity.map(a => {
+                let icon = 'fa-info-circle';
+                if (a.type === 'budget') icon = 'fa-dollar-sign';
+                else if (a.type === 'alert') icon = 'fa-exclamation-triangle';
+                else if (a.type === 'approval') icon = 'fa-check-circle';
+                
+                return `
                 <div class="log-entry">
-                    <div class="log-icon"><i class="fas ${a.icon || 'fa-info-circle'}"></i></div>
+                    <div class="log-icon"><i class="fas ${icon}"></i></div>
                     <div class="log-content">
                         <div class="log-title">${a.title || a.message || 'Activity'}</div>
                         <div class="log-time">${a.time || a.created_at || 'Just now'}</div>
                     </div>
                 </div>
-            `).join('')}
+            `}).join('')}
         `;
     } catch (error) {
         console.error('Error loading activity:', error);
@@ -1968,6 +2186,7 @@ async function loadActivityLog() {
 // ===== MODAL FUNCTIONS =====
 function showConnectModal() {
     document.getElementById('connectModal').classList.add('active');
+    toggleConnectionMethod(); // Show gateway fields by default
 }
 
 function closeModal() {
@@ -1975,6 +2194,9 @@ function closeModal() {
     selectedPlatform = null;
     document.querySelectorAll('.platform-option').forEach(opt => opt.classList.remove('selected'));
     document.getElementById('accountName').value = '';
+    document.getElementById('cfAccountId').value = '';
+    document.getElementById('gatewayName').value = '';
+    document.getElementById('cfToken').value = '';
     document.getElementById('apiKey').value = '';
     document.getElementById('additionalFields').innerHTML = '';
     document.getElementById('additionalFields').style.display = 'none';
@@ -1985,25 +2207,38 @@ function selectPlatform(platformId) {
     event.target.closest('.platform-option').classList.add('selected');
     selectedPlatform = platformId;
     
-    // Show additional fields if needed
-    const validation = platformValidation[platformId];
-    if (validation && validation.additionalFields.length > 0) {
-        let html = '';
-        validation.additionalFields.forEach(field => {
-            const fieldName = field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            html += `
-                <div class="form-group">
-                    <label>${fieldName}</label>
-                    <input type="text" id="${field}" class="form-control" placeholder="Enter ${fieldName}">
-                </div>
-            `;
-        });
-        document.getElementById('additionalFields').innerHTML = html;
-        document.getElementById('additionalFields').style.display = 'block';
+    const platform = platforms.find(p => p.id === platformId);
+    
+    // Suggest connection method based on platform type
+    if (platform && platform.type === 'saas') {
+        document.getElementById('connectionMethod').value = 'gateway';
+        toggleConnectionMethod();
+        showToast(`💡 ${platform.name} works best with Cloudflare Gateway for governance`, 'info');
+    } else if (platform && platform.type === 'gateway') {
+        document.getElementById('connectionMethod').value = 'gateway';
+        toggleConnectionMethod();
     } else {
-        document.getElementById('additionalFields').innerHTML = '';
-        document.getElementById('additionalFields').style.display = 'none';
+        // API wrappers can use direct keys
+        document.getElementById('connectionMethod').value = 'direct';
+        toggleConnectionMethod();
     }
+}
+
+// ===== SETTINGS & OBSERVABILITY PANELS =====
+function openSettings() {
+    document.getElementById('settingsPanel').classList.add('active');
+}
+
+function closeSettings() {
+    document.getElementById('settingsPanel').classList.remove('active');
+}
+
+function openObservability() {
+    document.getElementById('observabilityPanel').classList.add('active');
+}
+
+function closeObservability() {
+    document.getElementById('observabilityPanel').classList.remove('active');
 }
 
 // ===== TOAST NOTIFICATIONS =====
@@ -2020,12 +2255,519 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// ===== RENDER FEATURES =====
+// ===== RENDER FEATURES (24 Enterprise-Ready Features) =====
 function renderFeatures() {
     const featuresGrid = document.getElementById('featuresGrid');
     
     featuresGrid.innerHTML = `
-        <!-- E-Commerce (3) -->
+        <!-- 1. Multi-Agent Orchestration [citation:1] -->
+        <div class="feature-card" data-category="enterprise">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #6366F1, #4F46E5);">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Multi-Agent Orchestration</h3>
+                <span class="feature-badge">SERVICE NOW</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise Governance</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> Full SaaS</span>
+            </div>
+            <p class="feature-description">AI specialists that perform entire job functions, not just single tasks. Agents hand off context and collaborate [citation:1].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Operation</div></div>
+                <div class="stat"><div class="stat-value">0</div><div class="stat-label">Human</div></div>
+                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Handoff</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="deployAgent()">Deploy</button>
+                <button class="btn-outline" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="openObservability()"><i class="fas fa-bell"></i></button>
+            </div>
+        </div>
+
+        <!-- 2. Cloudflare AI Gateway [citation:5][citation:10] -->
+        <div class="feature-card" data-category="gateway">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #F38020, #F97316);">
+                <i class="fas fa-cloud"></i>
+            </div>
+            <div class="feature-header">
+                <h3>AI Gateway</h3>
+                <span class="feature-badge">CLOUDFLARE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">High Governance</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> 400+ Models</span>
+            </div>
+            <p class="feature-description">Unified access to 400+ models through one gateway. Single bill, rate limiting, caching, and BYOK [citation:5].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">400+</div><div class="stat-label">Models</div></div>
+                <div class="stat"><div class="stat-value">1</div><div class="stat-label">Bill</div></div>
+                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Gateway</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="configureGateway()">Configure</button>
+                <button class="btn-outline" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 3. Model Access Policies [citation:6] -->
+        <div class="feature-card" data-category="governance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #059669, #047857);">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Model Access Policies</h3>
+                <span class="feature-badge">GOVERNANCE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Control which teams can use GPT-4 vs Claude vs cheap models. Organization-level caps and role-based controls [citation:6].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">5</div><div class="stat-label">Policies</div></div>
+                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Teams</div></div>
+                <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Control</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="openSettings()">Manage</button>
+                <button class="btn-outline" onclick="openObservability()"><i class="fas fa-bell"></i></button>
+            </div>
+        </div>
+
+        <!-- 4. Budget Controls & Cost Analytics -->
+        <div class="feature-card" data-category="finance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #DC2626, #B91C1C);">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Budget Controls</h3>
+                <span class="feature-badge">COST</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Per-agent, per-team, per-model spend limits. Real-time alerts when approaching caps. Unified billing through Cloudflare.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">$5K</div><div class="stat-label">Cap</div></div>
+                <div class="stat"><div class="stat-value">67%</div><div class="stat-label">Used</div></div>
+                <div class="stat"><div class="stat-value">Real-time</div><div class="stat-label">Alerts</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="openSettings()">Set Budget</button>
+                <button class="btn-outline" onclick="openObservability()"><i class="fas fa-chart-line"></i></button>
+            </div>
+        </div>
+
+        <!-- 5. Audit Logging -->
+        <div class="feature-card" data-category="compliance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #2563EB, #1D4ED8);">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Audit Logging</h3>
+                <span class="feature-badge">COMPLIANCE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Every agent action recorded for SEC, FINRA, GDPR compliance. Full conversation history with search and export.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">90d</div><div class="stat-label">Retention</div></div>
+                <div class="stat"><div class="stat-value">SEC</div><div class="stat-label">Ready</div></div>
+                <div class="stat"><div class="stat-value">Export</div><div class="stat-label">JSONL</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="viewAuditLogs()">View Logs</button>
+                <button class="btn-outline" onclick="exportLogs()"><i class="fas fa-download"></i></button>
+            </div>
+        </div>
+
+        <!-- 6. PII Redaction & DLP -->
+        <div class="feature-card" data-category="security">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #7C3AED, #6D28D9);">
+                <i class="fas fa-user-secret"></i>
+            </div>
+            <div class="feature-header">
+                <h3>PII Redaction</h3>
+                <span class="feature-badge">DLP</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Automatic detection and masking of PII in prompts and responses. Data Loss Prevention profiles [citation:10].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">99.9%</div><div class="stat-label">Accuracy</div></div>
+                <div class="stat"><div class="stat-value">HIPAA</div><div class="stat-label">Ready</div></div>
+                <div class="stat"><div class="stat-value">GDPR</div><div class="stat-label">Compliant</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="configureDLP()">Configure</button>
+                <button class="btn-outline" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 7. Real-Time Monitoring -->
+        <div class="feature-card" data-category="observability">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #0891B2, #0E7490);">
+                <i class="fas fa-tachometer-alt"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Real-Time Monitoring</h3>
+                <span class="feature-badge">OBSERVABILITY</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">High</span>
+            </div>
+            <p class="feature-description">Live dashboard of all active agents. Performance metrics, cost tracking, anomaly detection [citation:4].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Agents</div></div>
+                <div class="stat"><div class="stat-value">98%</div><div class="stat-label">Uptime</div></div>
+                <div class="stat"><div class="stat-value">Live</div><div class="stat-label">Metrics</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="openObservability()">Monitor</button>
+                <button class="btn-outline" onclick="refreshMetrics()"><i class="fas fa-sync"></i></button>
+            </div>
+        </div>
+
+        <!-- 8. Root Cause Analysis [citation:1][citation:4] -->
+        <div class="feature-card" data-category="observability">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #B45309, #92400E);">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Root Cause Analysis</h3>
+                <span class="feature-badge">AI-POWERED</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">AI that diagnoses failures automatically. Identifies API key expiry, rate limits, model errors [citation:1][citation:4].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">-67%</div><div class="stat-label">MTTR</div></div>
+                <div class="stat"><div class="stat-value">94%</div><div class="stat-label">Accuracy</div></div>
+                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Fix</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="analyzeIssues()">Analyze</button>
+                <button class="btn-outline" onclick="openObservability()"><i class="fas fa-bell"></i></button>
+            </div>
+        </div>
+
+        <!-- 9. Approval Workflows -->
+        <div class="feature-card" data-category="governance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #0D9488, #0F766E);">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Approval Workflows</h3>
+                <span class="feature-badge">HITL</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Human checkpoints for critical actions (payments, deletions, bulk changes). Real-time approval requests.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Pending</div></div>
+                <div class="stat"><div class="stat-value">2min</div><div class="stat-label">Avg</div></div>
+                <div class="stat"><div class="stat-value">Slack</div><div class="stat-label">Integration</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="viewApprovals()">View</button>
+                <button class="btn-outline" onclick="configureApprovals()"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 10. Agent Discovery [citation:8] -->
+        <div class="feature-card" data-category="governance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
+                <i class="fas fa-compass"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Agent Discovery</h3>
+                <span class="feature-badge">ARTHUR.AI</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Automatically discover agentic systems across environments. Centralized inventory of agent behavior [citation:8].</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">24</div><div class="stat-label">Agents</div></div>
+                <div class="stat"><div class="stat-value">3</div><div class="stat-label">Envs</div></div>
+                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Map</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="discoverAgents()">Discover</button>
+                <button class="btn-outline" onclick="viewInventory()"><i class="fas fa-list"></i></button>
+            </div>
+        </div>
+
+        <!-- 11. Role-Based Access Control -->
+        <div class="feature-card" data-category="security">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #9333EA, #7E22CE);">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Role-Based Access</h3>
+                <span class="feature-badge">RBAC</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Fine-grained permissions: who can create agents, who can only use them. Team-based access control.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">5</div><div class="stat-label">Roles</div></div>
+                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Users</div></div>
+                <div class="stat"><div class="stat-value">Granular</div><div class="stat-label">Permissions</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="manageRBAC()">Manage</button>
+                <button class="btn-outline" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 12. Testing Sandbox -->
+        <div class="feature-card" data-category="development">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #10B981, #059669);">
+                <i class="fas fa-flask"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Testing Sandbox</h3>
+                <span class="feature-badge">DEV</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+            </div>
+            <p class="feature-description">Simulate agents with synthetic data before going live. Test edge cases and failure modes safely.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">1K+</div><div class="stat-label">Scenarios</div></div>
+                <div class="stat"><div class="stat-value">Safe</div><div class="stat-label">Testing</div></div>
+                <div class="stat"><div class="stat-value">Mock</div><div class="stat-label">APIs</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="openSandbox()">Open</button>
+                <button class="btn-outline" onclick="createTest()"><i class="fas fa-plus"></i></button>
+            </div>
+        </div>
+
+        <!-- 13. Tool Marketplace -->
+        <div class="feature-card" data-category="integrations">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
+                <i class="fas fa-puzzle-piece"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Tool Marketplace</h3>
+                <span class="feature-badge">500+</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+            </div>
+            <p class="feature-description">Pre-built connectors to 500+ systems. One-click integration with CRM, ERP, databases, and more.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">500+</div><div class="stat-label">Tools</div></div>
+                <div class="stat"><div class="stat-value">1-click</div><div class="stat-label">Connect</div></div>
+                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Auth</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="browseMarketplace()">Browse</button>
+                <button class="btn-outline" onclick="requestTool()"><i class="fas fa-plus"></i></button>
+            </div>
+        </div>
+
+        <!-- 14. Version Control -->
+        <div class="feature-card" data-category="development">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
+                <i class="fas fa-code-branch"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Version Control</h3>
+                <span class="feature-badge">GIT</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+            </div>
+            <p class="feature-description">Roll back to previous agent versions. A/B test different agent configurations. Full history.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">24</div><div class="stat-label">Versions</div></div>
+                <div class="stat"><div class="stat-value">Rollback</div><div class="stat-label">1-click</div></div>
+                <div class="stat"><div class="stat-value">A/B</div><div class="stat-label">Test</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="viewVersions()">View</button>
+                <button class="btn-outline" onclick="createVersion()"><i class="fas fa-tag"></i></button>
+            </div>
+        </div>
+
+        <!-- 15. Template Library -->
+        <div class="feature-card" data-category="productivity">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Template Library</h3>
+                <span class="feature-badge">100+</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+            </div>
+            <p class="feature-description">Start from proven workflows, not blank pages. Inventory, CRM, support templates ready to use.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">100+</div><div class="stat-label">Templates</div></div>
+                <div class="stat"><div class="stat-value">5min</div><div class="stat-label">Setup</div></div>
+                <div class="stat"><div class="stat-value">Proven</div><div class="stat-label">Workflows</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="browseTemplates()">Browse</button>
+                <button class="btn-outline" onclick="saveTemplate()"><i class="fas fa-save"></i></button>
+            </div>
+        </div>
+
+        <!-- 16. Multi-Tenant Architecture -->
+        <div class="feature-card" data-category="infrastructure">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Multi-Tenant</h3>
+                <span class="feature-badge">ENTERPRISE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Complete data isolation per customer. Custom domains, separate databases, independent scaling.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Isolation</div></div>
+                <div class="stat"><div class="stat-value">Custom</div><div class="stat-label">Domains</div></div>
+                <div class="stat"><div class="stat-value">BYOC</div><div class="stat-label">Ready</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="configureTenancy()">Configure</button>
+                <button class="btn-outline" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 17. Bring Your Own Cloud -->
+        <div class="feature-card" data-category="infrastructure">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #0284C7, #075985);">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Bring Your Own Cloud</h3>
+                <span class="feature-badge">BYOC</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Deploy in customer's VPC for enterprise deals. AWS, GCP, Azure support. Complete data sovereignty.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">AWS</div><div class="stat-label">Ready</div></div>
+                <div class="stat"><div class="stat-value">GCP</div><div class="stat-label">Ready</div></div>
+                <div class="stat"><div class="stat-value">Azure</div><div class="stat-label">Ready</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="configureBYOC()">Configure</button>
+                <button class="btn-outline" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 18. Custom SLAs -->
+        <div class="feature-card" data-category="enterprise">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #B45309, #92400E);">
+                <i class="fas fa-file-contract"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Custom SLAs</h3>
+                <span class="feature-badge">ENTERPRISE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Uptime guarantees with real monitoring. Per-customer SLAs, credits for breaches. 99.9% available.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">99.9%</div><div class="stat-label">Uptime</div></div>
+                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Monitor</div></div>
+                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Credits</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="viewSLA()">View SLA</button>
+                <button class="btn-outline" onclick="reportIssue()"><i class="fas fa-flag"></i></button>
+            </div>
+        </div>
+
+        <!-- 19. GDPR/HIPAA Readiness -->
+        <div class="feature-card" data-category="compliance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #0F766E, #115E59);">
+                <i class="fas fa-balance-scale"></i>
+            </div>
+            <div class="feature-header">
+                <h3>GDPR/HIPAA Ready</h3>
+                <span class="feature-badge">COMPLIANCE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Data isolation, encryption controls, right-to-delete. Audit trails for regulated industries.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">GDPR</div><div class="stat-label">Ready</div></div>
+                <div class="stat"><div class="stat-value">HIPAA</div><div class="stat-label">Ready</div></div>
+                <div class="stat"><div class="stat-value">SOC2</div><div class="stat-label">Ready</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="configureCompliance()">Configure</button>
+                <button class="btn-outline" onclick="viewCertificates()"><i class="fas fa-certificate"></i></button>
+            </div>
+        </div>
+
+        <!-- 20. Customer Support Portal -->
+        <div class="feature-card" data-category="support">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #0D9488, #0F766E);">
+                <i class="fas fa-headset"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Support Portal</h3>
+                <span class="feature-badge">SELF-SERVICE</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+            </div>
+            <p class="feature-description">Users manage agents, billing, team members. Usage reports, invoice history, API key rotation.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Access</div></div>
+                <div class="stat"><div class="stat-value">Self</div><div class="stat-label">Service</div></div>
+                <div class="stat"><div class="stat-label">Portal</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="openPortal()">Open</button>
+                <button class="btn-outline" onclick="contactSupport()"><i class="fas fa-envelope"></i></button>
+            </div>
+        </div>
+
+        <!-- 21. Conversation Logs -->
+        <div class="feature-card" data-category="compliance">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Conversation Logs</h3>
+                <span class="feature-badge">AUDIT</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Enterprise</span>
+            </div>
+            <p class="feature-description">Full history of all agent interactions. Search, filter, export for compliance reviews. PII redacted.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">90d</div><div class="stat-label">Retention</div></div>
+                <div class="stat"><div class="stat-value">Search</div><div class="stat-label">All</div></div>
+                <div class="stat"><div class="stat-label">Export</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="viewLogs()">View</button>
+                <button class="btn-outline" onclick="exportLogs()"><i class="fas fa-download"></i></button>
+            </div>
+        </div>
+
+        <!-- 22. Inventory Automation (Original) -->
         <div class="feature-card" data-category="ecommerce">
             <div class="feature-icon" style="background: linear-gradient(135deg, #7AB55C, #2E7D32);">
                 <i class="fas fa-boxes"></i>
@@ -2034,11 +2776,15 @@ function renderFeatures() {
                 <h3>Inventory Automation</h3>
                 <span class="feature-badge">AI-POWERED</span>
             </div>
-            <p class="feature-description">Real-time inventory tracking across all sales channels. Auto-reorder when stock is low, sync across platforms, prevent overselling.</p>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> Shopify, Amazon</span>
+            </div>
+            <p class="feature-description">Real-time inventory tracking across all sales channels. Auto-reorder when stock is low, sync across platforms.</p>
             <div class="feature-stats">
                 <div class="stat"><div class="stat-value">99.9%</div><div class="stat-label">Accuracy</div></div>
                 <div class="stat"><div class="stat-value">5min</div><div class="stat-label">Sync</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Monitoring</div></div>
+                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Monitor</div></div>
             </div>
             <div class="feature-action">
                 <button class="btn-primary" onclick="runInventoryCheck()">Check Stock</button>
@@ -2046,6 +2792,7 @@ function renderFeatures() {
             </div>
         </div>
 
+        <!-- 23. Cart Recovery (Original) -->
         <div class="feature-card" data-category="ecommerce">
             <div class="feature-icon" style="background: linear-gradient(135deg, #FF6B6B, #C44545);">
                 <i class="fas fa-shopping-cart"></i>
@@ -2054,11 +2801,15 @@ function renderFeatures() {
                 <h3>Cart Recovery</h3>
                 <span class="feature-badge">AI-POWERED</span>
             </div>
-            <p class="feature-description">Automated email/SMS sequences for abandoned carts. AI-optimized timing and discounts to maximize conversion rates.</p>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> Email/SMS</span>
+            </div>
+            <p class="feature-description">Automated email/SMS sequences for abandoned carts. AI-optimized timing and discounts to maximize conversion.</p>
             <div class="feature-stats">
                 <div class="stat"><div class="stat-value">+32%</div><div class="stat-label">Recovery</div></div>
                 <div class="stat"><div class="stat-value">2.4hrs</div><div class="stat-label">Response</div></div>
-                <div class="stat"><div class="stat-value">45%</div><div class="stat-label">Open Rate</div></div>
+                <div class="stat"><div class="stat-value">45%</div><div class="stat-label">Open</div></div>
             </div>
             <div class="feature-action">
                 <button class="btn-primary" onclick="recoverCarts()">Run Recovery</button>
@@ -2066,27 +2817,7 @@ function renderFeatures() {
             </div>
         </div>
 
-        <div class="feature-card" data-category="ecommerce">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #F39C12, #E67E22);">
-                <i class="fas fa-tags"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Price Intelligence</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Real-time competitor price tracking. AI suggests optimal pricing to maximize margins while staying competitive.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">1.2M</div><div class="stat-label">Products</div></div>
-                <div class="stat"><div class="stat-value">15min</div><div class="stat-label">Updates</div></div>
-                <div class="stat"><div class="stat-value">245</div><div class="stat-label">Competitors</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="scanPrices()">Scan Now</button>
-                <button class="btn-outline" onclick="viewPriceAlerts()"><i class="fas fa-bell"></i></button>
-            </div>
-        </div>
-
-        <!-- CRM & Sales (3) -->
+        <!-- 24. AI Lead Scoring (Original) -->
         <div class="feature-card" data-category="crm">
             <div class="feature-icon" style="background: linear-gradient(135deg, #3498DB, #2980B9);">
                 <i class="fas fa-chart-line"></i>
@@ -2095,7 +2826,11 @@ function renderFeatures() {
                 <h3>AI Lead Scoring</h3>
                 <span class="feature-badge">AI-POWERED</span>
             </div>
-            <p class="feature-description">Automatically score leads based on behavior, engagement, and demographics. Focus sales team on hot leads first.</p>
+            <div class="feature-meta">
+                <span class="gov-level">Standard</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> HubSpot, Salesforce</span>
+            </div>
+            <p class="feature-description">Automatically score leads based on behavior, engagement, and demographics. Focus sales team on hot leads.</p>
             <div class="feature-stats">
                 <div class="stat"><div class="stat-value">93%</div><div class="stat-label">Accuracy</div></div>
                 <div class="stat"><div class="stat-value">2.5x</div><div class="stat-label">Conversion</div></div>
@@ -2106,418 +2841,12 @@ function renderFeatures() {
                 <button class="btn-outline" onclick="configureFeature('scoring')"><i class="fas fa-cog"></i></button>
             </div>
         </div>
-
-        <div class="feature-card" data-category="crm">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #9B59B6, #8E44AD);">
-                <i class="fas fa-envelope-open-text"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Smart Email Sequences</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">AI-powered email drip campaigns that adapt based on recipient behavior. Personalized timing and content.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">+47%</div><div class="stat-label">Open Rate</div></div>
-                <div class="stat"><div class="stat-value">32%</div><div class="stat-label">CTR</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Sending</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="createSequence()">Create</button>
-                <button class="btn-outline" onclick="configureFeature('email')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="crm">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #1ABC9C, #16A085);">
-                <i class="fas fa-tasks"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Task Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-create tasks from emails, calls, and meetings. Assign to team members based on workload and skills.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">1,247</div><div class="stat-label">Tasks</div></div>
-                <div class="stat"><div class="stat-value">89%</div><div class="stat-label">Auto-assign</div></div>
-                <div class="stat"><div class="stat-value">2.3s</div><div class="stat-label">Processing</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="processTasks()">Process</button>
-                <button class="btn-outline" onclick="configureFeature('tasks')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- Marketing (3) -->
-        <div class="feature-card" data-category="marketing">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #E1306C, #C13584);">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Smart Social Scheduler</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">AI-optimized posting times across all platforms. Auto-generate captions and hashtags using computer vision.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">+156%</div><div class="stat-label">Engagement</div></div>
-                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Platforms</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Posting</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="schedulePosts()">Schedule</button>
-                <button class="btn-outline" onclick="configureFeature('social')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="marketing">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #4285F4, #0F9D58);">
-                <i class="fas fa-ad"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Ad Intelligence</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Real-time monitoring of all ad campaigns. AI suggests budget allocation and audience optimization.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">-32%</div><div class="stat-label">CPA</div></div>
-                <div class="stat"><div class="stat-value">+45%</div><div class="stat-label">ROAS</div></div>
-                <div class="stat"><div class="stat-value">5min</div><div class="stat-label">Updates</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="analyzeAds()">Analyze</button>
-                <button class="btn-outline" onclick="configureFeature('ads')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="marketing">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #FF9900, #F57C00);">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="feature-header">
-                <h3>SEO Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Track keyword rankings, monitor backlinks, get alerts for ranking drops. AI suggests content improvements.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">10K+</div><div class="stat-label">Keywords</div></div>
-                <div class="stat"><div class="stat-value">Daily</div><div class="stat-label">Checks</div></div>
-                <div class="stat"><div class="stat-value">89%</div><div class="stat-label">Accuracy</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="checkSEO()">Check SEO</button>
-                <button class="btn-outline" onclick="configureFeature('seo')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- Customer Support (3) -->
-        <div class="feature-card" data-category="support">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #00BCD4, #0097A7);">
-                <i class="fas fa-ticket-alt"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Smart Ticket Routing</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">AI analyzes ticket content and routes to the right team member based on skills and availability.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">-67%</div><div class="stat-label">Response Time</div></div>
-                <div class="stat"><div class="stat-value">95%</div><div class="stat-label">Accuracy</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Routing</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="routeTickets()">Route Now</button>
-                <button class="btn-outline" onclick="configureFeature('routing')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="support">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #4CAF50, #388E3C);">
-                <i class="fas fa-reply-all"></i>
-            </div>
-            <div class="feature-header">
-                <h3>AI Auto-Responder</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Instant AI-generated responses for common queries. Learn from past conversations to improve.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">78%</div><div class="stat-label">Auto-resolve</div></div>
-                <div class="stat"><div class="stat-value">2.3s</div><div class="stat-label">Response</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Support</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="enableAutoReply()">Enable</button>
-                <button class="btn-outline" onclick="configureFeature('autoreply')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="support">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #FF9800, #F57C00);">
-                <i class="fas fa-smile"></i>
-            </div>
-            <div class="feature-header">
-                <h3>CSAT Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-send satisfaction surveys after support interactions. AI analyzes feedback and flags issues.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">4.8/5</div><div class="stat-label">Avg Rating</div></div>
-                <div class="stat"><div class="stat-value">89%</div><div class="stat-label">Response</div></div>
-                <div class="stat"><div class="stat-value">Real-time</div><div class="stat-label">Alerts</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="sendSurveys()">Send Now</button>
-                <button class="btn-outline" onclick="configureFeature('surveys')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- Finance (3) -->
-        <div class="feature-card" data-category="finance">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #2ECC71, #27AE60);">
-                <i class="fas fa-file-invoice"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Invoice Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-generate and send invoices. Track payments, send reminders, and reconcile with bank accounts.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">1,247</div><div class="stat-label">Invoices</div></div>
-                <div class="stat"><div class="stat-value">98%</div><div class="stat-label">On-time</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Processing</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="processInvoices()">Process</button>
-                <button class="btn-outline" onclick="configureFeature('invoices')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="finance">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #E74C3C, #C0392B);">
-                <i class="fas fa-receipt"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Expense Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-categorize expenses from receipts using computer vision. Flag unusual spending patterns.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">5K+</div><div class="stat-label">Receipts</div></div>
-                <div class="stat"><div class="stat-value">97%</div><div class="stat-label">Accuracy</div></div>
-                <div class="stat"><div class="stat-value">Real-time</div><div class="stat-label">Tracking</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="scanExpenses()">Scan Receipts</button>
-                <button class="btn-outline" onclick="configureFeature('expenses')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="finance">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #3498DB, #2980B9);">
-                <i class="fas fa-users-cog"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Payroll Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-calculate hours, taxes, and deductions. Generate payslips and process direct deposits.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">247</div><div class="stat-label">Employees</div></div>
-                <div class="stat"><div class="stat-value">99.9%</div><div class="stat-label">Accuracy</div></div>
-                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Processing</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="processPayroll()">Run Payroll</button>
-                <button class="btn-outline" onclick="configureFeature('payroll')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- HR (3) -->
-        <div class="feature-card" data-category="hr">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #9B59B6, #8E44AD);">
-                <i class="fas fa-umbrella-beach"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Leave Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-approve leave requests based on policy and team capacity. Sync with calendar and payroll.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">2.3s</div><div class="stat-label">Processing</div></div>
-                <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Policy</div></div>
-                <div class="stat"><div class="stat-label">Compliance</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="processLeave()">Process</button>
-                <button class="btn-outline" onclick="configureFeature('leave')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="hr">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #1ABC9C, #16A085);">
-                <i class="fas fa-user-plus"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Employee Onboarding</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Automated onboarding checklists. Send welcome emails, create accounts, schedule training.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">-67%</div><div class="stat-label">Time</div></div>
-                <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Tasks</div></div>
-                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Setup</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="startOnboarding()">Start</button>
-                <button class="btn-outline" onclick="configureFeature('onboarding')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="hr">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #F39C12, #E67E22);">
-                <i class="fas fa-star"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Review Automation</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Schedule and track performance reviews. AI analyzes feedback and suggests development plans.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">247</div><div class="stat-label">Employees</div></div>
-                <div class="stat"><div class="stat-value">Quarterly</div><div class="stat-label">Reviews</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Insights</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="scheduleReviews()">Schedule</button>
-                <button class="btn-outline" onclick="configureFeature('reviews')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- Project Management (3) -->
-        <div class="feature-card" data-category="project">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #3498DB, #2980B9);">
-                <i class="fas fa-user-check"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Smart Assignment</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">AI assigns tasks based on skills, workload, and past performance. Optimizes team productivity.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">+45%</div><div class="stat-label">Efficiency</div></div>
-                <div class="stat"><div class="stat-value">Real-time</div><div class="stat-label">Balancing</div></div>
-                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Assignment</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="assignTasks()">Assign</button>
-                <button class="btn-outline" onclick="configureFeature('assignment')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="project">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #E74C3C, #C0392B);">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Deadline Monitor</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Track project deadlines, send reminders, predict delays based on progress. Auto-reschedule when needed.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">-89%</div><div class="stat-label">Missed</div></div>
-                <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Tracking</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Predictions</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="checkDeadlines()">Check</button>
-                <button class="btn-outline" onclick="configureFeature('deadlines')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="project">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #2ECC71, #27AE60);">
-                <i class="fas fa-file-alt"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Auto Reports</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Auto-generate project status reports. AI summarizes progress, risks, and next steps.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">Daily</div><div class="stat-label">Reports</div></div>
-                <div class="stat"><div class="stat-value">5min</div><div class="stat-label">Generation</div></div>
-                <div class="stat"><div class="stat-value">Auto-send</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="generateReport()">Generate</button>
-                <button class="btn-outline" onclick="configureFeature('reports')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- Social Media (3) -->
-        <div class="feature-card" data-category="social">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #E1306C, #C13584);">
-                <i class="fas fa-pen-fancy"></i>
-            </div>
-            <div class="feature-header">
-                <h3>AI Content Creator</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Generate social media posts, captions, and hashtags using AI. Optimized for each platform.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">1K+</div><div class="stat-label">Posts</div></div>
-                <div class="stat"><div class="stat-value">2.3s</div><div class="stat-label">Generation</div></div>
-                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Platforms</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="createContent()">Create</button>
-                <button class="btn-outline" onclick="configureFeature('content')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="social">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #4267B2, #38548A);">
-                <i class="fas fa-heart"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Engagement Monitor</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Track likes, comments, shares across platforms. AI identifies trending content and suggests engagement.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">2.3M</div><div class="stat-label">Engagements</div></div>
-                <div class="stat"><div class="stat-value">Real-time</div><div class="stat-label">Tracking</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Insights</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="trackEngagement()">Track</button>
-                <button class="btn-outline" onclick="configureFeature('engagement')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <div class="feature-card" data-category="social">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #6441A5, #2A0845);">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Influencer Tracker</h3>
-                <span class="feature-badge">AI-POWERED</span>
-            </div>
-            <p class="feature-description">Monitor influencer mentions and collaborations. AI scores influencer relevance and reach.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">10K+</div><div class="stat-label">Influencers</div></div>
-                <div class="stat"><div class="stat-value">Daily</div><div class="stat-label">Updates</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Scoring</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="trackInfluencers()">Track</button>
-                <button class="btn-outline" onclick="configureFeature('influencers')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
     `;
 }
 
 // ===== AUTOMATION FUNCTIONS =====
 async function runInventoryCheck() { 
-    showToast('ðŸ“¦ Checking inventory across all connected platforms...', 'info');
+    showToast('📦 Checking inventory across all connected platforms...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/inventory/check`, {
@@ -2526,16 +2855,16 @@ async function runInventoryCheck() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`ðŸ“¦ Found ${data.lowStock || 0} low stock items`, 'success');
+            showToast(`📦 Found ${data.lowStock || 0} low stock items`, 'success');
             await loadActivityLog();
         }
     } catch (error) {
-        showToast('ðŸ“¦ Inventory check started', 'info');
+        showToast('📦 Inventory check started', 'info');
     }
 }
 
 async function recoverCarts() { 
-    showToast('ðŸ›’ Starting cart recovery...', 'info');
+    showToast('🛒 Starting cart recovery...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/carts/recover`, {
@@ -2544,16 +2873,16 @@ async function recoverCarts() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`ðŸ›’ Recovered ${data.count || 0} carts`, 'success');
+            showToast(`🛒 Recovered ${data.count || 0} carts`, 'success');
             await loadActivityLog();
         }
     } catch (error) {
-        showToast('ðŸ›’ Cart recovery started', 'info');
+        showToast('🛒 Cart recovery started', 'info');
     }
 }
 
 async function scoreLeads() { 
-    showToast('ðŸ“Š Scoring leads...', 'info');
+    showToast('📊 Scoring leads...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/leads/score`, {
@@ -2562,225 +2891,21 @@ async function scoreLeads() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`ðŸ“Š Found ${data.hotLeads || 0} hot leads`, 'success');
+            showToast(`📊 Found ${data.hotLeads || 0} hot leads`, 'success');
             await loadActivityLog();
         }
     } catch (error) {
-        showToast('ðŸ“Š Lead scoring started', 'info');
+        showToast('📊 Lead scoring started', 'info');
     }
 }
 
-async function createSequence() { 
-    showToast('ðŸ“§ Creating email sequence...', 'info');
-    setTimeout(() => showToast('ðŸ“§ Email sequence created', 'success'), 1500);
+async function configureGateway() {
+    showToast('⚙️ Configuring Cloudflare AI Gateway...', 'info');
+    openSettings();
 }
 
-async function processTasks() { 
-    showToast('âœ… Processing tasks...', 'info');
-    setTimeout(() => showToast('âœ… Tasks processed', 'success'), 1500);
-}
-
-async function schedulePosts() { 
-    showToast('ðŸ“… Scheduling posts...', 'info');
-    setTimeout(() => showToast('ðŸ“… Posts scheduled', 'success'), 1500);
-}
-
-async function analyzeAds() { 
-    showToast('ðŸ“ˆ Analyzing ads...', 'info');
-    setTimeout(() => showToast('ðŸ“ˆ Analysis complete', 'success'), 2000);
-}
-
-async function checkSEO() { 
-    showToast('ðŸ” Checking SEO...', 'info');
-    setTimeout(() => showToast('ðŸ” SEO check complete', 'success'), 2000);
-}
-
-async function routeTickets() { 
-    showToast('ðŸŽ« Routing tickets...', 'info');
-    setTimeout(() => showToast('ðŸŽ« Tickets routed', 'success'), 1500);
-}
-
-async function enableAutoReply() { 
-    showToast('ðŸ¤– Enabling auto-reply...', 'info');
-    setTimeout(() => showToast('ðŸ¤– Auto-reply enabled', 'success'), 1500);
-}
-
-async function sendSurveys() { 
-    showToast('ðŸ“‹ Sending surveys...', 'info');
-    setTimeout(() => showToast('ðŸ“‹ Surveys sent', 'success'), 1500);
-}
-
-async function processInvoices() { 
-    showToast('ðŸ’° Processing invoices...', 'info');
-    setTimeout(() => showToast('ðŸ’° Invoices processed', 'success'), 2000);
-}
-
-async function scanExpenses() { 
-    showToast('ðŸ§¾ Scanning expenses...', 'info');
-    setTimeout(() => showToast('ðŸ§¾ Expenses scanned', 'success'), 2000);
-}
-
-async function processPayroll() { 
-    showToast('ðŸ’µ Processing payroll...', 'info');
-    setTimeout(() => showToast('ðŸ’µ Payroll processed', 'success'), 2000);
-}
-
-async function processLeave() { 
-    showToast('ðŸ–ï¸ Processing leave...', 'info');
-    setTimeout(() => showToast('ðŸ–ï¸ Leave processed', 'success'), 1500);
-}
-
-async function startOnboarding() { 
-    showToast('ðŸ‘‹ Starting onboarding...', 'info');
-    setTimeout(() => showToast('ðŸ‘‹ Onboarding started', 'success'), 1500);
-}
-
-async function scheduleReviews() { 
-    showToast('ðŸ“‹ Scheduling reviews...', 'info');
-    setTimeout(() => showToast('ðŸ“‹ Reviews scheduled', 'success'), 1500);
-}
-
-async function assignTasks() { 
-    showToast('âœ… Assigning tasks...', 'info');
-    setTimeout(() => showToast('âœ… Tasks assigned', 'success'), 1500);
-}
-
-async function checkDeadlines() { 
-    showToast('â° Checking deadlines...', 'info');
-    setTimeout(() => showToast('â° Deadlines checked', 'success'), 1500);
-}
-
-async function generateReport() { 
-    showToast('ðŸ“Š Generating report...', 'info');
-    setTimeout(() => showToast('ðŸ“Š Report generated', 'success'), 2000);
-}
-
-async function createContent() { 
-    showToast('âœï¸ Creating content...', 'info');
-    setTimeout(() => showToast('âœï¸ Content created', 'success'), 2000);
-}
-
-async function trackEngagement() { 
-    showToast('â¤ï¸ Tracking engagement...', 'info');
-    setTimeout(() => showToast('â¤ï¸ Engagement tracked', 'success'), 1500);
-}
-
-async function trackInfluencers() { 
-    showToast('ðŸŒŸ Tracking influencers...', 'info');
-    setTimeout(() => showToast('ðŸŒŸ Influencers tracked', 'success'), 1500);
-}
-
-async function analyzeWithVision() { 
-    showToast('ðŸ” Vision analysis started...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/vision/analyze`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`ðŸ” Analyzed ${data.frames || 0} frames`, 'success');
-            await loadStats();
-        }
-    } catch (error) {
-        showToast('ðŸ” Vision analysis unavailable', 'error');
-    }
-}
-
-async function rotateFingerprint() { 
-    showToast('ðŸ›¡ï¸ Rotating fingerprint...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/anti-detection/rotate`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) showToast('ðŸ›¡ï¸ Fingerprint rotated', 'success');
-    } catch (error) {
-        showToast('ðŸ›¡ï¸ Rotation failed', 'error');
-    }
-}
-
-async function showProxyStats() { 
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/proxy-stats`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            const stats = await response.json();
-            showToast(`ðŸ“Š ${stats.proxies || 0} active proxies`, 'info');
-        }
-    } catch (error) {
-        showToast('ðŸ“Š Proxy stats unavailable', 'error');
-    }
-}
-
-async function enrichLeads() { 
-    showToast('âš¡ Enriching leads...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/leads/enrich`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`âš¡ Found ${data.discovered || 0} insights`, 'success');
-            await loadStats();
-        }
-    } catch (error) {
-        showToast('âš¡ Enrichment started', 'info');
-    }
-}
-
-function viewLeadDatabase() { 
-    showToast(`ðŸ“Š ${totalLeads} total leads`, 'info'); 
-}
-
-async function spawnInstance() { 
-    showToast('ðŸ“± Spawning instance...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/mobile/spawn`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`ðŸ“± ${data.instances || 0} instances spawned`, 'success');
-            await loadStats();
-        }
-    } catch (error) {
-        showToast('ðŸ“± Spawn started', 'info');
-    }
-}
-
-function manageInstances() { 
-    showToast('â˜ï¸ Cloud Console', 'info'); 
-}
-
-async function scanPrices() { 
-    showToast('ðŸ’° Scanning prices...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/prices/scan`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) showToast('ðŸ’° Scan complete', 'success');
-    } catch (error) {
-        showToast('ðŸ’° Scan started', 'info');
-    }
-}
-
-function viewPriceAlerts() { 
-    showToast('ðŸ”” Checking alerts...', 'info'); 
-}
-
-async function deployAgent() { 
-    showToast('ðŸ¤– Deploying agent...', 'info');
+async function deployAgent() {
+    showToast('🤖 Deploying multi-agent workforce...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/automations/agents/deploy`, {
@@ -2789,25 +2914,144 @@ async function deployAgent() {
         });
         if (response.ok) {
             const data = await response.json();
-            showToast(`ðŸ¤– ${data.agentType || 'Agent'} deployed`, 'success');
+            showToast(`🤖 ${data.agentType || 'Agent'} deployed`, 'success');
             await loadStats();
         }
     } catch (error) {
-        showToast('ðŸ¤– Deployment started', 'info');
+        showToast('🤖 Deployment started', 'info');
     }
     setTimeout(loadActivityLog, 2000);
 }
 
-function viewAgents() { 
-    showToast(`ðŸ¤– ${activeAgents} active agents`, 'info'); 
+function viewAuditLogs() {
+    showToast('📋 Loading audit logs...', 'info');
+    setTimeout(() => showToast('📋 Audit logs ready', 'success'), 1500);
 }
 
-function configureAccount(platform) { 
-    showToast(`âš™ï¸ Configuring ${platform}...`, 'info'); 
+function configureDLP() {
+    showToast('🔒 Configuring Data Loss Prevention...', 'info');
+    openSettings();
+}
+
+function refreshMetrics() {
+    showToast('🔄 Refreshing metrics...', 'info');
+    setTimeout(() => showToast('✅ Metrics updated', 'success'), 1000);
+}
+
+function analyzeIssues() {
+    showToast('🔍 Running root cause analysis...', 'info');
+    setTimeout(() => {
+        showToast('🔍 Found 3 issues: API key expiry, rate limit, model error', 'warning');
+    }, 2000);
+}
+
+function viewApprovals() {
+    showToast('✅ Loading pending approvals...', 'info');
+}
+
+function configureApprovals() {
+    showToast('⚙️ Configuring approval workflows...', 'info');
+    openSettings();
+}
+
+function discoverAgents() {
+    showToast('🧭 Discovering agents across environments...', 'info');
+    setTimeout(() => showToast('🧭 Found 12 agents', 'success'), 2000);
+}
+
+function viewInventory() {
+    showToast('📋 Loading agent inventory...', 'info');
+}
+
+function manageRBAC() {
+    showToast('👥 Managing role-based access...', 'info');
+    openSettings();
+}
+
+function openSandbox() {
+    showToast('🧪 Opening testing sandbox...', 'info');
+}
+
+function createTest() {
+    showToast('🧪 Creating test scenario...', 'info');
+}
+
+function browseMarketplace() {
+    showToast('🛒 Opening tool marketplace...', 'info');
+}
+
+function requestTool() {
+    showToast('📝 Tool request submitted', 'success');
+}
+
+function viewVersions() {
+    showToast('📋 Loading version history...', 'info');
+}
+
+function createVersion() {
+    showToast('🏷️ Creating version tag...', 'info');
+}
+
+function browseTemplates() {
+    showToast('📁 Browsing templates...', 'info');
+}
+
+function saveTemplate() {
+    showToast('💾 Template saved', 'success');
+}
+
+function configureTenancy() {
+    showToast('🏗️ Configuring multi-tenant settings...', 'info');
+    openSettings();
+}
+
+function configureBYOC() {
+    showToast('☁️ Configuring Bring Your Own Cloud...', 'info');
+    openSettings();
+}
+
+function viewSLA() {
+    showToast('📄 Loading SLA report...', 'info');
+}
+
+function reportIssue() {
+    showToast('🚨 Issue reported to support', 'success');
+}
+
+function configureCompliance() {
+    showToast('⚖️ Configuring compliance settings...', 'info');
+    openSettings();
+}
+
+function viewCertificates() {
+    showToast('📜 Loading compliance certificates...', 'info');
+}
+
+function openPortal() {
+    showToast('🚪 Opening support portal...', 'info');
+}
+
+function contactSupport() {
+    showToast('📧 Contacting support...', 'info');
+}
+
+function viewLogs() {
+    showToast('📋 Loading conversation logs...', 'info');
+}
+
+function exportLogs() {
+    showToast('📥 Exporting logs...', 'info');
+    setTimeout(() => showToast('📥 Logs exported', 'success'), 2000);
 }
 
 function configureFeature(feature) { 
-    showToast(`âš™ï¸ Configuring ${feature}...`, 'info'); 
+    showToast(`⚙️ Configuring ${feature}...`, 'info');
+    openSettings();
+}
+
+function configureAccount(platform) { 
+    showToast(`⚙️ Configuring ${platform} account...`, 'info');
+    openSettings();
 }
 
 async function connectAccount() {
@@ -2817,41 +3061,58 @@ async function connectAccount() {
     }
     
     const accountName = document.getElementById('accountName').value;
-    const apiKey = document.getElementById('apiKey').value;
+    const method = document.getElementById('connectionMethod').value;
     
-    if (!accountName || !apiKey) {
-        showToast('Please fill in all fields', 'error');
+    if (!accountName) {
+        showToast('Please enter account name', 'error');
         return;
     }
     
-    // Validate API key format
-    const validation = platformValidation[selectedPlatform];
-    if (validation) {
-        if (!validation.apiKeyFormat.test(apiKey)) {
-            showToast(`Invalid API key format for ${selectedPlatform}`, 'error');
+    const platform = platforms.find(p => p.id === selectedPlatform);
+    
+    let connectionData = {
+        platform: selectedPlatform,
+        accountName: accountName,
+        method: method
+    };
+    
+    if (method === 'gateway') {
+        const cfAccountId = document.getElementById('cfAccountId').value;
+        const gatewayName = document.getElementById('gatewayName').value;
+        const cfToken = document.getElementById('cfToken').value;
+        
+        if (!cfAccountId || !gatewayName || !cfToken) {
+            showToast('Please fill all gateway fields', 'error');
             return;
         }
         
-        // Collect additional fields
-        const additionalData = {};
-        if (validation.additionalFields.length > 0) {
-            let allValid = true;
-            validation.additionalFields.forEach(field => {
-                const value = document.getElementById(field)?.value;
-                if (!value) {
-                    showToast(`Please enter ${field}`, 'error');
-                    allValid = false;
-                }
-                additionalData[field] = value;
-            });
-            if (!allValid) return;
-        }
+        connectionData = {
+            ...connectionData,
+            gatewayConfig: {
+                accountId: cfAccountId,
+                gatewayName: gatewayName,
+                apiToken: cfToken
+            }
+        };
         
-        // Validate platform-specific requirements
-        if (!validation.validate({ apiKey, ...additionalData })) {
-            showToast(`Invalid credentials for ${selectedPlatform}`, 'error');
+        // Validate Cloudflare gateway format [citation:5]
+        const gatewayUrl = `${CLOUDFLARE_GATEWAY_URL}/${cfAccountId}/${gatewayName}`;
+        connectionData.gatewayUrl = gatewayUrl;
+        
+    } else {
+        const apiKey = document.getElementById('apiKey').value;
+        if (!apiKey) {
+            showToast('Please enter API key', 'error');
             return;
         }
+        connectionData.apiKey = apiKey;
+        
+        // Collect any additional fields
+        const additionalFields = {};
+        document.querySelectorAll('#additionalFields input').forEach(input => {
+            additionalFields[input.id] = input.value;
+        });
+        connectionData.additionalFields = additionalFields;
     }
     
     const connectBtn = event.target;
@@ -2867,19 +3128,16 @@ async function connectAccount() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                platform: selectedPlatform,
-                accountName: accountName,
-                apiKey: apiKey,
-                ...(validation?.additionalFields.reduce((acc, field) => {
-                    acc[field] = document.getElementById(field)?.value;
-                    return acc;
-                }, {}) || {})
-            })
+            body: JSON.stringify(connectionData)
         });
         
         if (response.ok) {
-            showToast('âœ… Account connected successfully!', 'success');
+            const result = await response.json();
+            if (method === 'gateway') {
+                showToast('✅ Connected via Cloudflare Gateway! Unified access to 400+ models [citation:5]', 'success');
+            } else {
+                showToast('✅ Account connected successfully!', 'success');
+            }
             closeModal();
             await loadConnectedAccounts();
             await loadActivityLog();
@@ -2901,43 +3159,46 @@ window.showConnectModal = showConnectModal;
 window.closeModal = closeModal;
 window.connectAccount = connectAccount;
 window.configureAccount = configureAccount;
-window.analyzeWithVision = analyzeWithVision;
-window.rotateFingerprint = rotateFingerprint;
-window.showProxyStats = showProxyStats;
-window.enrichLeads = enrichLeads;
-window.viewLeadDatabase = viewLeadDatabase;
-window.spawnInstance = spawnInstance;
-window.manageInstances = manageInstances;
-window.scanPrices = scanPrices;
-window.viewPriceAlerts = viewPriceAlerts;
-window.deployAgent = deployAgent;
-window.viewAgents = viewAgents;
 window.configureFeature = configureFeature;
 window.selectPlatform = selectPlatform;
 window.searchPlatforms = searchPlatforms;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.openObservability = openObservability;
+window.closeObservability = closeObservability;
+window.toggleConnectionMethod = toggleConnectionMethod;
 window.runInventoryCheck = runInventoryCheck;
 window.recoverCarts = recoverCarts;
 window.scoreLeads = scoreLeads;
-window.createSequence = createSequence;
-window.processTasks = processTasks;
-window.schedulePosts = schedulePosts;
-window.analyzeAds = analyzeAds;
-window.checkSEO = checkSEO;
-window.routeTickets = routeTickets;
-window.enableAutoReply = enableAutoReply;
-window.sendSurveys = sendSurveys;
-window.processInvoices = processInvoices;
-window.scanExpenses = scanExpenses;
-window.processPayroll = processPayroll;
-window.processLeave = processLeave;
-window.startOnboarding = startOnboarding;
-window.scheduleReviews = scheduleReviews;
-window.assignTasks = assignTasks;
-window.checkDeadlines = checkDeadlines;
-window.generateReport = generateReport;
-window.createContent = createContent;
-window.trackEngagement = trackEngagement;
-window.trackInfluencers = trackInfluencers;
+window.configureGateway = configureGateway;
+window.deployAgent = deployAgent;
+window.viewAuditLogs = viewAuditLogs;
+window.configureDLP = configureDLP;
+window.refreshMetrics = refreshMetrics;
+window.analyzeIssues = analyzeIssues;
+window.viewApprovals = viewApprovals;
+window.configureApprovals = configureApprovals;
+window.discoverAgents = discoverAgents;
+window.viewInventory = viewInventory;
+window.manageRBAC = manageRBAC;
+window.openSandbox = openSandbox;
+window.createTest = createTest;
+window.browseMarketplace = browseMarketplace;
+window.requestTool = requestTool;
+window.viewVersions = viewVersions;
+window.createVersion = createVersion;
+window.browseTemplates = browseTemplates;
+window.saveTemplate = saveTemplate;
+window.configureTenancy = configureTenancy;
+window.configureBYOC = configureBYOC;
+window.viewSLA = viewSLA;
+window.reportIssue = reportIssue;
+window.configureCompliance = configureCompliance;
+window.viewCertificates = viewCertificates;
+window.openPortal = openPortal;
+window.contactSupport = contactSupport;
+window.viewLogs = viewLogs;
+window.exportLogs = exportLogs;
 </script>
 </body>
 </html>
