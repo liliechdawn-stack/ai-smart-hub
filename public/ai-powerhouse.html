@@ -1827,7 +1827,7 @@ async function loadUserAutomations() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             userAutomations = await response.json();
             const live = userAutomations.filter(a => a.status === 'active').length;
             const paused = userAutomations.filter(a => a.status === 'paused').length;
@@ -1868,7 +1868,7 @@ async function loadStats() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const stats = await response.json();
             activeAgents = stats.activeAgents || 0;
             imagesProcessed = stats.imagesProcessed || 0;
@@ -1890,7 +1890,7 @@ async function loadUserData() {
         const response = await fetch(`${API_BASE}/user/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             userData = await response.json();
             document.getElementById('userName').textContent = userData.business_name || userData.name || 'User';
         }
@@ -1976,7 +1976,7 @@ function startLiveUpdates() {
             const response = await fetch(`${API_BASE}/automations/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (response.ok) {
+            if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
                 const stats = await response.json();
                 activeAgents = stats.activeAgents || 0;
                 imagesProcessed = stats.imagesProcessed || 0;
@@ -2001,7 +2001,7 @@ async function loadConnectedAccounts() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const accounts = await response.json();
             connectedAccounts = accounts;
             
@@ -2290,7 +2290,7 @@ async function fetchRealGovernanceData() {
         const response = await fetch(`${API_BASE}/automations/governance`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const data = await response.json();
             // Update settings panel with real data
             document.querySelectorAll('.model-policy')[0].innerHTML = `
@@ -2315,7 +2315,7 @@ async function fetchRealObservabilityData() {
         const response = await fetch(`${API_BASE}/automations/observability`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const data = await response.json();
             // Update observability panel with real alerts
             const alertsDiv = document.querySelector('.observability-panel');
@@ -2956,7 +2956,7 @@ async function runInventoryCheck() {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const data = await response.json();
             showToast(`📦 Found ${data.lowStock || 0} low stock items`, 'success');
             await loadActivityLog();
@@ -2974,7 +2974,7 @@ async function recoverCarts() {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const data = await response.json();
             showToast(`🛒 Recovered ${data.count || 0} carts`, 'success');
             await loadActivityLog();
@@ -2992,7 +2992,7 @@ async function scoreLeads() {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const data = await response.json();
             showToast(`📊 Found ${data.hotLeads || 0} hot leads`, 'success');
             await loadActivityLog();
@@ -3015,7 +3015,7 @@ async function deployAgent() {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const data = await response.json();
             showToast(`🤖 ${data.agentType || 'Agent'} deployed`, 'success');
             await loadStats();
@@ -3234,7 +3234,7 @@ async function connectAccount() {
             body: JSON.stringify(connectionData)
         });
         
-        if (response.ok) {
+        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } if (response.ok) {
             const result = await response.json();
             if (method === 'gateway') {
                 showToast('✅ Connected via Cloudflare Gateway! Unified access to 400+ models', 'success');
