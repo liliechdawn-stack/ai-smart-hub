@@ -146,16 +146,239 @@ db.serialize(() => {
   // AI AUTOMATIONS TABLE
   db.run(`
     CREATE TABLE IF NOT EXISTS automations (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      trigger_type TEXT NOT NULL,
+      trigger_config TEXT,
+      action_type TEXT NOT NULL,
+      action_config TEXT,
+      schedule TEXT,
+      status TEXT DEFAULT 'active',
+      trigger_count INTEGER DEFAULT 0,
+      success_count INTEGER DEFAULT 0,
+      avg_duration INTEGER DEFAULT 0,
+      last_run DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // AUTOMATION RUNS TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS automation_runs (
+      id TEXT PRIMARY KEY,
+      automation_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      status TEXT DEFAULT 'running',
+      result TEXT,
+      duration INTEGER,
+      error TEXT,
+      started_at DATETIME,
+      completed_at DATETIME,
+      estimated_hours INTEGER DEFAULT 0,
+      FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // CONNECTED ACCOUNTS TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS connected_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      icon TEXT DEFAULT '⚙️',
-      trigger TEXT NOT NULL,
-      action TEXT NOT NULL,
-      enabled INTEGER DEFAULT 1,
-      live INTEGER DEFAULT 1,
+      platform TEXT NOT NULL,
+      account_name TEXT NOT NULL,
+      api_key_encrypted TEXT,
+      account_info TEXT,
+      gateway_url TEXT,
+      connection_type TEXT DEFAULT 'direct',
+      status TEXT DEFAULT 'active',
+      last_sync DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(user_id, platform, account_name)
+    )
+  `);
+
+  // PLATFORM METRICS TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS platform_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      platform TEXT NOT NULL,
+      metrics TEXT,
+      collected_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // VISION RESULTS TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS vision_results (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      image_url TEXT,
+      analysis TEXT,
+      objects_detected INTEGER DEFAULT 0,
+      sentiment TEXT,
+      confidence REAL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // ACTIVITY LOG TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      action TEXT NOT NULL,
+      details TEXT,
+      icon TEXT,
+      type TEXT DEFAULT 'info',
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // PRICE HISTORY TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      product_id TEXT,
+      product_name TEXT,
+      competitor TEXT,
+      price REAL,
+      currency TEXT DEFAULT 'USD',
+      detected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // INVENTORY ALERTS TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inventory_alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      product_id TEXT,
+      product_name TEXT,
+      current_quantity INTEGER,
+      threshold INTEGER,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      resolved_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // LEAD SCORES TABLE
+  db.run(`
+    CREATE TABLE IF NOT EXISTS lead_scores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      lead_id INTEGER NOT NULL,
+      score INTEGER,
+      criteria TEXT,
+      scored_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+    )
+  `);
+
+  // GOVERNANCE SETTINGS TABLE (NEW FOR SAAS)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS governance_settings (
+      user_id INTEGER PRIMARY KEY,
+      gpt4_policy TEXT DEFAULT 'Marketing Team Only',
+      claude_policy TEXT DEFAULT 'All Teams',
+      gemini_policy TEXT DEFAULT 'Executives Only',
+      monthly_cap INTEGER DEFAULT 5000,
+      used_amount INTEGER DEFAULT 0,
+      per_user_limit INTEGER DEFAULT 200,
+      cap_type TEXT DEFAULT 'soft',
+      pii_redaction INTEGER DEFAULT 1,
+      hipaa_mode INTEGER DEFAULT 0,
+      gdpr INTEGER DEFAULT 1,
+      salesforce_status TEXT DEFAULT 'connected',
+      hubspot_status TEXT DEFAULT 'connected',
+      shopify_status TEXT DEFAULT 'requires_auth',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // ALERTS TABLE (NEW FOR SAAS)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT,
+      severity TEXT,
+      title TEXT,
+      description TEXT,
+      resolved INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      resolved_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // USAGE LOGS TABLE (NEW FOR SAAS)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS usage_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      provider TEXT,
+      model TEXT,
+      cost REAL,
+      tokens INTEGER,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // AGENT PERFORMANCE TABLE (NEW FOR SAAS)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS agent_performance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT,
+      success_rate REAL,
+      avg_latency INTEGER,
+      total_runs INTEGER,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // MOBILE INSTANCES TABLE (NEW FOR SAAS)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS mobile_instances (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_active DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // PROXY USAGE TABLE (NEW FOR SAAS)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS proxy_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      ip TEXT,
+      success_rate REAL,
+      requests INTEGER,
+      used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
@@ -358,6 +581,20 @@ db.serialize(() => {
     }
   });
 
+  // Create indexes for performance
+  db.run(`CREATE INDEX IF NOT EXISTS idx_automations_user_id ON automations(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_automation_runs_user_id ON automation_runs(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_automation_runs_automation_id ON automation_runs(automation_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_connected_accounts_user_id ON connected_accounts(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_activity_log_user_id ON activity_log(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_activity_log_timestamp ON activity_log(timestamp);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_lead_scores_user_id ON lead_scores(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_lead_scores_lead_id ON lead_scores(lead_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_alerts_resolved ON alerts(resolved);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_usage_logs_user_id ON usage_logs(user_id);`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_usage_logs_timestamp ON usage_logs(timestamp);`);
+
   // ==================== BACKWARD COMPATIBILITY MIGRATIONS ====================
   
   // Users table migrations - FIXED: Added business_type column
@@ -458,6 +695,8 @@ function createUser(email, password, business_id, business_name, vToken) {
         const userId = this.lastID;
         // Also initialize an empty smart hub entry for them
         db.run(`INSERT INTO smart_hub_settings (user_id) VALUES (?)`, [userId]);
+        // Initialize governance settings for new user
+        db.run(`INSERT OR IGNORE INTO governance_settings (user_id) VALUES (?)`, [userId]);
         resolve(userId);
       }
     );
@@ -1059,6 +1298,7 @@ function createAdminIfNotExists(email, hashedPassword) {
           if (err) return reject(err);
           const adminId = this.lastID;
           db.run(`INSERT INTO smart_hub_settings (user_id) VALUES (?)`, [adminId]);
+          db.run(`INSERT INTO governance_settings (user_id) VALUES (?)`, [adminId]);
           resolve({ id: adminId, email: cleanEmail });
         }
       );
@@ -1067,17 +1307,21 @@ function createAdminIfNotExists(email, hashedPassword) {
 }
 
 // ===============================
-// AI AUTOMATIONS
+// AI AUTOMATIONS (UPDATED FOR SAAS)
 // ===============================
-function createAutomation(user_id, title, trigger, action, icon = '⚙️') {
+function createAutomation(user_id, name, trigger_type, action_type, description = '', trigger_config = {}, action_config = {}) {
   return new Promise((resolve, reject) => {
+    const { v4: uuidv4 } = require('uuid');
+    const id = 'auto_' + uuidv4().substring(0, 8);
+    const now = new Date().toISOString();
+    
     db.run(
-      `INSERT INTO automations (user_id, title, icon, trigger, action, enabled, live, created_at)
-       VALUES (?, ?, ?, ?, ?, 1, 1, datetime('now'))`,
-      [user_id, title, icon, trigger, action],
+      `INSERT INTO automations (id, user_id, name, description, trigger_type, trigger_config, action_type, action_config, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, user_id, name, description, trigger_type, JSON.stringify(trigger_config), action_type, JSON.stringify(action_config), now, now],
       function (err) {
         if (err) return reject(err);
-        resolve(this.lastID);
+        resolve(id);
       }
     );
   });
@@ -1090,23 +1334,20 @@ function getAutomationsByUser(user_id) {
       [user_id],
       (err, rows) => {
         if (err) return reject(err);
-        resolve(rows);
+        resolve(rows || []);
       }
     );
   });
 }
 
-function toggleAutomation(id, user_id) {
+function getAutomationById(id, user_id) {
   return new Promise((resolve, reject) => {
-    db.run(
-      `UPDATE automations 
-       SET enabled = CASE WHEN enabled = 1 THEN 0 ELSE 1 END,
-           live = CASE WHEN enabled = 1 THEN 0 ELSE 1 END
-       WHERE id = ? AND user_id = ?`,
+    db.get(
+      `SELECT * FROM automations WHERE id = ? AND user_id = ?`,
       [id, user_id],
-      function (err) {
+      (err, row) => {
         if (err) return reject(err);
-        resolve(this.changes > 0);
+        resolve(row);
       }
     );
   });
@@ -1114,36 +1355,42 @@ function toggleAutomation(id, user_id) {
 
 function updateAutomation(id, user_id, updates) {
   return new Promise((resolve, reject) => {
-    const { title, trigger, action, icon } = updates;
-    let query = `UPDATE automations SET `;
-    let params = [];
-    let first = true;
+    const { name, description, trigger_config, action_config, schedule, status } = updates;
+    let query = `UPDATE automations SET updated_at = ?`;
+    let params = [new Date().toISOString()];
+    let sets = [];
 
-    if (title) {
-      query += `title = ?`;
-      params.push(title);
-      first = false;
+    if (name) {
+      sets.push(`name = ?`);
+      params.push(name);
     }
-    if (trigger) {
-      if (!first) query += `, `;
-      query += `trigger = ?`;
-      params.push(trigger);
-      first = false;
+    if (description !== undefined) {
+      sets.push(`description = ?`);
+      params.push(description);
     }
-    if (action) {
-      if (!first) query += `, `;
-      query += `action = ?`;
-      params.push(action);
-      first = false;
+    if (trigger_config) {
+      sets.push(`trigger_config = ?`);
+      params.push(JSON.stringify(trigger_config));
     }
-    if (icon) {
-      if (!first) query += `, `;
-      query += `icon = ?`;
-      params.push(icon);
+    if (action_config) {
+      sets.push(`action_config = ?`);
+      params.push(JSON.stringify(action_config));
+    }
+    if (schedule) {
+      sets.push(`schedule = ?`);
+      params.push(schedule);
+    }
+    if (status) {
+      sets.push(`status = ?`);
+      params.push(status);
     }
 
-    query += ` WHERE id = ? AND user_id = ?`;
-    params.push(id, user_id);
+    if (sets.length === 0) {
+      return resolve(true);
+    }
+
+    query = `UPDATE automations SET ${sets.join(', ')}, updated_at = ? WHERE id = ? AND user_id = ?`;
+    params.push(new Date().toISOString(), id, user_id);
 
     db.run(query, params, function (err) {
       if (err) return reject(err);
@@ -1156,6 +1403,402 @@ function deleteAutomation(id, user_id) {
   return new Promise((resolve, reject) => {
     db.run(
       `DELETE FROM automations WHERE id = ? AND user_id = ?`,
+      [id, user_id],
+      function (err) {
+        if (err) return reject(err);
+        resolve(this.changes > 0);
+      }
+    );
+  });
+}
+
+function incrementAutomationTriggers(id, user_id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE automations SET trigger_count = trigger_count + 1, last_run = ? WHERE id = ? AND user_id = ?`,
+      [new Date().toISOString(), id, user_id],
+      function (err) {
+        if (err) return reject(err);
+        resolve(true);
+      }
+    );
+  });
+}
+
+// ===============================
+// AUTOMATION RUNS FUNCTIONS
+// ===============================
+function createAutomationRun(id, automation_id, user_id) {
+  return new Promise((resolve, reject) => {
+    const now = new Date().toISOString();
+    db.run(
+      `INSERT INTO automation_runs (id, automation_id, user_id, started_at) VALUES (?, ?, ?, ?)`,
+      [id, automation_id, user_id, now],
+      function (err) {
+        if (err) return reject(err);
+        resolve(id);
+      }
+    );
+  });
+}
+
+function completeAutomationRun(id, status, result, duration, error = null) {
+  return new Promise((resolve, reject) => {
+    const now = new Date().toISOString();
+    db.run(
+      `UPDATE automation_runs SET status = ?, result = ?, duration = ?, error = ?, completed_at = ? WHERE id = ?`,
+      [status, JSON.stringify(result), duration, error, now, id],
+      function (err) {
+        if (err) return reject(err);
+        resolve(true);
+      }
+    );
+  });
+}
+
+function getAutomationRuns(automation_id, user_id, limit = 50) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT * FROM automation_runs WHERE automation_id = ? AND user_id = ? ORDER BY started_at DESC LIMIT ?`,
+      [automation_id, user_id, limit],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+// ===============================
+// CONNECTED ACCOUNTS FUNCTIONS
+// ===============================
+function saveConnectedAccount(user_id, platform, account_name, api_key_encrypted, account_info = {}, gateway_url = null, connection_type = 'direct') {
+  return new Promise((resolve, reject) => {
+    const now = new Date().toISOString();
+    
+    db.get(
+      `SELECT id FROM connected_accounts WHERE user_id = ? AND platform = ? AND account_name = ?`,
+      [user_id, platform, account_name],
+      (err, existing) => {
+        if (err) return reject(err);
+        
+        if (existing) {
+          // Update existing
+          db.run(
+            `UPDATE connected_accounts SET api_key_encrypted = ?, account_info = ?, gateway_url = ?, connection_type = ?, status = 'active', last_sync = ?, updated_at = ? WHERE id = ?`,
+            [api_key_encrypted, JSON.stringify(account_info), gateway_url, connection_type, now, now, existing.id],
+            function(err) {
+              if (err) return reject(err);
+              resolve(existing.id);
+            }
+          );
+        } else {
+          // Insert new
+          db.run(
+            `INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, account_info, gateway_url, connection_type, last_sync, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [user_id, platform, account_name, api_key_encrypted, JSON.stringify(account_info), gateway_url, connection_type, now, now, now],
+            function(err) {
+              if (err) return reject(err);
+              resolve(this.lastID);
+            }
+          );
+        }
+      }
+    );
+  });
+}
+
+function getConnectedAccounts(user_id) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, platform, account_name, account_info, status, last_sync, created_at FROM connected_accounts WHERE user_id = ? ORDER BY created_at DESC`,
+      [user_id],
+      (err, rows) => {
+        if (err) return reject(err);
+        const accounts = (rows || []).map(row => {
+          try {
+            return {
+              ...row,
+              account_info: row.account_info ? JSON.parse(row.account_info) : null
+            };
+          } catch (e) {
+            return {
+              ...row,
+              account_info: null
+            };
+          }
+        });
+        resolve(accounts);
+      }
+    );
+  });
+}
+
+function deleteConnectedAccount(id, user_id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `DELETE FROM connected_accounts WHERE id = ? AND user_id = ?`,
+      [id, user_id],
+      function (err) {
+        if (err) return reject(err);
+        resolve(this.changes > 0);
+      }
+    );
+  });
+}
+
+function updateAccountLastSync(id, user_id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE connected_accounts SET last_sync = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+      [new Date().toISOString(), new Date().toISOString(), id, user_id],
+      function (err) {
+        if (err) return reject(err);
+        resolve(true);
+      }
+    );
+  });
+}
+
+// ===============================
+// ACTIVITY LOG FUNCTIONS
+// ===============================
+function logActivity(user_id, action, details, type = 'info', icon = null) {
+  return new Promise((resolve, reject) => {
+    const icons = {
+      'info': 'fa-info-circle',
+      'success': 'fa-check-circle',
+      'warning': 'fa-exclamation-triangle',
+      'error': 'fa-times-circle',
+      'automation': 'fa-robot',
+      'account': 'fa-plug',
+      'lead': 'fa-user',
+      'vision': 'fa-eye',
+      'security': 'fa-shield-alt',
+      'mobile': 'fa-cloud',
+      'pricing': 'fa-tags',
+      'inventory': 'fa-boxes',
+      'governance': 'fa-shield-alt'
+    };
+    
+    const finalIcon = icon || icons[type] || 'fa-info-circle';
+    
+    db.run(
+      `INSERT INTO activity_log (user_id, action, details, type, icon, timestamp) VALUES (?, ?, ?, ?, ?, ?)`,
+      [user_id, action, details, type, finalIcon, new Date().toISOString()],
+      function (err) {
+        if (err) return reject(err);
+        resolve(this.lastID);
+      }
+    );
+  });
+}
+
+function getRecentActivity(user_id, limit = 10) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT * FROM activity_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?`,
+      [user_id, limit],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+// ===============================
+// GOVERNANCE SETTINGS FUNCTIONS
+// ===============================
+function getGovernanceSettings(user_id) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT * FROM governance_settings WHERE user_id = ?`,
+      [user_id],
+      (err, row) => {
+        if (err) return reject(err);
+        if (!row) {
+          // Create default settings
+          db.run(`INSERT INTO governance_settings (user_id) VALUES (?)`, [user_id], function(err) {
+            if (err) return reject(err);
+            db.get(`SELECT * FROM governance_settings WHERE user_id = ?`, [user_id], (err, newRow) => {
+              if (err) return reject(err);
+              resolve(newRow || {});
+            });
+          });
+        } else {
+          resolve(row);
+        }
+      }
+    );
+  });
+}
+
+function updateGovernanceSettings(user_id, settings) {
+  return new Promise((resolve, reject) => {
+    // First ensure record exists
+    db.run(`INSERT OR IGNORE INTO governance_settings (user_id) VALUES (?)`, [user_id], function(err) {
+      if (err) return reject(err);
+      
+      // Build dynamic update query
+      const updates = [];
+      const params = [];
+      
+      const allowedFields = [
+        'gpt4_policy', 'claude_policy', 'gemini_policy', 
+        'monthly_cap', 'used_amount', 'per_user_limit', 'cap_type',
+        'pii_redaction', 'hipaa_mode', 'gdpr',
+        'salesforce_status', 'hubspot_status', 'shopify_status'
+      ];
+      
+      allowedFields.forEach(field => {
+        if (settings[field] !== undefined) {
+          updates.push(`${field} = ?`);
+          params.push(settings[field]);
+        }
+      });
+      
+      if (updates.length === 0) {
+        return resolve(true);
+      }
+      
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+      params.push(user_id);
+      
+      db.run(
+        `UPDATE governance_settings SET ${updates.join(', ')} WHERE user_id = ?`,
+        params,
+        function(err) {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    });
+  });
+}
+
+// ===============================
+// ALERTS FUNCTIONS
+// ===============================
+function createAlert(user_id, type, severity, title, description) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO alerts (user_id, type, severity, title, description, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+      [user_id, type, severity, title, description, new Date().toISOString()],
+      function (err) {
+        if (err) return reject(err);
+        resolve(this.lastID);
+      }
+    );
+  });
+}
+
+function getActiveAlerts(user_id) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT * FROM alerts WHERE user_id = ? AND resolved = 0 ORDER BY created_at DESC`,
+      [user_id],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+function resolveAlert(alert_id, user_id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE alerts SET resolved = 1, resolved_at = ? WHERE id = ? AND user_id = ?`,
+      [new Date().toISOString(), alert_id, user_id],
+      function (err) {
+        if (err) return reject(err);
+        resolve(this.changes > 0);
+      }
+    );
+  });
+}
+
+// ===============================
+// USAGE LOGS FUNCTIONS
+// ===============================
+function logUsage(user_id, provider, model, cost, tokens) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO usage_logs (user_id, provider, model, cost, tokens, timestamp) VALUES (?, ?, ?, ?, ?, ?)`,
+      [user_id, provider, model, cost, tokens, new Date().toISOString()],
+      function (err) {
+        if (err) return reject(err);
+        
+        // Update governance used_amount
+        db.run(
+          `UPDATE governance_settings SET used_amount = used_amount + ? WHERE user_id = ?`,
+          [cost, user_id],
+          function(err) {
+            if (err) console.error("Error updating used_amount:", err);
+          }
+        );
+        
+        resolve(this.lastID);
+      }
+    );
+  });
+}
+
+function getUsageStats(user_id, days = 30) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT provider, SUM(cost) as total_cost, SUM(tokens) as total_tokens, COUNT(*) as calls
+       FROM usage_logs 
+       WHERE user_id = ? AND timestamp > datetime('now', ? || ' days')
+       GROUP BY provider`,
+      [user_id, '-' + days],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+// ===============================
+// MOBILE INSTANCES FUNCTIONS
+// ===============================
+function spawnMobileInstance(user_id) {
+  return new Promise((resolve, reject) => {
+    const { v4: uuidv4 } = require('uuid');
+    const id = 'inst_' + uuidv4().substring(0, 8);
+    const now = new Date().toISOString();
+    
+    db.run(
+      `INSERT INTO mobile_instances (id, user_id, created_at, last_active) VALUES (?, ?, ?, ?)`,
+      [id, user_id, now, now],
+      function (err) {
+        if (err) return reject(err);
+        resolve(id);
+      }
+    );
+  });
+}
+
+function getMobileInstances(user_id) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT * FROM mobile_instances WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC`,
+      [user_id],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+function terminateMobileInstance(id, user_id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE mobile_instances SET status = 'terminated' WHERE id = ? AND user_id = ?`,
       [id, user_id],
       function (err) {
         if (err) return reject(err);
@@ -1318,21 +1961,49 @@ module.exports = {
   saveChat,
   getChatsByUser,
   getChatsBySession,
-  // New notification settings functions
+  // Notification settings functions
   getNotificationSettings,
   saveNotificationSettings,
-  // New API keys functions
+  // API keys functions
   createApiKey,
   getApiKeys,
   deleteApiKey,
   updateApiKeyLastUsed,
   validateApiKey,
   createAdminIfNotExists,
+  // Automation functions (UPDATED)
   createAutomation,
   getAutomationsByUser,
-  toggleAutomation,
+  getAutomationById,
   updateAutomation,
   deleteAutomation,
+  incrementAutomationTriggers,
+  // Automation run functions (NEW)
+  createAutomationRun,
+  completeAutomationRun,
+  getAutomationRuns,
+  // Connected accounts functions (NEW)
+  saveConnectedAccount,
+  getConnectedAccounts,
+  deleteConnectedAccount,
+  updateAccountLastSync,
+  // Activity log functions (NEW)
+  logActivity,
+  getRecentActivity,
+  // Governance functions (NEW)
+  getGovernanceSettings,
+  updateGovernanceSettings,
+  // Alert functions (NEW)
+  createAlert,
+  getActiveAlerts,
+  resolveAlert,
+  // Usage log functions (NEW)
+  logUsage,
+  getUsageStats,
+  // Mobile instance functions (NEW)
+  spawnMobileInstance,
+  getMobileInstances,
+  terminateMobileInstance,
   // Broadcast exports
   saveBroadcast,
   getBroadcastsByUser,
