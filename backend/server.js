@@ -16,22 +16,17 @@ require("dotenv").config();
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-// ================= IMPORT NEW SERVICES (ADDED - KEEPS ALL ORIGINAL CODE) =================
+// ================= IMPORT NEW SERVICES =================
 const CloudflareGateway = require('../services/cloudflare-gateway');
 const PlatformClients = require('../services/platform-clients');
 const EncryptionService = require('../services/encryption');
 const MetricsService = require('../services/metrics');
 
-// ================= IMPORT MODELS (ADDED - KEEPS ALL ORIGINAL CODE) =================
+// ================= IMPORT MODELS =================
 const AccountModel = require('../models/Account');
 const ActivityModel = require('../models/Activity');
 const GovernanceModel = require('../models/Governance');
 const AlertModel = require('../models/Alert');
-
-// ================= INITIALIZE SERVICES (ADDED - KEEPS ALL ORIGINAL CODE) =================
-const encryptionService = new EncryptionService(ENCRYPTION_KEY);
-const platformClients = new PlatformClients(ENCRYPTION_KEY);
-const metricsService = new MetricsService();
 
 // Use centralized DB from database.js
 const dbModule = require("./database.js");
@@ -100,6 +95,11 @@ const CLOUDFLARE_AI_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+
+// ================= INITIALIZE SERVICES =================
+const encryptionService = new EncryptionService(ENCRYPTION_KEY);
+const platformClients = new PlatformClients(ENCRYPTION_KEY);
+const metricsService = new MetricsService();
 
 // ================= RESEND CONFIGURATION =================
 let resend = null;
