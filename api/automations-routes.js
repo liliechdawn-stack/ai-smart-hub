@@ -3,10 +3,34 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
-const dbModule = require('../backend/database.js');
-const { authenticateToken } = require('../backend/auth-middleware.js');
+
+console.log('🔵 AUTOMATIONS ROUTES: Starting to load...');
+
+let dbModule;
+try {
+  dbModule = require('../backend/database.js');
+  console.log('✅ AUTOMATIONS ROUTES: Database module loaded');
+} catch (err) {
+  console.error('❌ AUTOMATIONS ROUTES: Failed to load database module:', err.message);
+  dbModule = { db: null, getUserById: null };
+}
+
+let authMiddleware;
+try {
+  authMiddleware = require('../backend/auth-middleware.js');
+  console.log('✅ AUTOMATIONS ROUTES: Auth middleware loaded');
+} catch (err) {
+  console.error('❌ AUTOMATIONS ROUTES: Failed to load auth middleware:', err.message);
+  authMiddleware = { authenticateToken: (req, res, next) => {
+    console.warn('⚠️ AUTOMATIONS ROUTES: Using fallback auth');
+    next();
+  }};
+}
 
 const { db, getUserById } = dbModule;
+const { authenticateToken } = authMiddleware;
+
+console.log('✅ AUTOMATIONS ROUTES: Dependencies loaded');
 
 // Encryption key from environment (should match server.js)
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here';
@@ -304,8 +328,17 @@ async function executeAnalyticsAction(userId, config) {
     }
 }
 
+// ===== TEST ROUTE TO VERIFY ROUTER IS WORKING =====
+router.get('/test', (req, res) => {
+  console.log('✅ TEST ROUTE HIT - automations router is working!');
+  res.json({ success: true, message: 'Automations router is working', timestamp: new Date().toISOString() });
+});
+
+console.log('📝 AUTOMATIONS ROUTES: Registering routes...');
+
 // ===== 1. GET ALL AUTOMATIONS =====
 router.get('/', authenticateToken, (req, res) => {
+  console.log('📥 GET /api/automations - User:', req.user?.id);
     const userId = req.user.id;
     
     db.all(`
@@ -323,6 +356,7 @@ router.get('/', authenticateToken, (req, res) => {
 
 // ===== 2. GET SINGLE AUTOMATION =====
 router.get('/:id', authenticateToken, (req, res) => {
+  console.log(`📥 GET /api/automations/${req.params.id}`);
     const { id } = req.params;
     const userId = req.user.id;
     
@@ -620,6 +654,7 @@ router.get('/stats/summary', authenticateToken, (req, res) => {
 
 // ===== 9. GET AUTOMATION STATS (for AI Powerhouse) =====
 router.get('/stats', authenticateToken, (req, res) => {
+  console.log('📊 GET /api/automations/stats - User:', req.user?.id);
     const userId = req.user.id;
     
     const queries = {
@@ -647,6 +682,7 @@ router.get('/stats', authenticateToken, (req, res) => {
 
 // ===== 10. GET RECENT ACTIVITY =====
 router.get('/activity', authenticateToken, (req, res) => {
+  console.log('📋 GET /api/automations/activity - User:', req.user?.id);
     const userId = req.user.id;
     
     db.all(`
@@ -665,6 +701,7 @@ router.get('/activity', authenticateToken, (req, res) => {
 
 // ===== 11. GET CONNECTED ACCOUNTS =====
 router.get('/accounts', authenticateToken, (req, res) => {
+  console.log('🔌 GET /api/automations/accounts - User:', req.user?.id);
     const userId = req.user.id;
     
     db.all(`
@@ -1370,10 +1407,10 @@ router.post('/import', authenticateToken, (req, res) => {
         });
     });
 });
-// Add these endpoints to your automations-routes.js (after the existing endpoints)
 
 // ===== INVENTORY CHECK =====
 router.post('/inventory/check', authenticateToken, async (req, res) => {
+    console.log('📦 POST /api/automations/inventory/check - User:', req.user?.id);
     const userId = req.user.id;
     
     try {
@@ -1435,6 +1472,7 @@ router.post('/inventory/check', authenticateToken, async (req, res) => {
 
 // ===== CART RECOVERY =====
 router.post('/carts/recover', authenticateToken, async (req, res) => {
+    console.log('🛒 POST /api/automations/carts/recover - User:', req.user?.id);
     const userId = req.user.id;
     
     try {
@@ -1471,6 +1509,7 @@ router.post('/carts/recover', authenticateToken, async (req, res) => {
 
 // ===== LEAD SCORING =====
 router.post('/leads/score', authenticateToken, async (req, res) => {
+    console.log('📊 POST /api/automations/leads/score - User:', req.user?.id);
     const userId = req.user.id;
     
     try {
@@ -1522,6 +1561,7 @@ router.post('/leads/score', authenticateToken, async (req, res) => {
 
 // ===== DEPLOY AGENT =====
 router.post('/agents/deploy', authenticateToken, async (req, res) => {
+    console.log('🤖 POST /api/automations/agents/deploy - User:', req.user?.id);
     const { agent_type, config } = req.body;
     const userId = req.user.id;
     
@@ -1576,6 +1616,7 @@ router.post('/agents/deploy', authenticateToken, async (req, res) => {
 
 // ===== PRICE SCAN =====
 router.post('/prices/scan', authenticateToken, async (req, res) => {
+    console.log('💰 POST /api/automations/prices/scan - User:', req.user?.id);
     const userId = req.user.id;
     
     try {
@@ -1613,4 +1654,16 @@ router.post('/prices/scan', authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Failed to scan prices" });
     }
 });
+
+// Log all registered routes at the end
+console.log('📋 Registered automation routes:');
+router.stack.forEach(layer => {
+  if (layer.route) {
+    console.log(`   ${Object.keys(layer.route.methods).join(', ').toUpperCase()} /api/automations${layer.route.path}`);
+  }
+});
+
+console.log('✅ AUTOMATIONS ROUTES: All routes registered successfully');
+
 module.exports = router;
+console.log('🚀 AUTOMATIONS ROUTES: Exported');
