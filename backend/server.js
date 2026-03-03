@@ -69,9 +69,20 @@ const settingsRoutes = require('../api/settings-routes');
 const app = express();
 
 // ================= MIDDLEWARE =================
+// CORS first - with proper configuration
+const corsOptions = {
+  origin: true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight requests
+
+// Then body-parser
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
-app.use(cors());
 
 // ================= SOCKET.IO =================
 const http = require("http");
