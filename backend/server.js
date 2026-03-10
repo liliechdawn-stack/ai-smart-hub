@@ -139,7 +139,8 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
   if (resend) {
     try {
       const { data, error } = await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+        // UPDATED: Using verified domain aismarthub.website
+        from: "AI Smart Hub <noreply@aismarthub.website>",
         to: [to],
         subject: subject,
         html: html,
@@ -1764,7 +1765,8 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
 
     if (resend) {
       await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+        // UPDATED: Using verified domain aismarthub.website
+        from: "AI Smart Hub <noreply@aismarthub.website>",
         to: ['aismarthub68@gmail.com'],
         subject: `[Contact Form] ${subject} - ${name}`,
         html: emailHtml,
@@ -1772,7 +1774,8 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
 
       if (copyMe) {
         await resend.emails.send({
-          from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+          // UPDATED: Using verified domain aismarthub.website
+          from: "AI Smart Hub <noreply@aismarthub.website>",
           to: [email],
           subject: `Copy: ${subject}`,
           html: `
