@@ -1,9 +1,10 @@
+// backend/ai-automations.js
 const express = require("express");
 const router = express.Router();
 const bodyParser = require("body-parser");
 
 const { authenticateToken } = require("./auth-middleware");
-const { db } = require("./database.js");
+const { supabase } = require("./database-supabase");
 
 // Debug route
 router.get("/debug", (req, res) => {
@@ -15,28 +16,45 @@ router.get("/debug", (req, res) => {
 });
 
 // GET all automations
-router.get("/automations", authenticateToken, (req, res) => {
+router.get("/automations", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   console.log(`[AI-AUTOMATIONS] GET /automations for user: ${userId}`);
 
-  // Removed the problematic columns: trigger_count, success_rate, leads_generated
-  db.all(`
-    SELECT id, title, icon, trigger, action, enabled, live, created_at
-    FROM automations 
-    WHERE user_id = ? 
-    ORDER BY created_at DESC
-  `, [userId], (err, rows) => {
-    if (err) {
-      console.error("[AI-AUTOMATIONS] Database error:", err.message);
-      return res.status(500).json({ error: "Database error: " + err.message });
-    }
-    console.log(`[AI-AUTOMATIONS] Returning ${rows ? rows.length : 0} automations`);
-    res.json(rows || []);
-  });
+  try {
+    const { data: automations, error } = await supabase
+      .from('automations')
+      .select(`
+        id, 
+        name as title, 
+        icon, 
+        trigger_type as trigger, 
+        action_type as action, 
+        is_active as enabled, 
+        status,
+        created_at
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Map the data to match frontend expectations
+    const mappedAutomations = (automations || []).map(a => ({
+      ...a,
+      live: a.status === 'active' ? 1 : 0,
+      enabled: a.enabled ? 1 : 0
+    }));
+
+    console.log(`[AI-AUTOMATIONS] Returning ${mappedAutomations.length} automations`);
+    res.json(mappedAutomations);
+  } catch (err) {
+    console.error("[AI-AUTOMATIONS] Database error:", err.message);
+    res.status(500).json({ error: "Database error: " + err.message });
+  }
 });
 
 // CREATE new automation
-router.post("/automations", authenticateToken, bodyParser.json(), (req, res) => {
+router.post("/automations", authenticateToken, bodyParser.json(), async (req, res) => {
   const userId = req.user.id;
   const { title, trigger, action, icon = '⚙️' } = req.body;
 
@@ -46,125 +64,158 @@ router.post("/automations", authenticateToken, bodyParser.json(), (req, res) => 
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  db.run(`
-    INSERT INTO automations (user_id, title, trigger, action, icon, enabled, live, created_at)
-    VALUES (?, ?, ?, ?, ?, 1, 1, datetime('now'))
-  `, [userId, title, trigger, action, icon], function(err) {
-    if (err) {
-      console.error("[AI-AUTOMATIONS] Insert error:", err.message);
-      return res.status(500).json({ error: "Failed to create automation" });
-    }
+  try {
+    const { data, error } = await supabase
+      .from('automations')
+      .insert({
+        user_id: userId,
+        name: title,
+        trigger_type: trigger,
+        action_type: action,
+        icon: icon,
+        is_active: true,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
     res.json({ 
-      id: this.lastID, 
+      id: data.id, 
       success: true,
       message: "Automation created successfully" 
     });
-  });
+  } catch (err) {
+    console.error("[AI-AUTOMATIONS] Insert error:", err.message);
+    res.status(500).json({ error: "Failed to create automation" });
+  }
 });
 
 // TOGGLE automation
-router.put("/automations/:id/toggle", authenticateToken, (req, res) => {
+router.put("/automations/:id/toggle", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
 
   console.log(`[AI-AUTOMATIONS] PUT toggle /automations/${id} by user ${userId}`);
 
-  db.run(`
-    UPDATE automations 
-    SET enabled = CASE WHEN enabled = 1 THEN 0 ELSE 1 END,
-        live = CASE WHEN live = 1 THEN 0 ELSE 1 END
-    WHERE id = ? AND user_id = ?
-  `, [id, userId], function(err) {
-    if (err) {
-      console.error("[AI-AUTOMATIONS] Toggle error:", err.message);
-      return res.status(500).json({ error: "Failed to toggle automation" });
-    }
-    if (this.changes === 0) {
+  try {
+    // First get current status
+    const { data: automation, error: fetchError } = await supabase
+      .from('automations')
+      .select('is_active, status')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !automation) {
       return res.status(404).json({ error: "Automation not found" });
     }
-    res.json({ success: true });
-  });
+
+    // Toggle values
+    const newIsActive = !automation.is_active;
+    const newStatus = newIsActive ? 'active' : 'paused';
+
+    const { error: updateError } = await supabase
+      .from('automations')
+      .update({ 
+        is_active: newIsActive, 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (updateError) throw updateError;
+
+    res.json({ 
+      success: true,
+      enabled: newIsActive ? 1 : 0,
+      live: newIsActive ? 1 : 0
+    });
+  } catch (err) {
+    console.error("[AI-AUTOMATIONS] Toggle error:", err.message);
+    res.status(500).json({ error: "Failed to toggle automation" });
+  }
 });
 
 // DELETE automation
-router.delete("/automations/:id", authenticateToken, (req, res) => {
+router.delete("/automations/:id", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
 
   console.log(`[AI-AUTOMATIONS] DELETE /automations/${id} by user ${userId}`);
 
-  // First check if the automation exists and belongs to the user
-  db.get(`SELECT id FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, row) => {
-    if (err) {
-      console.error("[AI-AUTOMATIONS] Delete check error:", err.message);
-      return res.status(500).json({ error: "Database error" });
-    }
-    
-    if (!row) {
+  try {
+    // First check if the automation exists and belongs to the user
+    const { data: automation, error: fetchError } = await supabase
+      .from('automations')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !automation) {
       return res.status(404).json({ error: "Automation not found" });
     }
 
     // Delete the automation
-    db.run(`DELETE FROM automations WHERE id = ? AND user_id = ?`, [id, userId], function(err) {
-      if (err) {
-        console.error("[AI-AUTOMATIONS] Delete error:", err.message);
-        return res.status(500).json({ error: "Failed to delete automation" });
-      }
-      
-      console.log(`[AI-AUTOMATIONS] Automation ${id} deleted successfully`);
-      res.json({ 
-        success: true, 
-        message: "Automation deleted successfully" 
-      });
+    const { error: deleteError } = await supabase
+      .from('automations')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (deleteError) throw deleteError;
+
+    console.log(`[AI-AUTOMATIONS] Automation ${id} deleted successfully`);
+    res.json({ 
+      success: true, 
+      message: "Automation deleted successfully" 
     });
-  });
+  } catch (err) {
+    console.error("[AI-AUTOMATIONS] Delete error:", err.message);
+    res.status(500).json({ error: "Failed to delete automation" });
+  }
 });
 
 // UPDATE automation
-router.put("/automations/:id", authenticateToken, bodyParser.json(), (req, res) => {
+router.put("/automations/:id", authenticateToken, bodyParser.json(), async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
   const { title, trigger, action, icon } = req.body;
 
   console.log(`[AI-AUTOMATIONS] PUT update /automations/${id} by user ${userId}`);
 
-  let updates = [];
-  let params = [];
+  const updateData = {};
+  
+  if (title) updateData.name = title;
+  if (trigger) updateData.trigger_type = trigger;
+  if (action) updateData.action_type = action;
+  if (icon) updateData.icon = icon;
+  
+  updateData.updated_at = new Date().toISOString();
 
-  if (title) {
-    updates.push("title = ?");
-    params.push(title);
-  }
-  if (trigger) {
-    updates.push("trigger = ?");
-    params.push(trigger);
-  }
-  if (action) {
-    updates.push("action = ?");
-    params.push(action);
-  }
-  if (icon) {
-    updates.push("icon = ?");
-    params.push(icon);
-  }
-
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 0) {
     return res.status(400).json({ error: "No fields to update" });
   }
 
-  params.push(id, userId);
-  const query = `UPDATE automations SET ${updates.join(", ")} WHERE id = ? AND user_id = ?`;
+  try {
+    const { error } = await supabase
+      .from('automations')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', userId);
 
-  db.run(query, params, function(err) {
-    if (err) {
-      console.error("[AI-AUTOMATIONS] Update error:", err.message);
-      return res.status(500).json({ error: "Failed to update automation" });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: "Automation not found" });
-    }
+    if (error) throw error;
+
     res.json({ success: true, message: "Automation updated successfully" });
-  });
+  } catch (err) {
+    console.error("[AI-AUTOMATIONS] Update error:", err.message);
+    res.status(500).json({ error: "Failed to update automation" });
+  }
 });
 
 module.exports = router;

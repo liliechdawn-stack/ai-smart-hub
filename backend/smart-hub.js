@@ -1,68 +1,89 @@
 const express = require('express');
 const router = express.Router();
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-const { db } = require('./database'); 
-const { auth } = require('./auth'); 
+const { supabase } = require('./database-supabase');
+const { auth } = require('./auth');
 
 /**
  * Smart Business Hub - Backend Controller
  * PRODUCTION READY - Fixed Tool Naming, Deactivation, and Plan Enforcement
+ * NOW USING SUPABASE - NO SQLITE
  */
 
 const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
 
 // ─── HELPER: RESOLVE USER ACCESS ──────────────────────────
 async function resolveUserAccess(userId) {
-    return new Promise((resolve) => {
-        db.get("SELECT plan, plan_expires, email FROM users WHERE id = ?", [userId], (err, user) => {
-            if (err || !user) return resolve({ plan: 'free', isExpired: true });
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('plan, plan_expires, email')
+            .eq('id', userId)
+            .single();
 
-            const userEmail = (user.email || '').toLowerCase().trim();
-            const isAdmin = userEmail === ADMIN_EMAIL;
-            
-            // Master Bypass for Admin
-            if (isAdmin) {
-                return resolve({ plan: 'agency', isExpired: false, isAdmin: true });
-            }
+        if (error || !user) return { plan: 'free', isExpired: true };
 
-            let currentPlan = (user.plan || 'free').toLowerCase().trim();
-            const now = new Date();
-            const expiryDate = user.plan_expires ? new Date(user.plan_expires) : null;
-            const isExpired = expiryDate ? (now > expiryDate) : false;
+        const userEmail = (user.email || '').toLowerCase().trim();
+        const isAdmin = userEmail === ADMIN_EMAIL;
+        
+        // Master Bypass for Admin
+        if (isAdmin) {
+            return { plan: 'agency', isExpired: false, isAdmin: true };
+        }
 
-            // If expired, treat as free
-            if (isExpired && currentPlan !== 'free') {
-                return resolve({ plan: 'free', isExpired: true });
-            }
+        let currentPlan = (user.plan || 'free').toLowerCase().trim();
+        const now = new Date();
+        const expiryDate = user.plan_expires ? new Date(user.plan_expires) : null;
+        const isExpired = expiryDate ? (now > expiryDate) : false;
 
-            resolve({ plan: currentPlan, isExpired: false });
-        });
-    });
+        // If expired, treat as free
+        if (isExpired && currentPlan !== 'free') {
+            return { plan: 'free', isExpired: true };
+        }
+
+        return { plan: currentPlan, isExpired: false };
+    } catch (err) {
+        console.error("[SMART-HUB] Resolve user access error:", err);
+        return { plan: 'free', isExpired: true };
+    }
 }
 
 // ─── GET CURRENT SETTINGS ──────────────────────────────
-router.get("/settings", auth, (req, res) => {
-    db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [req.user.id], (err, row) => {
-        if (err) {
-            console.error("❌ GET Settings Error:", err.message);
-            return res.status(500).json({ error: err.message });
+router.get("/settings", auth, async (req, res) => {
+    try {
+        const { data: settings, error: settingsError } = await supabase
+            .from('smart_hub_settings')
+            .select('*')
+            .eq('user_id', req.user.id)
+            .single();
+
+        if (settingsError && settingsError.code !== 'PGRST116') {
+            console.error("❌ GET Settings Error:", settingsError);
+            return res.status(500).json({ error: "Database error" });
         }
-        
+
         // Get business type from users table
-        db.get(`SELECT business_type, business_name FROM users WHERE id = ?`, [req.user.id], (err, userRow) => {
-            if (err) {
-                console.error("❌ GET User Error:", err.message);
-            }
-            
-            const settings = row || {};
-            if (userRow) {
-                settings.business_type = userRow.business_type || '';
-                settings.business_name = userRow.business_name || '';
-            }
-            
-            res.json(settings);
-        });
-    });
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('business_type, business_name')
+            .eq('id', req.user.id)
+            .single();
+
+        if (userError) {
+            console.error("❌ GET User Error:", userError);
+        }
+
+        const result = settings || {};
+        if (user) {
+            result.business_type = user.business_type || '';
+            result.business_name = user.business_name || '';
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error("[SMART-HUB] Settings error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
 });
 
 // ─── DEACTIVATE TOOL ──────────────────────────────────────
@@ -101,16 +122,12 @@ router.post("/deactivate", auth, async (req, res) => {
         }
 
         // Deactivate the tool by setting active flag to 0
-        await new Promise((resolve, reject) => {
-            db.run(
-                `UPDATE smart_hub_settings SET ${activeColumn} = 0 WHERE user_id = ?`,
-                [userId],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve();
-                }
-            );
-        });
+        const { error } = await supabase
+            .from('smart_hub_settings')
+            .update({ [activeColumn]: 0 })
+            .eq('user_id', userId);
+
+        if (error) throw error;
 
         console.log(`[SMART-HUB] Tool deactivated: ${toolType} for user ${userId}`);
         res.json({ success: true, message: "Tool deactivated successfully" });
@@ -151,29 +168,24 @@ router.post("/save", auth, async (req, res) => {
 
     // Handle business type update separately (goes to users table)
     if (toolType === 'business_type') {
-        db.run(
-            `UPDATE users SET business_type = ? WHERE id = ?`,
-            [data.businessType || data.business_type, userId],
-            function(err) {
-                if (err) {
-                    console.error("❌ Business Type Save Error:", err.message);
-                    return res.status(500).json({ success: false, error: "Database Error" });
-                }
-                res.json({ success: true, message: "Business type updated." });
-            }
-        );
-        return;
+        const { error } = await supabase
+            .from('users')
+            .update({ business_type: data.businessType || data.business_type })
+            .eq('id', userId);
+
+        if (error) {
+            console.error("❌ Business Type Save Error:", error);
+            return res.status(500).json({ success: false, error: "Database Error" });
+        }
+        return res.json({ success: true, message: "Business type updated." });
     }
 
     // 2. Ensure settings row exists
-    await new Promise((resolve, reject) => {
-        db.run(`INSERT OR IGNORE INTO smart_hub_settings (user_id) VALUES (?)`, [userId], (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
-    });
+    await supabase
+        .from('smart_hub_settings')
+        .upsert({ user_id: userId }, { onConflict: 'user_id' });
 
-    // 3. Build dynamic SQL based on tool type with ACTIVE FLAGS
+    // 3. Build update object based on tool type with ACTIVE FLAGS
     let updates = {};
     let activeFlag = true; // By default, saving activates the tool
     
@@ -235,29 +247,20 @@ router.post("/save", auth, async (req, res) => {
             return res.status(400).json({ success: false, error: "Unknown tool type" });
     }
 
-    // Build SQL dynamically
-    const keys = Object.keys(updates);
-    if (keys.length === 0) {
-        return res.status(400).json({ success: false, error: "No updates provided" });
-    }
+    try {
+        const { error } = await supabase
+            .from('smart_hub_settings')
+            .update(updates)
+            .eq('user_id', userId);
 
-    const setClause = keys.map(k => `${k} = ?`).join(', ');
-    const values = Object.values(updates);
+        if (error) throw error;
 
-    const sql = `
-        UPDATE smart_hub_settings 
-        SET ${setClause}
-        WHERE user_id = ?
-    `;
-
-    db.run(sql, [...values, userId], function(err) {
-        if (err) {
-            console.error("❌ Save Error:", err.message);
-            return res.status(500).json({ success: false, error: "Database Error" });
-        }
         console.log(`[SMART-HUB] ${toolType} saved with active flags for user ${userId}`);
         res.json({ success: true, message: "Settings updated." });
-    });
+    } catch (err) {
+        console.error("❌ Save Error:", err.message);
+        res.status(500).json({ success: false, error: "Database Error" });
+    }
 });
 
 // ─── RUN/TEST TOOL ──────────────────────────────────────
@@ -291,12 +294,12 @@ router.post("/test-tool", auth, async (req, res) => {
 
         // Mark as active in DB if applicable
         if (activeColumn) {
-            await new Promise((resolve, reject) => {
-                db.run(`UPDATE smart_hub_settings SET ${activeColumn} = 1 WHERE user_id = ?`, [userId], (err) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-            });
+            const { error } = await supabase
+                .from('smart_hub_settings')
+                .update({ [activeColumn]: 1 })
+                .eq('user_id', userId);
+
+            if (error) throw error;
         }
 
         // Generate AI response for brain tool
@@ -348,30 +351,35 @@ router.get("/tool-states", auth, async (req, res) => {
 
     try {
         // Get all active flags from smart_hub_settings
-        db.get(
-            `SELECT 
+        const { data: row, error: settingsError } = await supabase
+            .from('smart_hub_settings')
+            .select(`
                 brain_active, booking_active, sentiment_active, 
                 handover_active, webhook_active, apollo_active, 
                 followup_active, vision_active 
-            FROM smart_hub_settings WHERE user_id = ?`,
-            [userId],
-            (err, row) => {
-                if (err) {
-                    console.error("❌ Tool states error:", err.message);
-                    return res.status(500).json({ error: err.message });
-                }
+            `)
+            .eq('user_id', userId)
+            .single();
 
-                const states = row || {};
-                // Also check if business type exists
-                db.get(`SELECT business_type FROM users WHERE id = ?`, [userId], (err, userRow) => {
-                    if (!err && userRow?.business_type) {
-                        states.business_type_active = true;
-                    }
-                    
-                    res.json(states);
-                });
-            }
-        );
+        if (settingsError && settingsError.code !== 'PGRST116') {
+            console.error("❌ Tool states error:", settingsError);
+            return res.status(500).json({ error: settingsError.message });
+        }
+
+        const states = row || {};
+        
+        // Also check if business type exists
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('business_type')
+            .eq('id', userId)
+            .single();
+
+        if (!userError && user?.business_type) {
+            states.business_type_active = true;
+        }
+        
+        res.json(states);
     } catch (err) {
         console.error("Tool states error:", err);
         res.status(500).json({ error: err.message });
@@ -386,47 +394,63 @@ router.post("/public/apollo/enrich", async (req, res) => {
         return res.status(400).json({ error: "Email and widget_key required" });
     }
     
-    // Get user's Apollo key from their settings
-    db.get(`SELECT id FROM users WHERE widget_key = ?`, [widget_key], (err, user) => {
-        if (err || !user) {
+    try {
+        // Get user's Apollo key from their settings
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('widget_key', widget_key)
+            .single();
+
+        if (userError || !user) {
             return res.status(404).json({ error: "Invalid widget key" });
         }
         
-        db.get(`SELECT apollo_key, apollo_active FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, settings) => {
-            if (err || !settings?.apollo_key || !settings.apollo_active) {
-                return res.status(400).json({ error: "Apollo not configured" });
+        const { data: settings, error: settingsError } = await supabase
+            .from('smart_hub_settings')
+            .select('apollo_key, apollo_active')
+            .eq('user_id', user.id)
+            .single();
+
+        if (settingsError || !settings?.apollo_key || !settings.apollo_active) {
+            return res.status(400).json({ error: "Apollo not configured" });
+        }
+        
+        // Here you would call actual Apollo API
+        // For demo, return mock enriched data
+        const enrichedData = {
+            enriched: true,
+            data: {
+                email: email,
+                name: name,
+                title: "VP of Engineering",
+                company: "Tech Corp",
+                industry: "Software",
+                company_size: "50-200",
+                location: "San Francisco, CA",
+                phone: "+1 (555) 123-4567",
+                linkedin: "https://linkedin.com/in/example"
             }
-            
-            // Here you would call actual Apollo API
-            // For demo, return mock enriched data
-            const enrichedData = {
-                enriched: true,
-                data: {
-                    email: email,
-                    name: name,
-                    title: "VP of Engineering",
-                    company: "Tech Corp",
-                    industry: "Software",
-                    company_size: "50-200",
-                    location: "San Francisco, CA",
-                    phone: "+1 (555) 123-4567",
-                    linkedin: "https://linkedin.com/in/example"
-                }
-            };
-            
-            // Store enriched data in leads table if needed
-            db.run(
-                `UPDATE leads SET company = ?, job_title = ? WHERE user_id = ? AND email = ?`,
-                [enrichedData.data.company, enrichedData.data.title, user.id, email],
-                () => {} // Ignore errors
-            );
-            
-            res.json({
-                success: true,
-                ...enrichedData
-            });
+        };
+        
+        // Store enriched data in leads table if needed
+        await supabase
+            .from('leads')
+            .update({ 
+                company: enrichedData.data.company, 
+                job_title: enrichedData.data.title 
+            })
+            .eq('user_id', user.id)
+            .eq('email', email);
+        
+        res.json({
+            success: true,
+            ...enrichedData
         });
-    });
+    } catch (err) {
+        console.error("[SMART-HUB] Apollo enrichment error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
 });
 
 // ─── PUBLIC FOLLOW-UP SCHEDULING ─────────────────
@@ -437,60 +461,60 @@ router.post("/public/followup/schedule", async (req, res) => {
         return res.status(400).json({ error: "Email and widget_key required" });
     }
     
-    // Verify widget key and check if follow-up is active
-    db.get(`SELECT id FROM users WHERE widget_key = ?`, [widget_key], (err, user) => {
-        if (err || !user) {
+    try {
+        // Verify widget key and check if follow-up is active
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('widget_key', widget_key)
+            .single();
+
+        if (userError || !user) {
             return res.status(404).json({ error: "Invalid widget key" });
         }
         
-        db.get(`SELECT followup_active FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, settings) => {
-            if (err || !settings?.followup_active) {
-                return res.status(400).json({ error: "Follow-up not enabled" });
-            }
-            
-            // Create follow_ups table if it doesn't exist
-            db.run(`
-                CREATE TABLE IF NOT EXISTS follow_ups (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    email TEXT NOT NULL,
-                    name TEXT,
-                    session_id TEXT,
-                    scheduled_for DATETIME,
-                    sent INTEGER DEFAULT 0,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id)
-                )
-            `, (err) => {
-                if (err) {
-                    console.error("Follow-ups table error:", err);
-                    return res.status(500).json({ error: "Database error" });
-                }
-                
-                // Schedule follow-up for 24 hours later
-                const scheduledFor = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                
-                db.run(
-                    `INSERT INTO follow_ups (user_id, email, name, session_id, scheduled_for) VALUES (?, ?, ?, ?, ?)`,
-                    [user.id, email, name || null, session_id || null, scheduledFor.toISOString()],
-                    function(err) {
-                        if (err) {
-                            console.error("Follow-up save error:", err);
-                            return res.status(500).json({ error: "Failed to schedule follow-up" });
-                        }
-                        
-                        console.log(`[FOLLOWUP] Scheduled for ${email} (user ${user.id})`);
-                        
-                        res.json({ 
-                            success: true, 
-                            message: "Follow-up scheduled",
-                            scheduled_for: scheduledFor.toISOString()
-                        });
-                    }
-                );
+        const { data: settings, error: settingsError } = await supabase
+            .from('smart_hub_settings')
+            .select('followup_active')
+            .eq('user_id', user.id)
+            .single();
+
+        if (settingsError || !settings?.followup_active) {
+            return res.status(400).json({ error: "Follow-up not enabled" });
+        }
+        
+        // Create follow_ups table if it doesn't exist
+        // Schedule follow-up for 24 hours later
+        const scheduledFor = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        
+        const { error: insertError } = await supabase
+            .from('follow_ups')
+            .insert({
+                user_id: user.id,
+                email,
+                name: name || null,
+                session_id: session_id || null,
+                scheduled_for: scheduledFor.toISOString(),
+                sent: 0,
+                created_at: new Date().toISOString()
             });
+
+        if (insertError) {
+            console.error("Follow-up save error:", insertError);
+            return res.status(500).json({ error: "Failed to schedule follow-up" });
+        }
+        
+        console.log(`[FOLLOWUP] Scheduled for ${email} (user ${user.id})`);
+        
+        res.json({ 
+            success: true, 
+            message: "Follow-up scheduled",
+            scheduled_for: scheduledFor.toISOString()
         });
-    });
+    } catch (err) {
+        console.error("[SMART-HUB] Follow-up error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
 });
 
 // ─── HEALTH CHECK ──────────────────────────────────────

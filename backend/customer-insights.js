@@ -9,32 +9,36 @@ const bodyParser = require("body-parser");
 
 // Correct import
 const { authenticateToken } = require("./auth-middleware");
-
-const { db, getUserById, getKnowledgeByUser } = require("./database.js");
+const { supabase } = require("./database-supabase");
 
 // ==================== LEADS ====================
-router.get("/leads", authenticateToken, (req, res) => {
+router.get("/leads", authenticateToken, async (req, res) => {
   const userId = req.user.id;
 
   console.log(`[CUSTOMER-INSIGHTS] GET /leads for user ${userId}`);
 
-  db.all(`
-    SELECT id, name, email, phone, company, job_title, created_at 
-    FROM leads 
-    WHERE user_id = ? 
-    ORDER BY created_at DESC
-  `, [userId], (err, rows) => {
-    if (err) {
-      console.error("[CUSTOMER-INSIGHTS] Leads fetch error:", err.message);
-      return res.status(500).json({ error: "Database error" });
+  try {
+    const { data: rows, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('[CUSTOMER-INSIGHTS] Database error:', error);
+      return res.status(500).json({ error: 'Database error' });
     }
-    console.log(`[CUSTOMER-INSIGHTS] Returning ${rows.length} leads`);
+
+    console.log(`[CUSTOMER-INSIGHTS] Returning ${rows?.length || 0} leads`);
     res.json(rows || []);
-  });
+  } catch (err) {
+    console.error('[CUSTOMER-INSIGHTS] Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ==================== CHATS ====================
-router.get("/chats", authenticateToken, (req, res) => {
+router.get("/chats", authenticateToken, async (req, res) => {
   const email = req.query.email;
   if (!email) return res.status(400).json({ error: "Email parameter is required" });
 
@@ -42,19 +46,25 @@ router.get("/chats", authenticateToken, (req, res) => {
 
   console.log(`[CUSTOMER-INSIGHTS] GET /chats for user ${userId} - email: ${email}`);
 
-  db.all(`
-    SELECT id, message, response, sentiment, created_at as timestamp 
-    FROM chats 
-    WHERE client_name LIKE ? AND user_id = ?
-    ORDER BY timestamp ASC
-  `, [`%${email}%`, userId], (err, rows) => {
-    if (err) {
-      console.error("[CUSTOMER-INSIGHTS] Chats fetch error:", err.message);
-      return res.status(500).json({ error: "Database error" });
+  try {
+    const { data: rows, error } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('client_name', email)
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('[CUSTOMER-INSIGHTS] Database error:', error);
+      return res.status(500).json({ error: 'Database error' });
     }
-    console.log(`[CUSTOMER-INSIGHTS] Returning ${rows.length} chats for ${email}`);
+
+    console.log(`[CUSTOMER-INSIGHTS] Returning ${rows?.length || 0} chats for ${email}`);
     res.json(rows || []);
-  });
+  } catch (err) {
+    console.error('[CUSTOMER-INSIGHTS] Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ==================== AI CHAT (Cloudflare) ====================
@@ -67,22 +77,33 @@ router.post("/ai-chat", authenticateToken, bodyParser.json(), async (req, res) =
   console.log(`[CUSTOMER-INSIGHTS] POST /ai-chat for user ${userId} - query: ${query.substring(0, 100)}...`);
 
   try {
-    const user = await getUserById(userId);
-    if (!user) return res.status(401).json({ error: "User not found" });
+    // Get user info from Supabase
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('business_name')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      console.error('[CUSTOMER-INSIGHTS] User fetch error:', userError);
+      return res.status(401).json({ error: "User not found" });
+    }
 
     const businessName = user.business_name || "Your Business";
 
-    const recentChats = await new Promise((resolve, reject) => {
-      db.all(`
-        SELECT message, response 
-        FROM chats 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC 
-        LIMIT 10
-      `, [userId], (err, rows) => err ? reject(err) : resolve(rows || []));
-    });
+    // Get recent chats from Supabase
+    const { data: recentChats, error: chatsError } = await supabase
+      .from('chats')
+      .select('message, response')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    const context = recentChats.map(c => `User: ${c.message}\nAI: ${c.response}`).join('\n\n');
+    if (chatsError) {
+      console.error('[CUSTOMER-INSIGHTS] Chats fetch error:', chatsError);
+    }
+
+    const context = (recentChats || []).map(c => `User: ${c.message}\nAI: ${c.response}`).join('\n\n');
 
     const prompt = `
 You are an expert customer success analyst for ${businessName}.
@@ -140,19 +161,32 @@ router.get("/context", authenticateToken, async (req, res) => {
   console.log(`[CUSTOMER-INSIGHTS] GET /context for user ${userId}`);
 
   try {
-    const user = await getUserById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    // Get user info from Supabase
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('business_name, plan')
+      .eq('id', userId)
+      .single();
 
-    const recentProblems = await new Promise((resolve, reject) => {
-      db.all(`
-        SELECT client_name, message, created_at 
-        FROM chats 
-        WHERE user_id = ? AND sentiment = 'negative'
-        ORDER BY created_at DESC LIMIT 5
-      `, [userId], (err, rows) => err ? reject(err) : resolve(rows || []));
-    });
+    if (userError || !user) {
+      console.error('[CUSTOMER-INSIGHTS] User fetch error:', userError);
+      return res.status(404).json({ error: "User not found" });
+    }
 
-    const problemList = recentProblems.map(p => ({
+    // Get recent negative sentiment chats from Supabase
+    const { data: recentProblems, error: problemsError } = await supabase
+      .from('chats')
+      .select('client_name, message, created_at')
+      .eq('user_id', userId)
+      .eq('sentiment', 'negative')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (problemsError) {
+      console.error('[CUSTOMER-INSIGHTS] Problems fetch error:', problemsError);
+    }
+
+    const problemList = (recentProblems || []).map(p => ({
       customer: p.client_name || "Visitor",
       issue: p.message?.substring(0, 80) + (p.message?.length > 80 ? "..." : ""),
       time: new Date(p.created_at).toLocaleString()

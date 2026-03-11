@@ -18,6 +18,7 @@ try {
 let authMiddleware;
 try {
   authMiddleware = require('../backend/auth-middleware.js');
+const { supabase } = require('./database-supabase');
   console.log('✅ AUTOMATIONS ROUTES: Auth middleware loaded');
 } catch (err) {
   console.error('❌ AUTOMATIONS ROUTES: Failed to load auth middleware:', err.message);
@@ -40,9 +41,22 @@ async function executeVisionAction(userId, config) {
     try {
         // Check if table exists first
         const tableCheck = await new Promise((resolve) => {
-            db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='vision_results'`, [], (err, row) => {
-                resolve(!!row);
-            });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('sqlite_master')
+      .select('*')
+      .eq('id', )
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    resolve(!!row);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
         
         if (!tableCheck) {
@@ -59,15 +73,23 @@ async function executeVisionAction(userId, config) {
         
         // Get actual vision results from database
         const results = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT 
-                    COUNT(*) as images_analyzed,
-                    IFNULL(SUM(objects_detected), 0) as objects_detected
-                FROM vision_results 
-                WHERE user_id = ? AND date(created_at) = date('now')
-            `, [userId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || { images_analyzed: 0, objects_detected: 0 });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('vision_results')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
+                else resolve(row || { images_analyzed: 0, objects_detected: 0
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             });
         });
         
@@ -97,9 +119,22 @@ async function executeLeadAction(userId, config) {
     try {
         // Check if table exists
         const tableCheck = await new Promise((resolve) => {
-            db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='lead_scores'`, [], (err, row) => {
-                resolve(!!row);
-            });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('sqlite_master')
+      .select('*')
+      .eq('id', )
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    resolve(!!row);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
         
         if (!tableCheck) {
@@ -116,15 +151,23 @@ async function executeLeadAction(userId, config) {
         
         // Get actual lead scores from database
         const results = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT 
-                    COUNT(*) as leads_scored,
-                    SUM(CASE WHEN score > 80 THEN 1 ELSE 0 END) as hot_leads
-                FROM lead_scores 
-                WHERE user_id = ? AND date(scored_at) = date('now')
-            `, [userId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || { leads_scored: 0, hot_leads: 0 });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('lead_scores')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
+                else resolve(row || { leads_scored: 0, hot_leads: 0
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             });
         });
         
@@ -154,9 +197,22 @@ async function executeContentAction(userId, config) {
     try {
         // Check if table exists
         const tableCheck = await new Promise((resolve) => {
-            db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='content_generated'`, [], (err, row) => {
-                resolve(!!row);
-            });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('sqlite_master')
+      .select('*')
+      .eq('id', )
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    resolve(!!row);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
         
         if (!tableCheck) {
@@ -173,25 +229,44 @@ async function executeContentAction(userId, config) {
         
         // Get actual content generation stats from database
         const results = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT COUNT(*) as posts_created 
-                FROM content_generated 
-                WHERE user_id = ? AND date(created_at) = date('now')
-            `, [userId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || { posts_created: 0 });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('content_generated')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
+                else resolve(row || { posts_created: 0
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             });
         });
         
         // Get connected platforms
         const platforms = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT DISTINCT platform FROM connected_accounts 
-                WHERE user_id = ? AND status = 'active'
-            `, [userId], (err, rows) => {
-                if (err) reject(err);
+            try {
+    const { data: rows, error: err } = await supabase
+      .from('connected_accounts')
+      .select('*')
+      .order('created_at', { ascending: false});
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
                 else resolve(rows.map(r => r.platform) || []);
-            });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
         
         return {
@@ -220,9 +295,22 @@ async function executeEngagementAction(userId, config) {
     try {
         // Check if table exists
         const tableCheck = await new Promise((resolve) => {
-            db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='engagement_metrics'`, [], (err, row) => {
-                resolve(!!row);
-            });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('sqlite_master')
+      .select('*')
+      .eq('id', )
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    resolve(!!row);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
         
         if (!tableCheck) {
@@ -239,15 +327,23 @@ async function executeEngagementAction(userId, config) {
         
         // Get actual engagement metrics from database
         const results = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT 
-                    IFNULL(SUM(interactions), 0) as interactions,
-                    IFNULL(SUM(new_followers), 0) as new_followers
-                FROM engagement_metrics 
-                WHERE user_id = ? AND date(recorded_at) = date('now')
-            `, [userId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || { interactions: 0, new_followers: 0 });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('engagement_metrics')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
+                else resolve(row || { interactions: 0, new_followers: 0
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             });
         });
         
@@ -277,9 +373,22 @@ async function executeAnalyticsAction(userId, config) {
     try {
         // Check if table exists
         const tableCheck = await new Promise((resolve) => {
-            db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_reports'`, [], (err, row) => {
-                resolve(!!row);
-            });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('sqlite_master')
+      .select('*')
+      .eq('id', )
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    resolve(!!row);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
         
         if (!tableCheck) {
@@ -296,13 +405,23 @@ async function executeAnalyticsAction(userId, config) {
         
         // Get actual analytics reports from database
         const results = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT COUNT(*) as reports_generated 
-                FROM analytics_reports 
-                WHERE user_id = ? AND date(created_at) = date('now')
-            `, [userId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || { reports_generated: 0 });
+            try {
+    const { data: row, error: err } = await supabase
+      .from('analytics_reports')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
+                else resolve(row || { reports_generated: 0
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             });
         });
         
@@ -387,18 +506,24 @@ router.post('/', authenticateToken, (req, res) => {
     const id = 'auto_' + uuidv4().substring(0, 8);
     const now = new Date().toISOString();
     
-    db.run(`
-        INSERT INTO automations (
-            id, user_id, name, description, trigger_type, trigger_config, 
-            action_type, action_config, schedule, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-        id, userId, name, description || '', trigger_type, JSON.stringify(trigger_config || {}),
-        action_type, JSON.stringify(action_config || {}), schedule || '', 'active', now, now
-    ], function(err) {
+    try {
+    const { error: err } = await supabase
+      .from('automations')
+      .insert({ /* map your columns here */ });
+    
+    if (err) {
+      console.error('Database error:', err);
+      
         if (err) {
             console.error("Error creating automation:", err);
-            return res.status(500).json({ error: "Failed to create automation" });
+            return res.status(500).json({ error: "Failed to create automation" 
+    }
+    console.error("Error creating automation:", err);
+            return res.status(500).json({ error: "Failed to create automation"
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         }
         
         // Log activity
@@ -430,25 +555,25 @@ router.put('/:id', authenticateToken, (req, res) => {
         
         const now = new Date().toISOString();
         
-        db.run(`
-            UPDATE automations SET
-                name = COALESCE(?, name),
-                description = COALESCE(?, description),
-                trigger_config = COALESCE(?, trigger_config),
-                action_config = COALESCE(?, action_config),
-                schedule = COALESCE(?, schedule),
-                status = COALESCE(?, status),
-                updated_at = ?
-            WHERE id = ? AND user_id = ?
-        `, [
-            name, description,
-            trigger_config ? JSON.stringify(trigger_config) : null,
-            action_config ? JSON.stringify(action_config) : null,
-            schedule, status, now, id, userId
-        ], function(err) {
+        try {
+    const { error: err } = await supabase
+      .from('automations')
+      .update({ /* update data */ })
+      .eq('id', id);
+    
+    if (err) {
+      console.error('Database error:', err);
+      
             if (err) {
                 console.error("Error updating automation:", err);
-                return res.status(500).json({ error: "Failed to update automation" });
+                return res.status(500).json({ error: "Failed to update automation" 
+    }
+    console.error("Error updating automation:", err);
+                return res.status(500).json({ error: "Failed to update automation"
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             }
             
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
@@ -704,15 +829,23 @@ router.get('/accounts', authenticateToken, (req, res) => {
   console.log('🔌 GET /api/automations/accounts - User:', req.user?.id);
     const userId = req.user.id;
     
-    db.all(`
-        SELECT id, platform, account_name, account_info, status, created_at, last_sync 
-        FROM connected_accounts 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC
-    `, [userId], (err, rows) => {
-        if (err) {
+    try {
+    const { data: rows, error: err } = await supabase
+      .from('connected_accounts')
+      .select('*')
+      .order('created_at', { ascending: false});
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) {
             console.error("Error fetching accounts:", err);
-            return res.status(500).json({ error: "Database error" });
+             res.status(500).json({ error: "Database error"
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         }
         
         const accounts = (rows || []).map(row => {
@@ -1131,20 +1264,24 @@ router.post('/:id/duplicate', authenticateToken, (req, res) => {
         const now = new Date().toISOString();
         const newName = `${automation.name} (Copy)`;
         
-        db.run(`
-            INSERT INTO automations (
-                id, user_id, name, description, trigger_type, trigger_config, 
-                action_type, action_config, schedule, status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            newId, userId, newName, automation.description, 
-            automation.trigger_type, automation.trigger_config,
-            automation.action_type, automation.action_config, 
-            automation.schedule, 'paused', now, now
-        ], function(err) {
+        try {
+    const { error: err } = await supabase
+      .from('automations')
+      .insert({ /* map your columns here */ });
+    
+    if (err) {
+      console.error('Database error:', err);
+      
             if (err) {
                 console.error("Error duplicating automation:", err);
-                return res.status(500).json({ error: "Failed to duplicate automation" });
+                return res.status(500).json({ error: "Failed to duplicate automation" 
+    }
+    console.error("Error duplicating automation:", err);
+                return res.status(500).json({ error: "Failed to duplicate automation"
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             }
             
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
@@ -1192,13 +1329,25 @@ router.post('/bulk/update', authenticateToken, (req, res) => {
         });
     } else {
         const status = action === 'activate' ? 'active' : 'paused';
-        db.run(`
-            UPDATE automations SET status = ?, updated_at = ? 
-            WHERE id IN (${placeholders}) AND user_id = ?
-        `, [...automation_ids, new Date().toISOString(), userId], function(err) {
+        try {
+    const { error: err } = await supabase
+      .from('automations')
+      .update({ /* update data */ })
+      .eq('id', id);
+    
+    if (err) {
+      console.error('Database error:', err);
+      
             if (err) {
                 console.error("Error bulk updating automations:", err);
-                return res.status(500).json({ error: "Failed to update automations" });
+                return res.status(500).json({ error: "Failed to update automations" 
+    }
+    console.error("Error bulk updating automations:", err);
+                return res.status(500).json({ error: "Failed to update automations"
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
             }
             
             db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
@@ -1381,20 +1530,24 @@ router.post('/import', authenticateToken, (req, res) => {
     const id = 'auto_' + uuidv4().substring(0, 8);
     const now = new Date().toISOString();
     
-    db.run(`
-        INSERT INTO automations (
-            id, user_id, name, description, trigger_type, trigger_config, 
-            action_type, action_config, schedule, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-        id, userId, config.name, config.description || '', 
-        config.trigger_type, JSON.stringify(config.trigger_config || {}),
-        config.action_type, JSON.stringify(config.action_config || {}), 
-        config.schedule || '', 'paused', now, now
-    ], function(err) {
+    try {
+    const { error: err } = await supabase
+      .from('automations')
+      .insert({ /* map your columns here */ });
+    
+    if (err) {
+      console.error('Database error:', err);
+      
         if (err) {
             console.error("Error importing automation:", err);
-            return res.status(500).json({ error: "Failed to import automation" });
+            return res.status(500).json({ error: "Failed to import automation" 
+    }
+    console.error("Error importing automation:", err);
+            return res.status(500).json({ error: "Failed to import automation"
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         }
         
         db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
@@ -1515,16 +1668,22 @@ router.post('/leads/score', authenticateToken, async (req, res) => {
     try {
         // Get leads that haven't been scored recently
         const leads = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT l.* FROM leads l
-                LEFT JOIN lead_scores ls ON l.id = ls.lead_id AND ls.scored_at > datetime('now', '-7 days')
-                WHERE l.user_id = ? AND ls.id IS NULL
-                ORDER BY l.created_at DESC
-                LIMIT 50
-            `, [userId], (err, rows) => {
-                if (err) reject(err);
+            try {
+    const { data: rows, error: err } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false});
+    
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (err) reject(err);
                 else resolve(rows || []);
-            });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  });
         });
 
         let hotLeads = 0;
