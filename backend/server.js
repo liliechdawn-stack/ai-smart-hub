@@ -333,9 +333,8 @@ const PLAN_LIMITS = {
   agency: { messages: Infinity, leads: Infinity }
 };
 
-// ================= REMOVED SQLITE MIGRATIONS =================
-// All database migrations are now handled by Supabase
-console.log("✅ Using Supabase for database operations");
+// ================= ALL SQLITE MIGRATIONS REMOVED =================
+console.log("✅ Using Supabase for all database operations");
 
 // ================= VERIFICATION MIDDLEWARE =================
 async function checkVerified(req, res, next) {
@@ -347,6 +346,7 @@ async function checkVerified(req, res, next) {
       res.status(403).json({ error: "Please verify your email to access this feature." });
     }
   } catch (err) {
+    console.error("Verification check error:", err);
     res.status(500).json({ error: "Verification check failed" });
   }
 }
@@ -606,7 +606,8 @@ app.post("/api/knowledge/add", auth, checkVerified, bodyParser.json(), async (re
     await addKnowledge(req.user.id, content);
     res.json({ success: true, message: "Knowledge added" });
   } catch (err) { 
-    res.status(500).json({ error: "Failed to save" }); 
+    console.error("Knowledge add error:", err);
+    res.status(500).json({ error: "Failed to save knowledge" }); 
   }
 });
 
@@ -679,6 +680,7 @@ app.get("/api/chat/session/:session_id", auth, async (req, res) => {
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
+    console.error("Chat session error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -724,6 +726,7 @@ app.get("/api/public/widget-config/:key", async (req, res) => {
       smart_hub: settings
     });
   } catch (err) {
+    console.error("Widget config error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -1080,6 +1083,7 @@ app.get("/api/chat", auth, async (req, res) => {
 
     res.json(result);
   } catch (err) {
+    console.error("Chat list error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -1161,7 +1165,8 @@ app.delete("/api/leads/:id", auth, async (req, res) => {
       
     res.json({ success: true, message: "Lead deleted" });
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete" });
+    console.error("Lead delete error:", err);
+    res.status(500).json({ error: "Failed to delete lead" });
   }
 });
 
@@ -1191,6 +1196,7 @@ app.post("/api/support/ticket", auth, bodyParser.json(), async (req, res) => {
       
     res.json({ success: true, message: "Support ticket created successfully." });
   } catch (err) {
+    console.error("Ticket error:", err);
     res.status(500).json({ error: "Failed to submit ticket" });
   }
 });
@@ -1206,6 +1212,7 @@ app.get("/api/support/my-tickets", auth, async (req, res) => {
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
+    console.error("Tickets error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -1241,6 +1248,7 @@ app.get("/api/admin/users", auth, isAdminMiddleware, async (req, res) => {
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
+    console.error("Admin users error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -1257,6 +1265,7 @@ app.put("/api/admin/users/:id", auth, isAdminMiddleware, bodyParser.json(), asyn
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
+    console.error("Admin update error:", err);
     res.status(500).json({ error: "Update failed" });
   }
 });
@@ -1275,6 +1284,7 @@ app.delete("/api/admin/users/:id", auth, isAdminMiddleware, async (req, res) => 
     
     res.json({ success: true, message: "User and all data deleted" });
   } catch (err) {
+    console.error("Admin delete error:", err);
     res.status(500).json({ error: "Delete failed" });
   }
 });
@@ -1290,6 +1300,7 @@ app.get("/api/admin/activities", auth, isAdminMiddleware, async (req, res) => {
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
+    console.error("Admin activities error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -1501,6 +1512,7 @@ app.post("/api/subscription/create-checkout-session", auth, bodyParser.json(), a
 
     res.json({ url: data.data.authorization_url });
   } catch (err) {
+    console.error("Paystack error:", err);
     res.status(500).json({ error: "Paystack server error" });
   }
 });
