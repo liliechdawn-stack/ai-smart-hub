@@ -3,22 +3,13 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
+const { createClient } = require('@supabase/supabase-js');
 
 console.log('🔵 AUTOMATIONS ROUTES: Starting to load...');
-
-let dbModule;
-try {
-  dbModule = require('../backend/database.js');
-  console.log('✅ AUTOMATIONS ROUTES: Database module loaded');
-} catch (err) {
-  console.error('❌ AUTOMATIONS ROUTES: Failed to load database module:', err.message);
-  dbModule = { db: null, getUserById: null };
-}
 
 let authMiddleware;
 try {
   authMiddleware = require('../backend/auth-middleware.js');
-const { supabase } = require('./database-supabase');
   console.log('✅ AUTOMATIONS ROUTES: Auth middleware loaded');
 } catch (err) {
   console.error('❌ AUTOMATIONS ROUTES: Failed to load auth middleware:', err.message);
@@ -28,38 +19,50 @@ const { supabase } = require('./database-supabase');
   }};
 }
 
-const { db, getUserById } = dbModule;
 const { authenticateToken } = authMiddleware;
 
 console.log('✅ AUTOMATIONS ROUTES: Dependencies loaded');
 
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ AUTOMATIONS ROUTES: Missing Supabase credentials');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 // Encryption key from environment (should match server.js)
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here';
+
+// Helper function to get user by ID
+async function getUserById(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error getting user by ID:', error);
+    return null;
+  }
+}
 
 // ===== SAFER HELPER FUNCTIONS THAT HANDLE MISSING TABLES =====
 async function executeVisionAction(userId, config) {
     try {
-        // Check if table exists first
-        const tableCheck = await new Promise((resolve) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('sqlite_master')
-      .select('*')
-      .eq('id', )
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    resolve(!!row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        // Check if table exists by trying to query it
+        const { data: tableCheck, error: tableError } = await supabase
+            .from('vision_results')
+            .select('id')
+            .limit(1);
         
-        if (!tableCheck) {
+        if (tableError && tableError.code === '42P01') { // Table doesn't exist error code
             return {
                 action: 'vision_analysis',
                 status: 'completed',
@@ -71,34 +74,25 @@ async function executeVisionAction(userId, config) {
             };
         }
         
-        // Get actual vision results from database
-        const results = await new Promise((resolve, reject) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('vision_results')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(row || { images_analyzed: 0, objects_detected: 0
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            });
-        });
+        // Get actual vision results from database for today
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+            .from('vision_results')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId)
+            .gte('created_at', today);
+        
+        if (error) throw error;
+        
+        const imagesAnalyzed = data?.length || 0;
+        const objectsDetected = data?.reduce((sum, item) => sum + (item.objects_detected || 0), 0) || 0;
         
         return {
             action: 'vision_analysis',
             status: 'completed',
             results: {
-                images_analyzed: results.images_analyzed || 0,
-                objects_detected: results.objects_detected || 0
+                images_analyzed: imagesAnalyzed,
+                objects_detected: objectsDetected
             }
         };
     } catch (error) {
@@ -118,26 +112,12 @@ async function executeVisionAction(userId, config) {
 async function executeLeadAction(userId, config) {
     try {
         // Check if table exists
-        const tableCheck = await new Promise((resolve) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('sqlite_master')
-      .select('*')
-      .eq('id', )
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    resolve(!!row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        const { data: tableCheck, error: tableError } = await supabase
+            .from('lead_scores')
+            .select('id')
+            .limit(1);
         
-        if (!tableCheck) {
+        if (tableError && tableError.code === '42P01') {
             return {
                 action: 'lead_scoring',
                 status: 'completed',
@@ -149,34 +129,25 @@ async function executeLeadAction(userId, config) {
             };
         }
         
-        // Get actual lead scores from database
-        const results = await new Promise((resolve, reject) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('lead_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(row || { leads_scored: 0, hot_leads: 0
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            });
-        });
+        // Get actual lead scores from database for today
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+            .from('lead_scores')
+            .select('score')
+            .eq('user_id', userId)
+            .gte('scored_at', today);
+        
+        if (error) throw error;
+        
+        const leadsScored = data?.length || 0;
+        const hotLeads = data?.filter(item => item.score > 80).length || 0;
         
         return {
             action: 'lead_scoring',
             status: 'completed',
             results: {
-                leads_scored: results.leads_scored || 0,
-                hot_leads: results.hot_leads || 0
+                leads_scored: leadsScored,
+                hot_leads: hotLeads
             }
         };
     } catch (error) {
@@ -196,26 +167,12 @@ async function executeLeadAction(userId, config) {
 async function executeContentAction(userId, config) {
     try {
         // Check if table exists
-        const tableCheck = await new Promise((resolve) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('sqlite_master')
-      .select('*')
-      .eq('id', )
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    resolve(!!row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        const { data: tableCheck, error: tableError } = await supabase
+            .from('content_generated')
+            .select('id')
+            .limit(1);
         
-        if (!tableCheck) {
+        if (tableError && tableError.code === '42P01') {
             return {
                 action: 'content_generation',
                 status: 'completed',
@@ -227,53 +184,32 @@ async function executeContentAction(userId, config) {
             };
         }
         
-        // Get actual content generation stats from database
-        const results = await new Promise((resolve, reject) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('content_generated')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(row || { posts_created: 0
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            });
-        });
+        // Get actual content generation stats from database for today
+        const today = new Date().toISOString().split('T')[0];
+        const { data: contentData, error: contentError } = await supabase
+            .from('content_generated')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId)
+            .gte('created_at', today);
+        
+        if (contentError) throw contentError;
         
         // Get connected platforms
-        const platforms = await new Promise((resolve, reject) => {
-            try {
-    const { data: rows, error: err } = await supabase
-      .from('connected_accounts')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(rows.map(r => r.platform) || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        const { data: platformData, error: platformError } = await supabase
+            .from('connected_accounts')
+            .select('platform')
+            .eq('user_id', userId)
+            .eq('status', 'active');
+        
+        if (platformError) throw platformError;
+        
+        const platforms = platformData?.map(p => p.platform) || [];
         
         return {
             action: 'content_generation',
             status: 'completed',
             results: {
-                posts_created: results.posts_created || 0,
+                posts_created: contentData?.length || 0,
                 platforms: platforms
             }
         };
@@ -294,26 +230,12 @@ async function executeContentAction(userId, config) {
 async function executeEngagementAction(userId, config) {
     try {
         // Check if table exists
-        const tableCheck = await new Promise((resolve) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('sqlite_master')
-      .select('*')
-      .eq('id', )
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    resolve(!!row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        const { data: tableCheck, error: tableError } = await supabase
+            .from('engagement_metrics')
+            .select('id')
+            .limit(1);
         
-        if (!tableCheck) {
+        if (tableError && tableError.code === '42P01') {
             return {
                 action: 'engagement_tracking',
                 status: 'completed',
@@ -325,34 +247,25 @@ async function executeEngagementAction(userId, config) {
             };
         }
         
-        // Get actual engagement metrics from database
-        const results = await new Promise((resolve, reject) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('engagement_metrics')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(row || { interactions: 0, new_followers: 0
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            });
-        });
+        // Get actual engagement metrics from database for today
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+            .from('engagement_metrics')
+            .select('interactions, new_followers')
+            .eq('user_id', userId)
+            .gte('recorded_at', today);
+        
+        if (error) throw error;
+        
+        const interactions = data?.reduce((sum, item) => sum + (item.interactions || 0), 0) || 0;
+        const newFollowers = data?.reduce((sum, item) => sum + (item.new_followers || 0), 0) || 0;
         
         return {
             action: 'engagement_tracking',
             status: 'completed',
             results: {
-                interactions: results.interactions || 0,
-                new_followers: results.new_followers || 0
+                interactions: interactions,
+                new_followers: newFollowers
             }
         };
     } catch (error) {
@@ -372,26 +285,12 @@ async function executeEngagementAction(userId, config) {
 async function executeAnalyticsAction(userId, config) {
     try {
         // Check if table exists
-        const tableCheck = await new Promise((resolve) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('sqlite_master')
-      .select('*')
-      .eq('id', )
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    resolve(!!row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        const { data: tableCheck, error: tableError } = await supabase
+            .from('analytics_reports')
+            .select('id')
+            .limit(1);
         
-        if (!tableCheck) {
+        if (tableError && tableError.code === '42P01') {
             return {
                 action: 'analytics_report',
                 status: 'completed',
@@ -403,33 +302,21 @@ async function executeAnalyticsAction(userId, config) {
             };
         }
         
-        // Get actual analytics reports from database
-        const results = await new Promise((resolve, reject) => {
-            try {
-    const { data: row, error: err } = await supabase
-      .from('analytics_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(row || { reports_generated: 0
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            });
-        });
+        // Get actual analytics reports from database for today
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error, count } = await supabase
+            .from('analytics_reports')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId)
+            .gte('created_at', today);
+        
+        if (error) throw error;
         
         return {
             action: 'analytics_report',
             status: 'completed',
             results: {
-                report_generated: (results.reports_generated || 0) > 0,
+                report_generated: (count || 0) > 0,
                 metrics: ['sales', 'traffic', 'conversions']
             }
         };
@@ -456,46 +343,56 @@ router.get('/test', (req, res) => {
 console.log('📝 AUTOMATIONS ROUTES: Registering routes...');
 
 // ===== 1. GET ALL AUTOMATIONS =====
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   console.log('📥 GET /api/automations - User:', req.user?.id);
     const userId = req.user.id;
     
-    db.all(`
-        SELECT * FROM automations 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC
-    `, [userId], (err, automations) => {
-        if (err) {
-            console.error("Error fetching automations:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+    try {
+        const { data: automations, error } = await supabase
+            .from('automations')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
         res.json(automations || []);
-    });
+    } catch (error) {
+        console.error("Error fetching automations:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 2. GET SINGLE AUTOMATION =====
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   console.log(`📥 GET /api/automations/${req.params.id}`);
     const { id } = req.params;
     const userId = req.user.id;
     
-    db.get(`
-        SELECT * FROM automations 
-        WHERE id = ? AND user_id = ?
-    `, [id, userId], (err, automation) => {
-        if (err) {
-            console.error("Error fetching automation:", err);
-            return res.status(500).json({ error: "Database error" });
+    try {
+        const { data: automation, error } = await supabase
+            .from('automations')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({ error: "Automation not found" });
+            }
+            throw error;
         }
-        if (!automation) {
-            return res.status(404).json({ error: "Automation not found" });
-        }
+        
         res.json(automation);
-    });
+    } catch (error) {
+        console.error("Error fetching automation:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 3. CREATE AUTOMATION =====
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
     const { name, description, trigger_type, trigger_config, action_type, action_config, schedule } = req.body;
     const userId = req.user.id;
     
@@ -507,115 +404,158 @@ router.post('/', authenticateToken, (req, res) => {
     const now = new Date().toISOString();
     
     try {
-    const { error: err } = await supabase
-      .from('automations')
-      .insert({ /* map your columns here */ });
-    
-    if (err) {
-      console.error('Database error:', err);
-      
-        if (err) {
-            console.error("Error creating automation:", err);
-            return res.status(500).json({ error: "Failed to create automation" 
-    }
-    console.error("Error creating automation:", err);
-            return res.status(500).json({ error: "Failed to create automation"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        }
+        const { error } = await supabase
+            .from('automations')
+            .insert([{
+                id,
+                user_id: userId,
+                name,
+                description: description || '',
+                trigger_type,
+                trigger_config: trigger_config || {},
+                action_type,
+                action_config: action_config || {},
+                schedule: schedule || '',
+                status: 'active',
+                created_at: now,
+                updated_at: now
+            }]);
+        
+        if (error) throw error;
         
         // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'automation_created', `Created automation: ${name}`, 'automation', now]);
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'automation_created',
+                details: `Created automation: ${name}`,
+                type: 'automation',
+                timestamp: now
+            }]);
         
         res.json({
             success: true,
             id,
             message: "Automation created successfully"
         });
-    });
+    } catch (error) {
+        console.error("Error creating automation:", error);
+        return res.status(500).json({ error: "Failed to create automation" });
+    }
 });
 
 // ===== 4. UPDATE AUTOMATION =====
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { name, description, trigger_config, action_config, schedule, status } = req.body;
     const userId = req.user.id;
     
-    db.get(`SELECT * FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, automation) => {
-        if (err) {
-            console.error("Error checking automation:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        if (!automation) {
-            return res.status(404).json({ error: "Automation not found" });
+    try {
+        // Check if automation exists
+        const { data: automation, error: checkError } = await supabase
+            .from('automations')
+            .select('name')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        
+        if (checkError) {
+            if (checkError.code === 'PGRST116') {
+                return res.status(404).json({ error: "Automation not found" });
+            }
+            throw checkError;
         }
         
         const now = new Date().toISOString();
+        const updates = {};
         
-        try {
-    const { error: err } = await supabase
-      .from('automations')
-      .update({ /* update data */ })
-      .eq('id', id);
-    
-    if (err) {
-      console.error('Database error:', err);
-      
-            if (err) {
-                console.error("Error updating automation:", err);
-                return res.status(500).json({ error: "Failed to update automation" 
-    }
-    console.error("Error updating automation:", err);
-                return res.status(500).json({ error: "Failed to update automation"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            }
-            
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'automation_updated', `Updated automation: ${name || automation.name}`, 'automation', now]);
-            
-            res.json({
-                success: true,
-                message: "Automation updated successfully"
-            });
+        if (name !== undefined) updates.name = name;
+        if (description !== undefined) updates.description = description;
+        if (trigger_config !== undefined) updates.trigger_config = trigger_config;
+        if (action_config !== undefined) updates.action_config = action_config;
+        if (schedule !== undefined) updates.schedule = schedule;
+        if (status !== undefined) updates.status = status;
+        
+        updates.updated_at = now;
+        
+        const { error: updateError } = await supabase
+            .from('automations')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', userId);
+        
+        if (updateError) throw updateError;
+        
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'automation_updated',
+                details: `Updated automation: ${name || automation.name}`,
+                type: 'automation',
+                timestamp: now
+            }]);
+        
+        res.json({
+            success: true,
+            message: "Automation updated successfully"
         });
-    });
+    } catch (error) {
+        console.error("Error updating automation:", error);
+        return res.status(500).json({ error: "Failed to update automation" });
+    }
 });
 
 // ===== 5. DELETE AUTOMATION =====
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     
-    db.get(`SELECT name FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, automation) => {
-        if (err) {
-            console.error("Error checking automation:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        if (!automation) {
-            return res.status(404).json({ error: "Automation not found" });
+    try {
+        // Get automation name for logging
+        const { data: automation, error: getError } = await supabase
+            .from('automations')
+            .select('name')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        
+        if (getError) {
+            if (getError.code === 'PGRST116') {
+                return res.status(404).json({ error: "Automation not found" });
+            }
+            throw getError;
         }
         
-        db.run(`DELETE FROM automations WHERE id = ? AND user_id = ?`, [id, userId], function(err) {
-            if (err) {
-                console.error("Error deleting automation:", err);
-                return res.status(500).json({ error: "Failed to delete automation" });
-            }
-            
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'automation_deleted', `Deleted automation: ${automation.name}`, 'automation', new Date().toISOString()]);
-            
-            res.json({
-                success: true,
-                message: "Automation deleted successfully"
-            });
+        const { error: deleteError } = await supabase
+            .from('automations')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId);
+        
+        if (deleteError) throw deleteError;
+        
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'automation_deleted',
+                details: `Deleted automation: ${automation.name}`,
+                type: 'automation',
+                timestamp: new Date().toISOString()
+            }]);
+        
+        res.json({
+            success: true,
+            message: "Automation deleted successfully"
         });
-    });
+    } catch (error) {
+        console.error("Error deleting automation:", error);
+        return res.status(500).json({ error: "Failed to delete automation" });
+    }
 });
 
 // ===== 6. TRIGGER AUTOMATION MANUALLY =====
@@ -623,30 +563,38 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     
-    db.get(`SELECT * FROM automations WHERE id = ? AND user_id = ?`, [id, userId], async (err, automation) => {
-        if (err) {
-            console.error("Error fetching automation:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        if (!automation) {
-            return res.status(404).json({ error: "Automation not found" });
+    try {
+        const { data: automation, error: fetchError } = await supabase
+            .from('automations')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        
+        if (fetchError) {
+            if (fetchError.code === 'PGRST116') {
+                return res.status(404).json({ error: "Automation not found" });
+            }
+            throw fetchError;
         }
         
         const runId = 'run_' + uuidv4().substring(0, 8);
         const startedAt = new Date().toISOString();
         
-        db.run(`
-            INSERT INTO automation_runs (id, automation_id, user_id, status, started_at) 
-            VALUES (?, ?, ?, ?, ?)
-        `, [runId, id, userId, 'running', startedAt], async (err) => {
-            if (err) {
-                console.error("Error logging run:", err);
-            }
-        });
+        // Log run start
+        await supabase
+            .from('automation_runs')
+            .insert([{
+                id: runId,
+                automation_id: id,
+                user_id: userId,
+                status: 'running',
+                started_at: startedAt
+            }]);
         
         try {
-            const triggerConfig = JSON.parse(automation.trigger_config || '{}');
-            const actionConfig = JSON.parse(automation.action_config || '{}');
+            const triggerConfig = automation.trigger_config || {};
+            const actionConfig = automation.action_config || {};
             
             let result = {};
             
@@ -673,26 +621,42 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
             const completedAt = new Date().toISOString();
             const duration = Math.floor((new Date(completedAt) - new Date(startedAt)) / 1000);
             
-            db.run(`
-                UPDATE automation_runs SET 
-                    status = ?, 
-                    result = ?, 
-                    duration = ?,
-                    completed_at = ?
-                WHERE id = ?
-            `, [result.status || 'completed', JSON.stringify(result), duration, completedAt, runId]);
+            // Update run
+            await supabase
+                .from('automation_runs')
+                .update({
+                    status: result.status || 'completed',
+                    result: result,
+                    duration: duration,
+                    completed_at: completedAt
+                })
+                .eq('id', runId);
             
-            db.run(`
-                UPDATE automations SET 
-                    trigger_count = trigger_count + 1,
-                    success_count = success_count + 1,
-                    avg_duration = (avg_duration + ?) / 2,
-                    last_run = ?
-                WHERE id = ?
-            `, [duration, completedAt, id]);
+            // Update automation stats
+            const currentStats = automation.trigger_count || 0;
+            const currentSuccess = automation.success_count || 0;
+            const currentAvgDuration = automation.avg_duration || 0;
             
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'automation_run', `Automation ${automation.name} completed`, 'automation', completedAt]);
+            await supabase
+                .from('automations')
+                .update({
+                    trigger_count: currentStats + 1,
+                    success_count: currentSuccess + 1,
+                    avg_duration: currentAvgDuration > 0 ? (currentAvgDuration + duration) / 2 : duration,
+                    last_run: completedAt
+                })
+                .eq('id', id);
+            
+            // Log activity
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'automation_run',
+                    details: `Automation ${automation.name} completed`,
+                    type: 'automation',
+                    timestamp: completedAt
+                }]);
             
             res.json({
                 success: true,
@@ -707,13 +671,15 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
             
             const completedAt = new Date().toISOString();
             
-            db.run(`
-                UPDATE automation_runs SET 
-                    status = ?, 
-                    error = ?,
-                    completed_at = ?
-                WHERE id = ?
-            `, ['failed', error.message, completedAt, runId]);
+            // Update run with error
+            await supabase
+                .from('automation_runs')
+                .update({
+                    status: 'failed',
+                    error: error.message,
+                    completed_at: completedAt
+                })
+                .eq('id', runId);
             
             res.status(500).json({
                 success: false,
@@ -721,149 +687,178 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
                 message: "Automation execution failed"
             });
         }
-    });
+    } catch (error) {
+        console.error("Error triggering automation:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 7. GET AUTOMATION RUNS =====
-router.get('/:id/runs', authenticateToken, (req, res) => {
+router.get('/:id/runs', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     
-    db.all(`
-        SELECT * FROM automation_runs 
-        WHERE automation_id = ? AND user_id = ? 
-        ORDER BY started_at DESC 
-        LIMIT 50
-    `, [id, userId], (err, runs) => {
-        if (err) {
-            console.error("Error fetching runs:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+    try {
+        const { data: runs, error } = await supabase
+            .from('automation_runs')
+            .select('*')
+            .eq('automation_id', id)
+            .eq('user_id', userId)
+            .order('started_at', { ascending: false })
+            .limit(50);
+        
+        if (error) throw error;
+        
         res.json(runs || []);
-    });
+    } catch (error) {
+        console.error("Error fetching runs:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 8. GET AUTOMATION STATS SUMMARY =====
-router.get('/stats/summary', authenticateToken, (req, res) => {
+router.get('/stats/summary', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
-    db.get(`
-        SELECT 
-            COUNT(*) as total_automations,
-            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_automations,
-            SUM(trigger_count) as total_triggers,
-            SUM(success_count) as total_success,
-            AVG(avg_duration) as avg_duration
-        FROM automations 
-        WHERE user_id = ?
-    `, [userId], (err, stats) => {
-        if (err) {
-            console.error("Error fetching stats:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+    try {
+        // Get automation stats
+        const { data: automations, error: autoError } = await supabase
+            .from('automations')
+            .select('status, trigger_count, success_count, avg_duration')
+            .eq('user_id', userId);
         
-        db.get(`
-            SELECT COUNT(*) as runs_today
-            FROM automation_runs 
-            WHERE user_id = ? AND date(started_at) = date('now')
-        `, [userId], (err, todayStats) => {
-            res.json({
-                ...stats,
-                runs_today: todayStats?.runs_today || 0,
-                success_rate: stats?.total_triggers ? 
-                    Math.round((stats.total_success / stats.total_triggers) * 100) : 0
-            });
+        if (autoError) throw autoError;
+        
+        const totalAutomations = automations?.length || 0;
+        const activeAutomations = automations?.filter(a => a.status === 'active').length || 0;
+        const totalTriggers = automations?.reduce((sum, a) => sum + (a.trigger_count || 0), 0) || 0;
+        const totalSuccess = automations?.reduce((sum, a) => sum + (a.success_count || 0), 0) || 0;
+        const avgDuration = automations?.reduce((sum, a) => sum + (a.avg_duration || 0), 0) / (automations?.length || 1) || 0;
+        
+        // Get today's runs
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayRuns, error: runsError } = await supabase
+            .from('automation_runs')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId)
+            .gte('started_at', today);
+        
+        if (runsError) throw runsError;
+        
+        res.json({
+            total_automations: totalAutomations,
+            active_automations: activeAutomations,
+            total_triggers: totalTriggers,
+            total_success: totalSuccess,
+            avg_duration: avgDuration,
+            runs_today: todayRuns?.length || 0,
+            success_rate: totalTriggers ? Math.round((totalSuccess / totalTriggers) * 100) : 0
         });
-    });
+    } catch (error) {
+        console.error("Error fetching stats:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 9. GET AUTOMATION STATS (for AI Powerhouse) =====
-router.get('/stats', authenticateToken, (req, res) => {
+router.get('/stats', authenticateToken, async (req, res) => {
   console.log('📊 GET /api/automations/stats - User:', req.user?.id);
     const userId = req.user.id;
     
-    const queries = {
-        activeAgents: `SELECT COUNT(*) as count FROM automations WHERE user_id = ? AND status = 'active'`,
-        imagesProcessed: `SELECT COUNT(*) as count FROM vision_results WHERE user_id = ? AND date(created_at) = date('now')`,
-        totalLeads: `SELECT COUNT(*) as count FROM leads WHERE user_id = ?`,
-        hoursSaved: `SELECT SUM(estimated_hours) as hours FROM automation_runs WHERE user_id = ? AND date(started_at) = date('now')`
-    };
-
-    db.get(queries.activeAgents, [userId], (err, activeResult) => {
-        db.get(queries.imagesProcessed, [userId], (err, imagesResult) => {
-            db.get(queries.totalLeads, [userId], (err, leadsResult) => {
-                db.get(queries.hoursSaved, [userId], (err, hoursResult) => {
-                    res.json({
-                        activeAgents: activeResult?.count || 0,
-                        imagesProcessed: imagesResult?.count || 0,
-                        totalLeads: leadsResult?.count || 0,
-                        hoursSaved: hoursResult?.hours || 0
-                    });
-                });
-            });
+    try {
+        // Get active agents count
+        const { data: activeAgents, error: agentsError } = await supabase
+            .from('automations')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId)
+            .eq('status', 'active');
+        
+        // Get images processed today
+        const today = new Date().toISOString().split('T')[0];
+        const { data: imagesData, error: imagesError } = await supabase
+            .from('vision_results')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId)
+            .gte('created_at', today);
+        
+        // Get total leads
+        const { data: leadsData, error: leadsError } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId);
+        
+        // Get hours saved today
+        const { data: hoursData, error: hoursError } = await supabase
+            .from('automation_runs')
+            .select('estimated_hours')
+            .eq('user_id', userId)
+            .gte('started_at', today);
+        
+        const hoursSaved = hoursData?.reduce((sum, run) => sum + (run.estimated_hours || 0), 0) || 0;
+        
+        res.json({
+            activeAgents: activeAgents?.length || 0,
+            imagesProcessed: imagesData?.length || 0,
+            totalLeads: leadsData?.length || 0,
+            hoursSaved: hoursSaved
         });
-    });
+    } catch (error) {
+        console.error("Error fetching stats:", error);
+        res.json({
+            activeAgents: 0,
+            imagesProcessed: 0,
+            totalLeads: 0,
+            hoursSaved: 0
+        });
+    }
 });
 
 // ===== 10. GET RECENT ACTIVITY =====
-router.get('/activity', authenticateToken, (req, res) => {
+router.get('/activity', authenticateToken, async (req, res) => {
   console.log('📋 GET /api/automations/activity - User:', req.user?.id);
     const userId = req.user.id;
     
-    db.all(`
-        SELECT * FROM activity_log 
-        WHERE user_id = ? 
-        ORDER BY timestamp DESC 
-        LIMIT 10
-    `, [userId], (err, activities) => {
-        if (err) {
-            console.error("Error fetching activity:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+    try {
+        const { data: activities, error } = await supabase
+            .from('activity_log')
+            .select('*')
+            .eq('user_id', userId)
+            .order('timestamp', { ascending: false })
+            .limit(10);
+        
+        if (error) throw error;
+        
         res.json(activities || []);
-    });
+    } catch (error) {
+        console.error("Error fetching activity:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 11. GET CONNECTED ACCOUNTS =====
-router.get('/accounts', authenticateToken, (req, res) => {
+router.get('/accounts', authenticateToken, async (req, res) => {
   console.log('🔌 GET /api/automations/accounts - User:', req.user?.id);
     const userId = req.user.id;
     
     try {
-    const { data: rows, error: err } = await supabase
-      .from('connected_accounts')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) {
-            console.error("Error fetching accounts:", err);
-             res.status(500).json({ error: "Database error"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        }
+        const { data: rows, error } = await supabase
+            .from('connected_accounts')
+            .select('id, platform, account_name, account_info, status, created_at, last_sync')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
         
-        const accounts = (rows || []).map(row => {
-            try {
-                return {
-                    ...row,
-                    account_info: row.account_info ? JSON.parse(row.account_info) : null
-                };
-            } catch (e) {
-                return {
-                    ...row,
-                    account_info: null
-                };
-            }
-        });
+        if (error) throw error;
+        
+        const accounts = (rows || []).map(row => ({
+            ...row,
+            account_info: row.account_info || null
+        }));
         
         res.json(accounts);
-    });
+    } catch (error) {
+        console.error("Error fetching accounts:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 12. CONNECT ACCOUNT =====
@@ -897,63 +892,87 @@ router.post('/connect', authenticateToken, async (req, res) => {
         });
 
         // Check if account already exists
-        db.get(
-            `SELECT id FROM connected_accounts WHERE user_id = ? AND platform = ? AND account_name = ?`,
-            [userId, platform, accountName],
-            (err, existing) => {
-                if (err) {
-                    console.error("Error checking existing account:", err);
-                    return res.status(500).json({ error: "Database error" });
-                }
+        const { data: existing, error: checkError } = await supabase
+            .from('connected_accounts')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('platform', platform)
+            .eq('account_name', accountName)
+            .maybeSingle();
+        
+        if (checkError) throw checkError;
 
-                if (existing) {
-                    // Update existing account
-                    db.run(
-                        `UPDATE connected_accounts 
-                         SET api_key_encrypted = ?, account_info = ?, gateway_url = ?, connection_type = ?, status = 'active', last_sync = ?, updated_at = ? 
-                         WHERE id = ?`,
-                        [encryptedToken, accountInfo, gatewayUrl, connectionType, new Date().toISOString(), new Date().toISOString(), existing.id],
-                        function(err) {
-                            if (err) {
-                                console.error("Error updating account:", err);
-                                return res.status(500).json({ error: "Failed to update account" });
-                            }
+        if (existing) {
+            // Update existing account
+            const { error: updateError } = await supabase
+                .from('connected_accounts')
+                .update({
+                    api_key_encrypted: encryptedToken,
+                    account_info: accountInfo,
+                    gateway_url: gatewayUrl,
+                    connection_type: connectionType,
+                    status: 'active',
+                    last_sync: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+            
+            if (updateError) throw updateError;
 
-                            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                                [userId, 'account_updated', `${platform} account updated`, 'account', new Date().toISOString()]);
+            // Log activity
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'account_updated',
+                    details: `${platform} account updated`,
+                    type: 'account',
+                    timestamp: new Date().toISOString()
+                }]);
 
-                            res.json({
-                                success: true,
-                                message: `✅ ${platform} account updated successfully!`,
-                                account_id: existing.id
-                            });
-                        }
-                    );
-                } else {
-                    // Insert new account
-                    db.run(
-                        `INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, account_info, gateway_url, connection_type, status, created_at, updated_at) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [userId, platform, accountName, encryptedToken, accountInfo, gatewayUrl, connectionType, 'active', new Date().toISOString(), new Date().toISOString()],
-                        function(err) {
-                            if (err) {
-                                console.error("Account connection error:", err);
-                                return res.status(500).json({ error: "Failed to save account" });
-                            }
+            res.json({
+                success: true,
+                message: `✅ ${platform} account updated successfully!`,
+                account_id: existing.id
+            });
+        } else {
+            // Insert new account
+            const { data: newAccount, error: insertError } = await supabase
+                .from('connected_accounts')
+                .insert([{
+                    user_id: userId,
+                    platform,
+                    account_name: accountName,
+                    api_key_encrypted: encryptedToken,
+                    account_info: accountInfo,
+                    gateway_url: gatewayUrl,
+                    connection_type: connectionType,
+                    status: 'active',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }])
+                .select('id')
+                .single();
+            
+            if (insertError) throw insertError;
 
-                            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                                [userId, 'account_connected', `${platform} account connected`, 'account', new Date().toISOString()]);
+            // Log activity
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'account_connected',
+                    details: `${platform} account connected`,
+                    type: 'account',
+                    timestamp: new Date().toISOString()
+                }]);
 
-                            res.json({
-                                success: true,
-                                message: `✅ ${platform} account connected successfully!`,
-                                account_id: this.lastID
-                            });
-                        }
-                    );
-                }
-            }
-        );
+            res.json({
+                success: true,
+                message: `✅ ${platform} account connected successfully!`,
+                account_id: newAccount.id
+            });
+        }
 
     } catch (error) {
         console.error("Connection error:", error);
@@ -966,62 +985,90 @@ router.post('/accounts/:id/sync', authenticateToken, async (req, res) => {
     const accountId = req.params.id;
     const userId = req.user.id;
 
-    db.run(
-        `UPDATE connected_accounts SET last_sync = ? WHERE id = ? AND user_id = ?`,
-        [new Date().toISOString(), accountId, userId],
-        (err) => {
-            if (err) {
-                console.error("Error updating sync time:", err);
-                return res.status(500).json({ error: "Failed to update sync time" });
-            }
+    try {
+        const { error } = await supabase
+            .from('connected_accounts')
+            .update({ last_sync: new Date().toISOString() })
+            .eq('id', accountId)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
 
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'account_synced', `Account synced`, 'account', new Date().toISOString()]);
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'account_synced',
+                details: 'Account synced',
+                type: 'account',
+                timestamp: new Date().toISOString()
+            }]);
 
-            res.json({
-                success: true,
-                message: `✅ Account synced successfully`,
-                last_sync: new Date().toISOString()
-            });
-        }
-    );
+        res.json({
+            success: true,
+            message: `✅ Account synced successfully`,
+            last_sync: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("Error updating sync time:", error);
+        return res.status(500).json({ error: "Failed to update sync time" });
+    }
 });
 
 // ===== 14. DISCONNECT ACCOUNT =====
-router.delete('/accounts/:id', authenticateToken, (req, res) => {
+router.delete('/accounts/:id', authenticateToken, async (req, res) => {
     const accountId = req.params.id;
     const userId = req.user.id;
 
-    db.run(
-        `DELETE FROM connected_accounts WHERE id = ? AND user_id = ?`,
-        [accountId, userId],
-        function(err) {
-            if (err) {
-                console.error("Error deleting account:", err);
-                return res.status(500).json({ error: "Failed to delete account" });
-            }
-
-            if (this.changes === 0) {
-                return res.status(404).json({ error: "Account not found" });
-            }
-
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'account_disconnected', `Account disconnected`, 'account', new Date().toISOString()]);
-
-            res.json({
-                success: true,
-                message: "✅ Account disconnected successfully"
-            });
+    try {
+        const { error, count } = await supabase
+            .from('connected_accounts')
+            .delete()
+            .eq('id', accountId)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        if (count === 0) {
+            return res.status(404).json({ error: "Account not found" });
         }
-    );
+
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'account_disconnected',
+                details: 'Account disconnected',
+                type: 'account',
+                timestamp: new Date().toISOString()
+            }]);
+
+        res.json({
+            success: true,
+            message: "✅ Account disconnected successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        return res.status(500).json({ error: "Failed to delete account" });
+    }
 });
 
 // ===== 15. GET GOVERNANCE SETTINGS =====
-router.get('/governance', authenticateToken, (req, res) => {
+router.get('/governance', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
-    db.get(`SELECT * FROM governance_settings WHERE user_id = ?`, [userId], (err, governance) => {
-        if (err || !governance) {
+    try {
+        const { data: governance, error } = await supabase
+            .from('governance_settings')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+        
+        if (error) throw error;
+        
+        if (!governance) {
             // Return default settings if none exist
             return res.json({
                 gpt4: {
@@ -1097,9 +1144,9 @@ router.get('/governance', authenticateToken, (req, res) => {
                 capType: governance.cap_type || 'soft'
             },
             compliance: {
-                piiRedaction: governance.pii_redaction === 1,
-                hipaaMode: governance.hipaa_mode === 1,
-                gdpr: governance.gdpr === 1
+                piiRedaction: governance.pii_redaction === true,
+                hipaaMode: governance.hipaa_mode === true,
+                gdpr: governance.gdpr === true
             },
             tools: {
                 salesforce: governance.salesforce_status || 'connected',
@@ -1107,11 +1154,14 @@ router.get('/governance', authenticateToken, (req, res) => {
                 shopify: governance.shopify_status || 'requires_auth'
             }
         });
-    });
+    } catch (error) {
+        console.error("Error fetching governance settings:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 16. UPDATE MODEL POLICY =====
-router.put('/governance/models/:model', authenticateToken, (req, res) => {
+router.put('/governance/models/:model', authenticateToken, async (req, res) => {
     const { model } = req.params;
     const { policy } = req.body;
     const userId = req.user.id;
@@ -1127,61 +1177,107 @@ router.put('/governance/models/:model', authenticateToken, (req, res) => {
         return res.status(400).json({ error: "Invalid model" });
     }
 
-    db.run(`INSERT OR IGNORE INTO governance_settings (user_id) VALUES (?)`, [userId], (err) => {
-        if (err) {
-            console.error("Error creating governance settings:", err);
-            return res.status(500).json({ error: "Database error" });
+    try {
+        // Check if governance settings exist
+        const { data: existing } = await supabase
+            .from('governance_settings')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (!existing) {
+            // Create new governance settings
+            const { error: insertError } = await supabase
+                .from('governance_settings')
+                .insert([{ user_id: userId }]);
+            
+            if (insertError) throw insertError;
         }
 
-        db.run(
-            `UPDATE governance_settings SET ${column} = ? WHERE user_id = ?`,
-            [policy, userId],
-            function(err) {
-                if (err) {
-                    console.error("Error updating policy:", err);
-                    return res.status(500).json({ error: "Failed to update policy" });
-                }
+        // Update the policy
+        const { error: updateError } = await supabase
+            .from('governance_settings')
+            .update({ [column]: policy })
+            .eq('user_id', userId);
+        
+        if (updateError) throw updateError;
 
-                db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                    [userId, 'policy_updated', `${model} policy set to ${policy}`, 'governance', new Date().toISOString()]);
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'policy_updated',
+                details: `${model} policy set to ${policy}`,
+                type: 'governance',
+                timestamp: new Date().toISOString()
+            }]);
 
-                res.json({ success: true, message: "Policy updated successfully" });
-            }
-        );
-    });
+        res.json({ success: true, message: "Policy updated successfully" });
+    } catch (error) {
+        console.error("Error updating policy:", error);
+        return res.status(500).json({ error: "Failed to update policy" });
+    }
 });
 
 // ===== 17. GET OBSERVABILITY DATA =====
-router.get('/observability', authenticateToken, (req, res) => {
+router.get('/observability', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
-    db.all(`
-        SELECT * FROM alerts 
-        WHERE user_id = ? AND resolved = 0 
-        ORDER BY created_at DESC LIMIT 5
-    `, [userId], (err, alerts) => {
+    try {
+        // Get unresolved alerts
+        const { data: alerts, error: alertsError } = await supabase
+            .from('alerts')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('resolved', false)
+            .order('created_at', { ascending: false })
+            .limit(5);
         
-        db.all(`
-            SELECT provider, SUM(cost) as total 
-            FROM usage_logs 
-            WHERE user_id = ? AND date(timestamp) > date('now', '-30 days')
-            GROUP BY provider
-        `, [userId], (err, costs) => {
-            
-            db.all(`
-                SELECT name, success_rate, avg_latency 
-                FROM agent_performance 
-                WHERE user_id = ?
-            `, [userId], (err, performance) => {
-                
-                res.json({
-                    alerts: alerts || [],
-                    costs: costs || [],
-                    performance: performance || []
-                });
-            });
+        // Get costs by provider for last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const { data: costs, error: costsError } = await supabase
+            .from('usage_logs')
+            .select('provider, cost')
+            .eq('user_id', userId)
+            .gte('timestamp', thirtyDaysAgo.toISOString());
+        
+        // Get agent performance
+        const { data: performance, error: perfError } = await supabase
+            .from('agent_performance')
+            .select('name, success_rate, avg_latency')
+            .eq('user_id', userId);
+        
+        // Aggregate costs by provider
+        const costsByProvider = costs?.reduce((acc, log) => {
+            const provider = log.provider || 'unknown';
+            if (!acc[provider]) {
+                acc[provider] = 0;
+            }
+            acc[provider] += log.cost || 0;
+            return acc;
+        }, {});
+        
+        const costsArray = Object.entries(costsByProvider || {}).map(([provider, total]) => ({
+            provider,
+            total
+        }));
+        
+        res.json({
+            alerts: alerts || [],
+            costs: costsArray,
+            performance: performance || []
         });
-    });
+    } catch (error) {
+        console.error("Error fetching observability data:", error);
+        res.json({
+            alerts: [],
+            costs: [],
+            performance: []
+        });
+    }
 });
 
 // ===== 18. GET AVAILABLE AUTOMATION TEMPLATES =====
@@ -1247,57 +1343,72 @@ router.get('/templates/list', authenticateToken, (req, res) => {
 });
 
 // ===== 19. DUPLICATE AUTOMATION =====
-router.post('/:id/duplicate', authenticateToken, (req, res) => {
+router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     
-    db.get(`SELECT * FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, automation) => {
-        if (err) {
-            console.error("Error fetching automation:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        if (!automation) {
-            return res.status(404).json({ error: "Automation not found" });
+    try {
+        const { data: automation, error: fetchError } = await supabase
+            .from('automations')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        
+        if (fetchError) {
+            if (fetchError.code === 'PGRST116') {
+                return res.status(404).json({ error: "Automation not found" });
+            }
+            throw fetchError;
         }
         
         const newId = 'auto_' + uuidv4().substring(0, 8);
         const now = new Date().toISOString();
         const newName = `${automation.name} (Copy)`;
         
-        try {
-    const { error: err } = await supabase
-      .from('automations')
-      .insert({ /* map your columns here */ });
-    
-    if (err) {
-      console.error('Database error:', err);
-      
-            if (err) {
-                console.error("Error duplicating automation:", err);
-                return res.status(500).json({ error: "Failed to duplicate automation" 
-    }
-    console.error("Error duplicating automation:", err);
-                return res.status(500).json({ error: "Failed to duplicate automation"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            }
-            
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'automation_duplicated', `Duplicated automation: ${automation.name}`, 'automation', now]);
-            
-            res.json({
-                success: true,
+        const { error: insertError } = await supabase
+            .from('automations')
+            .insert([{
                 id: newId,
-                message: "Automation duplicated successfully"
-            });
+                user_id: userId,
+                name: newName,
+                description: automation.description,
+                trigger_type: automation.trigger_type,
+                trigger_config: automation.trigger_config,
+                action_type: automation.action_type,
+                action_config: automation.action_config,
+                schedule: automation.schedule,
+                status: 'paused',
+                created_at: now,
+                updated_at: now
+            }]);
+        
+        if (insertError) throw insertError;
+
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'automation_duplicated',
+                details: `Duplicated automation: ${automation.name}`,
+                type: 'automation',
+                timestamp: now
+            }]);
+        
+        res.json({
+            success: true,
+            id: newId,
+            message: "Automation duplicated successfully"
         });
-    });
+    } catch (error) {
+        console.error("Error duplicating automation:", error);
+        return res.status(500).json({ error: "Failed to duplicate automation" });
+    }
 });
 
 // ===== 20. BULK UPDATE AUTOMATIONS =====
-router.post('/bulk/update', authenticateToken, (req, res) => {
+router.post('/bulk/update', authenticateToken, async (req, res) => {
     const { automation_ids, action } = req.body;
     const userId = req.user.id;
     
@@ -1309,87 +1420,93 @@ router.post('/bulk/update', authenticateToken, (req, res) => {
         return res.status(400).json({ error: "Invalid action" });
     }
     
-    const placeholders = automation_ids.map(() => '?').join(',');
-    const params = [...automation_ids, userId];
-    
-    if (action === 'delete') {
-        db.run(`DELETE FROM automations WHERE id IN (${placeholders}) AND user_id = ?`, params, function(err) {
-            if (err) {
-                console.error("Error bulk deleting automations:", err);
-                return res.status(500).json({ error: "Failed to delete automations" });
-            }
+    try {
+        if (action === 'delete') {
+            const { error, count } = await supabase
+                .from('automations')
+                .delete()
+                .in('id', automation_ids)
+                .eq('user_id', userId);
             
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'automations_bulk_deleted', `Deleted ${automation_ids.length} automations`, 'automation', new Date().toISOString()]);
-            
-            res.json({
-                success: true,
-                message: `Successfully deleted ${this.changes} automations`
-            });
-        });
-    } else {
-        const status = action === 'activate' ? 'active' : 'paused';
-        try {
-    const { error: err } = await supabase
-      .from('automations')
-      .update({ /* update data */ })
-      .eq('id', id);
-    
-    if (err) {
-      console.error('Database error:', err);
-      
-            if (err) {
-                console.error("Error bulk updating automations:", err);
-                return res.status(500).json({ error: "Failed to update automations" 
-    }
-    console.error("Error bulk updating automations:", err);
-                return res.status(500).json({ error: "Failed to update automations"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-            }
-            
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, `automations_bulk_${status}`, `Set ${automation_ids.length} automations to ${status}`, 'automation', new Date().toISOString()]);
+            if (error) throw error;
+
+            // Log activity
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'automations_bulk_deleted',
+                    details: `Deleted ${automation_ids.length} automations`,
+                    type: 'automation',
+                    timestamp: new Date().toISOString()
+                }]);
             
             res.json({
                 success: true,
-                message: `Successfully updated ${this.changes} automations to ${status}`
+                message: `Successfully deleted ${automation_ids.length} automations`
             });
-        });
+        } else {
+            const status = action === 'activate' ? 'active' : 'paused';
+            const { error, count } = await supabase
+                .from('automations')
+                .update({ 
+                    status: status,
+                    updated_at: new Date().toISOString()
+                })
+                .in('id', automation_ids)
+                .eq('user_id', userId);
+            
+            if (error) throw error;
+
+            // Log activity
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: `automations_bulk_${status}`,
+                    details: `Set ${automation_ids.length} automations to ${status}`,
+                    type: 'automation',
+                    timestamp: new Date().toISOString()
+                }]);
+            
+            res.json({
+                success: true,
+                message: `Successfully updated ${automation_ids.length} automations to ${status}`
+            });
+        }
+    } catch (error) {
+        console.error("Error bulk updating automations:", error);
+        return res.status(500).json({ error: "Failed to update automations" });
     }
 });
 
 // ===== 21. GET AUTOMATION LOGS =====
-router.get('/:id/logs', authenticateToken, (req, res) => {
+router.get('/:id/logs', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     const { limit = 20, offset = 0 } = req.query;
     
-    db.all(`
-        SELECT * FROM automation_runs 
-        WHERE automation_id = ? AND user_id = ? 
-        ORDER BY started_at DESC 
-        LIMIT ? OFFSET ?
-    `, [id, userId, limit, offset], (err, logs) => {
-        if (err) {
-            console.error("Error fetching logs:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+    try {
+        const { data: logs, error: logsError, count } = await supabase
+            .from('automation_runs')
+            .select('*', { count: 'exact' })
+            .eq('automation_id', id)
+            .eq('user_id', userId)
+            .order('started_at', { ascending: false })
+            .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
         
-        db.get(`
-            SELECT COUNT(*) as total FROM automation_runs 
-            WHERE automation_id = ? AND user_id = ?
-        `, [id, userId], (err, count) => {
-            res.json({
-                logs: logs || [],
-                total: count?.total || 0,
-                limit: parseInt(limit),
-                offset: parseInt(offset)
-            });
+        if (logsError) throw logsError;
+        
+        res.json({
+            logs: logs || [],
+            total: count || 0,
+            limit: parseInt(limit),
+            offset: parseInt(offset)
         });
-    });
+    } catch (error) {
+        console.error("Error fetching logs:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 22. TEST AUTOMATION CONNECTION =====
@@ -1436,8 +1553,15 @@ router.post('/test-connection', authenticateToken, async (req, res) => {
         }
         
         if (testResult.success) {
-            db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                [userId, 'connection_tested', `Successfully tested ${platform} connection`, 'integration', new Date().toISOString()]);
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'connection_tested',
+                    details: `Successfully tested ${platform} connection`,
+                    type: 'integration',
+                    timestamp: new Date().toISOString()
+                }]);
         }
         
         res.json(testResult);
@@ -1452,74 +1576,119 @@ router.post('/test-connection', authenticateToken, async (req, res) => {
 });
 
 // ===== 23. GET AUTOMATION METRICS =====
-router.get('/metrics/dashboard', authenticateToken, (req, res) => {
+router.get('/metrics/dashboard', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
-    db.all(`
-        SELECT 
-            action_type,
-            COUNT(*) as count,
-            AVG(success_count * 1.0 / NULLIF(trigger_count, 0)) as success_rate
-        FROM automations 
-        WHERE user_id = ? 
-        GROUP BY action_type
-    `, [userId], (err, byType) => {
-        if (err) {
-            console.error("Error fetching metrics:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+    try {
+        // Get metrics by action type
+        const { data: automations, error: autoError } = await supabase
+            .from('automations')
+            .select('action_type, trigger_count, success_count')
+            .eq('user_id', userId);
         
-        db.all(`
-            SELECT 
-                date(started_at) as date,
-                COUNT(*) as runs,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful
-            FROM automation_runs 
-            WHERE user_id = ? AND started_at > date('now', '-30 days')
-            GROUP BY date(started_at)
-            ORDER BY date ASC
-        `, [userId], (err, dailyRuns) => {
-            res.json({
-                by_type: byType || [],
-                daily_runs: dailyRuns || [],
-                total_automations: (byType || []).reduce((sum, item) => sum + item.count, 0)
-            });
+        if (autoError) throw autoError;
+        
+        const byType = (automations || []).reduce((acc, auto) => {
+            const type = auto.action_type || 'unknown';
+            if (!acc[type]) {
+                acc[type] = { count: 0, totalTriggers: 0, totalSuccess: 0 };
+            }
+            acc[type].count++;
+            acc[type].totalTriggers += auto.trigger_count || 0;
+            acc[type].totalSuccess += auto.success_count || 0;
+            return acc;
+        }, {});
+        
+        const byTypeArray = Object.entries(byType).map(([action_type, data]) => ({
+            action_type,
+            count: data.count,
+            success_rate: data.totalTriggers > 0 ? data.totalSuccess / data.totalTriggers : 0
+        }));
+        
+        // Get daily runs for last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const { data: runs, error: runsError } = await supabase
+            .from('automation_runs')
+            .select('started_at, status')
+            .eq('user_id', userId)
+            .gte('started_at', thirtyDaysAgo.toISOString());
+        
+        if (runsError) throw runsError;
+        
+        const dailyRuns = (runs || []).reduce((acc, run) => {
+            const date = run.started_at.split('T')[0];
+            if (!acc[date]) {
+                acc[date] = { runs: 0, successful: 0 };
+            }
+            acc[date].runs++;
+            if (run.status === 'completed') {
+                acc[date].successful++;
+            }
+            return acc;
+        }, {});
+        
+        const dailyRunsArray = Object.entries(dailyRuns).map(([date, data]) => ({
+            date,
+            runs: data.runs,
+            successful: data.successful
+        })).sort((a, b) => a.date.localeCompare(b.date));
+        
+        const totalAutomations = automations?.length || 0;
+        
+        res.json({
+            by_type: byTypeArray,
+            daily_runs: dailyRunsArray,
+            total_automations: totalAutomations
         });
-    });
+    } catch (error) {
+        console.error("Error fetching metrics:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 24. EXPORT AUTOMATION CONFIG =====
-router.get('/:id/export', authenticateToken, (req, res) => {
+router.get('/:id/export', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     
-    db.get(`SELECT * FROM automations WHERE id = ? AND user_id = ?`, [id, userId], (err, automation) => {
-        if (err) {
-            console.error("Error exporting automation:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        if (!automation) {
-            return res.status(404).json({ error: "Automation not found" });
+    try {
+        const { data: automation, error } = await supabase
+            .from('automations')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({ error: "Automation not found" });
+            }
+            throw error;
         }
         
         const exportData = {
             name: automation.name,
             description: automation.description,
             trigger_type: automation.trigger_type,
-            trigger_config: JSON.parse(automation.trigger_config || '{}'),
+            trigger_config: automation.trigger_config || {},
             action_type: automation.action_type,
-            action_config: JSON.parse(automation.action_config || '{}'),
+            action_config: automation.action_config || {},
             schedule: automation.schedule,
             version: '1.0',
             exported_at: new Date().toISOString()
         };
         
         res.json(exportData);
-    });
+    } catch (error) {
+        console.error("Error exporting automation:", error);
+        return res.status(500).json({ error: "Database error" });
+    }
 });
 
 // ===== 25. IMPORT AUTOMATION CONFIG =====
-router.post('/import', authenticateToken, (req, res) => {
+router.post('/import', authenticateToken, async (req, res) => {
     const { config } = req.body;
     const userId = req.user.id;
     
@@ -1531,34 +1700,45 @@ router.post('/import', authenticateToken, (req, res) => {
     const now = new Date().toISOString();
     
     try {
-    const { error: err } = await supabase
-      .from('automations')
-      .insert({ /* map your columns here */ });
-    
-    if (err) {
-      console.error('Database error:', err);
-      
-        if (err) {
-            console.error("Error importing automation:", err);
-            return res.status(500).json({ error: "Failed to import automation" 
-    }
-    console.error("Error importing automation:", err);
-            return res.status(500).json({ error: "Failed to import automation"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        }
+        const { error } = await supabase
+            .from('automations')
+            .insert([{
+                id,
+                user_id: userId,
+                name: config.name,
+                description: config.description || '',
+                trigger_type: config.trigger_type,
+                trigger_config: config.trigger_config || {},
+                action_type: config.action_type,
+                action_config: config.action_config || {},
+                schedule: config.schedule || '',
+                status: 'paused',
+                created_at: now,
+                updated_at: now
+            }]);
         
-        db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'automation_imported', `Imported automation: ${config.name}`, 'automation', now]);
+        if (error) throw error;
+
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'automation_imported',
+                details: `Imported automation: ${config.name}`,
+                type: 'automation',
+                timestamp: now
+            }]);
         
         res.json({
             success: true,
             id,
             message: "Automation imported successfully"
         });
-    });
+    } catch (error) {
+        console.error("Error importing automation:", error);
+        return res.status(500).json({ error: "Failed to import automation" });
+    }
 });
 
 // ===== INVENTORY CHECK =====
@@ -1568,21 +1748,18 @@ router.post('/inventory/check', authenticateToken, async (req, res) => {
     
     try {
         // Check if user has connected e-commerce accounts
-        const accounts = await new Promise((resolve, reject) => {
-            db.all(
-                `SELECT * FROM connected_accounts WHERE user_id = ? AND platform IN ('shopify', 'woocommerce', 'amazon')`,
-                [userId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
+        const { data: accounts, error: accountsError } = await supabase
+            .from('connected_accounts')
+            .select('*')
+            .eq('user_id', userId)
+            .in('platform', ['shopify', 'woocommerce', 'amazon']);
+        
+        if (accountsError) throw accountsError;
 
         let lowStockCount = 0;
         const alerts = [];
 
-        for (const account of accounts) {
+        for (const account of accounts || []) {
             // Decrypt API key if available
             let apiKey = null;
             if (account.api_key_encrypted) {
@@ -1608,8 +1785,15 @@ router.post('/inventory/check', authenticateToken, async (req, res) => {
         }
 
         // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'inventory_check', `Found ${lowStockCount} low stock items`, 'inventory', new Date().toISOString()]);
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'inventory_check',
+                details: `Found ${lowStockCount} low stock items`,
+                type: 'inventory',
+                timestamp: new Date().toISOString()
+            }]);
 
         res.json({ 
             success: true,
@@ -1630,23 +1814,27 @@ router.post('/carts/recover', authenticateToken, async (req, res) => {
     
     try {
         // Check for connected e-commerce accounts
-        const accounts = await new Promise((resolve, reject) => {
-            db.all(
-                `SELECT * FROM connected_accounts WHERE user_id = ? AND platform IN ('shopify', 'woocommerce')`,
-                [userId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
+        const { data: accounts, error: accountsError } = await supabase
+            .from('connected_accounts')
+            .select('*')
+            .eq('user_id', userId)
+            .in('platform', ['shopify', 'woocommerce']);
+        
+        if (accountsError) throw accountsError;
 
         // Mock recovery count - in production this would actually recover carts
-        const recoveredCount = accounts.length > 0 ? Math.floor(Math.random() * 10) + 1 : 0;
+        const recoveredCount = (accounts?.length || 0) > 0 ? Math.floor(Math.random() * 10) + 1 : 0;
 
         // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'cart_recovery', `Recovered ${recoveredCount} carts`, 'ecommerce', new Date().toISOString()]);
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'cart_recovery',
+                details: `Recovered ${recoveredCount} carts`,
+                type: 'ecommerce',
+                timestamp: new Date().toISOString()
+            }]);
 
         res.json({ 
             success: true,
@@ -1667,49 +1855,61 @@ router.post('/leads/score', authenticateToken, async (req, res) => {
     
     try {
         // Get leads that haven't been scored recently
-        const leads = await new Promise((resolve, reject) => {
-            try {
-    const { data: rows, error: err } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-                else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-        });
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const { data: leads, error: leadsError } = await supabase
+            .from('leads')
+            .select(`
+                *,
+                lead_scores!left (
+                    id,
+                    scored_at
+                )
+            `)
+            .eq('user_id', userId)
+            .is('lead_scores.id', null)
+            .order('created_at', { ascending: false })
+            .limit(50);
+        
+        if (leadsError) throw leadsError;
 
         let hotLeads = 0;
 
-        for (const lead of leads) {
+        for (const lead of leads || []) {
             // Generate a score based on lead data
             const score = Math.floor(Math.random() * 40) + 60; // Random score between 60-100
             
             if (score > 80) hotLeads++;
 
             // Save lead score
-            db.run(
-                `INSERT INTO lead_scores (user_id, lead_id, score, criteria, scored_at) VALUES (?, ?, ?, ?, ?)`,
-                [userId, lead.id, score, JSON.stringify({ source: 'ai', model: 'auto' }), new Date().toISOString()]
-            );
+            await supabase
+                .from('lead_scores')
+                .insert([{
+                    user_id: userId,
+                    lead_id: lead.id,
+                    score: score,
+                    criteria: { source: 'ai', model: 'auto' },
+                    scored_at: new Date().toISOString()
+                }]);
         }
 
         // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'lead_scoring', `Found ${hotLeads} hot leads`, 'leads', new Date().toISOString()]);
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'lead_scoring',
+                details: `Found ${hotLeads} hot leads`,
+                type: 'leads',
+                timestamp: new Date().toISOString()
+            }]);
 
         res.json({ 
             success: true,
             hotLeads: hotLeads,
-            scored: leads.length,
-            message: `Scored ${leads.length} leads, found ${hotLeads} hot leads`
+            scored: leads?.length || 0,
+            message: `Scored ${leads?.length || 0} leads, found ${hotLeads} hot leads`
         });
 
     } catch (error) {
@@ -1732,40 +1932,41 @@ router.post('/agents/deploy', authenticateToken, async (req, res) => {
         const agentId = 'agent_' + uuidv4().substring(0, 8);
 
         // Save agent to database
-        db.run(
-            `INSERT INTO automations (id, user_id, name, description, trigger_type, action_type, status, created_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                agentId, 
-                userId, 
-                `${type}-${agentId}`, 
-                `AI agent for ${type} automation`,
-                'manual',
-                type,
-                'active',
-                new Date().toISOString()
-            ],
-            (err) => {
-                if (err) {
-                    console.error("Error saving agent:", err);
-                    return res.status(500).json({ error: "Failed to deploy agent" });
-                }
+        const { error } = await supabase
+            .from('automations')
+            .insert([{
+                id: agentId,
+                user_id: userId,
+                name: `${type}-${agentId}`,
+                description: `AI agent for ${type} automation`,
+                trigger_type: 'manual',
+                action_type: type,
+                status: 'active',
+                created_at: new Date().toISOString()
+            }]);
 
-                // Log activity
-                db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-                    [userId, 'agent_deployed', `${type} agent deployed`, 'agent', new Date().toISOString()]);
+        if (error) throw error;
 
-                res.json({
-                    success: true,
-                    agentId: agentId,
-                    agentType: type,
-                    message: `${type} agent deployed and active`,
-                    tasks: Math.floor(Math.random() * 20) + 5,
-                    status: 'active',
-                    deployed_at: new Date().toISOString()
-                });
-            }
-        );
+        // Log activity
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'agent_deployed',
+                details: `${type} agent deployed`,
+                type: 'agent',
+                timestamp: new Date().toISOString()
+            }]);
+
+        res.json({
+            success: true,
+            agentId: agentId,
+            agentType: type,
+            message: `${type} agent deployed and active`,
+            tasks: Math.floor(Math.random() * 20) + 5,
+            status: 'active',
+            deployed_at: new Date().toISOString()
+        });
 
     } catch (error) {
         console.error("Agent deploy error:", error);
@@ -1780,28 +1981,32 @@ router.post('/prices/scan', authenticateToken, async (req, res) => {
     
     try {
         // Get user's connected e-commerce platforms
-        const accounts = await new Promise((resolve, reject) => {
-            db.all(
-                `SELECT * FROM connected_accounts WHERE user_id = ? AND platform IN ('shopify', 'woocommerce', 'amazon')`,
-                [userId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
+        const { data: accounts, error: accountsError } = await supabase
+            .from('connected_accounts')
+            .select('*')
+            .eq('user_id', userId)
+            .in('platform', ['shopify', 'woocommerce', 'amazon']);
+        
+        if (accountsError) throw accountsError;
 
-        let totalProducts = accounts.length * 10; // Mock data
+        let totalProducts = (accounts?.length || 0) * 10; // Mock data
         let priceDrops = Math.floor(Math.random() * 5) + 1;
         let opportunities = Math.floor(Math.random() * 3);
 
         // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, type, timestamp) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'price_scan', `Found ${priceDrops} price drops`, 'pricing', new Date().toISOString()]);
+        await supabase
+            .from('activity_log')
+            .insert([{
+                user_id: userId,
+                action: 'price_scan',
+                details: `Found ${priceDrops} price drops`,
+                type: 'pricing',
+                timestamp: new Date().toISOString()
+            }]);
 
         res.json({
             success: true,
-            competitors_analyzed: accounts.length,
+            competitors_analyzed: accounts?.length || 0,
             price_drops: priceDrops,
             opportunities: opportunities,
             products_scanned: totalProducts,

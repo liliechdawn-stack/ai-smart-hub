@@ -1,194 +1,401 @@
 // api/analytics-routes.js
-const dbModule = require('../backend/database');
-const { db } = dbModule;
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../backend/auth');
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ ANALYTICS ROUTES: Missing Supabase credentials');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Helper function to execute multiple promises in parallel
+const promiseAll = async (promises) => {
+    return Promise.all(promises.map(p => p.catch(e => {
+        console.error('Promise error:', e);
+        return null;
+    })));
+};
 
 // ================= DASHBOARD ANALYTICS =================
-router.get('/dashboard', auth, (req, res) => {
+router.get('/dashboard', auth, async (req, res) => {
     const userId = req.user.id;
     
-    // Get comprehensive analytics for the dashboard
-    const queries = {
-        automationStats: `SELECT 
-            COUNT(*) as total_automations,
-            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_automations,
-            SUM(CASE WHEN status = 'paused' THEN 1 ELSE 0 END) as paused_automations,
-            SUM(trigger_count) as total_triggers,
-            SUM(success_count) as total_success,
-            AVG(success_count * 100.0 / NULLIF(trigger_count, 0)) as avg_success_rate
-        FROM automations WHERE user_id = ?`,
+    try {
+        // Execute all queries in parallel
+        const [statsResult, recentRunsResult, performanceResult, topAutomationsResult, platformStatsResult] = await promiseAll([
+            // Automation Stats
+            (async () => {
+                const { data, error } = await supabase
+                    .from('automations')
+                    .select('status, trigger_count, success_count')
+                    .eq('user_id', userId);
+                
+                if (error) throw error;
+                
+                const stats = {
+                    total_automations: data?.length || 0,
+                    active_automations: data?.filter(a => a.status === 'active').length || 0,
+                    paused_automations: data?.filter(a => a.status === 'paused').length || 0,
+                    total_triggers: data?.reduce((sum, a) => sum + (a.trigger_count || 0), 0) || 0,
+                    total_success: data?.reduce((sum, a) => sum + (a.success_count || 0), 0) || 0,
+                    avg_success_rate: 0
+                };
+                
+                if (stats.total_triggers > 0) {
+                    stats.avg_success_rate = (stats.total_success / stats.total_triggers) * 100;
+                }
+                
+                return stats;
+            })(),
+            
+            // Recent Runs
+            (async () => {
+                const { data, error } = await supabase
+                    .from('automation_runs')
+                    .select(`
+                        *,
+                        automations!inner (
+                            name
+                        )
+                    `)
+                    .eq('user_id', userId)
+                    .order('completed_at', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                return (data || []).map(run => ({
+                    ...run,
+                    automation_name: run.automations?.name
+                }));
+            })(),
+            
+            // Daily Performance (last 30 days)
+            (async () => {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                
+                const { data, error } = await supabase
+                    .from('automation_runs')
+                    .select('completed_at, status, duration')
+                    .eq('user_id', userId)
+                    .gte('completed_at', thirtyDaysAgo.toISOString());
+                
+                if (error) throw error;
+                
+                // Group by date manually since Supabase doesn't have SQLite's date functions
+                const dailyData = {};
+                (data || []).forEach(run => {
+                    if (!run.completed_at) return;
+                    
+                    const date = run.completed_at.split('T')[0];
+                    if (!dailyData[date]) {
+                        dailyData[date] = {
+                            date,
+                            runs: 0,
+                            successes: 0,
+                            total_duration: 0
+                        };
+                    }
+                    
+                    dailyData[date].runs++;
+                    if (run.status === 'success' || run.status === 'completed') {
+                        dailyData[date].successes++;
+                    }
+                    if (run.duration) {
+                        dailyData[date].total_duration += run.duration;
+                    }
+                });
+                
+                return Object.values(dailyData).map(day => ({
+                    ...day,
+                    avg_duration: day.runs > 0 ? day.total_duration / day.runs : 0
+                })).sort((a, b) => a.date.localeCompare(b.date));
+            })(),
+            
+            // Top Automations
+            (async () => {
+                const { data, error } = await supabase
+                    .from('automations')
+                    .select('id, name, trigger_count, success_count')
+                    .eq('user_id', userId)
+                    .order('trigger_count', { ascending: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                return (data || []).map(auto => ({
+                    ...auto,
+                    success_rate: auto.trigger_count > 0 
+                        ? (auto.success_count / auto.trigger_count) * 100 
+                        : 0
+                }));
+            })(),
+            
+            // Platform Stats
+            (async () => {
+                const { data, error } = await supabase
+                    .from('connected_accounts')
+                    .select('platform, status')
+                    .eq('user_id', userId);
+                
+                if (error) throw error;
+                
+                const platformStats = {};
+                (data || []).forEach(account => {
+                    if (!platformStats[account.platform]) {
+                        platformStats[account.platform] = {
+                            platform: account.platform,
+                            account_count: 0,
+                            active_accounts: 0
+                        };
+                    }
+                    
+                    platformStats[account.platform].account_count++;
+                    if (account.status === 'active') {
+                        platformStats[account.platform].active_accounts++;
+                    }
+                });
+                
+                return Object.values(platformStats);
+            })()
+        ]);
         
-        recentRuns: `SELECT ar.*, a.name as automation_name 
-            FROM automation_runs ar
-            JOIN automations a ON ar.automation_id = a.id
-            WHERE ar.user_id = ?
-            ORDER BY ar.completed_at DESC LIMIT 10`,
-        
-        dailyPerformance: `SELECT 
-            date(completed_at) as date,
-            COUNT(*) as runs,
-            SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successes,
-            AVG(duration) as avg_duration
-        FROM automation_runs
-        WHERE user_id = ? AND completed_at >= datetime('now', '-30 days')
-        GROUP BY date(completed_at)
-        ORDER BY date ASC`,
-        
-        topAutomations: `SELECT 
-            id, name, trigger_count, success_count,
-            (success_count * 100.0 / NULLIF(trigger_count, 0)) as success_rate
-        FROM automations
-        WHERE user_id = ?
-        ORDER BY trigger_count DESC LIMIT 5`,
-        
-        platformStats: `SELECT 
-            platform,
-            COUNT(*) as account_count,
-            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_accounts
-        FROM connected_accounts
-        WHERE user_id = ?
-        GROUP BY platform`
-    };
-    
-    // Execute all queries in parallel
-    Promise.all([
-        new Promise((resolve) => db.get(queries.automationStats, [userId], (_, row) => resolve(row || {}))),
-        new Promise((resolve) => db.all(queries.recentRuns, [userId], (_, rows) => resolve(rows || []))),
-        new Promise((resolve) => db.all(queries.dailyPerformance, [userId], (_, rows) => resolve(rows || []))),
-        new Promise((resolve) => db.all(queries.topAutomations, [userId], (_, rows) => resolve(rows || []))),
-        new Promise((resolve) => db.all(queries.platformStats, [userId], (_, rows) => resolve(rows || [])))
-    ]).then(([stats, recentRuns, performance, topAutomations, platformStats]) => {
         res.json({
             success: true,
-            stats,
-            recentRuns,
-            performance,
-            topAutomations,
-            platformStats
+            stats: statsResult || {},
+            recentRuns: recentRunsResult || [],
+            performance: performanceResult || [],
+            topAutomations: topAutomationsResult || [],
+            platformStats: platformStatsResult || []
         });
-    }).catch(err => {
-        console.error('Analytics error:', err);
+    } catch (error) {
+        console.error('Analytics error:', error);
         res.status(500).json({ error: 'Failed to fetch analytics' });
-    });
+    }
 });
 
 // ================= PERFORMANCE METRICS =================
-router.get('/performance', auth, (req, res) => {
+router.get('/performance', auth, async (req, res) => {
     const userId = req.user.id;
     const { days = 7 } = req.query;
     
-    db.all(`
-        SELECT 
-            date(completed_at) as date,
-            COUNT(*) as total_runs,
-            SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successful_runs,
-            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_runs,
-            AVG(duration) as avg_duration_ms,
-            SUM(duration) as total_duration_ms
-        FROM automation_runs
-        WHERE user_id = ? AND completed_at >= datetime('now', '-' || ? || ' days')
-        GROUP BY date(completed_at)
-        ORDER BY date ASC
-    `, [userId, days], (err, rows) => {
-        if (err) {
-            console.error('Performance error:', err);
-            return res.status(500).json({ error: 'Failed to fetch performance data' });
-        }
-        res.json(rows || []);
-    });
+    try {
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+        
+        const { data, error } = await supabase
+            .from('automation_runs')
+            .select('completed_at, status, duration')
+            .eq('user_id', userId)
+            .gte('completed_at', daysAgo.toISOString());
+        
+        if (error) throw error;
+        
+        // Group by date
+        const dailyData = {};
+        (data || []).forEach(run => {
+            if (!run.completed_at) return;
+            
+            const date = run.completed_at.split('T')[0];
+            if (!dailyData[date]) {
+                dailyData[date] = {
+                    date,
+                    total_runs: 0,
+                    successful_runs: 0,
+                    failed_runs: 0,
+                    total_duration_ms: 0,
+                    runs_with_duration: 0
+                };
+            }
+            
+            dailyData[date].total_runs++;
+            if (run.status === 'success' || run.status === 'completed') {
+                dailyData[date].successful_runs++;
+            } else if (run.status === 'failed') {
+                dailyData[date].failed_runs++;
+            }
+            
+            if (run.duration) {
+                dailyData[date].total_duration_ms += run.duration;
+                dailyData[date].runs_with_duration++;
+            }
+        });
+        
+        const result = Object.values(dailyData).map(day => ({
+            ...day,
+            avg_duration_ms: day.runs_with_duration > 0 
+                ? day.total_duration_ms / day.runs_with_duration 
+                : 0
+        })).sort((a, b) => a.date.localeCompare(b.date));
+        
+        res.json(result);
+    } catch (error) {
+        console.error('Performance error:', error);
+        return res.status(500).json({ error: 'Failed to fetch performance data' });
+    }
 });
 
 // ================= AUTOMATION SUCCESS RATES =================
-router.get('/success-rates', auth, (req, res) => {
+router.get('/success-rates', auth, async (req, res) => {
     const userId = req.user.id;
     
-    db.all(`
-        SELECT 
-            a.id,
-            a.name,
-            a.trigger_count,
-            a.success_count,
-            ROUND(a.success_count * 100.0 / NULLIF(a.trigger_count, 0), 2) as success_rate,
-            a.last_run,
-            a.status
-        FROM automations a
-        WHERE a.user_id = ?
-        ORDER BY success_rate DESC
-    `, [userId], (err, rows) => {
-        if (err) {
-            console.error('Success rates error:', err);
-            return res.status(500).json({ error: 'Failed to fetch success rates' });
-        }
-        res.json(rows || []);
-    });
+    try {
+        const { data, error } = await supabase
+            .from('automations')
+            .select('id, name, trigger_count, success_count, last_run, status')
+            .eq('user_id', userId)
+            .order('trigger_count', { ascending: false });
+        
+        if (error) throw error;
+        
+        const result = (data || []).map(auto => ({
+            ...auto,
+            success_rate: auto.trigger_count > 0 
+                ? parseFloat(((auto.success_count / auto.trigger_count) * 100).toFixed(2))
+                : 0
+        }));
+        
+        res.json(result);
+    } catch (error) {
+        console.error('Success rates error:', error);
+        return res.status(500).json({ error: 'Failed to fetch success rates' });
+    }
 });
 
 // ================= TIME-SERIES DATA FOR CHARTS =================
-router.get('/timeseries', auth, (req, res) => {
+router.get('/timeseries', auth, async (req, res) => {
     const userId = req.user.id;
     const { metric = 'runs', interval = 'day' } = req.query;
     
-    let timeFormat = '';
-    let groupBy = '';
-    
-    switch(interval) {
-        case 'hour':
-            timeFormat = '%H:00';
-            groupBy = 'strftime("%H", completed_at)';
-            break;
-        case 'day':
-            timeFormat = '%Y-%m-%d';
-            groupBy = 'date(completed_at)';
-            break;
-        case 'week':
-            timeFormat = '%Y-%W';
-            groupBy = 'strftime("%Y-%W", completed_at)';
-            break;
-        case 'month':
-            timeFormat = '%Y-%m';
-            groupBy = 'strftime("%Y-%m", completed_at)';
-            break;
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const { data, error } = await supabase
+            .from('automation_runs')
+            .select('completed_at, status, duration')
+            .eq('user_id', userId)
+            .gte('completed_at', thirtyDaysAgo.toISOString());
+        
+        if (error) throw error;
+        
+        // Group by time period based on interval
+        const groupedData = {};
+        
+        (data || []).forEach(run => {
+            if (!run.completed_at) return;
+            
+            const date = new Date(run.completed_at);
+            let timePeriod;
+            
+            switch(interval) {
+                case 'hour':
+                    timePeriod = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00`;
+                    break;
+                case 'week': {
+                    const firstDay = new Date(date.setDate(date.getDate() - date.getDay()));
+                    timePeriod = `${firstDay.getFullYear()}-W${Math.ceil((firstDay.getDate() + new Date(firstDay.getFullYear(), firstDay.getMonth(), 1).getDay()) / 7)}`;
+                    break;
+                }
+                case 'month':
+                    timePeriod = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    break;
+                case 'day':
+                default:
+                    timePeriod = run.completed_at.split('T')[0];
+                    break;
+            }
+            
+            if (!groupedData[timePeriod]) {
+                groupedData[timePeriod] = {
+                    time_period: timePeriod,
+                    count: 0,
+                    total_duration: 0,
+                    successes: 0
+                };
+            }
+            
+            groupedData[timePeriod].count++;
+            if (run.status === 'success' || run.status === 'completed') {
+                groupedData[timePeriod].successes++;
+            }
+            if (run.duration) {
+                groupedData[timePeriod].total_duration += run.duration;
+            }
+        });
+        
+        // Calculate value based on requested metric
+        const result = Object.values(groupedData).map(item => {
+            let value;
+            switch(metric) {
+                case 'duration':
+                    value = item.count > 0 ? item.total_duration / item.count : 0;
+                    break;
+                case 'success':
+                    value = item.successes;
+                    break;
+                case 'runs':
+                default:
+                    value = item.count;
+                    break;
+            }
+            
+            return {
+                time_period: item.time_period,
+                value
+            };
+        }).sort((a, b) => a.time_period.localeCompare(b.time_period));
+        
+        res.json(result);
+    } catch (error) {
+        console.error('Timeseries error:', error);
+        return res.status(500).json({ error: 'Failed to fetch timeseries data' });
     }
-    
-    let valueField = 'COUNT(*)';
-    if (metric === 'duration') valueField = 'AVG(duration)';
-    if (metric === 'success') valueField = 'SUM(CASE WHEN status = "success" THEN 1 ELSE 0 END)';
-    
-    db.all(`
-        SELECT 
-            ${groupBy} as time_period,
-            ${valueField} as value
-        FROM automation_runs
-        WHERE user_id = ? AND completed_at >= datetime('now', '-30 days')
-        GROUP BY ${groupBy}
-        ORDER BY time_period ASC
-    `, [userId], (err, rows) => {
-        if (err) {
-            console.error('Timeseries error:', err);
-            return res.status(500).json({ error: 'Failed to fetch timeseries data' });
-        }
-        res.json(rows || []);
-    });
 });
 
 // ================= COST ANALYTICS =================
-router.get('/costs', auth, (req, res) => {
+router.get('/costs', auth, async (req, res) => {
     const userId = req.user.id;
     
-    db.get(`
-        SELECT 
-            COUNT(*) as total_api_calls,
-            SUM(duration) as total_compute_ms,
-            COUNT(DISTINCT automation_id) as automations_used
-        FROM automation_runs
-        WHERE user_id = ? AND completed_at >= datetime('now', '-30 days')
-    `, [userId], (err, usage) => {
-        if (err) {
-            console.error('Cost analytics error:', err);
-            return res.status(500).json({ error: 'Failed to fetch cost data' });
-        }
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const { data: runs, error: runsError } = await supabase
+            .from('automation_runs')
+            .select('duration, automation_id')
+            .eq('user_id', userId)
+            .gte('completed_at', thirtyDaysAgo.toISOString());
+        
+        if (runsError) throw runsError;
+        
+        // Get unique automation IDs
+        const uniqueAutomations = new Set();
+        let totalDuration = 0;
+        let totalRuns = 0;
+        
+        (runs || []).forEach(run => {
+            if (run.automation_id) {
+                uniqueAutomations.add(run.automation_id);
+            }
+            if (run.duration) {
+                totalDuration += run.duration;
+            }
+            totalRuns++;
+        });
+        
+        const usage = {
+            total_api_calls: totalRuns,
+            total_compute_ms: totalDuration,
+            automations_used: uniqueAutomations.size
+        };
         
         // Estimate costs (you can adjust these rates)
         const estimatedCost = {
@@ -203,7 +410,10 @@ router.get('/costs', auth, (req, res) => {
             estimatedCost,
             currency: 'USD'
         });
-    });
+    } catch (error) {
+        console.error('Cost analytics error:', error);
+        return res.status(500).json({ error: 'Failed to fetch cost data' });
+    }
 });
 
 module.exports = router;
