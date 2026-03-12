@@ -69,6 +69,24 @@
             z-index: 1000;
         }
 
+        /* Scrollbar styling for sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: var(--sidebar-hover);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
         .sidebar-header {
             padding: 25px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -92,6 +110,7 @@
         .sidebar-menu {
             list-style: none;
             padding: 0 15px;
+            margin-bottom: 100px; /* Space for profile */
         }
 
         .sidebar-menu li {
@@ -131,13 +150,38 @@
             color: var(--primary);
         }
 
+        /* About button special styling */
+        .sidebar-menu .about-link {
+            margin-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px;
+        }
+
+        .sidebar-menu .about-link a {
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .sidebar-menu .about-link a:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        .sidebar-menu .about-link a i {
+            color: var(--primary);
+        }
+
+        .sidebar-menu .about-link a:hover i {
+            color: white;
+        }
+
         .sidebar-profile {
-            position: absolute;
+            position: sticky;
             bottom: 0;
             width: 100%;
             padding: 20px 15px;
             border-top: 1px solid rgba(255,255,255,0.1);
             background: var(--sidebar-bg);
+            margin-top: 20px;
         }
 
         .profile-trigger {
@@ -877,66 +921,152 @@
             color: var(--gray);
         }
 
-        /* ========== WHO IS THIS FOR SECTION ========== */
+        /* ========== WHO IS THIS FOR SECTION - ENHANCED ========== */
         .target-audience-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
             margin-top: 20px;
         }
 
         .audience-card {
             background: var(--light);
-            padding: 25px 20px;
-            border-radius: 16px;
+            padding: 30px 25px;
+            border-radius: 20px;
             text-align: center;
             transition: var(--transition);
             border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
         }
 
         .audience-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
             border-color: var(--primary);
             box-shadow: var(--shadow-hover);
         }
 
+        .audience-card.featured::before {
+            content: '⭐ MOST POPULAR';
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: var(--primary);
+            color: white;
+            padding: 5px 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transform: rotate(45deg);
+        }
+
         .audience-icon {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background: rgba(212, 175, 55, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 15px;
+            margin: 0 auto 20px;
+            transition: var(--transition);
+        }
+
+        .audience-card:hover .audience-icon {
+            background: var(--primary);
+        }
+
+        .audience-card:hover .audience-icon i {
+            color: white;
         }
 
         .audience-icon i {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: var(--primary);
+            transition: var(--transition);
         }
 
         .audience-card h4 {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
             color: var(--dark);
+            font-weight: 700;
         }
 
         .audience-card p {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--gray);
-            line-height: 1.5;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .audience-features {
+            list-style: none;
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .audience-features li {
+            padding: 8px 0;
+            font-size: 0.9rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .audience-features li i {
+            color: var(--primary);
+            font-size: 0.9rem;
+            width: 20px;
         }
 
         .audience-badge {
             display: inline-block;
             background: var(--primary);
             color: white;
-            padding: 4px 12px;
+            padding: 6px 16px;
             border-radius: 30px;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-top: 10px;
+            margin-top: 15px;
+        }
+
+        .audience-cta {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .audience-cta .btn-small {
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            border-radius: 30px;
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .audience-cta .btn-small:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Content Creator specific styling */
+        .audience-card.creator-card {
+            background: linear-gradient(135deg, #fff9e6, #ffffff);
+            border: 2px solid var(--primary);
+        }
+
+        .audience-card.creator-card .audience-icon {
+            background: var(--primary);
+        }
+
+        .audience-card.creator-card .audience-icon i {
+            color: white;
         }
 
         /* ========== FOOTER ========== */
@@ -966,6 +1096,11 @@
             margin-bottom: 15px;
         }
 
+        .grid {
+            display: grid;
+            gap: 25px;
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .sidebar {
@@ -991,7 +1126,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Facebook-style Sidebar -->
+        <!-- Facebook-style Sidebar with Scrollbar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>
@@ -1054,6 +1189,21 @@
                     <a href="ai-automations.html">
                         <i class="fas fa-bolt"></i>
                         <span>AI Automations</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="ai-powerhouse.html">
+                        <i class="fas fa-bolt"></i>
+                        <span>AI Powerhouse 2.0</span>
+                        <span class="badge" style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: auto;">ULTIMATE</span>
+                    </a>
+                </li>
+                <!-- About Button (NEW) -->
+                <li class="about-link">
+                    <a href="about.html">
+                        <i class="fas fa-info-circle"></i>
+                        <span>About</span>
+                        <span class="badge" style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: auto;">NEW</span>
                     </a>
                 </li>
             </ul>
@@ -1192,60 +1342,126 @@
 
             <!-- Dashboard Section (default view) -->
             <div id="dashboardSection">
-                <!-- NEW: Who Is This For Section -->
+                <!-- ENHANCED: Who Is This For Section - Focused on Content Creators & Automation Users -->
                 <div class="section-card">
                     <div class="section-header">
-                        <h2><i class="fas fa-users"></i> Who Is AI Smart Hub For?</h2>
-                        <span class="badge" style="background: var(--primary); color: white; padding: 5px 15px; border-radius: 30px;">Perfect For You</span>
+                        <h2><i class="fas fa-users"></i> Who Is AI Powerhouse For?</h2>
+                        <span class="badge" style="background: var(--primary); color: white; padding: 5px 15px; border-radius: 30px;">Choose Your Path</span>
                     </div>
                     <div class="target-audience-grid">
+                        <!-- Content Creators - Featured Card -->
+                        <div class="audience-card creator-card featured">
+                            <div class="audience-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <h4>🎬 Content Creators</h4>
+                            <p>Supercharge your content creation with AI-powered tools that work 24/7 to grow your audience and revenue.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> Generate viral video scripts for TikTok, Reels & YouTube</li>
+                                <li><i class="fas fa-check-circle"></i> Create stunning thumbnails with AI image generation</li>
+                                <li><i class="fas fa-check-circle"></i> Auto-schedule posts at peak engagement times</li>
+                                <li><i class="fas fa-check-circle"></i> Generate trending hashtags and captions</li>
+                                <li><i class="fas fa-check-circle"></i> Track influencer collaborations and engagement</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="ai-powerhouse.html" class="btn-small">🚀 Start Creating</a>
+                            </div>
+                            <span class="audience-badge">10K+ creators</span>
+                        </div>
+
+                        <!-- Social Media Managers -->
                         <div class="audience-card">
                             <div class="audience-icon">
-                                <i class="fas fa-store"></i>
+                                <i class="fas fa-hashtag"></i>
                             </div>
-                            <h4>Small & Large Businesses</h4>
-                            <p>Automate customer support, capture leads 24/7, and scale your business operations without hiring more staff.</p>
-                            <span class="audience-badge">200+ businesses</span>
-                        </div>
-                        <div class="audience-card">
-                            <div class="audience-icon">
-                                <i class="fas fa-bullhorn"></i>
+                            <h4>📱 Social Media Managers</h4>
+                            <p>Manage multiple platforms from one dashboard with AI-powered scheduling and analytics.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> Schedule across 12+ platforms (TikTok, IG, YouTube)</li>
+                                <li><i class="fas fa-check-circle"></i> AI-optimized posting times for maximum reach</li>
+                                <li><i class="fas fa-check-circle"></i> Real-time engagement tracking and alerts</li>
+                                <li><i class="fas fa-check-circle"></i> Auto-respond to comments and DMs</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="ai-automations.html" class="btn-small">📊 Start Managing</a>
                             </div>
-                            <h4>Marketing Agencies</h4>
-                            <p>Offer AI chatbots as a service to your clients. White-label ready and easy to manage multiple accounts.</p>
-                            <span class="audience-badge">50+ agencies</span>
+                            <span class="audience-badge">5K+ managers</span>
                         </div>
-                        <div class="audience-card">
-                            <div class="audience-icon">
-                                <i class="fas fa-school"></i>
-                            </div>
-                            <h4>Schools & Education</h4>
-                            <p>Answer parent inquiries, provide course information, and handle admissions automatically 24/7.</p>
-                            <span class="audience-badge">30+ schools</span>
-                        </div>
+
+                        <!-- E-commerce Businesses -->
                         <div class="audience-card">
                             <div class="audience-icon">
                                 <i class="fas fa-shopping-cart"></i>
                             </div>
-                            <h4>Online Stores</h4>
-                            <p>Recover abandoned carts, answer product questions, and increase sales with AI-powered recommendations.</p>
-                            <span class="audience-badge">500+ stores</span>
+                            <h4>🛍️ E-commerce Stores</h4>
+                            <p>Boost sales with AI-powered shopping assistants and automated recovery systems.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> 24/7 AI shopping assistant for customer queries</li>
+                                <li><i class="fas fa-check-circle"></i> Abandoned cart recovery automation</li>
+                                <li><i class="fas fa-check-circle"></i> Real-time inventory tracking across platforms</li>
+                                <li><i class="fas fa-check-circle"></i> Price intelligence and competitor monitoring</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="smart-tools.html" class="btn-small">🛒 Start Selling</a>
+                            </div>
+                            <span class="audience-badge">15K+ stores</span>
                         </div>
+
+                        <!-- Marketing Agencies -->
                         <div class="audience-card">
                             <div class="audience-icon">
-                                <i class="fas fa-rocket"></i>
+                                <i class="fas fa-bullhorn"></i>
                             </div>
-                            <h4>Startups</h4>
-                            <p>Validate ideas, gather customer feedback, and provide instant support while you focus on building.</p>
-                            <span class="audience-badge">1,000+ startups</span>
+                            <h4>🏢 Marketing Agencies</h4>
+                            <p>Scale your agency with white-label AI tools for multiple clients.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> Manage 100+ client accounts from one dashboard</li>
+                                <li><i class="fas fa-check-circle"></i> White-label reporting and analytics</li>
+                                <li><i class="fas fa-check-circle"></i> Bulk content creation and scheduling</li>
+                                <li><i class="fas fa-check-circle"></i> API access for custom integrations</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="pricing.html" class="btn-small">🚀 Scale Your Agency</a>
+                            </div>
+                            <span class="audience-badge">2K+ agencies</span>
                         </div>
+
+                        <!-- Small Businesses -->
                         <div class="audience-card">
                             <div class="audience-icon">
-                                <i class="fas fa-building"></i>
+                                <i class="fas fa-store"></i>
                             </div>
-                            <h4>Organizations</h4>
-                            <p>Non-profits, associations, and clubs can engage members, handle donations, and share updates automatically.</p>
-                            <span class="audience-badge">100+ orgs</span>
+                            <h4>🏪 Small Businesses</h4>
+                            <p>Automate customer support and lead generation 24/7 without hiring more staff.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> AI chatbot that answers customer questions 24/7</li>
+                                <li><i class="fas fa-check-circle"></i> Capture and score leads automatically</li>
+                                <li><i class="fas fa-check-circle"></i> Send personalized email sequences</li>
+                                <li><i class="fas fa-check-circle"></i> Track customer sentiment in real-time</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="customer-insights.html" class="btn-small">💼 Start Growing</a>
+                            </div>
+                            <span class="audience-badge">50K+ businesses</span>
+                        </div>
+
+                        <!-- Video Producers -->
+                        <div class="audience-card">
+                            <div class="audience-icon">
+                                <i class="fas fa-film"></i>
+                            </div>
+                            <h4>🎥 Video Producers</h4>
+                            <p>Create engaging video content faster with AI-powered script writing and editing tools.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> Generate video scripts for any length (15s-10min)</li>
+                                <li><i class="fas fa-check-circle"></i> Auto-generate captions and subtitles</li>
+                                <li><i class="fas fa-check-circle"></i> AI thumbnail generation from video content</li>
+                                <li><i class="fas fa-check-circle"></i> Trend analysis and topic suggestions</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="ai-powerhouse.html" class="btn-small">🎬 Start Creating</a>
+                            </div>
+                            <span class="audience-badge">8K+ producers</span>
                         </div>
                     </div>
                 </div>
@@ -1411,7 +1627,7 @@
 
             <!-- Footer -->
             <div class="footer">
-                <p>&copy; 2026 AI Smart Hub. All rights reserved.</p>
+                <p>&copy; 2026 AI Smart Hub. All rights reserved. | <a href="about.html" style="color: var(--primary); text-decoration: none;">About</a> | <a href="privacy.html" style="color: var(--gray); text-decoration: none;">Privacy</a> | <a href="terms.html" style="color: var(--gray); text-decoration: none;">Terms</a></p>
             </div>
         </main>
     </div>

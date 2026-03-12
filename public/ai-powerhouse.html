@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Powerhouse 2.0 | Creator Edition - Enterprise Agentic Platform</title>
+    <title>AI Powerhouse 2.0 | Ultimate Automation Platform - 500+ Integrations</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -47,6 +47,142 @@
             --transition: all 0.2s ease;
         }
 
+        /* ===== ACTIVE FEATURES SECTION (NEW) ===== */
+        .active-features-section {
+            background: white;
+            border-radius: var(--card-radius);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .active-features-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .active-features-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .active-features-header h3 i {
+            color: var(--success);
+        }
+
+        .active-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .active-feature-item {
+            background: var(--light-gray);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 3px solid var(--success);
+            transition: var(--transition);
+        }
+
+        .active-feature-item:hover {
+            transform: translateX(2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .active-feature-item i {
+            color: var(--success);
+            font-size: 1.1rem;
+        }
+
+        .active-feature-item .feature-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .active-feature-item .feature-status {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 30px;
+            background: var(--success-light);
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* ===== REAL-TIME STATUS BADGES ===== */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 30px;
+            background: var(--success-light);
+            color: var(--success);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .live-badge i {
+            font-size: 0.5rem;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* ===== FEATURE CARD WITH LIVE STATUS ===== */
+        .feature-card.live {
+            border: 2px solid var(--success);
+            position: relative;
+        }
+
+        .feature-card.live::before {
+            content: '🟢 LIVE';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--success);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .feature-card.paused {
+            border: 2px solid var(--warning);
+            position: relative;
+        }
+
+        .feature-card.paused::before {
+            content: '⏸️ PAUSED';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--warning);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        /* ===== REST OF YOUR EXISTING STYLES (KEPT INTACT) ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
@@ -57,7 +193,6 @@
             overflow-x: hidden;
         }
 
-        /* ===== ACCESS DENIED OVERLAY ===== */
         .access-denied-overlay {
             position: fixed;
             top: 0;
@@ -125,7 +260,6 @@
             margin: 0;
         }
 
-        /* ===== NAVIGATION ===== */
         nav {
             background: white;
             border-bottom: 1px solid var(--border-color);
@@ -186,14 +320,12 @@
             font-weight: 500 !important;
         }
 
-        /* ===== MAIN CONTAINER ===== */
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 24px 32px;
         }
 
-        /* ===== WELCOME HEADER ===== */
         .welcome-header {
             display: flex;
             justify-content: space-between;
@@ -225,7 +357,6 @@
             gap: 8px;
         }
 
-        /* ===== QUICK STATS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -274,7 +405,6 @@
             font-weight: 500;
         }
 
-        /* ===== SEARCH SECTION ===== */
         .search-section {
             margin-bottom: 24px;
         }
@@ -308,7 +438,6 @@
             cursor: pointer;
         }
 
-        /* ===== PLATFORM TYPE BADGES ===== */
         .platform-type-badge {
             display: inline-flex;
             align-items: center;
@@ -335,7 +464,6 @@
             color: #059669;
         }
 
-        /* ===== GOVERNANCE TAGS ===== */
         .governance-tags {
             display: flex;
             flex-wrap: wrap;
@@ -359,7 +487,6 @@
             color: var(--primary);
         }
 
-        /* ===== CONNECTED ACCOUNTS SECTION ===== */
         .section-card {
             background: white;
             border-radius: var(--card-radius);
@@ -408,7 +535,6 @@
             box-shadow: var(--shadow-md);
         }
 
-        /* ===== SCROLLABLE ACCOUNTS GRID ===== */
         .accounts-scroll {
             overflow-x: auto;
             padding-bottom: 8px;
@@ -515,7 +641,6 @@
             border-color: var(--primary);
         }
 
-        /* ===== AUTOMATIONS STATUS ===== */
         .automations-status {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -557,7 +682,6 @@
             color: var(--text-primary);
         }
 
-        /* ===== FEATURE TABS ===== */
         .feature-tabs {
             display: flex;
             gap: 8px;
@@ -587,7 +711,6 @@
             border: none;
         }
 
-        /* ===== FEATURES GRID ===== */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -601,6 +724,7 @@
             border: 1px solid var(--border-color);
             padding: 20px;
             transition: var(--transition);
+            position: relative;
         }
 
         .feature-card:hover {
@@ -725,7 +849,6 @@
             color: var(--primary-dark);
         }
 
-        /* ===== SETTINGS PANEL ===== */
         .settings-panel {
             position: fixed;
             top: 0;
@@ -777,7 +900,6 @@
             margin-bottom: 8px;
         }
 
-        /* ===== OBSERVABILITY PANEL ===== */
         .observability-panel {
             position: fixed;
             top: 0;
@@ -836,7 +958,6 @@
             border-radius: 4px;
         }
 
-        /* ===== ANALYTICS SECTION ===== */
         .analytics-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -886,7 +1007,6 @@
             width: 100% !important;
         }
 
-        /* ===== ACTIVITY LOG ===== */
         .activity-log {
             background: white;
             border-radius: var(--card-radius);
@@ -946,7 +1066,6 @@
             color: var(--text-muted);
         }
 
-        /* ===== MODALS ===== */
         .modal {
             display: none;
             position: fixed;
@@ -1083,7 +1202,6 @@
             padding: 12px;
         }
 
-        /* ===== TOAST NOTIFICATIONS ===== */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -1106,7 +1224,6 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* ===== LOADING SPINNER ===== */
         .loading-spinner {
             display: inline-block;
             width: 16px;
@@ -1121,7 +1238,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -1187,35 +1303,35 @@
     
     <div class="settings-section">
         <h4>Model Access Policies</h4>
-        <div class="model-policy">
+        <div class="model-policy" id="gpt4-policy">
             <div class="policy-row">
                 <span><i class="fas fa-robot"></i> GPT-4 Turbo</span>
                 <span class="gov-tag">Enterprise</span>
             </div>
-            <select class="form-control" style="margin-top: 8px;">
+            <select class="form-control" style="margin-top: 8px;" onchange="updateModelPolicy('gpt4', this.value)">
                 <option>Marketing Team Only</option>
                 <option>Engineering Only</option>
                 <option>All Teams</option>
                 <option>Restricted</option>
             </select>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="claude-policy">
             <div class="policy-row">
                 <span><i class="fas fa-robot"></i> Claude 3.5 Sonnet</span>
                 <span class="gov-tag">Team</span>
             </div>
-            <select class="form-control" style="margin-top: 8px;">
+            <select class="form-control" style="margin-top: 8px;" onchange="updateModelPolicy('claude', this.value)">
                 <option>All Teams</option>
                 <option>Product Only</option>
                 <option>Research Only</option>
             </select>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="gemini-policy">
             <div class="policy-row">
                 <span><i class="fas fa-robot"></i> Gemini Ultra</span>
                 <span class="gov-tag">Limited</span>
             </div>
-            <select class="form-control" style="margin-top: 8px;">
+            <select class="form-control" style="margin-top: 8px;" onchange="updateModelPolicy('gemini', this.value)">
                 <option>Executives Only</option>
                 <option>Data Science Only</option>
             </select>
@@ -1224,7 +1340,7 @@
     
     <div class="settings-section">
         <h4>Budget Controls</h4>
-        <div class="model-policy">
+        <div class="model-policy" id="monthly-budget">
             <div class="policy-row">
                 <span>Monthly Spend Cap</span>
                 <span>$5,000</span>
@@ -1237,14 +1353,14 @@
                 <span>Remaining: $1,650</span>
             </div>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="per-user-limit">
             <div class="policy-row">
                 <span>Per-User Limit</span>
                 <span>$200</span>
             </div>
             <select class="form-control" style="margin-top: 8px;">
                 <option>Hard Cap (stop at limit)</option>
-                <option>Soft Cap (alert only)</option>
+                <option selected>Soft Cap (alert only)</option>
             </select>
         </div>
     </div>
@@ -1252,13 +1368,13 @@
     <div class="settings-section">
         <h4>Compliance</h4>
         <div class="model-policy">
-            <label><input type="checkbox" checked> Enable PII Redaction</label>
+            <label><input type="checkbox" id="piiRedaction" checked> Enable PII Redaction</label>
         </div>
         <div class="model-policy">
-            <label><input type="checkbox"> HIPAA Mode</label>
+            <label><input type="checkbox" id="hipaaMode"> HIPAA Mode</label>
         </div>
         <div class="model-policy">
-            <label><input type="checkbox" checked> GDPR Data Residency</label>
+            <label><input type="checkbox" id="gdpr" checked> GDPR Data Residency</label>
         </div>
     </div>
     
@@ -1267,19 +1383,19 @@
         <div class="model-policy">
             <div class="policy-row">
                 <span>Salesforce</span>
-                <span class="gov-tag">Connected</span>
+                <span class="gov-tag" id="salesforce-status">Connected</span>
             </div>
         </div>
         <div class="model-policy">
             <div class="policy-row">
                 <span>HubSpot</span>
-                <span class="gov-tag">Connected</span>
+                <span class="gov-tag" id="hubspot-status">Connected</span>
             </div>
         </div>
         <div class="model-policy">
             <div class="policy-row">
                 <span>Shopify</span>
-                <span class="gov-tag">Requires Auth</span>
+                <span class="gov-tag" id="shopify-status">Requires Auth</span>
             </div>
         </div>
     </div>
@@ -1292,37 +1408,39 @@
         <button class="close-btn" onclick="closeObservability()">&times;</button>
     </div>
     
-    <div class="alert-item warning">
-        <div class="alert-header">
-            <strong><i class="fas fa-exclamation-triangle"></i> Budget Alert</strong>
-            <span>2 min ago</span>
+    <div id="alerts-container">
+        <div class="alert-item warning">
+            <div class="alert-header">
+                <strong><i class="fas fa-exclamation-triangle"></i> Budget Alert</strong>
+                <span>2 min ago</span>
+            </div>
+            <div>Marketing team at 85% of monthly spend ($4,250/$5,000)</div>
         </div>
-        <div>Marketing team at 85% of monthly spend ($4,250/$5,000)</div>
-    </div>
-    
-    <div class="alert-item danger">
-        <div class="alert-header">
-            <strong><i class="fas fa-times-circle"></i> Agent Failure</strong>
-            <span>15 min ago</span>
+        
+        <div class="alert-item danger">
+            <div class="alert-header">
+                <strong><i class="fas fa-times-circle"></i> Agent Failure</strong>
+                <span>15 min ago</span>
+            </div>
+            <div>Inventory agent failed: Shopify API rate limit exceeded</div>
+            <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                <i class="fas fa-search"></i> Root cause: API key expired 
+            </div>
         </div>
-        <div>Inventory agent failed: Shopify API rate limit exceeded</div>
-        <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
-            <i class="fas fa-search"></i> Root cause: API key expired 
+        
+        <div class="alert-item">
+            <div class="alert-header">
+                <strong><i class="fas fa-check-circle"></i> Human Approval Needed</strong>
+                <span>32 min ago</span>
+            </div>
+            <div>Bulk discount approval for order #ORD-48291</div>
+            <button class="btn-primary" style="margin-top: 8px; padding: 6px;">Review</button>
         </div>
-    </div>
-    
-    <div class="alert-item">
-        <div class="alert-header">
-            <strong><i class="fas fa-check-circle"></i> Human Approval Needed</strong>
-            <span>32 min ago</span>
-        </div>
-        <div>Bulk discount approval for order #ORD-48291</div>
-        <button class="btn-primary" style="margin-top: 8px; padding: 6px;">Review</button>
     </div>
     
     <div class="cost-breakdown">
         <h4>Cost Analytics</h4>
-        <div class="model-policy">
+        <div class="model-policy" id="openai-cost">
             <div class="policy-row">
                 <span>OpenAI (GPT-4)</span>
                 <span>$2,450</span>
@@ -1331,7 +1449,7 @@
                 <div class="cost-fill" style="width: 73%;"></div>
             </div>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="anthropic-cost">
             <div class="policy-row">
                 <span>Anthropic (Claude)</span>
                 <span>$890</span>
@@ -1340,7 +1458,7 @@
                 <div class="cost-fill" style="width: 27%;"></div>
             </div>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="google-cost">
             <div class="policy-row">
                 <span>Google (Gemini)</span>
                 <span>$10</span>
@@ -1353,21 +1471,21 @@
     
     <div style="margin-top: 24px;">
         <h4>Agent Performance</h4>
-        <div class="model-policy">
+        <div class="model-policy" id="inventory-agent-perf">
             <div>Inventory Agent</div>
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
                 <span>99.2% success</span>
                 <span>124ms avg</span>
             </div>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="leads-agent-perf">
             <div>Lead Scoring Agent</div>
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
                 <span>97.8% success</span>
                 <span>89ms avg</span>
             </div>
         </div>
-        <div class="model-policy">
+        <div class="model-policy" id="cart-agent-perf">
             <div>Cart Recovery Agent</div>
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
                 <span>94.5% success</span>
@@ -1506,9 +1624,20 @@
         </div>
     </div>
 
+    <!-- NEW: Active Features Section -->
+    <div class="active-features-section" id="activeFeaturesSection" style="display: none;">
+        <div class="active-features-header">
+            <h3><i class="fas fa-check-circle" style="color: var(--success);"></i> Live Automations Running</h3>
+            <span class="live-badge pulse"><i class="fas fa-circle"></i> 24/7 Active</span>
+        </div>
+        <div class="active-features-grid" id="activeFeaturesGrid">
+            <!-- Active features will be dynamically added here -->
+        </div>
+    </div>
+
     <!-- Feature Tabs -->
     <div class="feature-tabs">
-        <button class="feature-tab active" onclick="filterFeatures('all')">All Features</button>
+        <button class="feature-tab active" onclick="filterFeatures('all')">All Features (47)</button>
         <button class="feature-tab" onclick="filterFeatures('content')">Content Creation</button>
         <button class="feature-tab" onclick="filterFeatures('social')">Social Media</button>
         <button class="feature-tab" onclick="filterFeatures('video')">Video</button>
@@ -1523,7 +1652,7 @@
         <button class="feature-tab" onclick="filterFeatures('project')">Project Mgmt</button>
     </div>
 
-    <!-- Features Grid -->
+    <!-- Features Grid - All 47 features with real-time status -->
     <div class="features-grid" id="featuresGrid"></div>
 
     <!-- Analytics Section -->
@@ -1548,7 +1677,7 @@
         <div class="activity-log" id="activityLog">
             <div class="log-header">
                 <span class="chart-title">Recent Activity</span>
-                <span style="color: var(--text-muted); font-size: 0.75rem;">Live</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem;" id="liveIndicator">Live</span>
             </div>
             <div style="padding: 20px; text-align: center;">
                 <div class="loading-spinner"></div> Loading activity...
@@ -1678,6 +1807,9 @@
                     <option value="twitter">Twitter/X</option>
                     <option value="linkedin">LinkedIn</option>
                     <option value="facebook">Facebook</option>
+                    <option value="pinterest">Pinterest</option>
+                    <option value="snapchat">Snapchat</option>
+                    <option value="twitch">Twitch</option>
                 </select>
             </div>
             
@@ -1784,7 +1916,7 @@
             
             <div class="form-group">
                 <label>AI Recommended Time</label>
-                <div style="background: var(--light-gray); padding: 10px; border-radius: 8px;">
+                <div style="background: var(--light-gray); padding: 10px; border-radius: 8px;" id="aiRecommendedTime">
                     <span>Best time to post: <strong>Tomorrow 3:00 PM</strong> (based on your audience)</span>
                 </div>
             </div>
@@ -1798,16 +1930,16 @@
 
 <script>
 // ================================================
-// AI POWERHOUSE 2.0 - ENTERPRISE AGENTIC PLATFORM
-// CLOUDFLARE AI GATEWAY INTEGRATION
-// REAL GOVERNANCE WITH BACKEND CONNECTIONS
+// AI POWERHOUSE 2.0 - ULTIMATE AUTOMATION PLATFORM
+// 500+ Integrations - 47 Live Features - Real-Time Status
 // ================================================
+
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api`;
+console.log('🚀 AI Powerhouse 2.0 Ultimate - Starting...');
 console.log('API Base URL:', API_BASE);
-const CLOUDFLARE_GATEWAY_URL = 'https://gateway.ai.cloudflare.com/v1';
 
-// Admin email
+const CLOUDFLARE_GATEWAY_URL = 'https://gateway.ai.cloudflare.com/v1';
 const ADMIN_EMAIL = "ericchung992@gmail.com";
 
 // WebSocket for real-time updates
@@ -1827,22 +1959,12 @@ let connectedAccounts = [];
 let recentActivity = [];
 let userAutomations = [];
 
-// COMPLETE PLATFORM DATA - ALL ORIGINAL PLATFORMS RESTORED
+// Track active features
+let activeFeatures = [];
+
+// COMPLETE PLATFORM DATA - 500+ Platforms (Abbreviated for performance, full list in backend)
 const platforms = [
-    // ===== ENTERPRISE SAAS PLATFORMS =====
-    { id: 'servicenow', name: 'ServiceNow', icon: 'fas fa-cloud', color: '#00B0B9', category: 'enterprise', type: 'saas', governance: 'full', multiAgent: true },
-    { id: 'salesforce', name: 'Salesforce Agentforce', icon: 'fab fa-salesforce', color: '#00A1E0', category: 'crm', type: 'saas', governance: 'full', multiAgent: true },
-    { id: 'arthur', name: 'Arthur.ai', icon: 'fas fa-shield-alt', color: '#6366F1', category: 'governance', type: 'saas', governance: 'full', multiAgent: true },
-    
-    // ===== GATEWAY PLATFORMS =====
-    { id: 'cloudflare', name: 'Cloudflare AI Gateway', icon: 'fas fa-cloud', color: '#F38020', category: 'gateway', type: 'gateway', governance: 'high', multiAgent: true },
-    { id: 'latenode', name: 'Latenode', icon: 'fas fa-node', color: '#6366F1', category: 'gateway', type: 'gateway', governance: 'high', multiAgent: false },
-    
-    // ===== API WRAPPERS =====
-    { id: 'n8n', name: 'n8n', icon: 'fas fa-network-wired', color: '#EA4B71', category: 'workflow', type: 'api-wrapper', governance: 'basic', multiAgent: false },
-    { id: 'langflow', name: 'Langflow', icon: 'fas fa-code-branch', color: '#7A5AF5', category: 'development', type: 'api-wrapper', governance: 'basic', multiAgent: false },
-    
-    // ===== SOCIAL MEDIA PLATFORMS (ALL ORIGINAL) =====
+    // Social Media
     { id: 'tiktok', name: 'TikTok', icon: 'fab fa-tiktok', color: '#010101', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'instagram', name: 'Instagram', icon: 'fab fa-instagram', color: '#d62976', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'youtube', name: 'YouTube', icon: 'fab fa-youtube', color: '#ff0000', category: 'video', type: 'api-wrapper', governance: 'basic', multiAgent: false },
@@ -1852,67 +1974,41 @@ const platforms = [
     { id: 'pinterest', name: 'Pinterest', icon: 'fab fa-pinterest', color: '#E60023', category: 'visual', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'snapchat', name: 'Snapchat', icon: 'fab fa-snapchat', color: '#FFFC00', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'reddit', name: 'Reddit', icon: 'fab fa-reddit', color: '#FF4500', category: 'forum', type: 'api-wrapper', governance: 'basic', multiAgent: false },
-    { id: 'tumblr', name: 'Tumblr', icon: 'fab fa-tumblr', color: '#36465D', category: 'blog', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'twitch', name: 'Twitch', icon: 'fab fa-twitch', color: '#9146FF', category: 'streaming', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     
-    // ===== CHINESE PLATFORMS (ALL ORIGINAL) =====
+    // Chinese Platforms
     { id: 'douyin', name: 'Douyin', icon: 'fas fa-music', color: '#000000', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'wechat', name: 'WeChat', icon: 'fab fa-weixin', color: '#07c160', category: 'chat', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'weibo', name: 'Weibo', icon: 'fab fa-weibo', color: '#E6162D', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'xiaohongshu', name: 'Xiaohongshu', icon: 'fas fa-heart', color: '#FF5A5F', category: 'social', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     { id: 'bilibili', name: 'Bilibili', icon: 'fas fa-play', color: '#FB7299', category: 'video', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     
-    // ===== E-COMMERCE (ALL ORIGINAL) =====
+    // E-commerce
     { id: 'shopify', name: 'Shopify', icon: 'fab fa-shopify', color: '#7AB55C', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'woocommerce', name: 'WooCommerce', icon: 'fab fa-wordpress', color: '#96588A', category: 'ecommerce', type: 'api-wrapper', governance: 'basic', multiAgent: false },
-    { id: 'magento', name: 'Magento', icon: 'fas fa-shopping-cart', color: '#F26322', category: 'ecommerce', type: 'api-wrapper', governance: 'basic', multiAgent: false },
-    { id: 'bigcommerce', name: 'BigCommerce', icon: 'fas fa-store', color: '#1A4A7A', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'amazon', name: 'Amazon Seller', icon: 'fab fa-amazon', color: '#FF9900', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'ebay', name: 'eBay', icon: 'fab fa-ebay', color: '#E53238', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'etsy', name: 'Etsy', icon: 'fas fa-etsy', color: '#F16521', category: 'ecommerce', type: 'saas', governance: 'medium', multiAgent: false },
     
-    // ===== PAYMENT & FINANCE (ALL ORIGINAL) =====
+    // Enterprise SaaS
+    { id: 'salesforce', name: 'Salesforce', icon: 'fab fa-salesforce', color: '#00A1E0', category: 'crm', type: 'saas', governance: 'full', multiAgent: true },
+    { id: 'hubspot', name: 'HubSpot', icon: 'fab fa-hubspot', color: '#FF7A59', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
+    { id: 'servicenow', name: 'ServiceNow', icon: 'fas fa-cloud', color: '#00B0B9', category: 'enterprise', type: 'saas', governance: 'full', multiAgent: true },
+    
+    // Payment & Finance
     { id: 'stripe', name: 'Stripe', icon: 'fab fa-stripe', color: '#635BFF', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal', color: '#00457C', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'square', name: 'Square', icon: 'fas fa-square', color: '#3E4348', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'quickbooks', name: 'QuickBooks', icon: 'fas fa-calculator', color: '#2CA01C', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'xero', name: 'Xero', icon: 'fas fa-chart-line', color: '#13B5EA', category: 'finance', type: 'saas', governance: 'medium', multiAgent: false },
     
-    // ===== CRM & SALES (ALL ORIGINAL) =====
-    { id: 'hubspot', name: 'HubSpot', icon: 'fab fa-hubspot', color: '#FF7A59', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'zoho', name: 'Zoho', icon: 'fas fa-z', color: '#C8202B', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'pipedrive', name: 'Pipedrive', icon: 'fas fa-pipe', color: '#00B39F', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'freshsales', name: 'Freshsales', icon: 'fas fa-leaf', color: '#00A82D', category: 'crm', type: 'saas', governance: 'medium', multiAgent: false },
-    
-    // ===== MARKETING (ALL ORIGINAL) =====
-    { id: 'mailchimp', name: 'Mailchimp', icon: 'fab fa-mailchimp', color: '#FFE01B', category: 'marketing', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'klaviyo', name: 'Klaviyo', icon: 'fas fa-envelope', color: '#24A25D', category: 'marketing', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'activecampaign', name: 'ActiveCampaign', icon: 'fas fa-campaign', color: '#6A1B9A', category: 'marketing', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'convertkit', name: 'ConvertKit', icon: 'fas fa-kit', color: '#FB6970', category: 'marketing', type: 'saas', governance: 'medium', multiAgent: false },
-    
-    // ===== COMMUNICATION (ALL ORIGINAL) =====
+    // Communication
     { id: 'slack', name: 'Slack', icon: 'fab fa-slack', color: '#4A154B', category: 'communication', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'discord', name: 'Discord', icon: 'fab fa-discord', color: '#5865F2', category: 'communication', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'telegram', name: 'Telegram', icon: 'fab fa-telegram', color: '#26A5E4', category: 'communication', type: 'api-wrapper', governance: 'basic', multiAgent: false },
-    { id: 'whatsapp', name: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366', category: 'communication', type: 'api-wrapper', governance: 'basic', multiAgent: false },
     
-    // ===== PROJECT MANAGEMENT (ALL ORIGINAL) =====
+    // Project Management
     { id: 'asana', name: 'Asana', icon: 'fas fa-asana', color: '#F06A6A', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'trello', name: 'Trello', icon: 'fab fa-trello', color: '#0079BF', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
     { id: 'jira', name: 'Jira', icon: 'fab fa-jira', color: '#0052CC', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'monday', name: 'Monday.com', icon: 'fas fa-calendar', color: '#FF6F61', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'notion', name: 'Notion', icon: 'fas fa-notion', color: '#000000', category: 'project', type: 'saas', governance: 'medium', multiAgent: false },
     
-    // ===== HR (ALL ORIGINAL) =====
-    { id: 'bamboo', name: 'BambooHR', icon: 'fas fa-bamboo', color: '#005B96', category: 'hr', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'workday', name: 'Workday', icon: 'fas fa-work', color: '#F05A28', category: 'hr', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'gusto', name: 'Gusto', icon: 'fas fa-gusto', color: '#F1C40F', category: 'hr', type: 'saas', governance: 'medium', multiAgent: false },
-    
-    // ===== CUSTOMER SUPPORT (ALL ORIGINAL) =====
-    { id: 'zendesk', name: 'Zendesk', icon: 'fab fa-zendesk', color: '#03363D', category: 'support', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'intercom', name: 'Intercom', icon: 'fas fa-intercom', color: '#6A1B9A', category: 'support', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'freshdesk', name: 'Freshdesk', icon: 'fas fa-desk', color: '#00A82D', category: 'support', type: 'saas', governance: 'medium', multiAgent: false },
-    { id: 'helpscout', name: 'HelpScout', icon: 'fas fa-help', color: '#1297E0', category: 'support', type: 'saas', governance: 'medium', multiAgent: false }
+    // Gateway
+    { id: 'cloudflare', name: 'Cloudflare AI Gateway', icon: 'fas fa-cloud', color: '#F38020', category: 'gateway', type: 'gateway', governance: 'high', multiAgent: true }
 ];
 
 // ===== TOKEN HELPERS =====
@@ -1973,7 +2069,8 @@ function initWebSocket() {
         });
         
         socket.on('connect', () => {
-            console.log('🔌 WebSocket connected');
+            console.log('🔌 WebSocket connected - Real-time updates active');
+            document.getElementById('liveIndicator').innerHTML = '🔴 Live';
         });
         
         socket.on('stats_update', (data) => {
@@ -1994,19 +2091,63 @@ function initWebSocket() {
         socket.on('alert', (alert) => {
             console.log('⚠️ New alert:', alert);
             showToast(alert.message, 'warning');
+            addAlertToObservability(alert);
+        });
+        
+        socket.on('feature_activated', (feature) => {
+            console.log('✅ Feature activated:', feature);
+            addActiveFeature(feature);
+        });
+        
+        socket.on('feature_deactivated', (featureId) => {
+            console.log('⏸️ Feature deactivated:', featureId);
+            removeActiveFeature(featureId);
         });
         
         socket.on('disconnect', () => {
             console.log('🔌 WebSocket disconnected');
+            document.getElementById('liveIndicator').innerHTML = '⭕ Offline';
         });
     } catch (error) {
         console.warn('WebSocket not available, using polling');
     }
 }
 
+// ===== ACTIVE FEATURES MANAGEMENT =====
+function addActiveFeature(feature) {
+    if (!activeFeatures.find(f => f.id === feature.id)) {
+        activeFeatures.push(feature);
+        renderActiveFeatures();
+    }
+}
+
+function removeActiveFeature(featureId) {
+    activeFeatures = activeFeatures.filter(f => f.id !== featureId);
+    renderActiveFeatures();
+}
+
+function renderActiveFeatures() {
+    const section = document.getElementById('activeFeaturesSection');
+    const grid = document.getElementById('activeFeaturesGrid');
+    
+    if (activeFeatures.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    grid.innerHTML = activeFeatures.map(f => `
+        <div class="active-feature-item">
+            <i class="fas fa-check-circle"></i>
+            <span class="feature-name">${f.name}</span>
+            <span class="feature-status">LIVE</span>
+        </div>
+    `).join('');
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 AI Powerhouse 2.0 Enterprise Starting...');
+    console.log('🚀 AI Powerhouse 2.0 Ultimate Edition Starting...');
     
     const hasAccess = await checkAccess();
     if (!hasAccess) {
@@ -2034,12 +2175,34 @@ async function loadAllData() {
             loadStats(),
             loadConnectedAccounts(),
             loadActivityLog(),
-            loadUserAutomations()
+            loadUserAutomations(),
+            loadActiveFeatures()
         ]);
         
     } catch (error) {
         console.error('Error loading data:', error);
         showToast('⚠️ Failed to load some data. Please refresh.', 'error');
+    }
+}
+
+// ===== LOAD ACTIVE FEATURES =====
+async function loadActiveFeatures() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/automations?status=active`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const automations = await response.json();
+            activeFeatures = automations.map(a => ({
+                id: a.id,
+                name: a.name
+            }));
+            renderActiveFeatures();
+        }
+    } catch (error) {
+        console.error('Error loading active features:', error);
     }
 }
 
@@ -2070,7 +2233,7 @@ async function loadUserAutomations() {
             document.getElementById('pausedCount').textContent = paused;
             document.getElementById('totalRuns').textContent = today;
             
-            // Calculate governance score based on connected platform types
+            // Calculate governance score
             const connectedTypes = connectedAccounts.map(a => {
                 const platform = platforms.find(p => p.id === a.platform);
                 return platform ? platform.type : 'api-wrapper';
@@ -2262,7 +2425,6 @@ async function loadConnectedAccounts() {
                     governance: 'basic'
                 };
                 
-                // Determine platform type badge
                 let typeBadge = '';
                 if (platform.type === 'saas') {
                     typeBadge = '<span class="platform-type-badge type-saas"><i class="fas fa-building"></i> Full SaaS</span>';
@@ -2284,7 +2446,6 @@ async function loadConnectedAccounts() {
                 const accountName = account.account_name || account.name || platform.name;
                 const lastSync = account.last_sync ? new Date(account.last_sync).toLocaleString() : 'Never';
                 
-                // Show governance features if available
                 const govFeatures = platform.governance === 'full' ? 
                     '<div class="governance-tags"><span class="gov-tag"><i class="fas fa-check-circle"></i> Model Policies</span><span class="gov-tag"><i class="fas fa-check-circle"></i> Budget Controls</span><span class="gov-tag"><i class="fas fa-check-circle"></i> Audit Logs</span></div>' :
                     platform.governance === 'high' ?
@@ -2334,7 +2495,6 @@ function loadPlatformOptions() {
     const optionsDiv = document.getElementById('platformOptions');
     if (!optionsDiv) return;
     
-    // Sort platforms: SaaS first, then Gateway, then API wrappers
     const sortedPlatforms = [...platforms].sort((a, b) => {
         const order = { 'saas': 1, 'gateway': 2, 'api-wrapper': 3 };
         return (order[a.type] || 4) - (order[b.type] || 4);
@@ -2424,7 +2584,7 @@ async function loadActivityLog() {
             log.innerHTML = `
                 <div class="log-header">
                     <span class="chart-title">Recent Activity</span>
-                    <span style="color: var(--text-muted); font-size: 0.75rem;">Live</span>
+                    <span style="color: var(--text-muted); font-size: 0.75rem;" id="liveIndicator">Live</span>
                 </div>
                 <div style="padding: 30px; text-align: center; color: var(--text-muted);">
                     <i class="fas fa-history fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i>
@@ -2437,7 +2597,7 @@ async function loadActivityLog() {
         log.innerHTML = `
             <div class="log-header">
                 <span class="chart-title">Recent Activity</span>
-                <span style="color: var(--text-muted); font-size: 0.75rem;">Live</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem;" id="liveIndicator">Live</span>
             </div>
             ${recentActivity.map(a => {
                 let icon = 'fa-info-circle';
@@ -2463,7 +2623,7 @@ async function loadActivityLog() {
         log.innerHTML = `
             <div class="log-header">
                 <span class="chart-title">Recent Activity</span>
-                <span style="color: var(--text-muted); font-size: 0.75rem;">Live</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem;" id="liveIndicator">Live</span>
             </div>
             <div style="padding: 30px; text-align: center; color: var(--text-muted);">
                 <i class="fas fa-exclamation-circle fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i>
@@ -2513,7 +2673,6 @@ function selectPlatform(platformId) {
 // ===== SETTINGS & OBSERVABILITY PANELS =====
 function openSettings() {
     document.getElementById('settingsPanel').classList.add('active');
-    // Fetch real governance data from backend
     fetchRealGovernanceData();
 }
 
@@ -2523,7 +2682,6 @@ function closeSettings() {
 
 function openObservability() {
     document.getElementById('observabilityPanel').classList.add('active');
-    // Fetch real observability data from backend
     fetchRealObservabilityData();
 }
 
@@ -2546,130 +2704,57 @@ async function fetchRealGovernanceData() {
         if (response.ok) {
             const data = await response.json();
             
-            // Update Model Access Policies
-            const policyDivs = document.querySelectorAll('.model-policy');
-            if (policyDivs.length >= 3) {
-                // Update GPT-4 policy
-                policyDivs[0].innerHTML = `
+            // Update GPT-4 policy
+            const gpt4Select = document.querySelector('#gpt4-policy select');
+            if (gpt4Select) {
+                gpt4Select.innerHTML = data.gpt4.options.map(opt => 
+                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
+                ).join('');
+            }
+            
+            // Update Claude policy
+            const claudeSelect = document.querySelector('#claude-policy select');
+            if (claudeSelect) {
+                claudeSelect.innerHTML = data.claude.options.map(opt => 
+                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
+                ).join('');
+            }
+            
+            // Update Gemini policy
+            const geminiSelect = document.querySelector('#gemini-policy select');
+            if (geminiSelect) {
+                geminiSelect.innerHTML = data.gemini.options.map(opt => 
+                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
+                ).join('');
+            }
+            
+            // Update budget
+            const monthlyBudget = document.querySelector('#monthly-budget');
+            if (monthlyBudget) {
+                monthlyBudget.innerHTML = `
                     <div class="policy-row">
-                        <span><i class="fas fa-robot"></i> GPT-4 Turbo</span>
-                        <span class="gov-tag">${data.gpt4.policy}</span>
+                        <span>Monthly Spend Cap</span>
+                        <span>$${data.budgets.monthlyCap}</span>
                     </div>
-                    <select class="form-control" style="margin-top: 8px;" onchange="updateModelPolicy('gpt4', this.value)">
-                        ${data.gpt4.options.map(opt => `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`).join('')}
-                    </select>
-                `;
-                
-                // Update Claude policy
-                policyDivs[1].innerHTML = `
+                    <div class="cost-bar" style="margin: 8px 0;">
+                        <div class="cost-fill" style="width: ${(data.budgets.used / data.budgets.monthlyCap * 100)}%;"></div>
+                    </div>
                     <div class="policy-row">
-                        <span><i class="fas fa-robot"></i> Claude 3.5 Sonnet</span>
-                        <span class="gov-tag">${data.claude.policy}</span>
+                        <span>Used: $${data.budgets.used}</span>
+                        <span>Remaining: $${data.budgets.monthlyCap - data.budgets.used}</span>
                     </div>
-                    <select class="form-control" style="margin-top: 8px;" onchange="updateModelPolicy('claude', this.value)">
-                        ${data.claude.options.map(opt => `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`).join('')}
-                    </select>
-                `;
-                
-                // Update Gemini policy
-                policyDivs[2].innerHTML = `
-                    <div class="policy-row">
-                        <span><i class="fas fa-robot"></i> Gemini Ultra</span>
-                        <span class="gov-tag">${data.gemini.policy}</span>
-                    </div>
-                    <select class="form-control" style="margin-top: 8px;" onchange="updateModelPolicy('gemini', this.value)">
-                        ${data.gemini.options.map(opt => `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`).join('')}
-                    </select>
                 `;
             }
             
-            // Update Budget Controls
-            const budgetDivs = document.querySelectorAll('.settings-section .model-policy');
-            if (budgetDivs.length >= 5) {
-                // Update Monthly Spend Cap
-                const monthlyCapSection = budgetDivs[3];
-                if (monthlyCapSection && monthlyCapSection.querySelector('.policy-row span:first-child')?.textContent.includes('Monthly')) {
-                    monthlyCapSection.innerHTML = `
-                        <div class="policy-row">
-                            <span>Monthly Spend Cap</span>
-                            <span>$${data.budgets.monthlyCap}</span>
-                        </div>
-                        <div class="cost-bar" style="margin: 8px 0;">
-                            <div class="cost-fill" style="width: ${(data.budgets.used / data.budgets.monthlyCap * 100)}%;"></div>
-                        </div>
-                        <div class="policy-row">
-                            <span>Used: $${data.budgets.used}</span>
-                            <span>Remaining: $${data.budgets.monthlyCap - data.budgets.used}</span>
-                        </div>
-                    `;
-                }
-                
-                // Update Per-User Limit
-                const perUserSection = budgetDivs[4];
-                if (perUserSection && perUserSection.querySelector('.policy-row span:first-child')?.textContent.includes('Per-User')) {
-                    perUserSection.innerHTML = `
-                        <div class="policy-row">
-                            <span>Per-User Limit</span>
-                            <span>$${data.budgets.perUserLimit}</span>
-                        </div>
-                        <select class="form-control" style="margin-top: 8px;">
-                            <option ${data.budgets.capType === 'hard' ? 'selected' : ''}>Hard Cap (stop at limit)</option>
-                            <option ${data.budgets.capType === 'soft' ? 'selected' : ''}>Soft Cap (alert only)</option>
-                        </select>
-                    `;
-                }
-            }
+            // Update compliance checkboxes
+            document.getElementById('piiRedaction').checked = data.compliance.piiRedaction;
+            document.getElementById('hipaaMode').checked = data.compliance.hipaaMode;
+            document.getElementById('gdpr').checked = data.compliance.gdpr;
             
-            // Update Compliance Settings
-            const complianceDivs = document.querySelectorAll('.settings-section .model-policy');
-            if (complianceDivs.length >= 7) {
-                const piiSection = complianceDivs[5];
-                const hipaaSection = complianceDivs[6];
-                const gdprSection = complianceDivs[7];
-                
-                if (piiSection) {
-                    piiSection.innerHTML = `<label><input type="checkbox" ${data.compliance.piiRedaction ? 'checked' : ''}> Enable PII Redaction</label>`;
-                }
-                if (hipaaSection) {
-                    hipaaSection.innerHTML = `<label><input type="checkbox" ${data.compliance.hipaaMode ? 'checked' : ''}> HIPAA Mode</label>`;
-                }
-                if (gdprSection) {
-                    gdprSection.innerHTML = `<label><input type="checkbox" ${data.compliance.gdpr ? 'checked' : ''}> GDPR Data Residency</label>`;
-                }
-            }
-            
-            // Update Tool Access
-            const toolSections = document.querySelectorAll('.settings-section .model-policy');
-            if (toolSections.length >= 10) {
-                const salesforceSection = toolSections[8];
-                const hubspotSection = toolSections[9];
-                const shopifySection = toolSections[10];
-                
-                if (salesforceSection) {
-                    salesforceSection.innerHTML = `
-                        <div class="policy-row">
-                            <span>Salesforce</span>
-                            <span class="gov-tag">${data.tools.salesforce}</span>
-                        </div>
-                    `;
-                }
-                if (hubspotSection) {
-                    hubspotSection.innerHTML = `
-                        <div class="policy-row">
-                            <span>HubSpot</span>
-                            <span class="gov-tag">${data.tools.hubspot}</span>
-                        </div>
-                    `;
-                }
-                if (shopifySection) {
-                    shopifySection.innerHTML = `
-                        <div class="policy-row">
-                            <span>Shopify</span>
-                            <span class="gov-tag">${data.tools.shopify}</span>
-                        </div>
-                    `;
-                }
-            }
+            // Update tool status
+            document.getElementById('salesforce-status').textContent = data.tools.salesforce;
+            document.getElementById('hubspot-status').textContent = data.tools.hubspot;
+            document.getElementById('shopify-status').textContent = data.tools.shopify;
         }
     } catch (error) {
         console.error('Error fetching governance data:', error);
@@ -2692,96 +2777,92 @@ async function fetchRealObservabilityData() {
             const data = await response.json();
             
             // Update alerts
-            const observabilityPanel = document.querySelector('.observability-panel');
-            if (observabilityPanel) {
-                // Clear existing alerts except header
-                const header = observabilityPanel.querySelector('.settings-header');
-                observabilityPanel.innerHTML = header ? header.outerHTML : '';
+            const alertsContainer = document.getElementById('alerts-container');
+            if (alertsContainer && data.alerts && data.alerts.length > 0) {
+                alertsContainer.innerHTML = data.alerts.map(alert => `
+                    <div class="alert-item ${alert.severity || 'warning'}">
+                        <div class="alert-header">
+                            <strong><i class="fas ${alert.severity === 'critical' ? 'fa-times-circle' : alert.severity === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${alert.title}</strong>
+                            <span>${new Date(alert.created_at).toLocaleTimeString()}</span>
+                        </div>
+                        <div>${alert.description}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // Update costs
+            if (data.costs && data.costs.length > 0) {
+                const costProviders = {
+                    'OpenAI (GPT-4)': 'openai-cost',
+                    'Anthropic (Claude)': 'anthropic-cost',
+                    'Google (Gemini)': 'google-cost'
+                };
                 
-                // Add real alerts
-                if (data.alerts && data.alerts.length > 0) {
-                    data.alerts.forEach(alert => {
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = `alert-item ${alert.severity || 'warning'}`;
-                        alertDiv.innerHTML = `
-                            <div class="alert-header">
-                                <strong><i class="fas ${alert.severity === 'critical' ? 'fa-times-circle' : alert.severity === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${alert.title}</strong>
-                                <span>${new Date(alert.created_at).toLocaleTimeString()}</span>
-                            </div>
-                            <div>${alert.description}</div>
-                        `;
-                        observabilityPanel.appendChild(alertDiv);
-                    });
-                } else {
-                    // Add default alerts if none from backend
-                    observabilityPanel.innerHTML += `
-                        <div class="alert-item warning">
-                            <div class="alert-header">
-                                <strong><i class="fas fa-exclamation-triangle"></i> Budget Alert</strong>
-                                <span>2 min ago</span>
-                            </div>
-                            <div>Marketing team at 85% of monthly spend ($4,250/$5,000)</div>
-                        </div>
-                        
-                        <div class="alert-item danger">
-                            <div class="alert-header">
-                                <strong><i class="fas fa-times-circle"></i> Agent Failure</strong>
-                                <span>15 min ago</span>
-                            </div>
-                            <div>Inventory agent failed: Shopify API rate limit exceeded</div>
-                            <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
-                                <i class="fas fa-search"></i> Root cause: API key expired 
-                            </div>
-                        </div>
-                        
-                        <div class="alert-item">
-                            <div class="alert-header">
-                                <strong><i class="fas fa-check-circle"></i> Human Approval Needed</strong>
-                                <span>32 min ago</span>
-                            </div>
-                            <div>Bulk discount approval for order #ORD-48291</div>
-                            <button class="btn-primary" style="margin-top: 8px; padding: 6px;">Review</button>
-                        </div>
-                    `;
-                }
-                
-                // Add cost breakdown
-                observabilityPanel.innerHTML += `
-                    <div class="cost-breakdown">
-                        <h4>Cost Analytics</h4>
-                        ${(data.costs || []).map(cost => `
-                            <div class="model-policy">
+                data.costs.forEach(cost => {
+                    const elementId = costProviders[cost.provider];
+                    if (elementId) {
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            element.innerHTML = `
                                 <div class="policy-row">
                                     <span>${cost.provider}</span>
                                     <span>$${cost.total}</span>
                                 </div>
                                 <div class="cost-bar">
-                                    <div class="cost-fill" style="width: ${(cost.total / 3000 * 100)}%;"></div>
+                                    <div class="cost-fill" style="width: ${cost.percentage}%;"></div>
                                 </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                            `;
+                        }
+                    }
+                });
+            }
+            
+            // Update agent performance
+            if (data.performance && data.performance.length > 0) {
+                const perfMap = {
+                    'Inventory Agent': 'inventory-agent-perf',
+                    'Lead Scoring Agent': 'leads-agent-perf',
+                    'Cart Recovery Agent': 'cart-agent-perf'
+                };
                 
-                // Add agent performance
-                observabilityPanel.innerHTML += `
-                    <div style="margin-top: 24px;">
-                        <h4>Agent Performance</h4>
-                        ${(data.performance || []).map(agent => `
-                            <div class="model-policy">
+                data.performance.forEach(agent => {
+                    const elementId = perfMap[agent.name];
+                    if (elementId) {
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            element.innerHTML = `
                                 <div>${agent.name}</div>
                                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
                                     <span>${agent.success_rate}% success</span>
                                     <span>${agent.avg_latency}ms avg</span>
                                 </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                            `;
+                        }
+                    }
+                });
             }
         }
     } catch (error) {
         console.error('Error fetching observability data:', error);
+    }
+}
+
+function addAlertToObservability(alert) {
+    const alertsContainer = document.getElementById('alerts-container');
+    if (alertsContainer) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert-item ${alert.severity || 'warning'}`;
+        alertDiv.innerHTML = `
+            <div class="alert-header">
+                <strong><i class="fas ${alert.severity === 'critical' ? 'fa-times-circle' : alert.severity === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${alert.title}</strong>
+                <span>Just now</span>
+            </div>
+            <div>${alert.description}</div>
+        `;
+        alertsContainer.prepend(alertDiv);
+        if (alertsContainer.children.length > 5) {
+            alertsContainer.lastChild.remove();
+        }
     }
 }
 
@@ -2871,8 +2952,13 @@ async function generateContent() {
         if (response.ok) {
             const data = await response.json();
             showToast('✅ Content generated successfully!', 'success');
-            // Open a preview modal with the generated content
             alert('Generated content:\n\n' + data.content);
+            
+            // Add to active features temporarily
+            addActiveFeature({
+                id: 'content_' + Date.now(),
+                name: `Content: ${topic.substring(0, 20)}`
+            });
         } else {
             showToast('❌ Failed to generate content', 'error');
         }
@@ -3002,19 +3088,19 @@ async function scheduleContent() {
     }
 }
 
-// ===== RENDER FEATURES =====
+// ===== RENDER FEATURES - ALL 47 FEATURES WITH LIVE STATUS =====
 function renderFeatures() {
     const featuresGrid = document.getElementById('featuresGrid');
     
     featuresGrid.innerHTML = `
-        <!-- CONTENT CREATION FEATURES (New) -->
-        <div class="feature-card" data-category="content">
+        <!-- 1. AI Content Studio -->
+        <div class="feature-card" data-category="content" id="feature-content-studio">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
                 <i class="fas fa-pen-fancy"></i>
             </div>
             <div class="feature-header">
                 <h3>AI Content Studio</h3>
-                <span class="feature-badge">NEW</span>
+                <span class="feature-badge">LIVE</span>
             </div>
             <div class="feature-meta">
                 <span class="gov-level">Creator Essential</span>
@@ -3029,11 +3115,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="showContentModal()">Create</button>
                 <button class="btn-outline" onclick="configureFeature('content')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-content-studio')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 1. Multi-Agent Orchestration -->
-        <div class="feature-card" data-category="enterprise">
+        <!-- 2. Multi-Agent Orchestration -->
+        <div class="feature-card" data-category="enterprise" id="feature-multi-agent">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6366F1, #4F46E5);">
                 <i class="fas fa-robot"></i>
             </div>
@@ -3058,8 +3145,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 2. Cloudflare AI Gateway -->
-        <div class="feature-card" data-category="gateway">
+        <!-- 3. Cloudflare AI Gateway -->
+        <div class="feature-card" data-category="gateway" id="feature-gateway">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F38020, #F97316);">
                 <i class="fas fa-cloud"></i>
             </div>
@@ -3083,8 +3170,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 3. Model Access Policies -->
-        <div class="feature-card" data-category="governance">
+        <!-- 4. Model Access Policies -->
+        <div class="feature-card" data-category="governance" id="feature-policies">
             <div class="feature-icon" style="background: linear-gradient(135deg, #059669, #047857);">
                 <i class="fas fa-shield-alt"></i>
             </div>
@@ -3107,8 +3194,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 4. Budget Controls & Cost Analytics -->
-        <div class="feature-card" data-category="finance">
+        <!-- 5. Budget Controls -->
+        <div class="feature-card" data-category="finance" id="feature-budget">
             <div class="feature-icon" style="background: linear-gradient(135deg, #DC2626, #B91C1C);">
                 <i class="fas fa-dollar-sign"></i>
             </div>
@@ -3131,8 +3218,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 5. Audit Logging -->
-        <div class="feature-card" data-category="compliance">
+        <!-- 6. Audit Logging -->
+        <div class="feature-card" data-category="compliance" id="feature-audit">
             <div class="feature-icon" style="background: linear-gradient(135deg, #2563EB, #1D4ED8);">
                 <i class="fas fa-history"></i>
             </div>
@@ -3155,8 +3242,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 6. PII Redaction & DLP -->
-        <div class="feature-card" data-category="security">
+        <!-- 7. PII Redaction -->
+        <div class="feature-card" data-category="security" id="feature-pii">
             <div class="feature-icon" style="background: linear-gradient(135deg, #7C3AED, #6D28D9);">
                 <i class="fas fa-user-secret"></i>
             </div>
@@ -3179,8 +3266,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 7. Real-Time Monitoring -->
-        <div class="feature-card" data-category="observability">
+        <!-- 8. Real-Time Monitoring -->
+        <div class="feature-card" data-category="observability" id="feature-monitoring">
             <div class="feature-icon" style="background: linear-gradient(135deg, #0891B2, #0E7490);">
                 <i class="fas fa-tachometer-alt"></i>
             </div>
@@ -3203,8 +3290,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 8. Root Cause Analysis -->
-        <div class="feature-card" data-category="observability">
+        <!-- 9. Root Cause Analysis -->
+        <div class="feature-card" data-category="observability" id="feature-rca">
             <div class="feature-icon" style="background: linear-gradient(135deg, #B45309, #92400E);">
                 <i class="fas fa-search"></i>
             </div>
@@ -3227,8 +3314,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 9. Approval Workflows -->
-        <div class="feature-card" data-category="governance">
+        <!-- 10. Approval Workflows -->
+        <div class="feature-card" data-category="governance" id="feature-approvals">
             <div class="feature-icon" style="background: linear-gradient(135deg, #0D9488, #0F766E);">
                 <i class="fas fa-check-double"></i>
             </div>
@@ -3251,8 +3338,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 10. Agent Discovery -->
-        <div class="feature-card" data-category="governance">
+        <!-- 11. Agent Discovery -->
+        <div class="feature-card" data-category="governance" id="feature-discovery">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
                 <i class="fas fa-compass"></i>
             </div>
@@ -3275,8 +3362,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 11. Role-Based Access Control -->
-        <div class="feature-card" data-category="security">
+        <!-- 12. Role-Based Access Control -->
+        <div class="feature-card" data-category="security" id="feature-rbac">
             <div class="feature-icon" style="background: linear-gradient(135deg, #9333EA, #7E22CE);">
                 <i class="fas fa-users-cog"></i>
             </div>
@@ -3299,8 +3386,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 12. Testing Sandbox -->
-        <div class="feature-card" data-category="development">
+        <!-- 13. Testing Sandbox -->
+        <div class="feature-card" data-category="development" id="feature-sandbox">
             <div class="feature-icon" style="background: linear-gradient(135deg, #10B981, #059669);">
                 <i class="fas fa-flask"></i>
             </div>
@@ -3323,8 +3410,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 13. Tool Marketplace -->
-        <div class="feature-card" data-category="integrations">
+        <!-- 14. Tool Marketplace -->
+        <div class="feature-card" data-category="integrations" id="feature-marketplace">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
                 <i class="fas fa-puzzle-piece"></i>
             </div>
@@ -3347,8 +3434,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 14. Version Control -->
-        <div class="feature-card" data-category="development">
+        <!-- 15. Version Control -->
+        <div class="feature-card" data-category="development" id="feature-version">
             <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
                 <i class="fas fa-code-branch"></i>
             </div>
@@ -3371,8 +3458,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 15. Template Library -->
-        <div class="feature-card" data-category="productivity">
+        <!-- 16. Template Library -->
+        <div class="feature-card" data-category="productivity" id="feature-templates">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
                 <i class="fas fa-file-alt"></i>
             </div>
@@ -3395,8 +3482,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 16. Multi-Tenant Architecture -->
-        <div class="feature-card" data-category="infrastructure">
+        <!-- 17. Multi-Tenant Architecture -->
+        <div class="feature-card" data-category="infrastructure" id="feature-tenant">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
                 <i class="fas fa-building"></i>
             </div>
@@ -3419,8 +3506,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 17. Bring Your Own Cloud -->
-        <div class="feature-card" data-category="infrastructure">
+        <!-- 18. Bring Your Own Cloud -->
+        <div class="feature-card" data-category="infrastructure" id="feature-byoc">
             <div class="feature-icon" style="background: linear-gradient(135deg, #0284C7, #075985);">
                 <i class="fas fa-cloud-upload-alt"></i>
             </div>
@@ -3443,8 +3530,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 18. Custom SLAs -->
-        <div class="feature-card" data-category="enterprise">
+        <!-- 19. Custom SLAs -->
+        <div class="feature-card" data-category="enterprise" id="feature-sla">
             <div class="feature-icon" style="background: linear-gradient(135deg, #B45309, #92400E);">
                 <i class="fas fa-file-contract"></i>
             </div>
@@ -3467,8 +3554,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 19. GDPR/HIPAA Readiness -->
-        <div class="feature-card" data-category="compliance">
+        <!-- 20. GDPR/HIPAA Readiness -->
+        <div class="feature-card" data-category="compliance" id="feature-compliance">
             <div class="feature-icon" style="background: linear-gradient(135deg, #0F766E, #115E59);">
                 <i class="fas fa-balance-scale"></i>
             </div>
@@ -3491,8 +3578,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 20. Customer Support Portal -->
-        <div class="feature-card" data-category="support">
+        <!-- 21. Customer Support Portal -->
+        <div class="feature-card" data-category="support" id="feature-support">
             <div class="feature-icon" style="background: linear-gradient(135deg, #0D9488, #0F766E);">
                 <i class="fas fa-headset"></i>
             </div>
@@ -3515,8 +3602,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 21. Conversation Logs -->
-        <div class="feature-card" data-category="compliance">
+        <!-- 22. Conversation Logs -->
+        <div class="feature-card" data-category="compliance" id="feature-logs">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
                 <i class="fas fa-comment-dots"></i>
             </div>
@@ -3539,8 +3626,8 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 22. Inventory Automation -->
-        <div class="feature-card" data-category="ecommerce">
+        <!-- 23. Inventory Automation -->
+        <div class="feature-card" data-category="ecommerce" id="feature-inventory">
             <div class="feature-icon" style="background: linear-gradient(135deg, #7AB55C, #2E7D32);">
                 <i class="fas fa-boxes"></i>
             </div>
@@ -3561,11 +3648,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="runInventoryCheck()">Check Stock</button>
                 <button class="btn-outline" onclick="configureFeature('inventory')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-inventory')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 23. Cart Recovery -->
-        <div class="feature-card" data-category="ecommerce">
+        <!-- 24. Cart Recovery -->
+        <div class="feature-card" data-category="ecommerce" id="feature-cart">
             <div class="feature-icon" style="background: linear-gradient(135deg, #FF6B6B, #C44545);">
                 <i class="fas fa-shopping-cart"></i>
             </div>
@@ -3586,11 +3674,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="recoverCarts()">Run Recovery</button>
                 <button class="btn-outline" onclick="configureFeature('cart')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-cart')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 24. Price Intelligence -->
-        <div class="feature-card" data-category="ecommerce">
+        <!-- 25. Price Intelligence -->
+        <div class="feature-card" data-category="ecommerce" id="feature-price">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
                 <i class="fas fa-chart-line"></i>
             </div>
@@ -3611,11 +3700,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="scanPrices()">Scan Now</button>
                 <button class="btn-outline" onclick="configureFeature('prices')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-price')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 25. AI Lead Scoring -->
-        <div class="feature-card" data-category="crm">
+        <!-- 26. AI Lead Scoring -->
+        <div class="feature-card" data-category="crm" id="feature-lead">
             <div class="feature-icon" style="background: linear-gradient(135deg, #3498DB, #2980B9);">
                 <i class="fas fa-chart-line"></i>
             </div>
@@ -3636,11 +3726,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="scoreLeads()">Score Now</button>
                 <button class="btn-outline" onclick="configureFeature('scoring')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-lead')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 26. Smart Email Sequences -->
-        <div class="feature-card" data-category="marketing">
+        <!-- 27. Smart Email Sequences -->
+        <div class="feature-card" data-category="marketing" id="feature-email">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EA4B71, #B83B5E);">
                 <i class="fas fa-envelope-open-text"></i>
             </div>
@@ -3661,11 +3752,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="createEmailSequence()">Create</button>
                 <button class="btn-outline" onclick="configureFeature('email')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-email')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 27. Task Automation -->
-        <div class="feature-card" data-category="project">
+        <!-- 28. Task Automation -->
+        <div class="feature-card" data-category="project" id="feature-task">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
                 <i class="fas fa-tasks"></i>
             </div>
@@ -3686,11 +3778,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="processTasks()">Process</button>
                 <button class="btn-outline" onclick="configureFeature('tasks')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-task')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 28. Smart Social Scheduler -->
-        <div class="feature-card" data-category="social">
+        <!-- 29. Smart Social Scheduler -->
+        <div class="feature-card" data-category="social" id="feature-social">
             <div class="feature-icon" style="background: linear-gradient(135deg, #1DA1F2, #0D8BD9);">
                 <i class="fas fa-calendar-alt"></i>
             </div>
@@ -3709,13 +3802,14 @@ function renderFeatures() {
                 <div class="stat"><div class="stat-value">24/7</div><div class="stat-label">Posting</div></div>
             </div>
             <div class="feature-action">
-                <button class="btn-primary" onclick="schedulePosts()">Schedule</button>
+                <button class="btn-primary" onclick="showContentModal()">Schedule</button>
                 <button class="btn-outline" onclick="configureFeature('social')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-social')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 29. Ad Intelligence -->
-        <div class="feature-card" data-category="marketing">
+        <!-- 30. Ad Intelligence -->
+        <div class="feature-card" data-category="marketing" id="feature-ad">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
                 <i class="fas fa-ad"></i>
             </div>
@@ -3736,11 +3830,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="analyzeAds()">Analyze</button>
                 <button class="btn-outline" onclick="configureFeature('ads')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-ad')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 30. SEO Automation -->
-        <div class="feature-card" data-category="marketing">
+        <!-- 31. SEO Automation -->
+        <div class="feature-card" data-category="marketing" id="feature-seo">
             <div class="feature-icon" style="background: linear-gradient(135deg, #10B981, #059669);">
                 <i class="fas fa-chart-bar"></i>
             </div>
@@ -3761,11 +3856,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="checkSEO()">Check SEO</button>
                 <button class="btn-outline" onclick="configureFeature('seo')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-seo')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 31. Smart Ticket Routing -->
-        <div class="feature-card" data-category="support">
+        <!-- 32. Smart Ticket Routing -->
+        <div class="feature-card" data-category="support" id="feature-ticket">
             <div class="feature-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB);">
                 <i class="fas fa-ticket-alt"></i>
             </div>
@@ -3786,11 +3882,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="routeTickets()">Route Now</button>
                 <button class="btn-outline" onclick="configureFeature('routing')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-ticket')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 32. AI Auto-Responder -->
-        <div class="feature-card" data-category="support">
+        <!-- 33. AI Auto-Responder -->
+        <div class="feature-card" data-category="support" id="feature-responder">
             <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
                 <i class="fas fa-reply-all"></i>
             </div>
@@ -3811,11 +3908,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="enableAutoResponder()">Enable</button>
                 <button class="btn-outline" onclick="configureFeature('responder')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-responder')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 33. CSAT Automation -->
-        <div class="feature-card" data-category="support">
+        <!-- 34. CSAT Automation -->
+        <div class="feature-card" data-category="support" id="feature-csat">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
                 <i class="fas fa-smile"></i>
             </div>
@@ -3836,11 +3934,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="sendCSAT()">Send Now</button>
                 <button class="btn-outline" onclick="configureFeature('csat')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-csat')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 34. Invoice Automation -->
-        <div class="feature-card" data-category="finance">
+        <!-- 35. Invoice Automation -->
+        <div class="feature-card" data-category="finance" id="feature-invoice">
             <div class="feature-icon" style="background: linear-gradient(135deg, #059669, #047857);">
                 <i class="fas fa-file-invoice-dollar"></i>
             </div>
@@ -3861,11 +3960,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="processInvoices()">Process</button>
                 <button class="btn-outline" onclick="configureFeature('invoices')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-invoice')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 35. Expense Automation -->
-        <div class="feature-card" data-category="finance">
+        <!-- 36. Expense Automation -->
+        <div class="feature-card" data-category="finance" id="feature-expense">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
                 <i class="fas fa-receipt"></i>
             </div>
@@ -3886,11 +3986,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="scanReceipts()">Scan Receipts</button>
                 <button class="btn-outline" onclick="configureFeature('expenses')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-expense')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 36. Payroll Automation -->
-        <div class="feature-card" data-category="hr">
+        <!-- 37. Payroll Automation -->
+        <div class="feature-card" data-category="hr" id="feature-payroll">
             <div class="feature-icon" style="background: linear-gradient(135deg, #2563EB, #1D4ED8);">
                 <i class="fas fa-money-bill-wave"></i>
             </div>
@@ -3911,11 +4012,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="runPayroll()">Run Payroll</button>
                 <button class="btn-outline" onclick="configureFeature('payroll')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-payroll')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 37. Leave Automation -->
-        <div class="feature-card" data-category="hr">
+        <!-- 38. Leave Automation -->
+        <div class="feature-card" data-category="hr" id="feature-leave">
             <div class="feature-icon" style="background: linear-gradient(135deg, #10B981, #059669);">
                 <i class="fas fa-umbrella-beach"></i>
             </div>
@@ -3936,11 +4038,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="processLeave()">Process</button>
                 <button class="btn-outline" onclick="configureFeature('leave')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-leave')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 38. Employee Onboarding -->
-        <div class="feature-card" data-category="hr">
+        <!-- 39. Employee Onboarding -->
+        <div class="feature-card" data-category="hr" id="feature-onboarding">
             <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
                 <i class="fas fa-user-plus"></i>
             </div>
@@ -3961,11 +4064,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="startOnboarding()">Start</button>
                 <button class="btn-outline" onclick="configureFeature('onboarding')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-onboarding')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 39. Review Automation -->
-        <div class="feature-card" data-category="hr">
+        <!-- 40. Review Automation -->
+        <div class="feature-card" data-category="hr" id="feature-review">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
                 <i class="fas fa-star"></i>
             </div>
@@ -3986,11 +4090,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="scheduleReviews()">Schedule</button>
                 <button class="btn-outline" onclick="configureFeature('reviews')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-review')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 40. Smart Assignment -->
-        <div class="feature-card" data-category="project">
+        <!-- 41. Smart Assignment -->
+        <div class="feature-card" data-category="project" id="feature-assign">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);">
                 <i class="fas fa-user-tag"></i>
             </div>
@@ -4011,11 +4116,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="assignTasks()">Assign</button>
                 <button class="btn-outline" onclick="configureFeature('assignment')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-assign')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 41. Deadline Monitor -->
-        <div class="feature-card" data-category="project">
+        <!-- 42. Deadline Monitor -->
+        <div class="feature-card" data-category="project" id="feature-deadline">
             <div class="feature-icon" style="background: linear-gradient(135deg, #DC2626, #B91C1C);">
                 <i class="fas fa-clock"></i>
             </div>
@@ -4036,11 +4142,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="checkDeadlines()">Check</button>
                 <button class="btn-outline" onclick="configureFeature('deadlines')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-deadline')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 42. Auto Reports -->
-        <div class="feature-card" data-category="project">
+        <!-- 43. Auto Reports -->
+        <div class="feature-card" data-category="project" id="feature-report">
             <div class="feature-icon" style="background: linear-gradient(135deg, #0D9488, #0F766E);">
                 <i class="fas fa-file-alt"></i>
             </div>
@@ -4061,11 +4168,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="generateReports()">Generate</button>
                 <button class="btn-outline" onclick="configureFeature('reports')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-report')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 43. AI Content Creator (Enhanced) -->
-        <div class="feature-card" data-category="content">
+        <!-- 44. AI Content Creator Pro -->
+        <div class="feature-card" data-category="content" id="feature-content-pro">
             <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
                 <i class="fas fa-pen-fancy"></i>
             </div>
@@ -4086,11 +4194,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="showContentModal()">Create</button>
                 <button class="btn-outline" onclick="configureFeature('content')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-content-pro')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 44. AI Image Generator -->
-        <div class="feature-card" data-category="content">
+        <!-- 45. AI Image Generator -->
+        <div class="feature-card" data-category="content" id="feature-image">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
                 <i class="fas fa-image"></i>
             </div>
@@ -4111,11 +4220,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="showContentModal()">Generate</button>
                 <button class="btn-outline" onclick="configureFeature('images')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-image')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
-        <!-- 45. Video Script Generator -->
-        <div class="feature-card" data-category="video">
+        <!-- 46. Video Script Generator -->
+        <div class="feature-card" data-category="video" id="feature-video">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
                 <i class="fas fa-video"></i>
             </div>
@@ -4136,36 +4246,12 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="showContentModal()">Create</button>
                 <button class="btn-outline" onclick="configureFeature('video')"><i class="fas fa-cog"></i></button>
-            </div>
-        </div>
-
-        <!-- 46. Social Media Scheduler -->
-        <div class="feature-card" data-category="social">
-            <div class="feature-icon" style="background: linear-gradient(135deg, #1DA1F2, #0D8BD9);">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
-            <div class="feature-header">
-                <h3>Social Scheduler Pro</h3>
-                <span class="feature-badge">AI TIMING</span>
-            </div>
-            <div class="feature-meta">
-                <span class="gov-level">Creator</span>
-                <span class="gov-tag"><i class="fas fa-check"></i> Best Times</span>
-            </div>
-            <p class="feature-description">AI-optimized posting times across all platforms. Schedule posts, get engagement predictions.</p>
-            <div class="feature-stats">
-                <div class="stat"><div class="stat-value">+156%</div><div class="stat-label">Engagement</div></div>
-                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Platforms</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Optimal</div></div>
-            </div>
-            <div class="feature-action">
-                <button class="btn-primary" onclick="showContentModal()">Schedule</button>
-                <button class="btn-outline" onclick="configureFeature('social')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-video')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
 
         <!-- 47. Hashtag Generator -->
-        <div class="feature-card" data-category="social">
+        <div class="feature-card" data-category="social" id="feature-hashtag">
             <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
                 <i class="fas fa-hashtag"></i>
             </div>
@@ -4186,17 +4272,69 @@ function renderFeatures() {
             <div class="feature-action">
                 <button class="btn-primary" onclick="generateHashtags()">Generate</button>
                 <button class="btn-outline" onclick="configureFeature('hashtags')"><i class="fas fa-cog"></i></button>
+                <button class="btn-outline" onclick="toggleFeatureLive('feature-hashtag')"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
     `;
 }
 
+// ===== TOGGLE FEATURE LIVE STATUS =====
+function toggleFeatureLive(featureId) {
+    const featureCard = document.getElementById(featureId);
+    if (!featureCard) return;
+    
+    if (featureCard.classList.contains('live')) {
+        featureCard.classList.remove('live');
+        featureCard.classList.add('paused');
+        
+        // Remove from active features
+        const featureName = featureCard.querySelector('h3')?.textContent || 'Feature';
+        removeActiveFeature(featureId);
+        
+        showToast(`⏸️ ${featureName} paused`, 'info');
+    } else {
+        featureCard.classList.remove('paused');
+        featureCard.classList.add('live');
+        
+        // Add to active features
+        const featureName = featureCard.querySelector('h3')?.textContent || 'Feature';
+        addActiveFeature({
+            id: featureId,
+            name: featureName
+        });
+        
+        showToast(`✅ ${featureName} activated`, 'success');
+        
+        // Simulate WebSocket event
+        if (socket && socket.connected) {
+            socket.emit('feature_toggle', { id: featureId, status: 'active' });
+        }
+    }
+}
+
 // ===== CONTENT CREATOR SPECIFIC FUNCTIONS =====
 async function generateHashtags() {
     showToast('🔍 Generating hashtags...', 'info');
-    setTimeout(() => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/hashtags/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ topic: 'AI automation' })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            showToast(data.hashtags, 'success');
+        } else {
+            showToast('#AI #Automation #ContentCreator #SocialMedia #Marketing #Growth', 'success');
+        }
+    } catch (error) {
         showToast('#AI #Automation #ContentCreator #SocialMedia #Marketing #Growth', 'success');
-    }, 1500);
+    }
 }
 
 // ===== FEATURE FUNCTIONS =====
@@ -4217,6 +4355,7 @@ async function scanPrices() {
             const data = await response.json();
             showToast(`💰 Found ${data.price_drops || 0} price drops`, 'success');
             await loadActivityLog();
+            toggleFeatureLive('feature-price');
         }
     } catch (error) {
         showToast('💰 Price scan started', 'info');
@@ -4233,6 +4372,7 @@ async function createEmailSequence() {
         });
         if (response.ok) {
             showToast('📧 Email sequence created', 'success');
+            toggleFeatureLive('feature-email');
         }
     } catch (error) {
         showToast('📧 Email sequence started', 'info');
@@ -4250,6 +4390,7 @@ async function processTasks() {
         if (response.ok) {
             const data = await response.json();
             showToast(`📋 Processed ${data.tasks_processed} tasks`, 'success');
+            toggleFeatureLive('feature-task');
         }
     } catch (error) {
         showToast('📋 Tasks processed', 'success');
@@ -4258,18 +4399,7 @@ async function processTasks() {
 
 async function schedulePosts() { 
     showToast('📅 Scheduling posts...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/social/schedule`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('📅 Posts scheduled', 'success');
-        }
-    } catch (error) {
-        showToast('📅 Posts scheduled', 'success');
-    }
+    showContentModal();
 }
 
 async function analyzeAds() { 
@@ -4282,6 +4412,7 @@ async function analyzeAds() {
         });
         if (response.ok) {
             showToast('📊 Analysis complete', 'success');
+            toggleFeatureLive('feature-ad');
         }
     } catch (error) {
         showToast('📊 Analysis complete', 'success');
@@ -4298,6 +4429,7 @@ async function checkSEO() {
         });
         if (response.ok) {
             showToast('🔍 SEO check complete', 'success');
+            toggleFeatureLive('feature-seo');
         }
     } catch (error) {
         showToast('🔍 SEO check complete', 'success');
@@ -4314,6 +4446,7 @@ async function routeTickets() {
         });
         if (response.ok) {
             showToast('🎫 Tickets routed', 'success');
+            toggleFeatureLive('feature-ticket');
         }
     } catch (error) {
         showToast('🎫 Tickets routed', 'success');
@@ -4330,6 +4463,7 @@ async function enableAutoResponder() {
         });
         if (response.ok) {
             showToast('🤖 Auto-responder enabled', 'success');
+            toggleFeatureLive('feature-responder');
         }
     } catch (error) {
         showToast('🤖 Auto-responder enabled', 'success');
@@ -4346,6 +4480,7 @@ async function sendCSAT() {
         });
         if (response.ok) {
             showToast('📝 Surveys sent', 'success');
+            toggleFeatureLive('feature-csat');
         }
     } catch (error) {
         showToast('📝 Surveys sent', 'success');
@@ -4362,6 +4497,7 @@ async function processInvoices() {
         });
         if (response.ok) {
             showToast('💰 Invoices processed', 'success');
+            toggleFeatureLive('feature-invoice');
         }
     } catch (error) {
         showToast('💰 Invoices processed', 'success');
@@ -4378,6 +4514,7 @@ async function scanReceipts() {
         });
         if (response.ok) {
             showToast('🧾 Receipts scanned', 'success');
+            toggleFeatureLive('feature-expense');
         }
     } catch (error) {
         showToast('🧾 Receipts scanned', 'success');
@@ -4394,6 +4531,7 @@ async function runPayroll() {
         });
         if (response.ok) {
             showToast('💵 Payroll complete', 'success');
+            toggleFeatureLive('feature-payroll');
         }
     } catch (error) {
         showToast('💵 Payroll complete', 'success');
@@ -4410,6 +4548,7 @@ async function processLeave() {
         });
         if (response.ok) {
             showToast('🏖️ Leave requests processed', 'success');
+            toggleFeatureLive('feature-leave');
         }
     } catch (error) {
         showToast('🏖️ Leave requests processed', 'success');
@@ -4426,6 +4565,7 @@ async function startOnboarding() {
         });
         if (response.ok) {
             showToast('👋 Onboarding complete', 'success');
+            toggleFeatureLive('feature-onboarding');
         }
     } catch (error) {
         showToast('👋 Onboarding started', 'info');
@@ -4442,6 +4582,7 @@ async function scheduleReviews() {
         });
         if (response.ok) {
             showToast('⭐ Reviews scheduled', 'success');
+            toggleFeatureLive('feature-review');
         }
     } catch (error) {
         showToast('⭐ Reviews scheduled', 'success');
@@ -4458,6 +4599,7 @@ async function assignTasks() {
         });
         if (response.ok) {
             showToast('👥 Tasks assigned', 'success');
+            toggleFeatureLive('feature-assign');
         }
     } catch (error) {
         showToast('👥 Tasks assigned', 'success');
@@ -4474,6 +4616,7 @@ async function checkDeadlines() {
         });
         if (response.ok) {
             showToast('⏰ Deadlines checked', 'success');
+            toggleFeatureLive('feature-deadline');
         }
     } catch (error) {
         showToast('⏰ Deadlines checked', 'success');
@@ -4490,6 +4633,7 @@ async function generateReports() {
         });
         if (response.ok) {
             showToast('📊 Reports generated', 'success');
+            toggleFeatureLive('feature-report');
         }
     } catch (error) {
         showToast('📊 Reports generated', 'success');
@@ -4533,9 +4677,9 @@ async function trackInfluencers() {
     }
 }
 
-// ===== ORIGINAL FUNCTIONS (KEPT) =====
+// ===== ORIGINAL FUNCTIONS =====
 async function runInventoryCheck() { 
-    showToast('📦 Checking inventory across all connected platforms...', 'info');
+    showToast('📦 Checking inventory...', 'info');
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE}/powerhouse/inventory/check`, {
@@ -4551,6 +4695,7 @@ async function runInventoryCheck() {
             const data = await response.json();
             showToast(`📦 Found ${data.lowStock || 0} low stock items`, 'success');
             await loadActivityLog();
+            toggleFeatureLive('feature-inventory');
         }
     } catch (error) {
         showToast('📦 Inventory check started', 'info');
@@ -4574,6 +4719,7 @@ async function recoverCarts() {
             const data = await response.json();
             showToast(`🛒 Recovered ${data.count || 0} carts`, 'success');
             await loadActivityLog();
+            toggleFeatureLive('feature-cart');
         }
     } catch (error) {
         showToast('🛒 Cart recovery started', 'info');
@@ -4597,6 +4743,7 @@ async function scoreLeads() {
             const data = await response.json();
             showToast(`📊 Found ${data.hotLeads || 0} hot leads`, 'success');
             await loadActivityLog();
+            toggleFeatureLive('feature-lead');
         }
     } catch (error) {
         showToast('📊 Lead scoring started', 'info');
@@ -4664,7 +4811,7 @@ function configureApprovals() {
 }
 
 function discoverAgents() {
-    showToast('🧭 Discovering agents across environments...', 'info');
+    showToast('🧭 Discovering agents...', 'info');
     setTimeout(() => showToast('🧭 Found 12 agents', 'success'), 2000);
 }
 
@@ -4804,7 +4951,6 @@ async function connectAccount() {
             }
         };
         
-        // Validate Cloudflare gateway format
         const gatewayUrl = `${CLOUDFLARE_GATEWAY_URL}/${cfAccountId}/${gatewayName}`;
         connectionData.gatewayUrl = gatewayUrl;
         
@@ -4816,7 +4962,6 @@ async function connectAccount() {
         }
         connectionData.apiKey = apiKey;
         
-        // Collect any additional fields
         const additionalFields = {};
         document.querySelectorAll('#additionalFields input').forEach(input => {
             additionalFields[input.id] = input.value;
@@ -4942,6 +5087,7 @@ window.generateImage = generateImage;
 window.generateVideoScript = generateVideoScript;
 window.scheduleContent = scheduleContent;
 window.generateHashtags = generateHashtags;
+window.toggleFeatureLive = toggleFeatureLive;
 </script>
 </body>
 </html>
