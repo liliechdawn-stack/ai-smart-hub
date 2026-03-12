@@ -2,12 +2,14 @@ const { createClient } = require('@supabase/supabase-js');
 
 let supabase = null;
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Try both possible key names
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 
 console.log('🔧 Shared Supabase initialization:', { 
   urlExists: !!supabaseUrl, 
   keyExists: !!supabaseKey,
-  nodeEnv: process.env.NODE_ENV
+  nodeEnv: process.env.NODE_ENV,
+  keySource: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE_KEY' : (process.env.SUPABASE_KEY ? 'SUPABASE_KEY' : 'missing')
 });
 
 if (!supabaseUrl || !supabaseKey) {
@@ -20,6 +22,8 @@ if (!supabaseUrl || !supabaseKey) {
   // In production, we want to crash if credentials are missing
   if (process.env.NODE_ENV === 'production') {
     throw new Error('Supabase credentials are required in production');
+  } else {
+    console.warn('⚠️ Running in development mode without Supabase credentials - some features will be disabled');
   }
 } else {
   try {
