@@ -113,6 +113,13 @@ const IntegrationService = require('../services/integrations');
 const analyticsRoutes = require('../api/analytics-routes');
 const settingsRoutes = require('../api/settings-routes');
 
+// ===== AI POWERHOUSE ROUTES - ADDED HERE =====
+// Import AI Powerhouse routes
+const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
+// Initialize AI Powerhouse with Cloudflare Gateway
+const AI_POWERHOUSE_ENABLED = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
+console.log(`🔷 AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '✅ Enabled' : '⚠️ Disabled (Cloudflare credentials missing)'}`);
+
 const app = express();
 
 // ================= MIDDLEWARE =================
