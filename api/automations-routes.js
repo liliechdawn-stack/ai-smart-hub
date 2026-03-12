@@ -3,7 +3,6 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
-const { createClient } = require('@supabase/supabase-js');
 
 console.log('🔵 AUTOMATIONS ROUTES: Starting to load...');
 
@@ -23,15 +22,10 @@ const { authenticateToken } = authMiddleware;
 
 console.log('✅ AUTOMATIONS ROUTES: Dependencies loaded');
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Import shared Supabase client
+const supabase = require('../backend/supabase');
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ AUTOMATIONS ROUTES: Missing Supabase credentials');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+console.log('✅ AUTOMATIONS ROUTES: Using shared Supabase client');
 
 // Encryption key from environment (should match server.js)
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here';
@@ -39,6 +33,12 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here';
 // Helper function to get user by ID
 async function getUserById(userId) {
   try {
+    // Check if supabase is available
+    if (!supabase) {
+      console.error('Supabase client not available');
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -56,6 +56,19 @@ async function getUserById(userId) {
 // ===== SAFER HELPER FUNCTIONS THAT HANDLE MISSING TABLES =====
 async function executeVisionAction(userId, config) {
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return {
+                action: 'vision_analysis',
+                status: 'completed',
+                results: {
+                    images_analyzed: 0,
+                    objects_detected: 0,
+                    message: "Database service unavailable"
+                }
+            };
+        }
+        
         // Check if table exists by trying to query it
         const { data: tableCheck, error: tableError } = await supabase
             .from('vision_results')
@@ -111,6 +124,19 @@ async function executeVisionAction(userId, config) {
 
 async function executeLeadAction(userId, config) {
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return {
+                action: 'lead_scoring',
+                status: 'completed',
+                results: {
+                    leads_scored: 0,
+                    hot_leads: 0,
+                    message: "Database service unavailable"
+                }
+            };
+        }
+        
         // Check if table exists
         const { data: tableCheck, error: tableError } = await supabase
             .from('lead_scores')
@@ -166,6 +192,19 @@ async function executeLeadAction(userId, config) {
 
 async function executeContentAction(userId, config) {
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return {
+                action: 'content_generation',
+                status: 'completed',
+                results: {
+                    posts_created: 0,
+                    platforms: [],
+                    message: "Database service unavailable"
+                }
+            };
+        }
+        
         // Check if table exists
         const { data: tableCheck, error: tableError } = await supabase
             .from('content_generated')
@@ -229,6 +268,19 @@ async function executeContentAction(userId, config) {
 
 async function executeEngagementAction(userId, config) {
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return {
+                action: 'engagement_tracking',
+                status: 'completed',
+                results: {
+                    interactions: 0,
+                    new_followers: 0,
+                    message: "Database service unavailable"
+                }
+            };
+        }
+        
         // Check if table exists
         const { data: tableCheck, error: tableError } = await supabase
             .from('engagement_metrics')
@@ -284,6 +336,19 @@ async function executeEngagementAction(userId, config) {
 
 async function executeAnalyticsAction(userId, config) {
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return {
+                action: 'analytics_report',
+                status: 'completed',
+                results: {
+                    report_generated: false,
+                    metrics: ['sales', 'traffic', 'conversions'],
+                    message: "Database service unavailable"
+                }
+            };
+        }
+        
         // Check if table exists
         const { data: tableCheck, error: tableError } = await supabase
             .from('analytics_reports')
@@ -348,6 +413,11 @@ router.get('/', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: automations, error } = await supabase
             .from('automations')
             .select('*')
@@ -370,6 +440,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: automation, error } = await supabase
             .from('automations')
             .select('*')
@@ -404,6 +479,11 @@ router.post('/', authenticateToken, async (req, res) => {
     const now = new Date().toISOString();
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { error } = await supabase
             .from('automations')
             .insert([{
@@ -452,6 +532,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Check if automation exists
         const { data: automation, error: checkError } = await supabase
             .from('automations')
@@ -514,6 +599,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get automation name for logging
         const { data: automation, error: getError } = await supabase
             .from('automations')
@@ -564,6 +654,11 @@ router.post('/:id/trigger', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: automation, error: fetchError } = await supabase
             .from('automations')
             .select('*')
@@ -699,6 +794,11 @@ router.get('/:id/runs', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: runs, error } = await supabase
             .from('automation_runs')
             .select('*')
@@ -721,6 +821,11 @@ router.get('/stats/summary', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get automation stats
         const { data: automations, error: autoError } = await supabase
             .from('automations')
@@ -766,6 +871,11 @@ router.get('/stats', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get active agents count
         const { data: activeAgents, error: agentsError } = await supabase
             .from('automations')
@@ -819,6 +929,11 @@ router.get('/activity', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: activities, error } = await supabase
             .from('activity_log')
             .select('*')
@@ -841,6 +956,11 @@ router.get('/accounts', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: rows, error } = await supabase
             .from('connected_accounts')
             .select('id, platform, account_name, account_info, status, created_at, last_sync')
@@ -867,6 +987,11 @@ router.post('/connect', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const user = await getUserById(userId);
         if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== 'ericchung992@gmail.com')) {
             return res.status(403).json({ error: "Pro or Agency plan required" });
@@ -986,6 +1111,11 @@ router.post('/accounts/:id/sync', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { error } = await supabase
             .from('connected_accounts')
             .update({ last_sync: new Date().toISOString() })
@@ -1022,6 +1152,11 @@ router.delete('/accounts/:id', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { error, count } = await supabase
             .from('connected_accounts')
             .delete()
@@ -1060,6 +1195,11 @@ router.get('/governance', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: governance, error } = await supabase
             .from('governance_settings')
             .select('*')
@@ -1178,6 +1318,11 @@ router.put('/governance/models/:model', authenticateToken, async (req, res) => {
     }
 
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Check if governance settings exist
         const { data: existing } = await supabase
             .from('governance_settings')
@@ -1225,6 +1370,11 @@ router.get('/observability', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get unresolved alerts
         const { data: alerts, error: alertsError } = await supabase
             .from('alerts')
@@ -1348,6 +1498,11 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: automation, error: fetchError } = await supabase
             .from('automations')
             .select('*')
@@ -1421,6 +1576,11 @@ router.post('/bulk/update', authenticateToken, async (req, res) => {
     }
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         if (action === 'delete') {
             const { error, count } = await supabase
                 .from('automations')
@@ -1487,6 +1647,11 @@ router.get('/:id/logs', authenticateToken, async (req, res) => {
     const { limit = 20, offset = 0 } = req.query;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: logs, error: logsError, count } = await supabase
             .from('automation_runs')
             .select('*', { count: 'exact' })
@@ -1519,6 +1684,11 @@ router.post('/test-connection', authenticateToken, async (req, res) => {
     }
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         let testResult = { success: false, message: "" };
         
         switch(platform) {
@@ -1580,6 +1750,11 @@ router.get('/metrics/dashboard', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get metrics by action type
         const { data: automations, error: autoError } = await supabase
             .from('automations')
@@ -1654,6 +1829,11 @@ router.get('/:id/export', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { data: automation, error } = await supabase
             .from('automations')
             .select('*')
@@ -1700,6 +1880,11 @@ router.post('/import', authenticateToken, async (req, res) => {
     const now = new Date().toISOString();
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const { error } = await supabase
             .from('automations')
             .insert([{
@@ -1747,6 +1932,11 @@ router.post('/inventory/check', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Check if user has connected e-commerce accounts
         const { data: accounts, error: accountsError } = await supabase
             .from('connected_accounts')
@@ -1813,6 +2003,11 @@ router.post('/carts/recover', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Check for connected e-commerce accounts
         const { data: accounts, error: accountsError } = await supabase
             .from('connected_accounts')
@@ -1854,6 +2049,11 @@ router.post('/leads/score', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get leads that haven't been scored recently
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -1925,6 +2125,11 @@ router.post('/agents/deploy', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         const user = await getUserById(userId);
         
         const agentTypes = ['VisionAgent', 'LeadAgent', 'ContentAgent', 'EngagementAgent', 'AnalyticsAgent'];
@@ -1980,6 +2185,11 @@ router.post('/prices/scan', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: "Database service unavailable" });
+        }
+        
         // Get user's connected e-commerce platforms
         const { data: accounts, error: accountsError } = await supabase
             .from('connected_accounts')

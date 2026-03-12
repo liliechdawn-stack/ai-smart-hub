@@ -4,23 +4,22 @@ const router = express.Router();
 const { auth } = require('../backend/auth');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Import shared Supabase client
+const supabase = require('../backend/supabase');
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ SETTINGS ROUTES: Missing Supabase credentials');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+console.log('✅ SETTINGS ROUTES: Using shared Supabase client');
 
 // ================= GET USER SETTINGS =================
 router.get('/profile', auth, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const { data: user, error } = await supabase
             .from('users')
             .select(`
@@ -74,24 +73,29 @@ router.put('/profile', auth, async (req, res) => {
     const userId = req.user.id;
     const { business_name, name, widget_color, welcome_message } = req.body;
     
-    const updates = {};
-    
-    if (business_name !== undefined) {
-        updates.business_name = business_name;
-    }
-    // Note: 'name' column might not exist, so we'll use business_name for display name
-    if (widget_color !== undefined) {
-        updates.widget_color = widget_color;
-    }
-    if (welcome_message !== undefined) {
-        updates.welcome_message = welcome_message;
-    }
-    
-    if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ error: 'No fields to update' });
-    }
-    
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
+        const updates = {};
+        
+        if (business_name !== undefined) {
+            updates.business_name = business_name;
+        }
+        // Note: 'name' column might not exist, so we'll use business_name for display name
+        if (widget_color !== undefined) {
+            updates.widget_color = widget_color;
+        }
+        if (welcome_message !== undefined) {
+            updates.welcome_message = welcome_message;
+        }
+        
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+        
         const { error, count } = await supabase
             .from('users')
             .update(updates)
@@ -115,15 +119,20 @@ router.post('/change-password', auth, async (req, res) => {
     const userId = req.user.id;
     const { current_password, new_password } = req.body;
     
-    if (!current_password || !new_password) {
-        return res.status(400).json({ error: 'Current and new password required' });
-    }
-    
-    if (new_password.length < 6) {
-        return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-    
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
+        if (!current_password || !new_password) {
+            return res.status(400).json({ error: 'Current and new password required' });
+        }
+        
+        if (new_password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+        
         const { data: user, error: fetchError } = await supabase
             .from('users')
             .select('password')
@@ -162,6 +171,11 @@ router.get('/notifications', auth, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const { data: settings, error } = await supabase
             .from('notification_settings')
             .select(`
@@ -212,6 +226,11 @@ router.put('/notifications', auth, async (req, res) => {
     } = req.body;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         // Check if settings exist
         const { data: existing } = await supabase
             .from('notification_settings')
@@ -258,6 +277,11 @@ router.get('/api-keys', auth, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const { data: keys, error } = await supabase
             .from('api_keys')
             .select('id, name, platform, created_at, last_used')
@@ -278,14 +302,19 @@ router.post('/api-keys', auth, async (req, res) => {
     const userId = req.user.id;
     const { name, platform } = req.body;
     
-    if (!name || !platform) {
-        return res.status(400).json({ error: 'Name and platform required' });
-    }
-    
-    const keyId = uuidv4();
-    const apiKey = `ak_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-    
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
+        if (!name || !platform) {
+            return res.status(400).json({ error: 'Name and platform required' });
+        }
+        
+        const keyId = uuidv4();
+        const apiKey = `ak_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+        
         const { error } = await supabase
             .from('api_keys')
             .insert([{
@@ -318,6 +347,11 @@ router.delete('/api-keys/:id', auth, async (req, res) => {
     const keyId = req.params.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const { error, count } = await supabase
             .from('api_keys')
             .delete()
@@ -353,6 +387,11 @@ router.get('/billing', auth, async (req, res) => {
     };
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('plan, plan_expires, messages_used, leads_used')

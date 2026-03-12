@@ -1,4 +1,3 @@
-cat > backend/supabase-schema.sql << 'EOF'
 -- ============================================
 -- SUPABASE MIGRATION FOR AI SMART HUB
 -- Run this in Supabase SQL Editor
@@ -486,4 +485,3 @@ SELECT
   'Resend API had intermittent issues. All emails delivered.', 
   'resolved'
 WHERE NOT EXISTS (SELECT 1 FROM incidents WHERE title = 'Email Delivery Delay');
-EOF

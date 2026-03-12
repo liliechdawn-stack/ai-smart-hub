@@ -2,17 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../backend/auth');
-const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Import shared Supabase client
+const supabase = require('../backend/supabase');
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ ANALYTICS ROUTES: Missing Supabase credentials');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+console.log('✅ ANALYTICS ROUTES: Using shared Supabase client');
 
 // Helper function to execute multiple promises in parallel
 const promiseAll = async (promises) => {
@@ -27,6 +21,11 @@ router.get('/dashboard', auth, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         // Execute all queries in parallel
         const [statsResult, recentRunsResult, performanceResult, topAutomationsResult, platformStatsResult] = await promiseAll([
             // Automation Stats
@@ -187,6 +186,11 @@ router.get('/performance', auth, async (req, res) => {
     const { days = 7 } = req.query;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const daysAgo = new Date();
         daysAgo.setDate(daysAgo.getDate() - parseInt(days));
         
@@ -247,6 +251,11 @@ router.get('/success-rates', auth, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const { data, error } = await supabase
             .from('automations')
             .select('id, name, trigger_count, success_count, last_run, status')
@@ -275,6 +284,11 @@ router.get('/timeseries', auth, async (req, res) => {
     const { metric = 'runs', interval = 'day' } = req.query;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         
@@ -365,6 +379,11 @@ router.get('/costs', auth, async (req, res) => {
     const userId = req.user.id;
     
     try {
+        // Check if supabase is available
+        if (!supabase) {
+            return res.status(503).json({ error: 'Database service unavailable' });
+        }
+        
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         
