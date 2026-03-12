@@ -443,6 +443,8 @@ router.get('/', authenticateToken, async (req, res) => {
                 const enhancedData = (fallbackData || []).map(item => ({
                     ...item,
                     nameastitle: item.name,
+                    trigger_typeastrigger: item.trigger_type, // Add this for frontend
+                    action_typeasaction: item.action_type, // Add this for frontend
                     active: item.status === 'active',
                     is_active: item.status === 'active',
                     trigger_config: {},
@@ -460,9 +462,12 @@ router.get('/', authenticateToken, async (req, res) => {
         }
         
         // Enhance data for frontend - convert integer active/is_active to booleans
+        // Also add any computed fields the frontend might expect
         const enhancedAutomations = (automations || []).map(item => ({
             ...item,
             nameastitle: item.nameastitle || item.name,
+            trigger_typeastrigger: item.trigger_type, // Add this for frontend
+            action_typeasaction: item.action_type, // Add this for frontend
             active: item.active === 1 ? true : false,
             is_active: item.is_active === 1 ? true : false
         }));
@@ -501,9 +506,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
         }
         
         // Convert integer active/is_active to booleans for frontend
+        // Add computed fields for frontend
         const enhancedAutomation = {
             ...automation,
             nameastitle: automation.nameastitle || automation.name,
+            trigger_typeastrigger: automation.trigger_type,
+            action_typeasaction: automation.action_type,
             active: automation.active === 1 ? true : false,
             is_active: automation.is_active === 1 ? true : false
         };
@@ -552,8 +560,8 @@ router.post('/', authenticateToken, async (req, res) => {
             nameastitle: name,
             description: description || '',
             trigger_type,
-            trigger_config: trigger_config || {},
             action_type,
+            trigger_config: trigger_config || {},
             action_config: action_config || {},
             schedule: schedule || '',
             status: isActiveValue === 1 ? 'active' : 'paused',
@@ -1652,8 +1660,8 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
                 nameastitle: newName,
                 description: automation.description,
                 trigger_type: automation.trigger_type,
-                trigger_config: automation.trigger_config,
                 action_type: automation.action_type,
+                trigger_config: automation.trigger_config,
                 action_config: automation.action_config,
                 schedule: automation.schedule,
                 status: isActiveValue === 1 ? 'active' : 'paused',
@@ -1984,8 +1992,10 @@ router.get('/:id/export', authenticateToken, async (req, res) => {
             name: automation.name,
             description: automation.description,
             trigger_type: automation.trigger_type,
-            trigger_config: automation.trigger_config || {},
+            trigger_typeastrigger: automation.trigger_type, // Add for frontend
             action_type: automation.action_type,
+            action_typeasaction: automation.action_type, // Add for frontend
+            trigger_config: automation.trigger_config || {},
             action_config: automation.action_config || {},
             schedule: automation.schedule,
             version: '1.0',
@@ -2024,8 +2034,8 @@ router.post('/import', authenticateToken, async (req, res) => {
             nameastitle: config.name,
             description: config.description || '',
             trigger_type: config.trigger_type,
-            trigger_config: config.trigger_config || {},
             action_type: config.action_type,
+            trigger_config: config.trigger_config || {},
             action_config: config.action_config || {},
             schedule: config.schedule || '',
             status: 'paused',
