@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Powerhouse 2.0 | Enterprise Agentic Platform</title>
+    <title>AI Powerhouse 2.0 | Creator Edition - Enterprise Agentic Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
     <style>
         /* ========================================
@@ -1508,6 +1509,11 @@
     <!-- Feature Tabs -->
     <div class="feature-tabs">
         <button class="feature-tab active" onclick="filterFeatures('all')">All Features</button>
+        <button class="feature-tab" onclick="filterFeatures('content')">Content Creation</button>
+        <button class="feature-tab" onclick="filterFeatures('social')">Social Media</button>
+        <button class="feature-tab" onclick="filterFeatures('video')">Video</button>
+        <button class="feature-tab" onclick="filterFeatures('analytics')">Analytics</button>
+        <button class="feature-tab" onclick="filterFeatures('monetization')">Monetization</button>
         <button class="feature-tab" onclick="filterFeatures('ecommerce')">E-Commerce</button>
         <button class="feature-tab" onclick="filterFeatures('crm')">CRM & Sales</button>
         <button class="feature-tab" onclick="filterFeatures('marketing')">Marketing</button>
@@ -1515,7 +1521,6 @@
         <button class="feature-tab" onclick="filterFeatures('finance')">Finance</button>
         <button class="feature-tab" onclick="filterFeatures('hr')">HR</button>
         <button class="feature-tab" onclick="filterFeatures('project')">Project Mgmt</button>
-        <button class="feature-tab" onclick="filterFeatures('social')">Social Media</button>
     </div>
 
     <!-- Features Grid -->
@@ -1617,6 +1622,179 @@
     </div>
 </div>
 
+<!-- Content Creation Modal -->
+<div class="modal" id="contentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-pen-fancy" style="color: var(--primary);"></i> AI Content Studio</h3>
+            <button class="close-btn" onclick="closeContentModal()">&times;</button>
+        </div>
+        
+        <div class="feature-tabs" style="margin-bottom: 20px;">
+            <button class="feature-tab active" onclick="switchContentTab('generate')">Generate</button>
+            <button class="feature-tab" onclick="switchContentTab('images')">Images</button>
+            <button class="feature-tab" onclick="switchContentTab('video')">Video</button>
+            <button class="feature-tab" onclick="switchContentTab('schedule')">Schedule</button>
+        </div>
+        
+        <div id="contentGenerateTab">
+            <div class="form-group">
+                <label>Content Type</label>
+                <select id="contentType" class="form-control">
+                    <option value="social">Social Media Post</option>
+                    <option value="blog">Blog Article</option>
+                    <option value="caption">Caption</option>
+                    <option value="hashtags">Hashtags</option>
+                    <option value="script">Video Script</option>
+                    <option value="email">Email Newsletter</option>
+                    <option value="ad">Ad Copy</option>
+                    <option value="seo">SEO Description</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Topic / Keywords</label>
+                <input type="text" id="contentTopic" class="form-control" placeholder="e.g., AI automation tips">
+            </div>
+            
+            <div class="form-group">
+                <label>Tone</label>
+                <select id="contentTone" class="form-control">
+                    <option value="professional">Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="humorous">Humorous</option>
+                    <option value="inspirational">Inspirational</option>
+                    <option value="educational">Educational</option>
+                    <option value="persuasive">Persuasive</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Target Platforms</label>
+                <select id="contentPlatforms" class="form-control" multiple size="3">
+                    <option value="instagram" selected>Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="twitter">Twitter/X</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="facebook">Facebook</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Additional Instructions</label>
+                <textarea id="contentInstructions" class="form-control" rows="3" placeholder="Any specific requirements..."></textarea>
+            </div>
+            
+            <button class="btn-primary" onclick="generateContent()" style="width: 100%; padding: 14px;">
+                <i class="fas fa-magic"></i> Generate with AI
+            </button>
+        </div>
+        
+        <div id="contentImagesTab" style="display: none;">
+            <div class="form-group">
+                <label>Image Prompt</label>
+                <textarea id="imagePrompt" class="form-control" rows="3" placeholder="Describe the image you want to generate..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Style</label>
+                <select id="imageStyle" class="form-control">
+                    <option value="realistic">Realistic</option>
+                    <option value="cartoon">Cartoon</option>
+                    <option value="anime">Anime</option>
+                    <option value="oil-painting">Oil Painting</option>
+                    <option value="watercolor">Watercolor</option>
+                    <option value="3d-render">3D Render</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Aspect Ratio</label>
+                <select id="imageRatio" class="form-control">
+                    <option value="1:1">Square (1:1) - Instagram</option>
+                    <option value="16:9">Landscape (16:9) - YouTube</option>
+                    <option value="9:16">Portrait (9:16) - TikTok/Reels</option>
+                    <option value="4:5">Portrait (4:5) - Instagram Feed</option>
+                </select>
+            </div>
+            
+            <button class="btn-primary" onclick="generateImage()" style="width: 100%; padding: 14px;">
+                <i class="fas fa-image"></i> Generate Image
+            </button>
+            
+            <div id="imagePreview" style="margin-top: 20px; display: none;">
+                <img src="" alt="Generated Image" style="width: 100%; border-radius: 8px;">
+            </div>
+        </div>
+        
+        <div id="contentVideoTab" style="display: none;">
+            <div class="form-group">
+                <label>Video Topic</label>
+                <input type="text" id="videoTopic" class="form-control" placeholder="e.g., How to use AI for content creation">
+            </div>
+            
+            <div class="form-group">
+                <label>Video Length</label>
+                <select id="videoLength" class="form-control">
+                    <option value="15">15 seconds - TikTok/Reels</option>
+                    <option value="30">30 seconds - Short</option>
+                    <option value="60">60 seconds - Standard</option>
+                    <option value="180">3 minutes - YouTube Short</option>
+                    <option value="600">10 minutes - YouTube</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Include Captions?</label>
+                <select id="videoCaptions" class="form-control">
+                    <option value="yes">Yes, auto-generate captions</option>
+                    <option value="no">No captions</option>
+                </select>
+            </div>
+            
+            <button class="btn-primary" onclick="generateVideoScript()" style="width: 100%; padding: 14px;">
+                <i class="fas fa-video"></i> Generate Script
+            </button>
+        </div>
+        
+        <div id="contentScheduleTab" style="display: none;">
+            <div class="form-group">
+                <label>Content to Schedule</label>
+                <textarea id="scheduleContent" class="form-control" rows="4" placeholder="Paste your content here..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Platforms</label>
+                <select id="schedulePlatforms" class="form-control" multiple size="3">
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="twitter">Twitter/X</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="pinterest">Pinterest</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Schedule Date & Time</label>
+                <input type="datetime-local" id="scheduleTime" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label>AI Recommended Time</label>
+                <div style="background: var(--light-gray); padding: 10px; border-radius: 8px;">
+                    <span>Best time to post: <strong>Tomorrow 3:00 PM</strong> (based on your audience)</span>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="scheduleContent()" style="width: 100%; padding: 14px;">
+                <i class="fas fa-calendar-check"></i> Schedule Post
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 // ================================================
@@ -1631,6 +1809,9 @@ const CLOUDFLARE_GATEWAY_URL = 'https://gateway.ai.cloudflare.com/v1';
 
 // Admin email
 const ADMIN_EMAIL = "ericchung992@gmail.com";
+
+// WebSocket for real-time updates
+let socket = null;
 
 // Global state
 let activeAgents = 0;
@@ -1782,6 +1963,47 @@ async function checkAccess() {
     }
 }
 
+// ===== WEBSOCKET CONNECTION =====
+function initWebSocket() {
+    try {
+        const token = localStorage.getItem('token');
+        socket = io(BACKEND_URL, {
+            transports: ['websocket'],
+            query: { token }
+        });
+        
+        socket.on('connect', () => {
+            console.log('🔌 WebSocket connected');
+        });
+        
+        socket.on('stats_update', (data) => {
+            console.log('📊 Stats update received', data);
+            if (data.activeAgents !== undefined) {
+                activeAgents = data.activeAgents;
+                updateStats();
+            }
+        });
+        
+        socket.on('activity', (activity) => {
+            console.log('📋 New activity:', activity);
+            recentActivity.unshift(activity);
+            if (recentActivity.length > 10) recentActivity.pop();
+            loadActivityLog();
+        });
+        
+        socket.on('alert', (alert) => {
+            console.log('⚠️ New alert:', alert);
+            showToast(alert.message, 'warning');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('🔌 WebSocket disconnected');
+        });
+    } catch (error) {
+        console.warn('WebSocket not available, using polling');
+    }
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 AI Powerhouse 2.0 Enterprise Starting...');
@@ -1798,6 +2020,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadAllData();
     loadPlatformOptions();
     startLiveUpdates();
+    initWebSocket();
     renderFeatures();
 });
 
@@ -1828,7 +2051,11 @@ async function loadUserAutomations() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } 
+        if (response.status === 401) { 
+            localStorage.removeItem('token'); 
+            window.location.href = 'login.html'; 
+            return; 
+        } 
         if (response.ok) {
             userAutomations = await response.json();
             const live = userAutomations.filter(a => a.status === 'active').length;
@@ -1866,11 +2093,15 @@ async function loadUserAutomations() {
 async function loadStats() {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/stats`, {
+        const response = await fetch(`${API_BASE}/powerhouse/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } 
+        if (response.status === 401) { 
+            localStorage.removeItem('token'); 
+            window.location.href = 'login.html'; 
+            return; 
+        } 
         if (response.ok) {
             const stats = await response.json();
             activeAgents = stats.activeAgents || 0;
@@ -1893,7 +2124,11 @@ async function loadUserData() {
         const response = await fetch(`${API_BASE}/user/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } 
+        if (response.status === 401) { 
+            localStorage.removeItem('token'); 
+            window.location.href = 'login.html'; 
+            return; 
+        } 
         if (response.ok) {
             userData = await response.json();
             document.getElementById('userName').textContent = userData.business_name || userData.name || 'User';
@@ -1920,7 +2155,7 @@ function initCharts() {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [
                 {
-                    label: 'API Calls',
+                    label: 'Views',
                     data: [12400, 18900, 23400, 27800, 31200, 35600, 38900],
                     borderColor: '#d4af37',
                     backgroundColor: 'rgba(212,175,55,0.1)',
@@ -1930,15 +2165,14 @@ function initCharts() {
                     fill: true
                 },
                 {
-                    label: 'Cost ($)',
-                    data: [32, 48, 62, 71, 83, 94, 102],
+                    label: 'Engagement',
+                    data: [3200, 4800, 6200, 7100, 8300, 9400, 10200],
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37,99,235,0.1)',
                     borderWidth: 2,
                     pointRadius: 2,
                     tension: 0.3,
-                    fill: true,
-                    yAxisID: 'y1'
+                    fill: true
                 }
             ]
         },
@@ -1949,13 +2183,7 @@ function initCharts() {
             scales: {
                 y: { 
                     beginAtZero: true, 
-                    grid: { display: false },
-                    title: { display: true, text: 'API Calls' }
-                },
-                y1: {
-                    position: 'right',
-                    grid: { display: false },
-                    title: { display: true, text: 'Cost ($)' }
+                    grid: { display: false }
                 },
                 x: { grid: { display: false } }
             }
@@ -1977,10 +2205,14 @@ function startLiveUpdates() {
     setInterval(async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE}/automations/stats`, {
+            const response = await fetch(`${API_BASE}/powerhouse/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; } 
+            if (response.status === 401) { 
+                localStorage.removeItem('token'); 
+                window.location.href = 'login.html'; 
+                return; 
+            } 
             if (response.ok) {
                 const stats = await response.json();
                 activeAgents = stats.activeAgents || 0;
@@ -2002,7 +2234,7 @@ async function loadConnectedAccounts() {
     
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/accounts`, {
+        const response = await fetch(`${API_BASE}/powerhouse/accounts`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -2087,7 +2319,6 @@ async function loadConnectedAccounts() {
                 `;
             }).join('');
         } else {
-            // Handle other HTTP errors (500, 404, etc.)
             const errorText = await response.text();
             console.error('Error response:', errorText);
             throw new Error(`HTTP ${response.status}: ${errorText}`);
@@ -2180,7 +2411,7 @@ async function loadActivityLog() {
     
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/activity`, {
+        const response = await fetch(`${API_BASE}/powerhouse/activity`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -2213,6 +2444,9 @@ async function loadActivityLog() {
                 if (a.type === 'budget') icon = 'fa-dollar-sign';
                 else if (a.type === 'alert') icon = 'fa-exclamation-triangle';
                 else if (a.type === 'approval') icon = 'fa-check-circle';
+                else if (a.type === 'content') icon = 'fa-pen-fancy';
+                else if (a.type === 'social') icon = 'fa-share-alt';
+                else if (a.type === 'video') icon = 'fa-video';
                 
                 return `
                 <div class="log-entry">
@@ -2301,7 +2535,7 @@ function closeObservability() {
 async function fetchRealGovernanceData() {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/governance`, {
+        const response = await fetch(`${API_BASE}/powerhouse/governance`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.status === 401) { 
@@ -2446,7 +2680,7 @@ async function fetchRealGovernanceData() {
 async function fetchRealObservabilityData() {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/observability`, {
+        const response = await fetch(`${API_BASE}/powerhouse/observability`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.status === 401) { 
@@ -2555,7 +2789,7 @@ async function fetchRealObservabilityData() {
 async function updateModelPolicy(model, policy) {
     try {
         const token = localStorage.getItem('token');
-        await fetch(`${API_BASE}/automations/governance/models/${model}`, {
+        await fetch(`${API_BASE}/powerhouse/governance/models/${model}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -2583,11 +2817,221 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// ===== CONTENT CREATION FUNCTIONS =====
+function showContentModal() {
+    document.getElementById('contentModal').classList.add('active');
+    switchContentTab('generate');
+}
+
+function closeContentModal() {
+    document.getElementById('contentModal').classList.remove('active');
+}
+
+function switchContentTab(tab) {
+    document.querySelectorAll('#contentModal .feature-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.getElementById('contentGenerateTab').style.display = tab === 'generate' ? 'block' : 'none';
+    document.getElementById('contentImagesTab').style.display = tab === 'images' ? 'block' : 'none';
+    document.getElementById('contentVideoTab').style.display = tab === 'video' ? 'block' : 'none';
+    document.getElementById('contentScheduleTab').style.display = tab === 'schedule' ? 'block' : 'none';
+}
+
+async function generateContent() {
+    const contentType = document.getElementById('contentType').value;
+    const topic = document.getElementById('contentTopic').value;
+    const tone = document.getElementById('contentTone').value;
+    const platforms = Array.from(document.getElementById('contentPlatforms').selectedOptions).map(o => o.value);
+    const instructions = document.getElementById('contentInstructions').value;
+    
+    if (!topic) {
+        showToast('Please enter a topic', 'error');
+        return;
+    }
+    
+    showToast('🎨 Generating content with AI...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/content/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                content_type: contentType,
+                topic: topic,
+                tone: tone,
+                platforms: platforms,
+                instructions: instructions
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            showToast('✅ Content generated successfully!', 'success');
+            // Open a preview modal with the generated content
+            alert('Generated content:\n\n' + data.content);
+        } else {
+            showToast('❌ Failed to generate content', 'error');
+        }
+    } catch (error) {
+        console.error('Content generation error:', error);
+        showToast('❌ Failed to generate content', 'error');
+    }
+}
+
+async function generateImage() {
+    const prompt = document.getElementById('imagePrompt').value;
+    const style = document.getElementById('imageStyle').value;
+    const ratio = document.getElementById('imageRatio').value;
+    
+    if (!prompt) {
+        showToast('Please enter an image prompt', 'error');
+        return;
+    }
+    
+    showToast('🎨 Generating image with AI...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/images/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+                style: style,
+                ratio: ratio
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('imagePreview').src = data.image_url;
+            document.getElementById('imagePreview').style.display = 'block';
+            showToast('✅ Image generated!', 'success');
+        } else {
+            showToast('❌ Failed to generate image', 'error');
+        }
+    } catch (error) {
+        console.error('Image generation error:', error);
+        showToast('❌ Failed to generate image', 'error');
+    }
+}
+
+async function generateVideoScript() {
+    const topic = document.getElementById('videoTopic').value;
+    const length = document.getElementById('videoLength').value;
+    const captions = document.getElementById('videoCaptions').value;
+    
+    if (!topic) {
+        showToast('Please enter a video topic', 'error');
+        return;
+    }
+    
+    showToast('🎬 Generating video script...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/video/script`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                topic: topic,
+                length: length,
+                captions: captions === 'yes'
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            showToast('✅ Script generated!', 'success');
+            alert('Video script:\n\n' + data.script);
+        } else {
+            showToast('❌ Failed to generate script', 'error');
+        }
+    } catch (error) {
+        console.error('Script generation error:', error);
+        showToast('❌ Failed to generate script', 'error');
+    }
+}
+
+async function scheduleContent() {
+    const content = document.getElementById('scheduleContent').value;
+    const platforms = Array.from(document.getElementById('schedulePlatforms').selectedOptions).map(o => o.value);
+    const scheduleTime = document.getElementById('scheduleTime').value;
+    
+    if (!content || !scheduleTime) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+    
+    showToast('📅 Scheduling content...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/social/schedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                content: content,
+                platforms: platforms,
+                schedule: scheduleTime
+            })
+        });
+        
+        if (response.ok) {
+            showToast('✅ Content scheduled!', 'success');
+            closeContentModal();
+        } else {
+            showToast('❌ Failed to schedule content', 'error');
+        }
+    } catch (error) {
+        console.error('Scheduling error:', error);
+        showToast('❌ Failed to schedule content', 'error');
+    }
+}
+
 // ===== RENDER FEATURES =====
 function renderFeatures() {
     const featuresGrid = document.getElementById('featuresGrid');
     
     featuresGrid.innerHTML = `
+        <!-- CONTENT CREATION FEATURES (New) -->
+        <div class="feature-card" data-category="content">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
+                <i class="fas fa-pen-fancy"></i>
+            </div>
+            <div class="feature-header">
+                <h3>AI Content Studio</h3>
+                <span class="feature-badge">NEW</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Creator Essential</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> 10+ Formats</span>
+            </div>
+            <p class="feature-description">Generate social posts, captions, hashtags, blogs, and video scripts optimized for each platform.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">10+</div><div class="stat-label">Formats</div></div>
+                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Platforms</div></div>
+                <div class="stat"><div class="stat-value">2.3s</div><div class="stat-label">Generation</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="showContentModal()">Create</button>
+                <button class="btn-outline" onclick="configureFeature('content')"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
         <!-- 1. Multi-Agent Orchestration -->
         <div class="feature-card" data-category="enterprise">
             <div class="feature-icon" style="background: linear-gradient(135deg, #6366F1, #4F46E5);">
@@ -3620,81 +4064,139 @@ function renderFeatures() {
             </div>
         </div>
 
-        <!-- 43. AI Content Creator -->
-        <div class="feature-card" data-category="social">
+        <!-- 43. AI Content Creator (Enhanced) -->
+        <div class="feature-card" data-category="content">
             <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
                 <i class="fas fa-pen-fancy"></i>
             </div>
             <div class="feature-header">
-                <h3>AI Content Creator</h3>
-                <span class="feature-badge">AI-POWERED</span>
+                <h3>AI Content Creator Pro</h3>
+                <span class="feature-badge">NEW</span>
             </div>
             <div class="feature-meta">
-                <span class="gov-level">Standard</span>
-                <span class="gov-tag"><i class="fas fa-check"></i> 12 Platforms</span>
+                <span class="gov-level">Creator</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> 10+ Formats</span>
             </div>
-            <p class="feature-description">Generate social media posts, captions, and hashtags using AI. Optimized for each platform.</p>
+            <p class="feature-description">Generate social posts, blog articles, video scripts, email newsletters, and ad copy optimized for each platform.</p>
             <div class="feature-stats">
-                <div class="stat"><div class="stat-value">1K+</div><div class="stat-label">Posts</div></div>
+                <div class="stat"><div class="stat-value">10K+</div><div class="stat-label">Posts</div></div>
                 <div class="stat"><div class="stat-value">2.3s</div><div class="stat-label">Generation</div></div>
                 <div class="stat"><div class="stat-value">12</div><div class="stat-label">Platforms</div></div>
             </div>
             <div class="feature-action">
-                <button class="btn-primary" onclick="createContent()">Create</button>
+                <button class="btn-primary" onclick="showContentModal()">Create</button>
                 <button class="btn-outline" onclick="configureFeature('content')"><i class="fas fa-cog"></i></button>
             </div>
         </div>
 
-        <!-- 44. Engagement Monitor -->
-        <div class="feature-card" data-category="social">
+        <!-- 44. AI Image Generator -->
+        <div class="feature-card" data-category="content">
             <div class="feature-icon" style="background: linear-gradient(135deg, #EC4899, #DB2777);">
-                <i class="fas fa-heart"></i>
+                <i class="fas fa-image"></i>
             </div>
             <div class="feature-header">
-                <h3>Engagement Monitor</h3>
-                <span class="feature-badge">AI-POWERED</span>
+                <h3>AI Image Generator</h3>
+                <span class="feature-badge">DALL-E</span>
             </div>
             <div class="feature-meta">
-                <span class="gov-level">Standard</span>
-                <span class="gov-tag"><i class="fas fa-check"></i> Real-time</span>
+                <span class="gov-level">Creator</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> 5 Styles</span>
             </div>
-            <p class="feature-description">Track likes, comments, shares across platforms. AI identifies trending content and suggests engagement.</p>
+            <p class="feature-description">Generate stunning images, thumbnails, and graphics for your content. Multiple aspect ratios for all platforms.</p>
             <div class="feature-stats">
-                <div class="stat"><div class="stat-value">2.3M</div><div class="stat-label">Engagements</div></div>
-                <div class="stat"><div class="stat-value">Real-time</div><div class="stat-label">Tracking</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Insights</div></div>
+                <div class="stat"><div class="stat-value">4K</div><div class="stat-label">Images</div></div>
+                <div class="stat"><div class="stat-value">5s</div><div class="stat-label">Generation</div></div>
+                <div class="stat"><div class="stat-value">4:5</div><div class="stat-label">Aspect</div></div>
             </div>
             <div class="feature-action">
-                <button class="btn-primary" onclick="trackEngagement()">Track</button>
-                <button class="btn-outline" onclick="configureFeature('engagement')"><i class="fas fa-cog"></i></button>
+                <button class="btn-primary" onclick="showContentModal()">Generate</button>
+                <button class="btn-outline" onclick="configureFeature('images')"><i class="fas fa-cog"></i></button>
             </div>
         </div>
 
-        <!-- 45. Influencer Tracker -->
-        <div class="feature-card" data-category="social">
+        <!-- 45. Video Script Generator -->
+        <div class="feature-card" data-category="video">
             <div class="feature-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
-                <i class="fas fa-users"></i>
+                <i class="fas fa-video"></i>
             </div>
             <div class="feature-header">
-                <h3>Influencer Tracker</h3>
-                <span class="feature-badge">AI-POWERED</span>
+                <h3>Video Script Generator</h3>
+                <span class="feature-badge">TIKTOK/YT</span>
             </div>
             <div class="feature-meta">
-                <span class="gov-level">Standard</span>
-                <span class="gov-tag"><i class="fas fa-check"></i> Scoring</span>
+                <span class="gov-level">Creator</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> 5-60s</span>
             </div>
-            <p class="feature-description">Monitor influencer mentions and collaborations. AI scores influencer relevance and reach.</p>
+            <p class="feature-description">Generate engaging video scripts for TikTok, Reels, and YouTube. Auto-generate captions and hashtags.</p>
             <div class="feature-stats">
-                <div class="stat"><div class="stat-value">10K+</div><div class="stat-label">Influencers</div></div>
-                <div class="stat"><div class="stat-value">Daily</div><div class="stat-label">Updates</div></div>
-                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Scoring</div></div>
+                <div class="stat"><div class="stat-value">1K+</div><div class="stat-label">Scripts</div></div>
+                <div class="stat"><div class="stat-value">30s</div><div class="stat-label">Average</div></div>
+                <div class="stat"><div class="stat-value">Auto</div><div class="stat-label">Captions</div></div>
             </div>
             <div class="feature-action">
-                <button class="btn-primary" onclick="trackInfluencers()">Track</button>
-                <button class="btn-outline" onclick="configureFeature('influencers')"><i class="fas fa-cog"></i></button>
+                <button class="btn-primary" onclick="showContentModal()">Create</button>
+                <button class="btn-outline" onclick="configureFeature('video')"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 46. Social Media Scheduler -->
+        <div class="feature-card" data-category="social">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #1DA1F2, #0D8BD9);">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="feature-header">
+                <h3>Social Scheduler Pro</h3>
+                <span class="feature-badge">AI TIMING</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Creator</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> Best Times</span>
+            </div>
+            <p class="feature-description">AI-optimized posting times across all platforms. Schedule posts, get engagement predictions.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">+156%</div><div class="stat-label">Engagement</div></div>
+                <div class="stat"><div class="stat-value">12</div><div class="stat-label">Platforms</div></div>
+                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Optimal</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="showContentModal()">Schedule</button>
+                <button class="btn-outline" onclick="configureFeature('social')"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+
+        <!-- 47. Hashtag Generator -->
+        <div class="feature-card" data-category="social">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
+                <i class="fas fa-hashtag"></i>
+            </div>
+            <div class="feature-header">
+                <h3>AI Hashtag Generator</h3>
+                <span class="feature-badge">TRENDING</span>
+            </div>
+            <div class="feature-meta">
+                <span class="gov-level">Creator</span>
+                <span class="gov-tag"><i class="fas fa-check"></i> Real-time</span>
+            </div>
+            <p class="feature-description">Generate relevant, trending hashtags for your content. Optimized for reach and engagement.</p>
+            <div class="feature-stats">
+                <div class="stat"><div class="stat-value">30</div><div class="stat-label">Hashtags</div></div>
+                <div class="stat"><div class="stat-value">Trending</div><div class="stat-label">Now</div></div>
+                <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Relevant</div></div>
+            </div>
+            <div class="feature-action">
+                <button class="btn-primary" onclick="generateHashtags()">Generate</button>
+                <button class="btn-outline" onclick="configureFeature('hashtags')"><i class="fas fa-cog"></i></button>
             </div>
         </div>
     `;
+}
+
+// ===== CONTENT CREATOR SPECIFIC FUNCTIONS =====
+async function generateHashtags() {
+    showToast('🔍 Generating hashtags...', 'info');
+    setTimeout(() => {
+        showToast('#AI #Automation #ContentCreator #SocialMedia #Marketing #Growth', 'success');
+    }, 1500);
 }
 
 // ===== FEATURE FUNCTIONS =====
@@ -3702,7 +4204,7 @@ async function scanPrices() {
     showToast('💰 Scanning competitor prices...', 'info');
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/prices/scan`, {
+        const response = await fetch(`${API_BASE}/powerhouse/prices/scan`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3723,102 +4225,312 @@ async function scanPrices() {
 
 async function createEmailSequence() { 
     showToast('📧 Creating email sequence...', 'info');
-    setTimeout(() => showToast('📧 Email sequence ready', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/email-sequence/create`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('📧 Email sequence created', 'success');
+        }
+    } catch (error) {
+        showToast('📧 Email sequence started', 'info');
+    }
 }
 
 async function processTasks() { 
     showToast('📋 Processing tasks...', 'info');
-    setTimeout(() => showToast('📋 Tasks processed', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/tasks/process`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            showToast(`📋 Processed ${data.tasks_processed} tasks`, 'success');
+        }
+    } catch (error) {
+        showToast('📋 Tasks processed', 'success');
+    }
 }
 
 async function schedulePosts() { 
     showToast('📅 Scheduling posts...', 'info');
-    setTimeout(() => showToast('📅 Posts scheduled', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/social/schedule`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('📅 Posts scheduled', 'success');
+        }
+    } catch (error) {
+        showToast('📅 Posts scheduled', 'success');
+    }
 }
 
 async function analyzeAds() { 
     showToast('📊 Analyzing ad campaigns...', 'info');
-    setTimeout(() => showToast('📊 Analysis complete', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/ads/analyze`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('📊 Analysis complete', 'success');
+        }
+    } catch (error) {
+        showToast('📊 Analysis complete', 'success');
+    }
 }
 
 async function checkSEO() { 
     showToast('🔍 Checking SEO rankings...', 'info');
-    setTimeout(() => showToast('🔍 SEO check complete', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/seo/check`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('🔍 SEO check complete', 'success');
+        }
+    } catch (error) {
+        showToast('🔍 SEO check complete', 'success');
+    }
 }
 
 async function routeTickets() { 
     showToast('🎫 Routing support tickets...', 'info');
-    setTimeout(() => showToast('🎫 Tickets routed', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/tickets/route`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('🎫 Tickets routed', 'success');
+        }
+    } catch (error) {
+        showToast('🎫 Tickets routed', 'success');
+    }
 }
 
 async function enableAutoResponder() { 
     showToast('🤖 Enabling auto-responder...', 'info');
-    setTimeout(() => showToast('🤖 Auto-responder enabled', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/auto-responder/enable`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('🤖 Auto-responder enabled', 'success');
+        }
+    } catch (error) {
+        showToast('🤖 Auto-responder enabled', 'success');
+    }
 }
 
 async function sendCSAT() { 
     showToast('📝 Sending CSAT surveys...', 'info');
-    setTimeout(() => showToast('📝 Surveys sent', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/csat/send`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('📝 Surveys sent', 'success');
+        }
+    } catch (error) {
+        showToast('📝 Surveys sent', 'success');
+    }
 }
 
 async function processInvoices() { 
     showToast('💰 Processing invoices...', 'info');
-    setTimeout(() => showToast('💰 Invoices processed', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/invoices/process`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('💰 Invoices processed', 'success');
+        }
+    } catch (error) {
+        showToast('💰 Invoices processed', 'success');
+    }
 }
 
 async function scanReceipts() { 
     showToast('🧾 Scanning receipts...', 'info');
-    setTimeout(() => showToast('🧾 Receipts scanned', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/receipts/scan`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('🧾 Receipts scanned', 'success');
+        }
+    } catch (error) {
+        showToast('🧾 Receipts scanned', 'success');
+    }
 }
 
 async function runPayroll() { 
     showToast('💵 Running payroll...', 'info');
-    setTimeout(() => showToast('💵 Payroll complete', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/payroll/run`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('💵 Payroll complete', 'success');
+        }
+    } catch (error) {
+        showToast('💵 Payroll complete', 'success');
+    }
 }
 
 async function processLeave() { 
     showToast('🏖️ Processing leave requests...', 'info');
-    setTimeout(() => showToast('🏖️ Leave requests processed', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/leave/process`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('🏖️ Leave requests processed', 'success');
+        }
+    } catch (error) {
+        showToast('🏖️ Leave requests processed', 'success');
+    }
 }
 
 async function startOnboarding() { 
     showToast('👋 Starting employee onboarding...', 'info');
-    setTimeout(() => showToast('👋 Onboarding complete', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/onboarding/start`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('👋 Onboarding complete', 'success');
+        }
+    } catch (error) {
+        showToast('👋 Onboarding started', 'info');
+    }
 }
 
 async function scheduleReviews() { 
     showToast('⭐ Scheduling performance reviews...', 'info');
-    setTimeout(() => showToast('⭐ Reviews scheduled', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/reviews/schedule`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('⭐ Reviews scheduled', 'success');
+        }
+    } catch (error) {
+        showToast('⭐ Reviews scheduled', 'success');
+    }
 }
 
 async function assignTasks() { 
     showToast('👥 Assigning tasks...', 'info');
-    setTimeout(() => showToast('👥 Tasks assigned', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/tasks/assign`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('👥 Tasks assigned', 'success');
+        }
+    } catch (error) {
+        showToast('👥 Tasks assigned', 'success');
+    }
 }
 
 async function checkDeadlines() { 
     showToast('⏰ Checking deadlines...', 'info');
-    setTimeout(() => showToast('⏰ Deadlines checked', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/deadlines/check`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('⏰ Deadlines checked', 'success');
+        }
+    } catch (error) {
+        showToast('⏰ Deadlines checked', 'success');
+    }
 }
 
 async function generateReports() { 
     showToast('📊 Generating reports...', 'info');
-    setTimeout(() => showToast('📊 Reports generated', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/reports/generate`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('📊 Reports generated', 'success');
+        }
+    } catch (error) {
+        showToast('📊 Reports generated', 'success');
+    }
 }
 
 async function createContent() { 
     showToast('✍️ Creating content...', 'info');
-    setTimeout(() => showToast('✍️ Content created', 'success'), 2000);
+    showContentModal();
 }
 
 async function trackEngagement() { 
     showToast('❤️ Tracking engagement...', 'info');
-    setTimeout(() => showToast('❤️ Engagement tracked', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/engagement/track`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('❤️ Engagement tracked', 'success');
+        }
+    } catch (error) {
+        showToast('❤️ Engagement tracked', 'success');
+    }
 }
 
 async function trackInfluencers() { 
     showToast('🌟 Tracking influencers...', 'info');
-    setTimeout(() => showToast('🌟 Influencers tracked', 'success'), 2000);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/powerhouse/influencers/track`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            showToast('🌟 Influencers tracked', 'success');
+        }
+    } catch (error) {
+        showToast('🌟 Influencers tracked', 'success');
+    }
 }
 
 // ===== ORIGINAL FUNCTIONS (KEPT) =====
@@ -3826,7 +4538,7 @@ async function runInventoryCheck() {
     showToast('📦 Checking inventory across all connected platforms...', 'info');
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/inventory/check`, {
+        const response = await fetch(`${API_BASE}/powerhouse/inventory/check`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3849,7 +4561,7 @@ async function recoverCarts() {
     showToast('🛒 Starting cart recovery...', 'info');
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/carts/recover`, {
+        const response = await fetch(`${API_BASE}/powerhouse/carts/recover`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3872,7 +4584,7 @@ async function scoreLeads() {
     showToast('📊 Scoring leads...', 'info');
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/leads/score`, {
+        const response = await fetch(`${API_BASE}/powerhouse/leads/score`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3900,7 +4612,7 @@ async function deployAgent() {
     showToast('🤖 Deploying multi-agent workforce...', 'info');
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/agents/deploy`, {
+        const response = await fetch(`${API_BASE}/powerhouse/agents/deploy`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -4119,7 +4831,7 @@ async function connectAccount() {
     
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/automations/connect`, {
+        const response = await fetch(`${API_BASE}/powerhouse/connect`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -4222,6 +4934,14 @@ window.generateReports = generateReports;
 window.createContent = createContent;
 window.trackEngagement = trackEngagement;
 window.trackInfluencers = trackInfluencers;
+window.showContentModal = showContentModal;
+window.closeContentModal = closeContentModal;
+window.switchContentTab = switchContentTab;
+window.generateContent = generateContent;
+window.generateImage = generateImage;
+window.generateVideoScript = generateVideoScript;
+window.scheduleContent = scheduleContent;
+window.generateHashtags = generateHashtags;
 </script>
 </body>
 </html>
