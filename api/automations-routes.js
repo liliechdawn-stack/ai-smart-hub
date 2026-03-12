@@ -424,9 +424,50 @@ router.get('/', authenticateToken, async (req, res) => {
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+            console.error("❌ Supabase error:", error);
+            
+            // If column doesn't exist error, try fallback query with only existing columns
+            if (error.message && error.message.includes('does not exist')) {
+                console.log("⚠️ Schema mismatch detected, attempting fallback query");
+                
+                const { data: fallbackData, error: fallbackError } = await supabase
+                    .from('automations')
+                    .select('id, user_id, name, description, trigger_type, action_type, status, created_at, updated_at')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
+                
+                if (fallbackError) throw fallbackError;
+                
+                // Enhance data with computed fields for frontend compatibility
+                const enhancedData = (fallbackData || []).map(item => ({
+                    ...item,
+                    nameastitle: item.name,
+                    active: item.status === 'active',
+                    is_active: item.status === 'active',
+                    trigger_config: {},
+                    action_config: {},
+                    schedule: '',
+                    trigger_count: 0,
+                    success_count: 0,
+                    avg_duration: 0,
+                    last_run: null
+                }));
+                
+                return res.json(enhancedData);
+            }
+            throw error;
+        }
         
-        res.json(automations || []);
+        // Enhance data for frontend - convert integer active/is_active to booleans
+        const enhancedAutomations = (automations || []).map(item => ({
+            ...item,
+            nameastitle: item.nameastitle || item.name,
+            active: item.active === 1 ? true : false,
+            is_active: item.is_active === 1 ? true : false
+        }));
+        
+        res.json(enhancedAutomations);
     } catch (error) {
         console.error("Error fetching automations:", error);
         return res.status(500).json({ error: "Database error" });
@@ -459,7 +500,15 @@ router.get('/:id', authenticateToken, async (req, res) => {
             throw error;
         }
         
-        res.json(automation);
+        // Convert integer active/is_active to booleans for frontend
+        const enhancedAutomation = {
+            ...automation,
+            nameastitle: automation.nameastitle || automation.name,
+            active: automation.active === 1 ? true : false,
+            is_active: automation.is_active === 1 ? true : false
+        };
+        
+        res.json(enhancedAutomation);
     } catch (error) {
         console.error("Error fetching automation:", error);
         return res.status(500).json({ error: "Database error" });
@@ -468,8 +517,17 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 // ===== 3. CREATE AUTOMATION =====
 router.post('/', authenticateToken, async (req, res) => {
-    const { name, description, trigger_type, trigger_config, action_type, action_config, schedule } = req.body;
+    const { name, description, trigger_type, trigger_config, action_type, action_config, schedule, active, is_active } = req.body;
     const userId = req.user.id;
+    
+    console.log('📝 CREATE AUTOMATION - Request body:', { 
+        name, 
+        trigger_type, 
+        action_type,
+        active,
+        is_active,
+        userId
+    });
     
     if (!name || !trigger_type || !action_type) {
         return res.status(400).json({ error: "Name, trigger_type, and action_type are required" });
@@ -484,52 +542,85 @@ router.post('/', authenticateToken, async (req, res) => {
             return res.status(503).json({ error: "Database service unavailable" });
         }
         
-        const { error } = await supabase
-            .from('automations')
-            .insert([{
-                id,
-                user_id: userId,
-                name,
-                description: description || '',
-                trigger_type,
-                trigger_config: trigger_config || {},
-                action_type,
-                action_config: action_config || {},
-                schedule: schedule || '',
-                status: 'active',
-                created_at: now,
-                updated_at: now
-            }]);
+        // Convert boolean to integer (1 for true, 0 for false)
+        const isActiveValue = active === true || is_active === true ? 1 : 0;
         
-        if (error) throw error;
+        const automationData = {
+            id,
+            user_id: userId,
+            name,
+            nameastitle: name,
+            description: description || '',
+            trigger_type,
+            trigger_config: trigger_config || {},
+            action_type,
+            action_config: action_config || {},
+            schedule: schedule || '',
+            status: isActiveValue === 1 ? 'active' : 'paused',
+            active: isActiveValue,
+            is_active: isActiveValue,
+            created_at: now,
+            updated_at: now,
+            trigger_count: 0,
+            success_count: 0,
+            avg_duration: 0
+        };
+        
+        console.log('📝 Automation data to insert:', JSON.stringify(automationData, null, 2));
+        
+        const { data, error } = await supabase
+            .from('automations')
+            .insert([automationData])
+            .select();
+        
+        if (error) {
+            console.error('❌ Supabase insert error:', error);
+            console.error('❌ Error code:', error.code);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Error details:', error.details);
+            throw error;
+        }
+        
+        console.log('✅ Automation created successfully:', data);
         
         // Log activity
-        await supabase
-            .from('activity_log')
-            .insert([{
-                user_id: userId,
-                action: 'automation_created',
-                details: `Created automation: ${name}`,
-                type: 'automation',
-                timestamp: now
-            }]);
+        try {
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'automation_created',
+                    details: `Created automation: ${name}`,
+                    type: 'automation',
+                    timestamp: now
+                }]);
+        } catch (logError) {
+            console.error('⚠️ Failed to log activity:', logError);
+        }
         
         res.json({
             success: true,
             id,
             message: "Automation created successfully"
         });
+        
     } catch (error) {
-        console.error("Error creating automation:", error);
-        return res.status(500).json({ error: "Failed to create automation" });
+        console.error("❌ Error creating automation:", error);
+        return res.status(500).json({ 
+            error: "Failed to create automation",
+            details: error.message,
+            code: error.code
+        });
     }
 });
 
 // ===== 4. UPDATE AUTOMATION =====
 router.put('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { name, description, trigger_config, action_config, schedule, status } = req.body;
+    const { name, description, trigger_config, action_config, schedule, status, active, is_active } = req.body;
     const userId = req.user.id;
+    
+    console.log('📝 UPDATE AUTOMATION - ID:', id, 'User:', userId);
     
     try {
         // Check if supabase is available
@@ -555,14 +646,27 @@ router.put('/:id', authenticateToken, async (req, res) => {
         const now = new Date().toISOString();
         const updates = {};
         
-        if (name !== undefined) updates.name = name;
+        if (name !== undefined) {
+            updates.name = name;
+            updates.nameastitle = name;
+        }
         if (description !== undefined) updates.description = description;
         if (trigger_config !== undefined) updates.trigger_config = trigger_config;
         if (action_config !== undefined) updates.action_config = action_config;
         if (schedule !== undefined) updates.schedule = schedule;
         if (status !== undefined) updates.status = status;
         
+        // Handle boolean to integer conversion for active/is_active
+        if (active !== undefined) {
+            updates.active = active === true ? 1 : 0;
+        }
+        if (is_active !== undefined) {
+            updates.is_active = is_active === true ? 1 : 0;
+        }
+        
         updates.updated_at = now;
+        
+        console.log('📝 Updating automation with data:', updates);
         
         const { error: updateError } = await supabase
             .from('automations')
@@ -570,26 +674,39 @@ router.put('/:id', authenticateToken, async (req, res) => {
             .eq('id', id)
             .eq('user_id', userId);
         
-        if (updateError) throw updateError;
+        if (updateError) {
+            console.error('❌ Update error:', updateError);
+            throw updateError;
+        }
+        
+        console.log('✅ Automation updated successfully');
         
         // Log activity
-        await supabase
-            .from('activity_log')
-            .insert([{
-                user_id: userId,
-                action: 'automation_updated',
-                details: `Updated automation: ${name || automation.name}`,
-                type: 'automation',
-                timestamp: now
-            }]);
+        try {
+            await supabase
+                .from('activity_log')
+                .insert([{
+                    user_id: userId,
+                    action: 'automation_updated',
+                    details: `Updated automation: ${name || automation.name}`,
+                    type: 'automation',
+                    timestamp: now
+                }]);
+        } catch (logError) {
+            console.error('⚠️ Failed to log activity:', logError);
+        }
         
         res.json({
             success: true,
             message: "Automation updated successfully"
         });
     } catch (error) {
-        console.error("Error updating automation:", error);
-        return res.status(500).json({ error: "Failed to update automation" });
+        console.error("❌ Error updating automation:", error);
+        return res.status(500).json({ 
+            error: "Failed to update automation",
+            details: error.message,
+            code: error.code
+        });
     }
 });
 
@@ -597,6 +714,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
+    
+    console.log('🗑️ DELETE automation - ID:', id, 'User:', userId);
     
     try {
         // Check if supabase is available
@@ -1521,21 +1640,30 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
         const now = new Date().toISOString();
         const newName = `${automation.name} (Copy)`;
         
+        // Determine active status from existing automation
+        const isActiveValue = automation.active === 1 ? 1 : 0;
+        
         const { error: insertError } = await supabase
             .from('automations')
             .insert([{
                 id: newId,
                 user_id: userId,
                 name: newName,
+                nameastitle: newName,
                 description: automation.description,
                 trigger_type: automation.trigger_type,
                 trigger_config: automation.trigger_config,
                 action_type: automation.action_type,
                 action_config: automation.action_config,
                 schedule: automation.schedule,
-                status: 'paused',
+                status: isActiveValue === 1 ? 'active' : 'paused',
+                active: isActiveValue,
+                is_active: isActiveValue,
                 created_at: now,
-                updated_at: now
+                updated_at: now,
+                trigger_count: 0,
+                success_count: 0,
+                avg_duration: 0
             }]);
         
         if (insertError) throw insertError;
@@ -1607,10 +1735,14 @@ router.post('/bulk/update', authenticateToken, async (req, res) => {
             });
         } else {
             const status = action === 'activate' ? 'active' : 'paused';
+            const isActiveValue = action === 'activate' ? 1 : 0;
+            
             const { error, count } = await supabase
                 .from('automations')
                 .update({ 
                     status: status,
+                    active: isActiveValue,
+                    is_active: isActiveValue,
                     updated_at: new Date().toISOString()
                 })
                 .in('id', automation_ids)
@@ -1885,22 +2017,30 @@ router.post('/import', authenticateToken, async (req, res) => {
             return res.status(503).json({ error: "Database service unavailable" });
         }
         
+        const automationData = {
+            id,
+            user_id: userId,
+            name: config.name,
+            nameastitle: config.name,
+            description: config.description || '',
+            trigger_type: config.trigger_type,
+            trigger_config: config.trigger_config || {},
+            action_type: config.action_type,
+            action_config: config.action_config || {},
+            schedule: config.schedule || '',
+            status: 'paused',
+            active: 0,
+            is_active: 0,
+            created_at: now,
+            updated_at: now,
+            trigger_count: 0,
+            success_count: 0,
+            avg_duration: 0
+        };
+        
         const { error } = await supabase
             .from('automations')
-            .insert([{
-                id,
-                user_id: userId,
-                name: config.name,
-                description: config.description || '',
-                trigger_type: config.trigger_type,
-                trigger_config: config.trigger_config || {},
-                action_type: config.action_type,
-                action_config: config.action_config || {},
-                schedule: config.schedule || '',
-                status: 'paused',
-                created_at: now,
-                updated_at: now
-            }]);
+            .insert([automationData]);
         
         if (error) throw error;
 
@@ -2143,11 +2283,17 @@ router.post('/agents/deploy', authenticateToken, async (req, res) => {
                 id: agentId,
                 user_id: userId,
                 name: `${type}-${agentId}`,
+                nameastitle: `${type}-${agentId}`,
                 description: `AI agent for ${type} automation`,
                 trigger_type: 'manual',
                 action_type: type,
                 status: 'active',
-                created_at: new Date().toISOString()
+                active: 1,
+                is_active: 1,
+                created_at: new Date().toISOString(),
+                trigger_count: 0,
+                success_count: 0,
+                avg_duration: 0
             }]);
 
         if (error) throw error;
