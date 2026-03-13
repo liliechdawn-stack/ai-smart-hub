@@ -107,6 +107,19 @@
             font-weight: 500 !important;
         }
 
+        .media-gallery-link {
+            background: var(--primary-gradient);
+            color: white !important;
+            padding: 8px 20px !important;
+            border-radius: 40px;
+            font-weight: 500 !important;
+        }
+
+        .media-gallery-link:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
         .container {
             max-width: 1000px;
             margin: 0 auto;
@@ -279,6 +292,9 @@
             background: white;
             cursor: pointer;
             transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .icon-btn:hover {
@@ -343,6 +359,39 @@
         }
 
         .hidden { display: none; }
+
+        .key-display {
+            background: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .view-key-btn {
+            background: var(--info);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .view-key-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .key-value {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -357,6 +406,9 @@
             <a href="dashboard.html">Dashboard</a>
             <a href="ai-powerhouse.html">Automations</a>
             <a href="analytics.html">Analytics</a>
+            <a href="media-gallery.html" class="media-gallery-link">
+                <i class="fas fa-images"></i> Media Gallery
+            </a>
             <a href="#" class="active">Settings</a>
             <a href="about.html">About</a>
             <a href="ai-automations.html" class="back-btn">
@@ -589,9 +641,51 @@
     </div>
 </div>
 
+<!-- View API Key Modal -->
+<div class="modal" id="viewKeyModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: white; border-radius: 16px; padding: 32px; max-width: 500px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 1.3rem; font-weight: 600;">API Key Details</h3>
+            <button onclick="closeViewKeyModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div class="form-group">
+            <label>Key Name</label>
+            <p id="viewKeyName" style="font-weight: 600;"></p>
+        </div>
+        
+        <div class="form-group">
+            <label>Platform</label>
+            <p id="viewKeyPlatform"></p>
+        </div>
+        
+        <div class="form-group">
+            <label>API Key</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="viewKeyValue" readonly style="background: var(--light-gray); font-family: monospace;" value="">
+                <button class="icon-btn" onclick="copyViewKey()" title="Copy Key">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Created</label>
+            <p id="viewKeyCreated"></p>
+        </div>
+        
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button class="btn-primary" onclick="closeViewKeyModal()" style="flex: 1;">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api`;
+
+// Store current viewing key
+let currentViewKey = null;
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', async () => {
@@ -749,18 +843,30 @@ async function loadApiKeys() {
         }
         
         container.innerHTML = keys.map(key => {
-            // Handle case where api_key might not be returned for security
-            const displayKey = key.api_key ? key.api_key.substring(0, 8) + '...' : '••••••••';
+            // Mask the key for display
+            const maskedKey = key.api_key ? 
+                key.api_key.substring(0, 4) + '••••' + key.api_key.substring(key.api_key.length - 4) : 
+                '••••••••';
+            
             return `
             <div class="api-key-item">
                 <div class="api-key-info">
                     <h4>${key.name}</h4>
                     <p>${key.platform} • Created: ${new Date(key.created_at).toLocaleDateString()}</p>
-                    <p style="font-family: monospace; font-size: 0.8rem;">${displayKey}</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <span class="key-display">${maskedKey}</span>
+                    </div>
                 </div>
                 <div class="api-key-actions">
-                    ${key.api_key ? `<button class="icon-btn" onclick="copyApiKey('${key.api_key}')" title="Copy"><i class="fas fa-copy"></i></button>` : ''}
-                    <button class="icon-btn" onclick="deleteApiKey('${key.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                    <button class="icon-btn" onclick="viewApiKey('${key.id}', '${key.name}', '${key.platform}', '${key.api_key || ''}', '${key.created_at}')" title="View Key">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="icon-btn" onclick="copyApiKey('${key.api_key || ''}')" title="Copy Key">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="icon-btn" onclick="deleteApiKey('${key.id}')" title="Delete Key">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `}).join('');
@@ -768,6 +874,33 @@ async function loadApiKeys() {
     } catch (error) {
         console.error('Error loading API keys:', error);
         container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);">Failed to load API keys</div>';
+    }
+}
+
+// View API key
+function viewApiKey(id, name, platform, key, createdAt) {
+    currentViewKey = { id, name, platform, key, createdAt };
+    document.getElementById('viewKeyName').textContent = name;
+    document.getElementById('viewKeyPlatform').textContent = platform;
+    document.getElementById('viewKeyValue').value = key || 'Key not available';
+    document.getElementById('viewKeyCreated').textContent = new Date(createdAt).toLocaleString();
+    document.getElementById('viewKeyModal').style.display = 'flex';
+}
+
+// Close view key modal
+function closeViewKeyModal() {
+    document.getElementById('viewKeyModal').style.display = 'none';
+    currentViewKey = null;
+}
+
+// Copy key from view modal
+function copyViewKey() {
+    if (currentViewKey && currentViewKey.key) {
+        navigator.clipboard.writeText(currentViewKey.key).then(() => {
+            showToast('API key copied to clipboard', 'success');
+        }).catch(() => {
+            showToast('Failed to copy', 'error');
+        });
     }
 }
 
@@ -841,6 +974,11 @@ async function deleteApiKey(id) {
 
 // Copy API key to clipboard
 function copyApiKey(key) {
+    if (!key) {
+        showToast('No key to copy', 'error');
+        return;
+    }
+    
     navigator.clipboard.writeText(key).then(() => {
         showToast('API key copied to clipboard', 'success');
     }).catch(() => {
@@ -971,9 +1109,9 @@ async function deleteAccount() {
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.style.background = type === 'success' ? '#059669' : '#dc2626';
+    toast.style.background = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#2563eb';
     toast.style.color = 'white';
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
