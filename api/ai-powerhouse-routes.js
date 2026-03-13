@@ -1,6 +1,7 @@
 // ================================================
 // AI POWERHOUSE 2.0 - ULTIMATE AUTOMATION PLATFORM
 // 47 Features - Real-Time Data Flow - Cloudflare AI Gateway
+// Media Gallery & Playback Support Added
 // ================================================
 
 const express = require('express');
@@ -8,6 +9,8 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
+const path = require('path');
+const fs = require('fs').promises;
 
 console.log('🔷 AI POWERHOUSE ROUTES: Starting to load...');
 
@@ -51,6 +54,23 @@ try {
 } catch (error) {
   console.warn('⚠️ AI POWERHOUSE ROUTES: Socket.io not available');
 }
+
+// ================================================
+// MEDIA STORAGE CONFIGURATION
+// ================================================
+const MEDIA_STORAGE_PATH = path.join(__dirname, '../public/media');
+const MEDIA_BASE_URL = '/media';
+
+// Ensure media directory exists
+async function ensureMediaDirectory() {
+  try {
+    await fs.mkdir(MEDIA_STORAGE_PATH, { recursive: true });
+    console.log('✅ Media storage directory ready');
+  } catch (error) {
+    console.error('❌ Failed to create media directory:', error);
+  }
+}
+ensureMediaDirectory();
 
 // ================================================
 // HELPER FUNCTIONS
@@ -160,6 +180,55 @@ async function callCloudflareGateway(model, messages, options = {}) {
   }
 }
 
+// Save generated media to storage
+async function saveGeneratedMedia(userId, mediaType, content, metadata = {}) {
+  try {
+    const mediaId = uuidv4();
+    const timestamp = Date.now();
+    const fileName = `${userId}_${mediaType}_${timestamp}_${mediaId}`;
+    let filePath = '';
+    let fileUrl = '';
+
+    if (mediaType === 'image') {
+      // Handle base64 image data
+      const base64Data = content.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      filePath = path.join(MEDIA_STORAGE_PATH, `${fileName}.png`);
+      await fs.writeFile(filePath, buffer);
+      fileUrl = `${MEDIA_BASE_URL}/${fileName}.png`;
+    } else if (mediaType === 'video' || mediaType === 'script') {
+      // Handle text content
+      filePath = path.join(MEDIA_STORAGE_PATH, `${fileName}.txt`);
+      await fs.writeFile(filePath, content);
+      fileUrl = `${MEDIA_BASE_URL}/${fileName}.txt`;
+    }
+
+    // Save to database
+    const { error } = await supabase
+      .from('generated_media')
+      .insert([{
+        id: mediaId,
+        user_id: userId,
+        media_type: mediaType,
+        file_url: fileUrl,
+        metadata: metadata,
+        created_at: new Date().toISOString()
+      }]);
+
+    if (error) throw error;
+
+    return {
+      id: mediaId,
+      url: fileUrl,
+      type: mediaType,
+      metadata
+    };
+  } catch (error) {
+    console.error('Error saving generated media:', error);
+    throw error;
+  }
+}
+
 // Broadcast real-time update to user
 async function broadcastUpdate(userId, event, data) {
   if (io) {
@@ -247,11 +316,18 @@ router.get('/stats', authenticateToken, requirePowerhouseAccess, async (req, res
 
     const hoursSaved = runs?.reduce((sum, run) => sum + (run.estimated_hours || 0), 0) || 0;
 
+    // Get generated media count
+    const { count: mediaCount, error: mediaError } = await supabase
+      .from('generated_media')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
     res.json({
       activeAgents: activeAgents || 0,
       imagesProcessed: imagesProcessed || 0,
       totalLeads: totalLeads || 0,
       hoursSaved: hoursSaved,
+      mediaGenerated: mediaCount || 0,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -914,10 +990,14 @@ router.get('/activity', authenticateToken, requirePowerhouseAccess, async (req, 
         icon = 'fa-share-alt';
         color = '#1DA1F2';
         type = 'social';
-      } else if (action.includes('video') || details.includes('video')) {
+      } else if (action.includes('video') || details.includes('video') || action.includes('script')) {
         icon = 'fa-video';
         color = '#FF0000';
         type = 'video';
+      } else if (action.includes('image') || details.includes('image') || action.includes('picture')) {
+        icon = 'fa-image';
+        color = '#8B5CF6';
+        type = 'image';
       } else if (action.includes('budget') || details.includes('budget') || action.includes('spend')) {
         icon = 'fa-dollar-sign';
         color = '#F59E0B';
@@ -3354,6 +3434,7 @@ router.post('/images/generate', authenticateToken, requirePowerhouseAccess, asyn
     }
 
     let imageUrl = null;
+    let savedMedia = null;
     
     if (CLOUDFLARE_ACCOUNT_ID && CLOUDFLARE_API_TOKEN && prompt) {
       try {
@@ -3370,16 +3451,22 @@ router.post('/images/generate', authenticateToken, requirePowerhouseAccess, asyn
               prompt: prompt,
               negative_prompt: 'low quality, blurry, distorted',
               guidance: 7.5,
-              steps: 20,
-              style: style,
-              aspect_ratio: ratio
+              steps: 20
             })
           }
         );
         
         if (aiResponse.ok) {
           const aiData = await aiResponse.json();
-          imageUrl = aiData.result?.image;
+          if (aiData.result && aiData.result.image) {
+            // Save the generated image to storage
+            savedMedia = await saveGeneratedMedia(userId, 'image', aiData.result.image, {
+              prompt,
+              style,
+              ratio
+            });
+            imageUrl = savedMedia.url;
+          }
         }
       } catch (aiError) {
         console.error('AI image generation failed:', aiError);
@@ -3387,8 +3474,7 @@ router.post('/images/generate', authenticateToken, requirePowerhouseAccess, asyn
     }
 
     if (!imageUrl) {
-      // Return a placeholder or mock image URL
-      imageUrl = `https://via.placeholder.com/512x512.png?text=AI+Generated+Image`;
+      return res.status(400).json({ error: 'Failed to generate image' });
     }
 
     await supabase
@@ -3401,9 +3487,16 @@ router.post('/images/generate', authenticateToken, requirePowerhouseAccess, asyn
         timestamp: new Date().toISOString()
       }]);
 
+    await broadcastUpdate(userId, 'media_generated', {
+      type: 'image',
+      id: savedMedia.id,
+      url: imageUrl
+    });
+
     res.json({
       success: true,
       image_url: imageUrl,
+      media_id: savedMedia.id,
       prompt: prompt,
       style: style,
       ratio: ratio
@@ -3428,6 +3521,7 @@ router.post('/video/script', authenticateToken, requirePowerhouseAccess, async (
     }
 
     let script = '';
+    let savedMedia = null;
     
     if (CLOUDFLARE_ACCOUNT_ID && CLOUDFLARE_API_TOKEN && topic) {
       try {
@@ -3443,13 +3537,20 @@ router.post('/video/script', authenticateToken, requirePowerhouseAccess, async (
         ]);
         
         script = aiResponse.choices[0]?.message?.content;
+        
+        // Save the script
+        savedMedia = await saveGeneratedMedia(userId, 'script', script, {
+          topic,
+          length,
+          captions
+        });
       } catch (aiError) {
         console.error('AI script generation failed:', aiError);
       }
     }
 
     if (!script) {
-      script = `[INTRO - ${length}s]\n"Hey everyone! Today we're talking about ${topic || 'AI automation'}..."\n\n[MAIN - ${length-10}s]\nHere's what you need to know about ${topic} and how it can transform your workflow.\n\n[OUTRO - 5s]\n"Don't forget to like and subscribe for more content!"`;
+      return res.status(400).json({ error: 'Failed to generate script' });
     }
 
     await supabase
@@ -3462,9 +3563,16 @@ router.post('/video/script', authenticateToken, requirePowerhouseAccess, async (
         timestamp: new Date().toISOString()
       }]);
 
+    await broadcastUpdate(userId, 'media_generated', {
+      type: 'script',
+      id: savedMedia.id,
+      topic
+    });
+
     res.json({
       success: true,
       script: script,
+      media_id: savedMedia.id,
       topic: topic,
       length: length,
       captions: captions
@@ -3537,6 +3645,181 @@ router.post('/social/scheduler-pro', authenticateToken, requirePowerhouseAccess,
   } catch (error) {
     console.error('Social scheduler pro error:', error);
     res.status(500).json({ error: 'Failed to schedule content' });
+  }
+});
+
+// ================================================
+// 37. GET GENERATED MEDIA GALLERY
+// ================================================
+router.get('/media/gallery', authenticateToken, requirePowerhouseAccess, async (req, res) => {
+  console.log('🖼️ GET /api/powerhouse/media/gallery - User:', req.user?.id);
+  const userId = req.user.id;
+  const { type, limit = 50, offset = 0 } = req.query;
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not available');
+    }
+
+    let query = supabase
+      .from('generated_media')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    if (type && type !== 'all') {
+      query = query.eq('media_type', type);
+    }
+
+    const { data: media, error, count } = await query;
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      media: media || [],
+      total: count || 0,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (error) {
+    console.error('Error fetching media gallery:', error);
+    res.status(500).json({ error: 'Failed to fetch media gallery' });
+  }
+});
+
+// ================================================
+// 38. GET SINGLE MEDIA ITEM
+// ================================================
+router.get('/media/:id', authenticateToken, requirePowerhouseAccess, async (req, res) => {
+  console.log('🖼️ GET /api/powerhouse/media/:id - User:', req.user?.id);
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not available');
+    }
+
+    const { data: media, error } = await supabase
+      .from('generated_media')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Media not found' });
+      }
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      media
+    });
+  } catch (error) {
+    console.error('Error fetching media:', error);
+    res.status(500).json({ error: 'Failed to fetch media' });
+  }
+});
+
+// ================================================
+// 39. DELETE MEDIA ITEM
+// ================================================
+router.delete('/media/:id', authenticateToken, requirePowerhouseAccess, async (req, res) => {
+  console.log('🗑️ DELETE /api/powerhouse/media/:id - User:', req.user?.id);
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not available');
+    }
+
+    // Get media info first to delete file
+    const { data: media, error: fetchError } = await supabase
+      .from('generated_media')
+      .select('file_url')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Media not found' });
+      }
+      throw fetchError;
+    }
+
+    // Delete from database
+    const { error: deleteError } = await supabase
+      .from('generated_media')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (deleteError) throw deleteError;
+
+    // Delete file from storage (optional - can keep for history)
+    if (media && media.file_url) {
+      const fileName = path.basename(media.file_url);
+      const filePath = path.join(MEDIA_STORAGE_PATH, fileName);
+      try {
+        await fs.unlink(filePath);
+      } catch (fileError) {
+        console.error('Error deleting media file:', fileError);
+      }
+    }
+
+    await broadcastUpdate(userId, 'media_deleted', { id });
+
+    res.json({
+      success: true,
+      message: 'Media deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting media:', error);
+    res.status(500).json({ error: 'Failed to delete media' });
+  }
+});
+
+// ================================================
+// 40. GET MEDIA STATS
+// ================================================
+router.get('/media/stats', authenticateToken, requirePowerhouseAccess, async (req, res) => {
+  console.log('📊 GET /api/powerhouse/media/stats - User:', req.user?.id);
+  const userId = req.user.id;
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client not available');
+    }
+
+    const { data: media, error } = await supabase
+      .from('generated_media')
+      .select('media_type')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    const stats = {
+      total: media?.length || 0,
+      images: media?.filter(m => m.media_type === 'image').length || 0,
+      scripts: media?.filter(m => m.media_type === 'script').length || 0,
+      videos: media?.filter(m => m.media_type === 'video').length || 0,
+      audio: media?.filter(m => m.media_type === 'audio').length || 0
+    };
+
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Error fetching media stats:', error);
+    res.status(500).json({ error: 'Failed to fetch media stats' });
   }
 });
 
