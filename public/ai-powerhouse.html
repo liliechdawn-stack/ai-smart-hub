@@ -47,7 +47,93 @@
             --transition: all 0.2s ease;
         }
 
-        /* ===== ACTIVE FEATURES SECTION (NEW) ===== */
+        /* ===== AUTO BADGE (NEW) ===== */
+        .auto-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 30px;
+            background: var(--info-light);
+            color: var(--info);
+            font-size: 0.6rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .auto-badge i {
+            font-size: 0.5rem;
+        }
+
+        /* ===== RECOMMENDATION CARD (NEW) ===== */
+        .recommendations-section {
+            background: white;
+            border-radius: var(--card-radius);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .recommendation-item {
+            background: var(--light-gray);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .recommendation-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .recommendation-content {
+            flex: 1;
+        }
+
+        .recommendation-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .recommendation-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .recommendation-priority {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .priority-high {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        .priority-medium {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .priority-low {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        /* ===== ACTIVE FEATURES SECTION ===== */
         .active-features-section {
             background: white;
             border-radius: var(--card-radius);
@@ -1635,6 +1721,17 @@
         </div>
     </div>
 
+    <!-- NEW: AI Recommendations Section -->
+    <div class="recommendations-section" id="recommendationsSection" style="display: none;">
+        <div class="section-header">
+            <h2><i class="fas fa-lightbulb" style="color: var(--primary);"></i> AI Recommendations</h2>
+            <span class="live-badge pulse"><i class="fas fa-circle"></i> Real-time</span>
+        </div>
+        <div id="recommendationsGrid">
+            <!-- Recommendations will be dynamically added here -->
+        </div>
+    </div>
+
     <!-- Feature Tabs -->
     <div class="feature-tabs">
         <button class="feature-tab active" onclick="filterFeatures('all')">All Features (47)</button>
@@ -1962,6 +2059,35 @@ let userAutomations = [];
 // Track active features
 let activeFeatures = [];
 
+// Automation scheduler
+let automationScheduler = null;
+
+// Feature-platform mapping for auto-activation
+const FEATURE_PLATFORM_MAP = {
+    'feature-video': ['youtube', 'tiktok', 'instagram'],
+    'feature-hashtag': ['instagram', 'tiktok', 'twitter'],
+    'feature-inventory': ['shopify', 'woocommerce', 'amazon'],
+    'feature-cart': ['shopify', 'woocommerce'],
+    'feature-price': ['shopify', 'amazon', 'ebay'],
+    'feature-content-pro': ['instagram', 'tiktok', 'facebook', 'twitter'],
+    'feature-social': ['instagram', 'tiktok', 'youtube', 'facebook'],
+    'feature-engagement': ['instagram', 'tiktok', 'youtube', 'twitter'],
+    'feature-image': ['youtube', 'tiktok', 'instagram'],
+    'feature-lead': ['salesforce', 'hubspot', 'zoho']
+};
+
+// Automation schedules
+const AUTOMATION_SCHEDULES = {
+    'feature-video': { frequency: 'daily', time: '09:00', timezone: 'auto' },
+    'feature-hashtag': { frequency: 'daily', time: '10:00' },
+    'feature-inventory': { frequency: 'hourly', realtime: true },
+    'feature-price': { frequency: 'daily', time: '02:00' },
+    'feature-cart': { frequency: 'realtime', checkInterval: 15 },
+    'feature-engagement': { frequency: 'hourly' },
+    'feature-content-pro': { frequency: 'daily', time: '08:00' },
+    'feature-social': { frequency: 'continuous', checkInterval: 5 }
+};
+
 // COMPLETE PLATFORM DATA - 500+ Platforms (Abbreviated for performance, full list in backend)
 const platforms = [
     // Social Media
@@ -2113,17 +2239,311 @@ function initWebSocket() {
     }
 }
 
+// ===== START AUTOMATION SCHEDULER (NEW) =====
+function startAutomationScheduler() {
+    console.log('⏰ Starting automation scheduler...');
+    
+    // Check every minute for scheduled tasks
+    automationScheduler = setInterval(async () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const currentTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+        
+        // Check each connected account for scheduled automations
+        for (const account of connectedAccounts) {
+            for (const [featureId, platforms] of Object.entries(FEATURE_PLATFORM_MAP)) {
+                if (!platforms.includes(account.platform)) continue;
+                
+                const schedule = AUTOMATION_SCHEDULES[featureId];
+                if (!schedule) continue;
+                
+                // Check if feature is active
+                const featureCard = document.getElementById(featureId);
+                if (!featureCard || !featureCard.classList.contains('live')) continue;
+                
+                // Check if this feature should run now
+                let shouldRun = false;
+                
+                if (schedule.frequency === 'realtime') {
+                    shouldRun = true;
+                } else if (schedule.frequency === 'hourly') {
+                    shouldRun = currentMinute === 0;
+                } else if (schedule.frequency === 'daily' && schedule.time === currentTime) {
+                    shouldRun = true;
+                }
+                
+                if (shouldRun) {
+                    executeScheduledAutomation(account, featureId);
+                }
+            }
+        }
+    }, 60000); // Check every minute
+}
+
+// ===== EXECUTE SCHEDULED AUTOMATION (NEW) =====
+async function executeScheduledAutomation(account, featureId) {
+    console.log(`🤖 Running scheduled automation: ${featureId} for ${account.platform}`);
+    
+    try {
+        const token = localStorage.getItem('token');
+        let response;
+        
+        switch(featureId) {
+            case 'feature-video':
+                response = await fetch(`${API_BASE}/powerhouse/video/script/auto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        platform: account.platform,
+                        autoGenerate: true,
+                        count: 3
+                    })
+                });
+                break;
+                
+            case 'feature-hashtag':
+                response = await fetch(`${API_BASE}/powerhouse/hashtags/auto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        platform: account.platform,
+                        trending: true,
+                        count: 10
+                    })
+                });
+                break;
+                
+            case 'feature-inventory':
+                response = await fetch(`${API_BASE}/powerhouse/inventory/auto-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        platform: account.platform,
+                        alertLowStock: true,
+                        autoReorder: true
+                    })
+                });
+                break;
+                
+            case 'feature-cart':
+                response = await fetch(`${API_BASE}/powerhouse/carts/auto-recover`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        platform: account.platform,
+                        hoursOld: 24,
+                        autoSendDiscount: true
+                    })
+                });
+                break;
+                
+            default:
+                return;
+        }
+        
+        if (response && response.ok) {
+            const data = await response.json();
+            
+            // Log the automation run
+            addNotification('🤖 Automation Complete', 
+                `${featureId} ran successfully for ${account.platform}`);
+            
+            // Update stats
+            await loadStats();
+            await loadActivityLog();
+        }
+        
+    } catch (error) {
+        console.error(`Automation failed for ${featureId}:`, error);
+    }
+}
+
+// ===== AUTO-ACTIVATE FEATURES WHEN ACCOUNT CONNECTED (NEW) =====
+async function autoActivateFeaturesForAccount(account) {
+    console.log(`🤖 Auto-activating features for ${account.platform}...`);
+    
+    const activated = [];
+    
+    for (const [featureId, platforms] of Object.entries(FEATURE_PLATFORM_MAP)) {
+        if (platforms.includes(account.platform)) {
+            const featureCard = document.getElementById(featureId);
+            if (featureCard && !featureCard.classList.contains('live')) {
+                featureCard.classList.add('live');
+                featureCard.classList.remove('paused');
+                
+                const featureName = featureCard.querySelector('h3')?.textContent || featureId;
+                addActiveFeature({
+                    id: featureId,
+                    name: featureName,
+                    platform: account.platform
+                });
+                
+                activated.push(featureName);
+                
+                // Log activation
+                logAutoActivation(account.platform, featureName);
+            }
+        }
+    }
+    
+    if (activated.length > 0) {
+        showToast(`✨ Auto-activated ${activated.length} features for ${account.platform}!`, 'success');
+    }
+    
+    return activated;
+}
+
+// ===== LOG AUTO-ACTIVATION (NEW) =====
+function logAutoActivation(platform, feature) {
+    const logEntry = {
+        id: Date.now(),
+        title: `✨ Auto-activated: ${feature}`,
+        message: `Feature automatically enabled for ${platform}`,
+        time: 'Just now',
+        icon: 'fa-robot',
+        color: '#10B981',
+        type: 'automation'
+    };
+    
+    recentActivity.unshift(logEntry);
+    if (recentActivity.length > 10) recentActivity.pop();
+    loadActivityLog();
+}
+
+// ===== GET AI RECOMMENDATIONS (NEW) =====
+async function getAIRecommendations() {
+    if (connectedAccounts.length === 0) return;
+    
+    const recommendations = [];
+    
+    for (const account of connectedAccounts) {
+        const accountAge = daysSince(account.created_at);
+        
+        // Recommend features based on account age
+        if (accountAge < 7) {
+            recommendations.push({
+                platform: account.platform,
+                feature: 'AI Content Studio',
+                reason: 'New account detected - start with daily posts to build audience',
+                priority: 'high',
+                action: 'content'
+            });
+        }
+        
+        // Check for missing features
+        const activeFeatureIds = activeFeatures.map(f => f.id);
+        
+        for (const [featureId, platforms] of Object.entries(FEATURE_PLATFORM_MAP)) {
+            if (!platforms.includes(account.platform)) continue;
+            
+            const featureCard = document.getElementById(featureId);
+            const featureName = featureCard?.querySelector('h3')?.textContent || featureId;
+            
+            if (!activeFeatureIds.includes(featureId)) {
+                recommendations.push({
+                    platform: account.platform,
+                    feature: featureName,
+                    reason: `This feature works great with ${account.platform} and could boost your results`,
+                    priority: 'medium',
+                    action: 'activate'
+                });
+            }
+        }
+    }
+    
+    return recommendations.slice(0, 3); // Show top 3 recommendations
+}
+
+// ===== RENDER AI RECOMMENDATIONS (NEW) =====
+async function renderRecommendations() {
+    const section = document.getElementById('recommendationsSection');
+    const grid = document.getElementById('recommendationsGrid');
+    
+    const recommendations = await getAIRecommendations();
+    
+    if (!recommendations || recommendations.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    grid.innerHTML = recommendations.map(rec => `
+        <div class="recommendation-item">
+            <div class="recommendation-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="recommendation-content">
+                <div class="recommendation-title">
+                    Activate ${rec.feature} for ${rec.platform}
+                </div>
+                <div class="recommendation-desc">
+                    ${rec.reason}
+                </div>
+            </div>
+            <div>
+                <span class="recommendation-priority priority-${rec.priority}">
+                    ${rec.priority.toUpperCase()}
+                </span>
+            </div>
+            <button class="btn-primary" style="padding: 8px 16px;" 
+                    onclick="activateRecommendedFeature('${rec.feature}')">
+                Activate
+            </button>
+        </div>
+    `).join('');
+}
+
+// ===== ACTIVATE RECOMMENDED FEATURE (NEW) =====
+function activateRecommendedFeature(featureName) {
+    // Find the feature card by name
+    const cards = document.querySelectorAll('.feature-card');
+    for (const card of cards) {
+        const title = card.querySelector('h3')?.textContent;
+        if (title === featureName) {
+            const toggleBtn = card.querySelector('.btn-outline:last-child');
+            if (toggleBtn) {
+                toggleBtn.click();
+            }
+            break;
+        }
+    }
+}
+
+// ===== DAYS SINCE HELPER (NEW) =====
+function daysSince(dateString) {
+    const then = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - then);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+}
+
 // ===== ACTIVE FEATURES MANAGEMENT =====
 function addActiveFeature(feature) {
     if (!activeFeatures.find(f => f.id === feature.id)) {
         activeFeatures.push(feature);
         renderActiveFeatures();
+        renderRecommendations(); // Update recommendations
     }
 }
 
 function removeActiveFeature(featureId) {
     activeFeatures = activeFeatures.filter(f => f.id !== featureId);
     renderActiveFeatures();
+    renderRecommendations(); // Update recommendations
 }
 
 function renderActiveFeatures() {
@@ -2163,6 +2583,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     startLiveUpdates();
     initWebSocket();
     renderFeatures();
+    startAutomationScheduler(); // Start the automation scheduler
 });
 
 // ===== LOAD ALL DATA =====
@@ -2178,6 +2599,9 @@ async function loadAllData() {
             loadUserAutomations(),
             loadActiveFeatures()
         ]);
+        
+        // After accounts are loaded, get recommendations
+        await renderRecommendations();
         
     } catch (error) {
         console.error('Error loading data:', error);
@@ -2607,6 +3031,7 @@ async function loadActivityLog() {
                 else if (a.type === 'content') icon = 'fa-pen-fancy';
                 else if (a.type === 'social') icon = 'fa-share-alt';
                 else if (a.type === 'video') icon = 'fa-video';
+                else if (a.type === 'automation') icon = 'fa-robot';
                 
                 return `
                 <div class="log-entry">
@@ -2898,6 +3323,33 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// ===== ADD NOTIFICATION =====
+function addNotification(title, message) {
+    const list = document.getElementById('notificationList');
+    const count = document.getElementById('notificationCount');
+    
+    if (!list) return;
+    
+    let notificationCount = parseInt(count?.textContent || '0');
+    notificationCount++;
+    if (count) count.textContent = notificationCount;
+    
+    const item = document.createElement('div');
+    item.className = 'notification-item unread';
+    item.innerHTML = `
+        <div class="notification-title">
+            <span>${title}</span>
+            <span class="time">Just now</span>
+        </div>
+        <div class="notification-message">${message}</div>
+    `;
+    list.prepend(item);
+    
+    if (list.children.length > 10) {
+        list.lastChild.remove();
+    }
+}
+
 // ===== CONTENT CREATION FUNCTIONS =====
 function showContentModal() {
     document.getElementById('contentModal').classList.add('active');
@@ -2954,7 +3406,6 @@ async function generateContent() {
             showToast('✅ Content generated successfully!', 'success');
             alert('Generated content:\n\n' + data.content);
             
-            // Add to active features temporarily
             addActiveFeature({
                 id: 'content_' + Date.now(),
                 name: `Content: ${topic.substring(0, 20)}`
@@ -4180,6 +4631,7 @@ function renderFeatures() {
             <div class="feature-header">
                 <h3>AI Content Creator Pro</h3>
                 <span class="feature-badge">NEW</span>
+                <span class="auto-badge"><i class="fas fa-bolt"></i> AUTO</span>
             </div>
             <div class="feature-meta">
                 <span class="gov-level">Creator</span>
@@ -4206,6 +4658,7 @@ function renderFeatures() {
             <div class="feature-header">
                 <h3>AI Image Generator</h3>
                 <span class="feature-badge">DALL-E</span>
+                <span class="auto-badge"><i class="fas fa-bolt"></i> AUTO</span>
             </div>
             <div class="feature-meta">
                 <span class="gov-level">Creator</span>
@@ -4232,6 +4685,7 @@ function renderFeatures() {
             <div class="feature-header">
                 <h3>Video Script Generator</h3>
                 <span class="feature-badge">TIKTOK/YT</span>
+                <span class="auto-badge"><i class="fas fa-bolt"></i> AUTO</span>
             </div>
             <div class="feature-meta">
                 <span class="gov-level">Creator</span>
@@ -4258,6 +4712,7 @@ function renderFeatures() {
             <div class="feature-header">
                 <h3>AI Hashtag Generator</h3>
                 <span class="feature-badge">TRENDING</span>
+                <span class="auto-badge"><i class="fas fa-bolt"></i> AUTO</span>
             </div>
             <div class="feature-meta">
                 <span class="gov-level">Creator</span>
@@ -4287,7 +4742,6 @@ function toggleFeatureLive(featureId) {
         featureCard.classList.remove('live');
         featureCard.classList.add('paused');
         
-        // Remove from active features
         const featureName = featureCard.querySelector('h3')?.textContent || 'Feature';
         removeActiveFeature(featureId);
         
@@ -4296,7 +4750,6 @@ function toggleFeatureLive(featureId) {
         featureCard.classList.remove('paused');
         featureCard.classList.add('live');
         
-        // Add to active features
         const featureName = featureCard.querySelector('h3')?.textContent || 'Feature';
         addActiveFeature({
             id: featureId,
@@ -4305,7 +4758,6 @@ function toggleFeatureLive(featureId) {
         
         showToast(`✅ ${featureName} activated`, 'success');
         
-        // Simulate WebSocket event
         if (socket && socket.connected) {
             socket.emit('feature_toggle', { id: featureId, status: 'active' });
         }
@@ -5000,6 +5452,9 @@ async function connectAccount() {
             closeModal();
             await loadConnectedAccounts();
             await loadActivityLog();
+            
+            // NEW: Auto-activate features for this platform
+            await autoActivateFeaturesForAccount({ platform: selectedPlatform, id: result.account.id });
         } else {
             const error = await response.json();
             showToast(error.error || 'Failed to connect account', 'error');
