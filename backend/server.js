@@ -116,10 +116,37 @@ const settingsRoutes = require('../api/settings-routes');
 // ===== AI POWERHOUSE ROUTES =====
 const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
 
-// ===== NEW: AUTOMATION TEMPLATES ROUTES =====
-const automationTemplatesRoutes = require('./routes/automation-templates-routes');
-const userAutomationsRoutes = require('./routes/user-automations-routes');
-const leadsRoutes = require('./routes/leads-routes');
+// ===== NEW: AUTOMATION TEMPLATES ROUTES (with error handling) =====
+let automationTemplatesRoutes;
+let userAutomationsRoutes;
+let leadsRoutes;
+
+try {
+  automationTemplatesRoutes = require('./routes/automation-templates-routes');
+  console.log('✅ automation-templates-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load automation-templates-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  automationTemplatesRoutes = (req, res) => res.status(500).json({ error: 'Templates routes not available', details: err.message });
+}
+
+try {
+  userAutomationsRoutes = require('./routes/user-automations-routes');
+  console.log('✅ user-automations-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load user-automations-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  userAutomationsRoutes = (req, res) => res.status(500).json({ error: 'User automations routes not available', details: err.message });
+}
+
+try {
+  leadsRoutes = require('./routes/leads-routes');
+  console.log('✅ leads-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load leads-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
+}
 
 const app = express();
 
