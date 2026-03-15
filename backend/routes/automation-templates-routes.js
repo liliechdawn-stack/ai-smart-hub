@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const supabase = require('../backend/supabase');
+const supabase = require('../database-supabase');
 const { authenticateToken } = require('../backend/auth-middleware');
 
 // ================================================
