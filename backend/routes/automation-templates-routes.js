@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../database-supabase');
-const { authenticateToken } = require('../backend/auth-middleware');
+const { authenticateToken } = require('../auth-middleware');
 
 // ================================================
 // GET ALL TEMPLATES (with filters)
