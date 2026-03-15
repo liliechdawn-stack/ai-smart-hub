@@ -1,6 +1,5 @@
-
+const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
-const { supabase } = require('./database-supabase');
 
 // Make sure this path matches the one your app uses!
 const dbPath = path.join(__dirname, "database.sqlite");

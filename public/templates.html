@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Templates - Get More Leads | AI Powerhouse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #d4af37;
+            --primary-light: #f5e7b2;
+            --primary-dark: #b8962e;
+            --primary-gradient: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+            --dark: #0f172a;
+            --dark-accent: #1e293b;
+            --light: #ffffff;
+            --light-gray: #f8fafc;
+            --medium-gray: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #2563eb;
+            --border-color: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f1f5f9;
+            color: var(--text-primary);
+        }
+
+        nav {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 32px; 
+        }
+        
+        .nav-logo { 
+            font-weight: 800; 
+            font-size: 1.4rem; 
+            color: var(--primary-dark);
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        
+        .nav-links { 
+            display: flex; 
+            gap: 24px; 
+            align-items: center; 
+        }
+        
+        .nav-links a { 
+            text-decoration: none; 
+            color: var(--text-secondary); 
+            font-size: 0.95rem; 
+            font-weight: 500; 
+            transition: all 0.2s ease; 
+            padding: 6px 0;
+        }
+        
+        .nav-links a:hover { 
+            color: var(--primary-dark); 
+        }
+        
+        .nav-links a.active { 
+            color: var(--primary-dark); 
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* Header Section */
+        .template-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .template-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .template-header p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 30px;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-gradient);
+            border-color: transparent;
+            color: white;
+        }
+
+        /* Template Grid */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .template-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .template-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(212, 175, 55, 0.2);
+            border-color: var(--primary);
+        }
+
+        .template-header-bg {
+            height: 100px;
+            background: var(--primary-gradient);
+            position: relative;
+        }
+
+        .template-icon {
+            position: absolute;
+            top: 50px;
+            left: 24px;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--primary);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .template-content {
+            padding: 40px 24px 24px;
+        }
+
+        .template-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--light-gray);
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .template-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .template-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .template-metrics {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 12px 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .metric i {
+            color: var(--primary);
+        }
+
+        .template-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .complexity {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .complexity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .use-count {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--light-gray);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-muted);
+            grid-column: 1/-1;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo">
+                <i class="fas fa-bolt" style="color: var(--primary);"></i>
+                AI Powerhouse
+            </a>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="templates.html" class="active">Templates</a>
+                <a href="my-automations.html">My Automations</a>
+                <a href="analytics.html">Analytics</a>
+                <a href="settings.html">Settings</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="template-header">
+            <h1>Automation Templates</h1>
+            <p>Start with a proven template used by thousands of businesses to save time and get more leads</p>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalTemplates">0</div>
+                <div class="stat-label">Templates</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalRuns">0</div>
+                <div class="stat-label">Automations Run</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalLeads">0</div>
+                <div class="stat-label">Leads Generated</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avgSuccess">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search templates...">
+            </div>
+            
+            <div class="filter-group">
+                <button class="filter-btn active" data-category="all">All</button>
+                <button class="filter-btn" data-category="lead_generation">Lead Gen</button>
+                <button class="filter-btn" data-category="content_creation">Content</button>
+                <button class="filter-btn" data-category="customer_support">Support</button>
+                <button class="filter-btn" data-category="ecommerce">E-commerce</button>
+                <button class="filter-btn" data-category="social_media">Social</button>
+            </div>
+
+            <div class="filter-group">
+                <select id="industryFilter" class="filter-btn" style="min-width: 150px;">
+                    <option value="all">All Industries</option>
+                    <option value="agency">Agency</option>
+                    <option value="ecommerce">E-commerce</option>
+                    <option value="creator">Creator</option>
+                    <option value="local_business">Local Business</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="templateGrid" class="template-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading templates...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+        const API_BASE = `${BACKEND_URL}/api/automation`;
+
+        let allTemplates = [];
+        let currentCategory = 'all';
+        let currentIndustry = 'all';
+        let searchTerm = '';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadTemplates();
+            await loadStats();
+            setupEventListeners();
+        });
+
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        async function loadTemplates() {
+            try {
+                const token = localStorage.getItem('token');
+                let url = `${API_BASE}/templates?`;
+                
+                if (currentCategory !== 'all') {
+                    url += `&category=${currentCategory}`;
+                }
+                if (currentIndustry !== 'all') {
+                    url += `&industry=${currentIndustry}`;
+                }
+                if (searchTerm) {
+                    url += `&search=${encodeURIComponent(searchTerm)}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load templates');
+
+                const data = await response.json();
+                allTemplates = data.templates;
+                renderTemplates(allTemplates);
+
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                document.getElementById('templateGrid').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Failed to load templates</h3>
+                        <p>Please try again later</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('token');
+                
+                // Get total templates
+                const templatesResponse = await fetch(`${API_BASE}/templates`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const templatesData = await templatesResponse.json();
+                
+                // Get user's automation stats
+                const automationsResponse = await fetch(`${BACKEND_URL}/api/automations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const automationsData = await automationsResponse.json();
+                
+                // Get leads stats
+                const leadsResponse = await fetch(`${BACKEND_URL}/api/leads/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const leadsData = await leadsResponse.json();
+
+                document.getElementById('totalTemplates').textContent = templatesData.total || 0;
+                document.getElementById('totalRuns').textContent = automationsData.total_runs || 0;
+                document.getElementById('totalLeads').textContent = leadsData.total || 0;
+                document.getElementById('avgSuccess').textContent = leadsData.conversion_rate || '85%';
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function renderTemplates(templates) {
+            const grid = document.getElementById('templateGrid');
+
+            if (!templates || templates.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <h3>No templates found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = templates.map(template => `
+                <div class="template-card" onclick="useTemplate('${template.id}')">
+                    <div class="template-header-bg" style="background: ${template.color || 'var(--primary-gradient)'}">
+                        ${template.is_featured ? '<span class="featured-badge">🔥 Featured</span>' : ''}
+                        <div class="template-icon">
+                            <i class="fas ${template.icon || 'fa-robot'}"></i>
+                        </div>
+                    </div>
+                    <div class="template-content">
+                        <span class="template-category">
+                            ${formatCategory(template.category)}
+                        </span>
+                        <h3 class="template-title">${template.name}</h3>
+                        <p class="template-description">${template.description}</p>
+                        
+                        <div class="template-metrics">
+                            <div class="metric">
+                                <i class="far fa-clock"></i>
+                                <span>${template.time_saved || '5 hrs/week'}</span>
+                            </div>
+                            <div class="metric">
+                                <i class="fas fa-trend-up"></i>
+                                <span>${template.roi_impact || '30% more leads'}</span>
+                            </div>
+                        </div>
+
+                        <div class="template-footer">
+                            <div class="complexity">
+                                <span class="complexity-dot" style="opacity: ${template.complexity === 'simple' ? 1 : 0.3}"></span>
+                                <span class="complexity-dot" style="opacity: ${template.complexity === 'medium' ? 1 : 0.3}"></span>
+                                <span class="complexity-dot" style="opacity: ${template.complexity === 'advanced' ? 1 : 0.3}"></span>
+                                <span style="margin-left: 4px;">${template.complexity || 'simple'}</span>
+                            </div>
+                            <div class="use-count">
+                                <i class="fas fa-users"></i> ${template.user_count || 0} users
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatCategory(category) {
+            const categories = {
+                'lead_generation': 'Lead Generation',
+                'content_creation': 'Content Creation',
+                'customer_support': 'Customer Support',
+                'ecommerce': 'E-commerce',
+                'social_media': 'Social Media',
+                'reporting': 'Reporting'
+            };
+            return categories[category] || category;
+        }
+
+        function useTemplate(templateId) {
+            window.location.href = `builder.html?template=${templateId}`;
+        }
+
+        function setupEventListeners() {
+            // Category filters
+            document.querySelectorAll('[data-category]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('[data-category]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentCategory = btn.dataset.category;
+                    loadTemplates();
+                });
+            });
+
+            // Industry filter
+            document.getElementById('industryFilter').addEventListener('change', (e) => {
+                currentIndustry = e.target.value;
+                loadTemplates();
+            });
+
+            // Search input (debounced)
+            let searchTimeout;
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    searchTerm = e.target.value;
+                    loadTemplates();
+                }, 300);
+            });
+        }
+    </script>
+</body>
+</html>

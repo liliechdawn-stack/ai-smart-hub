@@ -1,5 +1,4 @@
 const { db, query, getOne } = require("./db");
-const { supabase } = require('./database-supabase');
 
 const LIMITS = {
   free: { messages: 100, leads: 10 },
@@ -20,8 +19,12 @@ async function canUserProceed(user_id, type = 'messages') {
 // Save message and increment usage
 async function saveAiResponse(user_id, session_id, client_name, message, response) {
   return new Promise((resolve, reject) => {
-    // Removed SQLite serialization
-
+    db.serialize(() => {
+      db.run(`INSERT INTO chats (user_id, session_id, client_name, message, response) VALUES (?, ?, ?, ?, ?)`,
+        [user_id, session_id, client_name, message, response]);
+      db.run(`UPDATE users SET messages_used = messages_used + 1 WHERE id = ?`, [user_id], (err) => {
+        err ? reject(err) : resolve(true);
+      });
     });
   });
 }

@@ -80,13 +80,20 @@ CREATE TABLE IF NOT EXISTS knowledge_base (
 CREATE TABLE IF NOT EXISTS leads (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  automation_id TEXT,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
   company TEXT,
   job_title TEXT,
   message TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  status TEXT DEFAULT 'new',
+  source TEXT DEFAULT 'widget',
+  notes TEXT,
+  metadata JSONB DEFAULT '{}',
+  last_contact TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP
 );
 
 -- ============================================
@@ -436,11 +443,96 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 -- ============================================
--- CREATE INDEXES FOR PERFORMANCE
+-- NEW TABLES FOR AI POWERHOUSE 2.0
+-- ============================================
+
+-- 1. AUTOMATION TEMPLATES (Pre-built workflows)
+CREATE TABLE IF NOT EXISTS automation_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL CHECK (category IN (
+    'lead_generation', 
+    'content_creation', 
+    'customer_support', 
+    'ecommerce', 
+    'reporting',
+    'social_media'
+  )),
+  industry TEXT[] DEFAULT '{}',
+  complexity TEXT CHECK (complexity IN ('simple', 'medium', 'advanced')),
+  time_saved TEXT,
+  roi_impact TEXT,
+  icon TEXT,
+  color TEXT,
+  trigger_schema JSONB NOT NULL DEFAULT '{}',
+  action_schema JSONB NOT NULL DEFAULT '{}',
+  default_config JSONB DEFAULT '{}',
+  is_featured BOOLEAN DEFAULT false,
+  usage_count INTEGER DEFAULT 0,
+  success_rate DECIMAL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. USER AUTOMATIONS (Advanced automations created by users)
+CREATE TABLE IF NOT EXISTS user_automations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  template_id UUID REFERENCES automation_templates(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'error', 'archived')),
+  trigger_type TEXT NOT NULL,
+  trigger_config JSONB NOT NULL DEFAULT '{}',
+  actions JSONB NOT NULL DEFAULT '[]',
+  connected_accounts JSONB[] DEFAULT '{}',
+  ai_config JSONB DEFAULT '{}',
+  run_count INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  fail_count INTEGER DEFAULT 0,
+  last_run_at TIMESTAMP WITH TIME ZONE,
+  last_error TEXT,
+  next_run_at TIMESTAMP WITH TIME ZONE,
+  leads_generated INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. LEAD SOURCES (Track where leads come from)
+CREATE TABLE IF NOT EXISTS lead_sources (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  automation_id UUID REFERENCES user_automations(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  type TEXT CHECK (type IN ('widget', 'form', 'chat', 'email', 'social', 'api')),
+  config JSONB DEFAULT '{}',
+  leads_count INTEGER DEFAULT 0,
+  conversion_rate DECIMAL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. GENERATED MEDIA (Images, scripts, videos)
+CREATE TABLE IF NOT EXISTS generated_media (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  automation_id UUID REFERENCES user_automations(id) ON DELETE SET NULL,
+  media_type TEXT CHECK (media_type IN ('image', 'video', 'script', 'audio')),
+  file_url TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  views INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- CREATE ADDITIONAL INDEXES FOR PERFORMANCE
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_business_id ON users(business_id);
 CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id);
+CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id);
 CREATE INDEX IF NOT EXISTS idx_chats_session_id ON chats(session_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_user_id ON knowledge_base(user_id);
@@ -458,6 +550,47 @@ CREATE INDEX IF NOT EXISTS idx_usage_logs_user_id ON usage_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_logs_timestamp ON usage_logs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
+
+-- NEW INDEXES
+CREATE INDEX IF NOT EXISTS idx_user_automations_user_id ON user_automations(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_automations_status ON user_automations(status);
+CREATE INDEX IF NOT EXISTS idx_lead_sources_user_id ON lead_sources(user_id);
+CREATE INDEX IF NOT EXISTS idx_generated_media_user_id ON generated_media(user_id);
+CREATE INDEX IF NOT EXISTS idx_automation_templates_category ON automation_templates(category);
+CREATE INDEX IF NOT EXISTS idx_automation_templates_featured ON automation_templates(is_featured);
+
+-- ============================================
+-- ENABLE ROW LEVEL SECURITY
+-- ============================================
+ALTER TABLE automation_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_automations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lead_sources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE generated_media ENABLE ROW LEVEL SECURITY;
+
+-- Templates are readable by all authenticated users
+CREATE POLICY "Templates are viewable by all authenticated users" 
+  ON automation_templates FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Users can only see their own automations
+CREATE POLICY "Users can view their own automations" 
+  ON user_automations FOR SELECT USING (auth.uid()::integer = user_id);
+
+CREATE POLICY "Users can insert their own automations" 
+  ON user_automations FOR INSERT WITH CHECK (auth.uid()::integer = user_id);
+
+CREATE POLICY "Users can update their own automations" 
+  ON user_automations FOR UPDATE USING (auth.uid()::integer = user_id);
+
+CREATE POLICY "Users can delete their own automations" 
+  ON user_automations FOR DELETE USING (auth.uid()::integer = user_id);
+
+-- Users can only see their own lead sources
+CREATE POLICY "Users can view their own lead sources" 
+  ON lead_sources FOR SELECT USING (auth.uid()::integer = user_id);
+
+-- Users can only see their own generated media
+CREATE POLICY "Users can view their own generated media" 
+  ON generated_media FOR SELECT USING (auth.uid()::integer = user_id);
 
 -- ============================================
 -- INSERT SAMPLE INCIDENTS

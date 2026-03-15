@@ -1,8 +1,7 @@
 // backend/migrate.js - Run this before deployment
-
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const { db } = require('./database.js');
-const { supabase } = require('./database-supabase');
 
 console.log('🚀 Starting database migration...');
 console.log('📊 Checking all required tables...');

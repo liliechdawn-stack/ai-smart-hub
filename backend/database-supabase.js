@@ -634,6 +634,61 @@ async function getLeadByEmail(user_id, email) {
   }
 }
 
+async function updateLeadStatus(lead_id, user_id, status, notes = null) {
+  try {
+    const updateData = { status, updated_at: new Date().toISOString() };
+    if (notes) updateData.notes = notes;
+    
+    const { error } = await supabase
+      .from('leads')
+      .update(updateData)
+      .eq('id', lead_id)
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'updateLeadStatus');
+  }
+}
+
+async function getLeadScore(lead_id, user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('lead_scores')
+      .select('score, scored_at')
+      .eq('lead_id', lead_id)
+      .eq('user_id', user_id)
+      .order('scored_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'getLeadScore');
+  }
+}
+
+async function saveLeadScore(lead_id, user_id, score, criteria = {}) {
+  try {
+    const { error } = await supabase
+      .from('lead_scores')
+      .insert({
+        lead_id,
+        user_id,
+        score,
+        criteria,
+        scored_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'saveLeadScore');
+  }
+}
+
 // ===============================
 // CHATS
 // ===============================
@@ -1070,6 +1125,232 @@ async function getAutomationRuns(automation_id, user_id, limit = 50) {
     return data || [];
   } catch (error) {
     handleError(error, 'getAutomationRuns');
+  }
+}
+
+// ===============================
+// AUTOMATION TEMPLATES (NEW)
+// ===============================
+
+async function getAutomationTemplates(category = null, industry = null, featured = false) {
+  try {
+    let query = supabase
+      .from('automation_templates')
+      .select('*')
+      .order('is_featured', { ascending: false })
+      .order('usage_count', { ascending: false });
+
+    if (category && category !== 'all') {
+      query = query.eq('category', category);
+    }
+    
+    if (industry && industry !== 'all') {
+      query = query.contains('industry', [industry]);
+    }
+    
+    if (featured) {
+      query = query.eq('is_featured', true);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getAutomationTemplates');
+  }
+}
+
+async function getAutomationTemplateBySlug(slug) {
+  try {
+    const { data, error } = await supabase
+      .from('automation_templates')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'getAutomationTemplateBySlug');
+  }
+}
+
+async function incrementTemplateUsage(templateId) {
+  try {
+    const { error } = await supabase
+      .from('automation_templates')
+      .update({ usage_count: supabase.raw('usage_count + 1') })
+      .eq('id', templateId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'incrementTemplateUsage');
+  }
+}
+
+// ===============================
+// USER AUTOMATIONS (NEW - Advanced)
+// ===============================
+
+async function createUserAutomation(user_id, template_id, name, description, trigger_type, trigger_config, actions, status = 'draft') {
+  try {
+    const id = uuidv4();
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('user_automations')
+      .insert({
+        id,
+        user_id,
+        template_id,
+        name,
+        description,
+        status,
+        trigger_type,
+        trigger_config,
+        actions,
+        created_at: now,
+        updated_at: now
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'createUserAutomation');
+  }
+}
+
+async function getUserAutomations(user_id, status = null) {
+  try {
+    let query = supabase
+      .from('user_automations')
+      .select('*, template:automation_templates(name, icon, color, category)')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getUserAutomations');
+  }
+}
+
+async function getUserAutomationById(id, user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('user_automations')
+      .select('*, template:automation_templates(*)')
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'getUserAutomationById');
+  }
+}
+
+async function updateUserAutomation(id, user_id, updates) {
+  try {
+    const { error } = await supabase
+      .from('user_automations')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'updateUserAutomation');
+  }
+}
+
+async function deleteUserAutomation(id, user_id) {
+  try {
+    // Delete runs first
+    await supabase
+      .from('automation_runs')
+      .delete()
+      .eq('automation_id', id);
+
+    // Delete automation
+    const { error } = await supabase
+      .from('user_automations')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'deleteUserAutomation');
+  }
+}
+
+// ===============================
+// LEAD SOURCES (NEW)
+// ===============================
+
+async function createLeadSource(user_id, name, type, automation_id = null, config = {}) {
+  try {
+    const id = uuidv4();
+    const { data, error } = await supabase
+      .from('lead_sources')
+      .insert({
+        id,
+        user_id,
+        automation_id,
+        name,
+        type,
+        config
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'createLeadSource');
+  }
+}
+
+async function getLeadSources(user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('lead_sources')
+      .select('*')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getLeadSources');
+  }
+}
+
+async function updateLeadSourceStats(source_id, leads_generated) {
+  try {
+    const { error } = await supabase
+      .from('lead_sources')
+      .update({
+        leads_count: supabase.raw('leads_count + ' + leads_generated)
+      })
+      .eq('id', source_id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'updateLeadSourceStats');
   }
 }
 
@@ -1640,6 +1921,92 @@ async function removeSubscriber(email) {
 }
 
 // ===============================
+// GENERATED MEDIA (NEW)
+// ===============================
+
+async function saveGeneratedMedia(user_id, media_type, file_url, metadata = {}) {
+  try {
+    const id = uuidv4();
+    const { data, error } = await supabase
+      .from('generated_media')
+      .insert({
+        id,
+        user_id,
+        media_type,
+        file_url,
+        metadata,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'saveGeneratedMedia');
+  }
+}
+
+async function getGeneratedMedia(user_id, media_type = null, limit = 50, offset = 0) {
+  try {
+    let query = supabase
+      .from('generated_media')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (media_type && media_type !== 'all') {
+      query = query.eq('media_type', media_type);
+    }
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+    return { media: data || [], total: count || 0 };
+  } catch (error) {
+    handleError(error, 'getGeneratedMedia');
+  }
+}
+
+async function deleteGeneratedMedia(media_id, user_id) {
+  try {
+    const { error } = await supabase
+      .from('generated_media')
+      .delete()
+      .eq('id', media_id)
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'deleteGeneratedMedia');
+  }
+}
+
+async function getMediaStats(user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('generated_media')
+      .select('media_type')
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+    
+    const stats = {
+      total: data?.length || 0,
+      images: data?.filter(m => m.media_type === 'image').length || 0,
+      videos: data?.filter(m => m.media_type === 'video').length || 0,
+      scripts: data?.filter(m => m.media_type === 'script').length || 0,
+      audio: data?.filter(m => m.media_type === 'audio').length || 0
+    };
+    
+    return stats;
+  } catch (error) {
+    handleError(error, 'getMediaStats');
+  }
+}
+
+// ===============================
 // EXPORTS
 // ===============================
 
@@ -1690,6 +2057,9 @@ module.exports = {
   saveLead,
   getLeadsByUser,
   getLeadByEmail,
+  updateLeadStatus,
+  getLeadScore,
+  saveLeadScore,
   
   // Chats
   saveChat,
@@ -1710,7 +2080,7 @@ module.exports = {
   // Admin
   createAdminIfNotExists,
   
-  // Automations
+  // Automations (Basic)
   createAutomation,
   getAutomationsByUser,
   getAutomationById,
@@ -1722,6 +2092,23 @@ module.exports = {
   createAutomationRun,
   completeAutomationRun,
   getAutomationRuns,
+  
+  // Automation Templates (NEW)
+  getAutomationTemplates,
+  getAutomationTemplateBySlug,
+  incrementTemplateUsage,
+  
+  // User Automations (NEW - Advanced)
+  createUserAutomation,
+  getUserAutomations,
+  getUserAutomationById,
+  updateUserAutomation,
+  deleteUserAutomation,
+  
+  // Lead Sources (NEW)
+  createLeadSource,
+  getLeadSources,
+  updateLeadSourceStats,
   
   // Connected Accounts
   saveConnectedAccount,
@@ -1763,5 +2150,11 @@ module.exports = {
   // Status Subscribers
   addSubscriber,
   getSubscribers,
-  removeSubscriber
+  removeSubscriber,
+  
+  // Generated Media (NEW)
+  saveGeneratedMedia,
+  getGeneratedMedia,
+  deleteGeneratedMedia,
+  getMediaStats
 };

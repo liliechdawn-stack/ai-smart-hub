@@ -116,6 +116,11 @@ const settingsRoutes = require('../api/settings-routes');
 // ===== AI POWERHOUSE ROUTES =====
 const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
 
+// ===== NEW: AUTOMATION TEMPLATES ROUTES =====
+const automationTemplatesRoutes = require('./routes/automation-templates-routes');
+const userAutomationsRoutes = require('./routes/user-automations-routes');
+const leadsRoutes = require('./routes/leads-routes');
+
 const app = express();
 
 // ================= MIDDLEWARE =================
@@ -143,6 +148,9 @@ const io = new Server(server, {
   transports: ['websocket', 'polling']
 });
 app.set("socketio", io);
+
+// Make io globally accessible for routes
+global.io = io;
 
 // Socket.io connection handling with authentication
 io.use(async (socket, next) => {
@@ -332,9 +340,21 @@ app.use('/api/settings', settingsRoutes);
 const AI_POWERHOUSE_ENABLED = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
 console.log(`🔷 AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '✅ Enabled' : '⚠️ Disabled (Cloudflare credentials missing)'}`);
 
-// Mount AI Powerhouse routes - FIXED: Added authenticateToken middleware
+// Mount AI Powerhouse routes
 app.use('/api/powerhouse', authenticateToken, aiPowerhouseRoutes);
 console.log('✅ AI Powerhouse routes mounted at /api/powerhouse');
+
+// ===== NEW: AUTOMATION TEMPLATES ROUTES =====
+app.use('/api/automation', automationTemplatesRoutes);
+console.log('✅ Automation Templates routes mounted at /api/automation');
+
+// ===== NEW: USER AUTOMATIONS ROUTES =====
+app.use('/api', userAutomationsRoutes);
+console.log('✅ User Automations routes mounted at /api/automations');
+
+// ===== NEW: LEADS MANAGEMENT ROUTES =====
+app.use('/api', leadsRoutes);
+console.log('✅ Leads Management routes mounted at /api/leads');
 
 // ================= PLAN LIMITS =================
 const PLAN_LIMITS = {

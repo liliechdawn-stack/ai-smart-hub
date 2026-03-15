@@ -1,5 +1,5 @@
 const express = require("express");
-
+const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -201,7 +201,6 @@ app.get('/api/customer-insights/debug', (req, res) => {
 
 // AI Automations
 app.use('/api/ai-automations', require('./ai-automations'));
-const { supabase } = require('./database-supabase');
 
 // ================= NEW: AUTOMATION POWERHOUSE ROUTES =================
 app.use('/api/automations', automationRoutes);
@@ -400,42 +399,18 @@ app.post("/api/automations/leads/enrich", auth, bodyParser.json(), async (req, r
     if (lead_id) {
       // Enrich specific lead
       leadsToEnrich = await new Promise((resolve, reject) => {
-        try {
-    const { data: rows, error: err } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
+        db.all(`SELECT * FROM leads WHERE id = ? AND user_id = ?`, [lead_id, userId], (err, rows) => {
+          if (err) reject(err);
           else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
+        });
       });
     } else {
       // Enrich recent leads
       leadsToEnrich = await new Promise((resolve, reject) => {
-        try {
-    const { data: rows, error: err } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
+        db.all(`SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`, [userId], (err, rows) => {
+          if (err) reject(err);
           else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
+        });
       });
     }
 
@@ -873,8 +848,8 @@ const PLAN_LIMITS = {
 };
 
 // ================= DATABASE MIGRATIONS =================
-// Removed SQLite serialization
-
+db.serialize(() => {
+  db.run(`ALTER TABLE users ADD COLUMN plan_expires DATETIME`, () => {});
   
   db.run(`
     CREATE TABLE IF NOT EXISTS smart_hub_settings (
@@ -1297,23 +1272,10 @@ app.post("/api/auth/verify-code", bodyParser.json(), async (req, res) => {
   try {
     // Find user with this verification token
     const user = await new Promise((resolve, reject) => {
-      try {
-    const { data: row, error: err } = await supabase
-      .from('users')
-      .select('*')
-      .eq('verification_token', code)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
+      db.get(`SELECT * FROM users WHERE verification_token = ?`, [code], (err, row) => {
+        if (err) reject(err);
         else resolve(row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
+      });
     });
 
     if (!user) {
@@ -1352,7 +1314,7 @@ app.post("/api/auth/login", bodyParser.json(), (req, res, next) => {
   const { email } = req.body;
   if (email && email.toLowerCase().trim() === ADMIN_EMAIL) {
     db.run(
-      `UPDATE users SET is_verified = 1, plan = 'agency', plan_expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() WHERE email = ?`, 
+      `UPDATE users SET is_verified = 1, plan = 'agency', plan_expires = datetime('now', '+30 days') WHERE email = ?`, 
       [ADMIN_EMAIL], 
       (err) => {
         if (err) console.error("Admin update error:", err);
@@ -1397,8 +1359,12 @@ app.put("/api/admin/users/update-profile", auth, bodyParser.json(), async (req, 
 
 app.delete("/api/admin/users/delete-account", auth, (req, res) => {
   const userId = req.user.id;
-  // Removed SQLite serialization
-
+  db.serialize(() => {
+    db.run(`DELETE FROM leads WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM chats WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM support_tickets WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM users WHERE id = ?`, [userId], function(err) {
+      if (err) return res.status(500).json({ error: "Failed to delete account" });
       res.json({ success: true, message: "Account deleted permanently" });
     });
   });
@@ -1943,21 +1909,8 @@ app.post("/api/support/ticket", auth, bodyParser.json(), (req, res) => {
 });
 
 app.get("/api/support/my-tickets", auth, (req, res) => {
-  try {
-    const { data: rows, error: err } = await supabase
-      .from('support_tickets')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err)  res.status(500).json({ error: "Database error"
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
+  db.all(`SELECT * FROM support_tickets WHERE user_id = ? ORDER BY created_at DESC`, [req.user.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(rows || []);
   });
 });
@@ -2003,8 +1956,11 @@ app.put("/api/admin/users/:id", auth, isAdminMiddleware, bodyParser.json(), (req
 
 app.delete("/api/admin/users/:id", auth, isAdminMiddleware, (req, res) => {
   const userId = req.params.id;
-  // Removed SQLite serialization
-
+  db.serialize(() => {
+    db.run(`DELETE FROM users WHERE id = ?`, [userId]);
+    db.run(`DELETE FROM chats WHERE user_id = ?`, [userId]);
+    db.run(`DELETE FROM leads WHERE user_id = ?`, [userId]);
+    res.json({ success: true, message: "User and all data deleted" });
   });
 });
 
@@ -2155,23 +2111,9 @@ app.get("/api/smart-hub/settings", auth, async (req, res) => {
     const userId = req.user.id;
     
     const settings = await new Promise((resolve, reject) => {
-      try {
-    const { data: row, error: err } = await supabase
-      .from('smart_hub_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-        else resolve(row || {
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
+      db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [userId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row || {});
       });
     });
 
@@ -2245,7 +2187,7 @@ app.post("/api/subscription/webhook", bodyParser.raw({ type: "application/json" 
     const { userId, plan } = event.data.metadata;
     
     db.run(
-      `UPDATE users SET plan = ?, plan_expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), messages_used = 0, leads_used = 0 WHERE id = ?`, 
+      `UPDATE users SET plan = ?, plan_expires = datetime('now', '+30 days'), messages_used = 0, leads_used = 0 WHERE id = ?`, 
       [plan, userId]
     );
 
@@ -2350,22 +2292,10 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const leads = await new Promise((resolve, reject) => {
-      try {
-    const { data: rows, error: err } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
+      db.all(`SELECT name, email FROM leads WHERE user_id = ?`, [userId], (err, rows) => {
+        if (err) reject(err);
         else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
+      });
     });
 
     if (leads.length === 0) {

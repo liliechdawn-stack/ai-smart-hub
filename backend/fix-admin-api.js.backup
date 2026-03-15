@@ -1,4 +1,3 @@
-const { supabase } = require('./database-supabase');
 // backend/fix-admin-api.js
 // Add these routes to your server.js
 

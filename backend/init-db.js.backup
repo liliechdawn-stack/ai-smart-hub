@@ -1,6 +1,5 @@
-
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const { supabase } = require('./database-supabase');
 
 // Connect to your existing database file
 const dbPath = path.join(__dirname, 'database.sqlite'); 
