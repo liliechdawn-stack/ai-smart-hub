@@ -104,6 +104,34 @@ const {
 const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
+// ===== DEBUG: Check if route files exist =====
+const fs = require('fs');
+const pathModule = require('path');
+
+const routesPath = pathModule.join(__dirname, 'routes');
+console.log(`🔍 Checking routes directory: ${routesPath}`);
+
+try {
+  const files = fs.readdirSync(routesPath);
+  console.log(`📁 Files in routes directory: ${files.join(', ')}`);
+} catch (err) {
+  console.error(`❌ Could not read routes directory: ${err.message}`);
+}
+
+const templateRouteFile = pathModule.join(__dirname, 'routes', 'automation-templates-routes.js');
+console.log(`🔍 Checking template route file: ${templateRouteFile}`);
+if (fs.existsSync(templateRouteFile)) {
+  console.log(`✅ File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
+  try {
+    const content = fs.readFileSync(templateRouteFile, 'utf8');
+    console.log(`📄 First 100 chars: ${content.substring(0, 100)}...`);
+  } catch (readErr) {
+    console.log(`⚠️ Could not read file: ${readErr.message}`);
+  }
+} else {
+  console.log(`❌ File NOT FOUND at: ${templateRouteFile}`);
+}
+
 // Import new automation modules
 const automationRoutes = require('../api/automations-routes');
 const AutomationEngine = require('../services/automation-engine');
