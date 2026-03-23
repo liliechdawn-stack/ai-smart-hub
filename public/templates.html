@@ -365,6 +365,17 @@
             font-size: 4rem;
             margin-bottom: 16px;
         }
+
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -435,6 +446,8 @@
             </div>
         </div>
 
+        <div id="debugInfo" class="debug-info"></div>
+
         <div id="templateGrid" class="template-grid">
             <div class="loading">
                 <div class="spinner"></div>
@@ -453,45 +466,80 @@
         let searchTerm = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth();
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
             await loadTemplates();
             await loadStats();
             setupEventListeners();
         });
 
-        async function checkAuth() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = 'login.html';
-                return false;
-            }
-            return true;
-        }
-
         async function loadTemplates() {
+            const grid = document.getElementById('templateGrid');
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading templates...</p></div>';
+            
             try {
                 const token = localStorage.getItem('token');
-                let url = `${API_BASE}/templates?`;
+                let url = `${API_BASE}/templates`;
+                const params = new URLSearchParams();
                 
                 if (currentCategory !== 'all') {
-                    url += `&category=${currentCategory}`;
+                    params.append('category', currentCategory);
                 }
                 if (currentIndustry !== 'all') {
-                    url += `&industry=${currentIndustry}`;
+                    params.append('industry', currentIndustry);
                 }
                 if (searchTerm) {
-                    url += `&search=${encodeURIComponent(searchTerm)}`;
+                    params.append('search', searchTerm);
+                }
+                
+                if (params.toString()) {
+                    url += `?${params.toString()}`;
                 }
 
+                console.log('Fetching templates from:', url);
+                
                 const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('Failed to load templates');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API Error:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
 
                 const data = await response.json();
-                allTemplates = data.templates;
-                renderTemplates(allTemplates);
+                console.log('API Response:', data);
+                
+                // Display debug info
+                const debugDiv = document.getElementById('debugInfo');
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML = `
+                    <strong>Debug Info:</strong><br>
+                    Templates in response: ${data.templates?.length || 0}<br>
+                    Total: ${data.total || 0}<br>
+                    Success: ${data.success}<br>
+                    ${data.message ? `Message: ${data.message}<br>` : ''}
+                    ${data.templates?.length ? `First template: ${data.templates[0].name}` : 'No templates found'}
+                `;
+                
+                if (data.templates && data.templates.length > 0) {
+                    allTemplates = data.templates;
+                    renderTemplates(allTemplates);
+                } else {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <h3>No templates found</h3>
+                            <p>${data.message || 'Try adjusting your filters'}</p>
+                            <button onclick="loadTemplates()" style="margin-top: 20px; padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">Refresh</button>
+                        </div>
+                    `;
+                }
 
             } catch (error) {
                 console.error('Error loading templates:', error);
@@ -499,7 +547,8 @@
                     <div class="empty-state">
                         <i class="fas fa-exclamation-circle"></i>
                         <h3>Failed to load templates</h3>
-                        <p>Please try again later</p>
+                        <p>${error.message}</p>
+                        <button onclick="loadTemplates()" style="margin-top: 20px; padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button>
                     </div>
                 `;
             }
@@ -509,28 +558,27 @@
             try {
                 const token = localStorage.getItem('token');
                 
-                // Get total templates
+                // Get templates count
                 const templatesResponse = await fetch(`${API_BASE}/templates`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const templatesData = await templatesResponse.json();
+                document.getElementById('totalTemplates').textContent = templatesData.total || 0;
                 
                 // Get user's automation stats
                 const automationsResponse = await fetch(`${BACKEND_URL}/api/automations`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const automationsData = await automationsResponse.json();
+                document.getElementById('totalRuns').textContent = automationsData.total_runs || 0;
                 
                 // Get leads stats
                 const leadsResponse = await fetch(`${BACKEND_URL}/api/leads/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const leadsData = await leadsResponse.json();
-
-                document.getElementById('totalTemplates').textContent = templatesData.total || 0;
-                document.getElementById('totalRuns').textContent = automationsData.total_runs || 0;
-                document.getElementById('totalLeads').textContent = leadsData.total || 0;
-                document.getElementById('avgSuccess').textContent = leadsData.conversion_rate || '85%';
+                document.getElementById('totalLeads').textContent = leadsData.stats?.total || 0;
+                document.getElementById('avgSuccess').textContent = leadsData.stats?.conversion_rate || '85%';
 
             } catch (error) {
                 console.error('Error loading stats:', error);
@@ -563,8 +611,8 @@
                         <span class="template-category">
                             ${formatCategory(template.category)}
                         </span>
-                        <h3 class="template-title">${template.name}</h3>
-                        <p class="template-description">${template.description}</p>
+                        <h3 class="template-title">${escapeHtml(template.name)}</h3>
+                        <p class="template-description">${escapeHtml(template.description)}</p>
                         
                         <div class="template-metrics">
                             <div class="metric">
@@ -591,6 +639,13 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function formatCategory(category) {
