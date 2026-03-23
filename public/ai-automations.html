@@ -155,10 +155,6 @@
             width: 100%;
         }
 
-        /* ========================================
-           POWERHOUSE NAV BUTTON - NEW & IMPROVED
-           ========================================
-        */
         .powerhouse-nav-btn {
             background: var(--primary-gradient);
             color: white !important;
@@ -313,9 +309,159 @@
         }
 
         /* ========================================
-           SECTION HEADERS
+           AI RECOMMENDED AUTOMATIONS SECTION (NEW)
            ========================================
         */
+        .recommended-section {
+            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+            border: 2px solid var(--primary);
+            border-radius: 24px;
+            padding: 28px;
+            margin: 40px 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommended-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .recommended-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .recommended-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #1e293b 0%, #b8962e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .ai-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-badge i {
+            font-size: 0.8rem;
+        }
+
+        .recommended-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+        }
+
+        .recommended-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid rgba(212,175,55,0.3);
+            transition: var(--transition);
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .recommended-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg), var(--shadow-gold);
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .recommended-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(212,175,55,0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .recommended-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .recommended-reason {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--light-gray);
+            border-radius: 12px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .recommended-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        .btn-ai-deploy {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ai-deploy:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -339,10 +485,6 @@
             font-size: 1.8rem;
         }
 
-        /* ========================================
-           ANALYTICS DASHBOARD
-           ========================================
-        */
         .analytics-dashboard {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -389,10 +531,6 @@
             border-radius: 4px;
         }
 
-        /* ========================================
-           TEMPLATE GRID
-           ========================================
-        */
         .template-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -459,10 +597,6 @@
             color: var(--primary);
         }
 
-        /* ========================================
-           AUTOMATION GRID
-           ========================================
-        */
         .automation-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -486,7 +620,7 @@
             box-shadow: var(--shadow-lg), var(--shadow-gold);
         }
 
-        .automation-card.premium {
+        .automation-card.ai-recommended {
             border: 2px solid var(--primary);
             background: linear-gradient(135deg, white 0%, #fff9e6 100%);
         }
@@ -588,10 +722,6 @@
             margin-top: 20px;
         }
 
-        /* ========================================
-           TOGGLE SWITCH
-           ========================================
-        */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -635,10 +765,6 @@
             transform: translateX(26px);
         }
 
-        /* ========================================
-           BUTTONS
-           ========================================
-        */
         .btn-primary {
             background: var(--primary-gradient);
             color: white;
@@ -699,10 +825,6 @@
             border-color: var(--primary);
         }
 
-        /* ========================================
-           MODAL
-           ========================================
-        */
         .modal {
             display: none;
             position: fixed;
@@ -827,10 +949,6 @@
             align-items: center;
         }
 
-        /* ========================================
-           LOCK OVERLAY
-           ========================================
-        */
         .lock-overlay {
             position: absolute;
             inset: 0;
@@ -864,10 +982,6 @@
             max-width: 400px;
         }
 
-        /* ========================================
-           ACTIVITY TIMELINE
-           ========================================
-        */
         .timeline {
             margin-top: 20px;
         }
@@ -910,10 +1024,6 @@
             color: var(--text-secondary);
         }
 
-        /* ========================================
-           FLOATING ACTION BUTTON
-           ========================================
-        */
         .fab {
             position: fixed;
             bottom: 40px;
@@ -939,10 +1049,6 @@
             box-shadow: 0 20px 40px rgba(212,175,55,0.4);
         }
 
-        /* ========================================
-           FOOTER
-           ========================================
-        */
         footer {
             text-align: center;
             padding: 60px 20px;
@@ -953,10 +1059,6 @@
             margin-top: 40px;
         }
 
-        /* ========================================
-           UTILITY CLASSES
-           ========================================
-        */
         .hidden { display: none !important; }
         
         .loading-spinner {
@@ -979,6 +1081,10 @@
             }
             
             .automation-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .recommended-grid {
                 grid-template-columns: 1fr;
             }
             
@@ -1005,7 +1111,6 @@
             <a href="customer-insights.html">Customer Insights</a>
             <a href="ai-automations.html" class="active-nav">Automations</a>
             <a href="team.html">Team</a>
-            <!-- NEW: Powerhouse Navigation Button -->
             <a href="/ai-powerhouse.html" class="powerhouse-nav-btn">
                 <i class="fas fa-bolt"></i>
                 <span>Powerhouse 2.0</span>
@@ -1062,6 +1167,21 @@
             <h3 id="success-rate">98%</h3>
             <p>Success Rate</p>
         </div>
+    </div>
+</div>
+
+<!-- ========== NEW: AI RECOMMENDED AUTOMATIONS SECTION ========== -->
+<div id="recommendedAutomationsSection" class="recommended-section" style="display: none;">
+    <div class="recommended-header">
+        <h2>
+            <i class="fas fa-magic"></i>
+            AI-Powered Automations
+            <span class="ai-badge"><i class="fas fa-robot"></i> Deployed by AI</span>
+        </h2>
+        <span class="live-badge pulse"><i class="fas fa-circle"></i> Live from Insights</span>
+    </div>
+    <div id="recommendedAutomationsGrid" class="recommended-grid">
+        <!-- AI recommended automations will be loaded here -->
     </div>
 </div>
 
@@ -1262,7 +1382,7 @@
 
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api/automations`;
-const WS_BASE = BACKEND_URL.replace('https', 'wss'); // WebSocket for real-time updates
+const WS_BASE = BACKEND_URL.replace('https', 'wss');
 
 let automations = [];
 let activities = [];
@@ -1429,8 +1549,8 @@ function showToast(msg, type = 'success', duration = 4000) {
 }
 
 // Add animation styles
-const style = document.createElement('style');
-style.textContent = `
+const styleEl = document.createElement('style');
+styleEl.textContent = `
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
@@ -1440,7 +1560,7 @@ style.textContent = `
         to { transform: translateX(100%); opacity: 0; }
     }
 `;
-document.head.appendChild(style);
+document.head.appendChild(styleEl);
 
 function unlockContent() {
     const lock = document.getElementById('plan-lock');
@@ -1458,15 +1578,171 @@ function unlockContent() {
     renderTemplates();
     loadActivity();
     loadAutomations();
+    loadRecommendedAutomations(); // NEW: Load AI recommended automations
     initRealTimeUpdates();
     startAutoRefresh();
+}
+
+// ===== LOAD AI RECOMMENDED AUTOMATIONS (NEW) =====
+async function loadRecommendedAutomations() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${BACKEND_URL}/api/automations?source=recommended`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // Filter automations that came from AI recommendations
+            const recommended = (data.automations || []).filter(a => 
+                a.metadata?.source === 'ai_recommendation' || 
+                a.name?.includes('AI Recommended') ||
+                a.description?.includes('deployed by AI')
+            );
+            
+            const section = document.getElementById('recommendedAutomationsSection');
+            const grid = document.getElementById('recommendedAutomationsGrid');
+            
+            if (recommended.length > 0) {
+                section.style.display = 'block';
+                grid.innerHTML = recommended.map(automation => `
+                    <div class="recommended-card">
+                        <div class="recommended-badge">
+                            <i class="fas fa-robot"></i> AI Recommended
+                        </div>
+                        <div class="recommended-icon">
+                            <i class="fas ${automation.icon || 'fa-magic'}"></i>
+                        </div>
+                        <div class="recommended-title">${automation.name || automation.title}</div>
+                        <div class="recommended-reason">
+                            <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
+                            ${automation.metadata?.reason || 'Deployed by AI based on your business profile'}
+                        </div>
+                        <div class="recommended-footer">
+                            <span class="automation-status status-live">🟢 ACTIVE</span>
+                            <button class="btn-ai-deploy" onclick="viewAutomation('${automation.id}')">
+                                <i class="fas fa-eye"></i> View Automation
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                // Try to fetch from business insights recommendations
+                const insightsRes = await fetch(`${BACKEND_URL}/api/business/insights`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (insightsRes.ok) {
+                    const insightsData = await insightsRes.json();
+                    if (insightsData.recommendations && insightsData.recommendations.length > 0) {
+                        section.style.display = 'block';
+                        grid.innerHTML = insightsData.recommendations.map(rec => `
+                            <div class="recommended-card">
+                                <div class="recommended-badge">
+                                    <i class="fas fa-robot"></i> AI Suggested
+                                </div>
+                                <div class="recommended-icon">
+                                    <i class="fas ${rec.icon || 'fa-magic'}"></i>
+                                </div>
+                                <div class="recommended-title">${rec.title}</div>
+                                <div class="recommended-reason">
+                                    <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
+                                    ${rec.reason}
+                                </div>
+                                <div class="recommended-footer">
+                                    <button class="btn-ai-deploy" onclick="deployAIAutomation('${rec.automation_template_id}')">
+                                        <i class="fas fa-rocket"></i> Deploy Now
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        section.style.display = 'none';
+                    }
+                } else {
+                    section.style.display = 'none';
+                }
+            }
+        } else {
+            // Try fallback - check if there are any automations marked as AI recommended
+            const allAutomations = await fetch(`${BACKEND_URL}/api/automations`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (allAutomations.ok) {
+                const allData = await allAutomations.json();
+                const recommended = (allData.automations || []).filter(a => a.ai_recommended === true);
+                if (recommended.length > 0) {
+                    section.style.display = 'block';
+                    grid.innerHTML = recommended.map(automation => `
+                        <div class="recommended-card">
+                            <div class="recommended-badge">
+                                <i class="fas fa-robot"></i> AI Recommended
+                            </div>
+                            <div class="recommended-icon">
+                                <i class="fas ${automation.icon || 'fa-magic'}"></i>
+                            </div>
+                            <div class="recommended-title">${automation.name || automation.title}</div>
+                            <div class="recommended-reason">
+                                <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
+                                ${automation.description || 'Deployed by AI based on your business profile'}
+                            </div>
+                            <div class="recommended-footer">
+                                <span class="automation-status status-live">🟢 ACTIVE</span>
+                                <button class="btn-ai-deploy" onclick="viewAutomation('${automation.id}')">
+                                    <i class="fas fa-eye"></i> View Automation
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    section.style.display = 'none';
+                }
+            } else {
+                section.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading recommended automations:', error);
+        document.getElementById('recommendedAutomationsSection').style.display = 'none';
+    }
+}
+
+// Deploy AI recommended automation
+async function deployAIAutomation(templateId) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${BACKEND_URL}/api/automation/automations/from-template/${templateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: `AI Recommended Automation`,
+                customizations: { auto_configured: true, source: 'ai_recommendation' }
+            })
+        });
+        
+        if (response.ok) {
+            showToast('✅ AI automation deployed successfully!', 'success');
+            loadAutomations();
+            loadRecommendedAutomations();
+        } else {
+            throw new Error('Deployment failed');
+        }
+    } catch (error) {
+        console.error('Deploy error:', error);
+        showToast('Failed to deploy automation', 'error');
+    }
+}
+
+function viewAutomation(id) {
+    window.location.href = `ai-powerhouse.html?automation=${id}`;
 }
 
 // ===== REAL-TIME UPDATES =====
 function initRealTimeUpdates() {
     try {
-        // For demo purposes, we'll use polling as fallback
-        // In production, you'd use WebSocket
         console.log("📡 Real-time monitoring active");
     } catch (err) {
         console.warn("WebSocket not available, using polling");
@@ -1474,37 +1750,14 @@ function initRealTimeUpdates() {
 }
 
 function startAutoRefresh() {
-    // Refresh every 30 seconds for real-time updates
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     autoRefreshInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
-            loadAutomations(true); // Silent refresh
+            loadAutomations(true);
             loadActivity(true);
+            loadRecommendedAutomations(true);
         }
     }, 30000);
-}
-
-// ===== LEAD ACTIONS =====
-async function triggerLeadAction(leadId, action) {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/leads/${leadId}/action`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ action })
-        });
-        
-        if (response.ok) {
-            showToast(`Lead action '${action}' triggered`);
-            return await response.json();
-        }
-    } catch (err) {
-        console.error('Lead action error:', err);
-        showToast('Failed to trigger lead action', 'error');
-    }
 }
 
 // ===== CHARTS with Real Data =====
@@ -1518,7 +1771,6 @@ async function updateChartsWithRealData() {
         if (response.ok) {
             const data = await response.json();
             
-            // Update performance chart
             if (performanceChart && data.daily_runs) {
                 performanceChart.data.labels = data.daily_runs.map(d => d.date);
                 performanceChart.data.datasets[0].data = data.daily_runs.map(d => d.successful);
@@ -1526,7 +1778,6 @@ async function updateChartsWithRealData() {
                 performanceChart.update();
             }
             
-            // Update trigger chart
             if (triggerChart && data.by_type) {
                 triggerChart.data.labels = data.by_type.map(t => t.action_type);
                 triggerChart.data.datasets[0].data = data.by_type.map(t => t.count);
@@ -1599,7 +1850,6 @@ function initCharts() {
         });
     }
     
-    // Load real data
     updateChartsWithRealData();
 }
 
@@ -1692,7 +1942,6 @@ function showTemplateModal() {
     const modal = document.getElementById('template-modal');
     const grid = document.getElementById('template-modal-grid');
     
-    // Group by category
     const categorized = templates.reduce((acc, t) => {
         if (!acc[t.category]) acc[t.category] = [];
         acc[t.category].push(t);
@@ -1724,7 +1973,7 @@ function closeTemplateModal() {
     document.getElementById('template-modal').classList.remove('active');
 }
 
-// ===== ACTIVITY TIMELINE with Real Data =====
+// ===== ACTIVITY TIMELINE =====
 async function loadActivity(silent = false) {
     const timeline = document.getElementById('activity-timeline');
     if (!silent) {
@@ -1743,7 +1992,6 @@ async function loadActivity(silent = false) {
         }
     } catch (err) {
         console.warn('Using mock activity data');
-        // Mock data as fallback
         activities = [
             { id: 1, type: 'success', title: 'Welcome Series triggered for John Doe', time: '2 minutes ago', icon: 'fa-user-plus', color: '#10b981' },
             { id: 2, type: 'warning', title: 'Lead scoring updated for 5 contacts', time: '15 minutes ago', icon: 'fa-chart-line', color: '#f59e0b' },
@@ -1768,10 +2016,9 @@ async function loadActivity(silent = false) {
 
 function handleActivityClick(id) {
     showToast(`Viewing activity details`, 'info');
-    // Could open a modal with more details
 }
 
-// ===== LOAD AUTOMATIONS with Real Data =====
+// ===== LOAD AUTOMATIONS =====
 async function loadAutomations(silent = false) {
     const grid = document.getElementById('automation-grid');
     if (!silent) {
@@ -1804,7 +2051,6 @@ async function loadAutomations(silent = false) {
         
     } catch (err) {
         console.error("[LOAD ERROR]", err);
-        // Fallback to mock data with enhanced fields
         automations = [
             {
                 id: "1",
@@ -1872,7 +2118,6 @@ async function loadAutomations(silent = false) {
     }
 }
 
-// ===== RENDER AUTOMATIONS with Proper Status =====
 function renderAutomations(items) {
     const grid = document.getElementById('automation-grid');
     
@@ -1889,28 +2134,23 @@ function renderAutomations(items) {
     }
 
     grid.innerHTML = items.map(item => {
-        // Determine if automation is live/active from multiple possible fields
-        const isLive = item.status === 'active' || 
-                      item.active === 1 || 
-                      item.is_active === 1 || 
-                      item.live === true ||
-                      item.enabled === true;
-        
-        // Calculate success rate
+        const isLive = item.status === 'active' || item.active === 1 || item.is_active === 1 || item.live === true;
         const successRate = item.success_count && item.trigger_count ? 
             Math.round((item.success_count / item.trigger_count) * 100) : 
             item.success_rate || 98;
-        
-        // Get category color
         const categoryColor = getCategoryColor(item.category || 'lead-generation');
         
+        // Check if this automation is AI recommended
+        const isAIRecommended = item.metadata?.source === 'ai_recommendation' || item.name?.includes('AI Recommended');
+        
         return `
-        <div class="automation-card ${isLive ? 'premium' : ''}" data-category="${item.category || 'general'}">
+        <div class="automation-card ${isAIRecommended ? 'ai-recommended' : ''}" data-category="${item.category || 'general'}">
             <div class="automation-header">
                 <div class="automation-icon" style="background: linear-gradient(135deg, ${categoryColor}20 0%, ${categoryColor}10 100%);">
                     <i class="fas fa-${item.icon || 'robot'}" style="color:${categoryColor}"></i>
                 </div>
                 <div>
+                    ${isAIRecommended ? '<span style="background: var(--primary-gradient); color:white; padding:2px 10px; border-radius:20px; font-size:0.7rem; margin-right:8px;"><i class="fas fa-robot"></i> AI</span>' : ''}
                     <span class="automation-status ${isLive ? 'status-live' : 'status-paused'}">
                         ${isLive ? '🟢 LIVE' : '⏸️ PAUSED'}
                     </span>
@@ -2012,7 +2252,6 @@ function updateStats() {
     document.getElementById('hours-saved').textContent = hoursSaved;
     document.getElementById('leads-generated').textContent = totalLeads;
     
-    // Calculate average success rate
     const totalSuccess = automations.reduce((sum, a) => sum + (a.success_count || 0), 0);
     const totalTriggers = automations.reduce((sum, a) => sum + (a.trigger_count || 0), 0);
     const successRate = totalTriggers > 0 ? Math.round((totalSuccess / totalTriggers) * 100) : 98;
@@ -2038,7 +2277,8 @@ async function toggleAutomation(id, shouldEnable) {
 
         if (response.ok) {
             showToast(`Automation ${shouldEnable ? 'activated' : 'paused'}`);
-            await loadAutomations(true); // Silent refresh
+            await loadAutomations(true);
+            await loadRecommendedAutomations(true);
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Toggle failed');
@@ -2062,6 +2302,7 @@ async function deleteAutomation(id) {
         if (response.ok) {
             showToast("Automation deleted successfully");
             await loadAutomations();
+            await loadRecommendedAutomations();
         } else {
             throw new Error('Delete failed');
         }
@@ -2182,7 +2423,6 @@ async function saveAutomation() {
         return;
     }
 
-    // Collect conditions
     const conditions = [];
     document.querySelectorAll('#conditions-list .condition-row span').forEach(span => {
         conditions.push(span.innerText);
@@ -2192,10 +2432,8 @@ async function saveAutomation() {
         const token = localStorage.getItem('token');
         const isEdit = document.getElementById('modal-title').textContent.includes('Edit');
         
-        // Get the automation ID if editing
         let automationId = null;
         if (isEdit) {
-            // Find the currently selected automation
             const currentTitle = document.getElementById('automation-name').value;
             const automation = automations.find(a => (a.name || a.title) === currentTitle);
             automationId = automation?.id;
@@ -2203,7 +2441,6 @@ async function saveAutomation() {
         
         const url = isEdit && automationId ? `${API_BASE}/${automationId}` : `${API_BASE}`;
         
-        // Build automation data matching backend schema
         const automationData = {
             name: title,
             description: description,
@@ -2233,8 +2470,8 @@ async function saveAutomation() {
             showToast(isEdit ? "Automation updated!" : "Automation created!");
             closeModal();
             await loadAutomations();
+            await loadRecommendedAutomations();
             
-            // If it's a lead-focused automation, show extra info
             if (trigger.includes('lead') || action.includes('score')) {
                 showToast("⚡ Lead automation active - ready to convert!", "success", 5000);
             }
@@ -2248,7 +2485,6 @@ async function saveAutomation() {
     }
 }
 
-// ===== FILTER =====
 function filterAutomations(type) {
     if (type === 'all') {
         renderAutomations(automations);
@@ -2305,49 +2541,6 @@ async function checkPlan() {
     }
 }
 
-// ===== WIDGET TRIGGER ENDPOINT =====
-async function triggerAutomation(eventType, data) {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/automations/trigger`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ eventType, data })
-        });
-        const result = await response.json();
-        showToast(`Triggered: ${eventType}`, 'success');
-        return result;
-    } catch (err) {
-        console.error('Trigger error:', err);
-        showToast('Failed to trigger automation', 'error');
-    }
-}
-
-// ===== LEAD SCORING & MANAGEMENT =====
-async function scoreLead(leadId, score) {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/leads/${leadId}/score`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ score })
-        });
-        
-        if (response.ok) {
-            showToast(`Lead scored: ${score}`, 'success');
-            loadAutomations(true);
-        }
-    } catch (err) {
-        console.error('Lead scoring error:', err);
-    }
-}
-
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 AI Automations Studio Starting...");
@@ -2355,15 +2548,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const hasAccess = await checkPlan();
     if (hasAccess) {
-        // Add visibility change handler to refresh when tab becomes visible
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 loadAutomations(true);
                 loadActivity(true);
+                loadRecommendedAutomations(true);
             }
         });
         
-        // Clean up on page unload
         window.addEventListener('beforeunload', () => {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
         });
@@ -2385,9 +2577,8 @@ window.deleteAutomation = deleteAutomation;
 window.duplicateAutomation = duplicateAutomation;
 window.editAutomation = editAutomation;
 window.testAutomation = testAutomation;
-window.triggerAutomation = triggerAutomation;
-window.scoreLead = scoreLead;
-window.triggerLeadAction = triggerLeadAction;
+window.deployAIAutomation = deployAIAutomation;
+window.viewAutomation = viewAutomation;
 </script>
 </body>
 </html>
