@@ -643,20 +643,20 @@
             <h3>Lead List</h3>
             <table id="leadsTable">
                 <thead>
-                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Date Added</th><th>Actions</th> </tr>
+                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Date Added</th><th>Actions</th>  </tr>
                 </thead>
                 <tbody></tbody>
-            </table>
+             </table>
         </section>
 
         <section id="chatSection" class="hidden">
             <h2>Chat Conversations</h2>
             <table id="chatTable" style="margin-bottom: 32px;">
                 <thead>
-                    <tr><th>Client / Session</th><th>Messages</th><th>Last Message</th><th>Action</th> </tr>
+                     <tr><th>Client / Session</th><th>Messages</th><th>Last Message</th><th>Action</th>  </tr>
                 </thead>
                 <tbody></tbody>
-            </table>
+             </table>
 
             <div style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
                 <h3>Internal AI Tester</h3>
@@ -791,7 +791,7 @@
 
         // ========== ADVANCED BUSINESS INTELLIGENCE ALGORITHM ==========
 
-        // Comprehensive industry profiles with automation recommendations
+        // Comprehensive industry profiles with automation recommendations - UPDATED WITH CORRECT SLUGS
         const INDUSTRY_PROFILES = {
             agency: {
                 name: "Digital Agency",
@@ -801,9 +801,9 @@
                     { title: "📱 Social Media Management", description: "Schedule and manage posts across all client accounts automatically.", priority: "medium", type: "content" }
                 ],
                 templates: [
-                    { id: "client-onboarding", title: "Client Onboarding Automation", reason: "Automate welcome emails, task creation, and team notifications when new clients sign up." },
-                    { id: "report-generator", title: "Auto-Generate Client Reports", reason: "Pull data from analytics tools and email beautiful reports to clients weekly." },
-                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score inbound leads based on budget, timeline, and project complexity." }
+                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score inbound leads based on budget, timeline, and project complexity." },
+                    { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms with optimal timing." },
+                    { id: "video-script-generator", title: "Video Script Generator", reason: "Generate engaging video scripts for Reels, TikTok, and YouTube Shorts." }
                 ]
             },
             ecommerce: {
@@ -815,8 +815,8 @@
                 ],
                 templates: [
                     { id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Send automated emails to customers who left items in their cart." },
-                    { id: "inventory-alerts", title: "Low Stock Alerts", reason: "Get Slack/email notifications when inventory drops below threshold." },
-                    { id: "price-monitoring", title: "Competitor Price Monitoring", reason: "Track competitor prices and get alerts when they change." }
+                    { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and get alerts when they change." },
+                    { id: "lead-capture-crm-slack", title: "Lead Capture & CRM", reason: "Capture leads from your website and instantly notify your team on Slack." }
                 ]
             },
             saas: {
@@ -827,9 +827,9 @@
                     { title: "📈 Usage Analytics", description: "Track feature usage and send personalized tips to increase engagement.", priority: "medium", type: "analytics" }
                 ],
                 templates: [
-                    { id: "user-onboarding", title: "User Onboarding Sequence", reason: "Automated welcome emails, tutorials, and activation triggers." },
-                    { id: "churn-prevention", title: "Churn Prevention Workflow", reason: "Detect inactive users and send re-engagement campaigns." },
-                    { id: "feedback-collector", title: "Feedback Collection", reason: "Automatically send NPS surveys after key milestones." }
+                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior and engagement to prioritize hot leads." },
+                    { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales with automated follow-up sequences." },
+                    { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule and auto-post content across platforms." }
                 ]
             },
             creator: {
@@ -840,9 +840,9 @@
                     { title: "🎬 Video Script Generator", description: "Generate engaging video scripts for Reels, TikTok, and YouTube Shorts.", priority: "medium", type: "content" }
                 ],
                 templates: [
-                    { id: "social-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms." },
-                    { id: "video-script", title: "Video Script Generator", reason: "Generate viral video scripts optimized for short-form content." },
-                    { id: "hashtag-generator", title: "Smart Hashtag Generator", reason: "Get trending hashtags optimized for reach and engagement." }
+                    { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms." },
+                    { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts optimized for short-form content." },
+                    { id: "lead-capture-crm-slack", title: "Lead Capture", reason: "Capture leads from your content and send to CRM." }
                 ]
             },
             coach: {
@@ -853,9 +853,9 @@
                     { title: "📧 Email Sequences", description: "Create automated nurture sequences for leads and existing clients.", priority: "medium", type: "marketing" }
                 ],
                 templates: [
-                    { id: "appointment-booking", title: "Smart Appointment Booking", reason: "Automate scheduling, calendar sync, and reminder emails." },
-                    { id: "client-onboarding", title: "Client Onboarding Workflow", reason: "Send welcome materials, contracts, and intake forms automatically." },
-                    { id: "email-sequence", title: "Nurture Email Sequence", reason: "Build automated email sequences for lead nurturing." }
+                    { id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups." },
+                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on engagement and qualification." },
+                    { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule posts to build your personal brand." }
                 ]
             },
             local_business: {
@@ -866,50 +866,50 @@
                     { title: "📅 Appointment Reminders", description: "Reduce no-shows with automated appointment reminders via SMS/email.", priority: "medium", type: "operations" }
                 ],
                 templates: [
-                    { id: "review-requests", title: "Review Request Automation", reason: "Auto-send review requests after service completion." },
-                    { id: "lead-capture", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups." },
-                    { id: "appointment-reminders", title: "Appointment Reminders", reason: "Send SMS/email reminders 24hrs before appointments." }
+                    { id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups." },
+                    { id: "cart-recovery", title: "Appointment Reminders", reason: "Send SMS/email reminders 24hrs before appointments." },
+                    { id: "lead-scoring", title: "Lead Scoring", reason: "Score leads based on urgency and readiness." }
                 ]
             }
         };
 
-        // Goal-based recommendations
+        // Goal-based recommendations - UPDATED WITH CORRECT SLUGS
         const GOAL_RECOMMENDATIONS = {
             leads: [
-                { id: "lead-capture", title: "Lead Capture & Qualification", reason: "Automatically capture, score, and qualify leads from your website forms and chats." },
+                { id: "lead-capture-crm-slack", title: "Lead Capture & Qualification", reason: "Automatically capture, score, and qualify leads from your website forms and chats." },
                 { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior, engagement, and demographics to prioritize hot leads." },
-                { id: "crm-integration", title: "CRM Integration", reason: "Sync leads automatically to your CRM and notify sales team on Slack." }
+                { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales from abandoned carts." }
             ],
             content: [
-                { id: "content-generator", title: "AI Content Generator", reason: "Create blog posts, social captions, and email newsletters with AI." },
-                { id: "social-scheduler", title: "Social Media Scheduler", reason: "Schedule posts across all platforms with AI-optimized timing." },
-                { id: "video-script", title: "Video Script Generator", reason: "Generate viral video scripts for TikTok, Reels, and YouTube Shorts." }
+                { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms with AI-optimized timing." },
+                { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts for TikTok, Reels, and YouTube Shorts." },
+                { id: "lead-capture-crm-slack", title: "Content to Lead", reason: "Capture leads from your content and send to CRM." }
             ],
             support: [
                 { id: "auto-responder", title: "AI Auto-Responder", reason: "Handle 70% of common customer questions automatically, 24/7." },
-                { id: "ticket-routing", title: "Smart Ticket Routing", reason: "Route support tickets to the right team member based on expertise and workload." },
-                { id: "csat-survey", title: "CSAT Survey Automation", reason: "Auto-send satisfaction surveys after support interactions." }
+                { id: "lead-capture-crm-slack", title: "Lead Capture & Support", reason: "Capture leads from support chats and follow up." },
+                { id: "lead-scoring", title: "Lead Scoring", reason: "Score support leads based on urgency." }
             ],
             operations: [
-                { id: "task-automation", title: "Task Automation", reason: "Auto-create tasks from emails, meetings, and forms." },
-                { id: "report-generator", title: "Automated Reports", reason: "Generate and email reports on schedule (daily, weekly, monthly)." },
-                { id: "approval-workflow", title: "Approval Workflows", reason: "Create automated approval chains for expenses, time-off, and documents." }
+                { id: "lead-scoring", title: "Lead Scoring", reason: "Score and prioritize leads automatically." },
+                { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule and manage social media posts." },
+                { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales automatically." }
             ],
             sales: [
                 { id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Recover 15-25% of lost sales with automated follow-up sequences." },
-                { id: "email-sequence", title: "Sales Nurture Sequence", reason: "Create automated email sequences to nurture leads through the sales funnel." },
-                { id: "price-monitoring", title: "Competitor Price Monitoring", reason: "Track competitor prices and adjust yours to stay competitive." }
+                { id: "lead-scoring", title: "Lead Scoring", reason: "Score leads based on purchase intent." },
+                { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and adjust yours to stay competitive." }
             ]
         };
 
-        // Tool-based recommendations
+        // Tool-based recommendations - UPDATED WITH CORRECT SLUGS
         const TOOL_RECOMMENDATIONS = {
             shopify: { id: "cart-recovery", title: "Shopify Cart Recovery", reason: "Automatically recover abandoned carts and send discount codes." },
-            stripe: { id: "payment-followup", title: "Payment Follow-up", reason: "Auto-send receipts and follow-up emails after successful payments." },
-            slack: { id: "slack-alerts", title: "Slack Alerts", reason: "Get real-time notifications in Slack for leads, sales, and support tickets." },
-            gmail: { id: "email-automation", title: "Email Automation", reason: "Auto-respond, categorize, and follow up on emails." },
-            instagram: { id: "social-scheduler", title: "Instagram Post Scheduler", reason: "Schedule and auto-post content to Instagram at optimal times." },
-            hubspot: { id: "crm-sync", title: "CRM Sync", reason: "Sync leads and contacts automatically with HubSpot." }
+            stripe: { id: "cart-recovery", title: "Payment Follow-up", reason: "Auto-send receipts and follow-up emails after successful payments." },
+            slack: { id: "lead-capture-crm-slack", title: "Slack Alerts", reason: "Get real-time notifications in Slack for leads, sales, and support tickets." },
+            gmail: { id: "lead-capture-crm-slack", title: "Email Automation", reason: "Auto-respond, categorize, and follow up on emails." },
+            instagram: { id: "ai-social-media-scheduler", title: "Instagram Post Scheduler", reason: "Schedule and auto-post content to Instagram at optimal times." },
+            hubspot: { id: "lead-capture-crm-slack", title: "CRM Sync", reason: "Sync leads and contacts automatically with HubSpot." }
         };
 
         async function loadBusinessInsights() {
@@ -1361,7 +1361,7 @@
             chatTableBody.innerHTML = "";
             const threads = {};
             chats.forEach(c => { const session = c.session_id || 'manual'; if (!threads[session]) { threads[session] = { client: c.client_name || "Guest", count: 0, last: c.created_at, messages: [] }; } threads[session].count++; threads[session].messages.push(c); });
-            Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = `<td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td><td>${t.count} messages</td><td>${new Date(t.last).toLocaleString()}</td><td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>`; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); });
+            Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = ` <td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td><td>${t.count} messages</td><td>${new Date(t.last).toLocaleString()}</td><td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>`; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); });
         }
 
         function openChatModal(client, messages) {
@@ -1385,7 +1385,7 @@
         function renderLeads(leads) {
             if (!leadsTableBody) return;
             leadsTableBody.innerHTML = "";
-            leads.forEach(function (l) { var tr = document.createElement("tr"); tr.innerHTML = `<td>${l.name}</td><td>${l.email}</td><td>${l.phone || "-"}</td><td>${new Date(l.created_at).toLocaleString()}</td><td class="lead-actions"><button class="btn-danger delete-lead-btn" data-id="${l.id}">Delete</button></td>`; leadsTableBody.appendChild(tr); });
+            leads.forEach(function (l) { var tr = document.createElement("tr"); tr.innerHTML = ` <td>${l.name}</td><td>${l.email}</td><td>${l.phone || "-"}</td><td>${new Date(l.created_at).toLocaleString()}</td><td class="lead-actions"><button class="btn-danger delete-lead-btn" data-id="${l.id}">Delete</button></td>`; leadsTableBody.appendChild(tr); });
             document.querySelectorAll(".delete-lead-btn").forEach(function (btn) { btn.onclick = async function () { if (!confirm("Delete this lead?")) return; var leadId = btn.dataset.id; try { var res = await fetch(`${BACKEND_URL}/api/leads/${leadId}`, { method: "DELETE", headers: { "Authorization": "Bearer " + token } }); if (!res.ok) throw new Error(); alert("Lead deleted"); loadDashboard(); } catch (err) { alert("Could not delete lead"); } }; });
         }
 
