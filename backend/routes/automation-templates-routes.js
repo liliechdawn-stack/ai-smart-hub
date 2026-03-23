@@ -1,12 +1,13 @@
 // ================================================
 // AUTOMATION TEMPLATES ROUTES - REAL PRODUCTION CODE
 // 20+ Pre-built Templates for Lead Generation
+// Supports both UUID and Slug lookups
 // ================================================
 
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const { supabase } = require('../database-supabase');  // FIXED: Proper import
+const { supabase } = require('../database-supabase');
 const { authenticateToken } = require('../auth-middleware');
 
 console.log('📋 AUTOMATION TEMPLATES ROUTES: Loading...');
@@ -19,7 +20,6 @@ async function executeAutomationActions(userId, template, automationId, customiz
   let leadsGenerated = 0;
   let leadIds = [];
 
-  // Get the actions from template or customizations
   const actions = customizations?.actions || template.default_config?.actions || [];
 
   for (const action of actions) {
@@ -82,7 +82,6 @@ async function executeCreateLeadAction(userId, config, triggerData, automationId
     const leadId = uuidv4();
     const now = new Date().toISOString();
 
-    // Extract lead data from trigger or config
     const leadData = {
       id: leadId,
       user_id: userId,
@@ -118,7 +117,6 @@ async function executeCreateLeadAction(userId, config, triggerData, automationId
 
     score = Math.min(100, score);
 
-    // Save lead score
     await supabase
       .from('lead_scores')
       .insert({
@@ -129,7 +127,6 @@ async function executeCreateLeadAction(userId, config, triggerData, automationId
         scored_at: now
       });
 
-    // If hot lead (score > 80), create alert
     if (score > 80) {
       await supabase
         .from('alerts')
@@ -143,7 +140,6 @@ async function executeCreateLeadAction(userId, config, triggerData, automationId
           created_at: now
         });
 
-      // Broadcast real-time alert
       if (global.io) {
         global.io.to(`user:${userId}`).emit('hot_lead', {
           lead: lead,
@@ -175,7 +171,6 @@ async function executeEmailAction(userId, config, triggerData) {
       .eq('id', userId)
       .single();
 
-    // Here you would integrate with your email service (Resend, SendGrid, etc.)
     console.log(`📧 [AUTOMATION] Sending email to: ${config.to || triggerData.email}`);
 
     return {
@@ -234,6 +229,32 @@ async function executeAIContentAction(userId, config, triggerData) {
   } catch (error) {
     throw new Error(`AI content action failed: ${error.message}`);
   }
+}
+
+// ================================================
+// HELPER: Find template by ID or Slug
+// ================================================
+async function findTemplateByIdOrSlug(identifier) {
+  // First try by UUID
+  let { data: template, error } = await supabase
+    .from('automation_templates')
+    .select('*')
+    .eq('id', identifier)
+    .maybeSingle();
+  
+  // If not found, try by slug
+  if (!template && !error) {
+    const { data: slugTemplate, error: slugError } = await supabase
+      .from('automation_templates')
+      .select('*')
+      .eq('slug', identifier)
+      .maybeSingle();
+    
+    if (slugError) throw slugError;
+    template = slugTemplate;
+  }
+  
+  return template;
 }
 
 // ================================================
@@ -430,22 +451,28 @@ router.get('/templates/:slug', authenticateToken, async (req, res) => {
 });
 
 // ================================================
-// CREATE AUTOMATION FROM TEMPLATE - WITH REAL EXECUTION
+// CREATE AUTOMATION FROM TEMPLATE - WITH SLUG SUPPORT
 // ================================================
 router.post('/automations/from-template/:templateId', authenticateToken, async (req, res) => {
   const { templateId } = req.params;
   const { name, customizations, trigger_data } = req.body;
   const userId = req.user.id;
   
+  console.log(`🚀 Creating automation from template: ${templateId} for user ${userId}`);
+  
   try {
-    // Get template
-    const { data: template, error: templateError } = await supabase
-      .from('automation_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
+    // Find template by ID or Slug
+    const template = await findTemplateByIdOrSlug(templateId);
     
-    if (templateError) throw templateError;
+    if (!template) {
+      return res.status(404).json({ 
+        error: 'Template not found', 
+        templateId,
+        hint: 'Make sure the template slug or ID exists in automation_templates table'
+      });
+    }
+    
+    console.log(`✅ Found template: ${template.name} (${template.id})`);
     
     // Merge default config with customizations
     const triggerConfig = {
@@ -464,7 +491,7 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
       .insert([{
         id: automationId,
         user_id: userId,
-        template_id: templateId,
+        template_id: template.id,
         name: name || template.name,
         description: template.description,
         status: 'active',
@@ -474,7 +501,8 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
         connected_accounts: [],
         ai_config: customizations?.ai || {},
         created_at: now,
-        updated_at: now
+        updated_at: now,
+        metadata: { source: 'ai_recommendation', reason: customizations?.reason || 'AI recommended' }
       }])
       .select()
       .single();
@@ -485,14 +513,33 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
     await supabase
       .from('automation_templates')
       .update({ usage_count: (template.usage_count || 0) + 1 })
-      .eq('id', templateId);
+      .eq('id', template.id);
     
-    // If trigger_data provided, execute immediately (for testing)
+    // Log activity
+    await supabase
+      .from('activity_log')
+      .insert([{
+        user_id: userId,
+        action: 'automation_created',
+        details: `Created automation from template: ${template.name}`,
+        type: 'automation',
+        timestamp: now
+      }]);
+    
+    // Broadcast real-time update
+    if (global.io) {
+      global.io.to(`user:${userId}`).emit('automation_created', {
+        id: automationId,
+        name: name || template.name,
+        source: 'ai_recommendation'
+      });
+    }
+    
+    // If trigger_data provided, execute immediately
     if (trigger_data) {
       const runId = uuidv4();
       const runNow = new Date().toISOString();
       
-      // Create run record
       await supabase
         .from('automation_runs')
         .insert({
@@ -503,7 +550,7 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
           started_at: runNow
         });
       
-      // Execute actions in background
+      // Execute in background
       setTimeout(async () => {
         try {
           const { results, leadsGenerated, leadIds } = await executeAutomationActions(
@@ -523,7 +570,6 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
             })
             .eq('id', runId);
           
-          // Broadcast completion
           if (global.io) {
             global.io.to(`user:${userId}`).emit('automation_executed', {
               automation_id: automationId,
@@ -550,26 +596,7 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
         automation: automation,
         run_id: runId,
         message: 'Automation created and triggered',
-        next_step: '/my-automations.html'
-      });
-    }
-    
-    // Log activity
-    await supabase
-      .from('activity_log')
-      .insert([{
-        user_id: userId,
-        action: 'automation_created',
-        details: `Created automation from template: ${template.name}`,
-        type: 'automation',
-        timestamp: now
-      }]);
-    
-    // Broadcast real-time update
-    if (global.io) {
-      global.io.to(`user:${userId}`).emit('automation_created', {
-        id: automationId,
-        name: name || template.name
+        next_step: '/ai-automations.html'
       });
     }
     
@@ -577,7 +604,7 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
       success: true,
       automation: automation,
       message: 'Automation created successfully and is now LIVE',
-      next_step: '/my-automations.html'
+      next_step: '/ai-automations.html'
     });
     
   } catch (error) {
@@ -595,7 +622,6 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
   const userId = req.user.id;
   
   try {
-    // Get automation
     const { data: automation, error } = await supabase
       .from('user_automations')
       .select('*, template:automation_templates(*)')
@@ -617,7 +643,6 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
     const runId = uuidv4();
     const now = new Date().toISOString();
     
-    // Create run record
     await supabase
       .from('automation_runs')
       .insert({
@@ -628,7 +653,6 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
         started_at: now
       });
     
-    // Execute in background (non-blocking)
     setTimeout(async () => {
       try {
         const template = automation.template;
@@ -654,7 +678,6 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
           })
           .eq('id', runId);
         
-        // Update automation stats
         await supabase
           .from('user_automations')
           .update({
@@ -664,7 +687,6 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
           })
           .eq('id', automationId);
         
-        // Broadcast real-time update
         if (global.io) {
           global.io.to(`user:${userId}`).emit('automation_executed', {
             automation_id: automationId,
@@ -696,6 +718,38 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
   } catch (error) {
     console.error('Error triggering automation:', error);
     res.status(500).json({ error: 'Failed to trigger automation' });
+  }
+});
+
+// ================================================
+// GET USER AUTOMATIONS (with AI recommended filter)
+// ================================================
+router.get('/automations', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { source } = req.query;
+  
+  try {
+    let query = supabase
+      .from('user_automations')
+      .select('*, template:automation_templates(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (source === 'recommended') {
+      query = query.eq('metadata->>source', 'ai_recommendation');
+    }
+    
+    const { data: automations, error } = await query;
+    if (error) throw error;
+    
+    res.json({
+      success: true,
+      automations: automations || []
+    });
+    
+  } catch (error) {
+    console.error('Error fetching automations:', error);
+    res.status(500).json({ error: 'Failed to fetch automations' });
   }
 });
 
@@ -749,8 +803,9 @@ console.log('✅ AUTOMATION TEMPLATES ROUTES: All routes registered');
 console.log('   - GET /test');
 console.log('   - GET /templates');
 console.log('   - GET /templates/:slug');
-console.log('   - POST /automations/from-template/:templateId');
+console.log('   - POST /automations/from-template/:templateId (supports UUID or slug)');
 console.log('   - POST /automations/:automationId/trigger');
+console.log('   - GET /automations');
 console.log('   - GET /health');
 console.log('   - POST /admin/templates');
 
