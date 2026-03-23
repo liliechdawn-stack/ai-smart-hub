@@ -1382,6 +1382,7 @@
 
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api/automations`;
+const TEMPLATE_API = `${BACKEND_URL}/api/automation`; // ADDED: For template routes
 const WS_BASE = BACKEND_URL.replace('https', 'wss');
 
 let automations = [];
@@ -1707,11 +1708,12 @@ async function loadRecommendedAutomations() {
     }
 }
 
-// Deploy AI recommended automation
+// Deploy AI recommended automation - FIXED: Using correct endpoint
 async function deployAIAutomation(templateId) {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/automation/automations/from-template/${templateId}`, {
+        // FIXED: Use TEMPLATE_API which is /api/automation
+        const response = await fetch(`${TEMPLATE_API}/automations/from-template/${templateId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1728,11 +1730,12 @@ async function deployAIAutomation(templateId) {
             loadAutomations();
             loadRecommendedAutomations();
         } else {
-            throw new Error('Deployment failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Deployment failed');
         }
     } catch (error) {
         console.error('Deploy error:', error);
-        showToast('Failed to deploy automation', 'error');
+        showToast('Failed to deploy automation: ' + error.message, 'error');
     }
 }
 
