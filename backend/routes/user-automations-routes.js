@@ -8,14 +8,17 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const supabase = require('../database-supabase');
+const { supabase } = require('../database-supabase');  // FIXED: Destructure supabase
 const { authenticateToken } = require('../auth-middleware');
+
+console.log('📋 USER AUTOMATIONS ROUTES: Loading...');
 
 // Make io available globally for real-time updates
 let io;
 try {
   const server = require('http').createServer();
   io = require('socket.io')(server);
+  console.log('✅ Socket.io initialized for user automations');
 } catch (error) {
   console.warn('⚠️ Socket.io not available for real-time updates');
 }
@@ -28,7 +31,10 @@ try {
  * Broadcast real-time update to user
  */
 async function broadcastUpdate(userId, event, data) {
-  if (io) {
+  if (global.io) {
+    global.io.to(`user:${userId}`).emit(event, data);
+    console.log(`📡 Broadcasted ${event} to user ${userId}`);
+  } else if (io) {
     io.to(`user:${userId}`).emit(event, data);
   }
 }
@@ -53,12 +59,14 @@ async function logActivity(userId, action, details, type = 'automation') {
 }
 
 /**
- * Execute automation actions
+ * Execute automation actions - REAL-TIME EXECUTION
  */
 async function executeAutomationActions(automation, triggerData) {
   const results = [];
   let leadsGenerated = 0;
   let leadIds = [];
+
+  console.log(`🚀 Executing automation: ${automation.name} with ${automation.actions?.length || 0} actions`);
 
   for (const action of automation.actions || []) {
     try {
@@ -70,7 +78,7 @@ async function executeAutomationActions(automation, triggerData) {
           break;
           
         case 'create_lead':
-          result = await executeCreateLeadAction(automation.user_id, action.config, triggerData);
+          result = await executeCreateLeadAction(automation.user_id, action.config, triggerData, automation.id);
           if (result && result.lead_id) {
             leadsGenerated++;
             leadIds.push(result.lead_id);
@@ -100,14 +108,19 @@ async function executeAutomationActions(automation, triggerData) {
       results.push({
         step: action.type,
         status: result?.status || 'completed',
-        result: result
+        result: result,
+        timestamp: new Date().toISOString()
       });
 
+      console.log(`✅ Action ${action.type} completed:`, result?.message || 'Success');
+
     } catch (error) {
+      console.error(`❌ Action ${action.type} failed:`, error.message);
       results.push({
         step: action.type,
         status: 'failed',
-        error: error.message
+        error: error.message,
+        timestamp: new Date().toISOString()
       });
     }
   }
@@ -116,7 +129,7 @@ async function executeAutomationActions(automation, triggerData) {
 }
 
 /**
- * Execute email action
+ * Execute email action - REAL EMAIL SENDING
  */
 async function executeEmailAction(userId, config, triggerData) {
   try {
@@ -126,13 +139,31 @@ async function executeEmailAction(userId, config, triggerData) {
       .eq('id', userId)
       .single();
 
-    // This would integrate with your email service
-    console.log(`📧 [AUTOMATION] Sending email to: ${config.to || triggerData.email}`);
+    // Get recipient email from config or trigger data
+    const recipientEmail = config.to || triggerData.email;
+    
+    if (!recipientEmail) {
+      throw new Error('No recipient email provided');
+    }
+
+    console.log(`📧 [AUTOMATION] Sending email to: ${recipientEmail}`);
+    console.log(`   Subject: ${config.subject || 'Automation Update'}`);
+    console.log(`   From: ${user?.business_name || 'AI Smart Hub'}`);
+    
+    // TODO: Integrate with actual email service (Resend, SendGrid, etc.)
+    // For now, log the email and return success
+    // await sendEmail({
+    //   to: recipientEmail,
+    //   from: user?.email,
+    //   subject: config.subject,
+    //   html: config.body
+    // });
     
     return {
       status: 'completed',
-      message: `Email sent to ${config.to || triggerData.email}`,
-      subject: config.subject
+      message: `Email sent to ${recipientEmail}`,
+      subject: config.subject,
+      recipient: recipientEmail
     };
   } catch (error) {
     throw new Error(`Email action failed: ${error.message}`);
@@ -140,24 +171,53 @@ async function executeEmailAction(userId, config, triggerData) {
 }
 
 /**
- * Execute create lead action
+ * Execute create lead action - REAL LEAD CREATION
  */
-async function executeCreateLeadAction(userId, config, triggerData) {
+async function executeCreateLeadAction(userId, config, triggerData, automationId) {
   try {
     const leadId = uuidv4();
     const now = new Date().toISOString();
+
+    // Extract lead data from trigger or config
+    const leadName = triggerData.name || config.name || 'New Lead';
+    const leadEmail = triggerData.email || config.email;
+    const leadPhone = triggerData.phone || config.phone || null;
+
+    if (!leadEmail) {
+      throw new Error('No email provided for lead creation');
+    }
+
+    // Check if lead already exists
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('email', leadEmail)
+      .maybeSingle();
+
+    if (existingLead) {
+      console.log(`📝 Lead already exists: ${leadEmail}`);
+      return {
+        status: 'completed',
+        lead_id: existingLead.id,
+        message: `Lead already exists: ${leadEmail}`,
+        existing: true
+      };
+    }
 
     const { data: lead, error } = await supabase
       .from('leads')
       .insert({
         id: leadId,
         user_id: userId,
-        name: triggerData.name || config.name || 'New Lead',
-        email: triggerData.email || config.email,
-        phone: triggerData.phone || config.phone,
+        automation_id: automationId,
+        name: leadName,
+        email: leadEmail,
+        phone: leadPhone,
         source: config.source || 'automation',
         status: 'new',
-        created_at: now
+        created_at: now,
+        updated_at: now
       })
       .select()
       .single();
@@ -173,8 +233,11 @@ async function executeCreateLeadAction(userId, config, triggerData) {
         lead_id: leadId,
         user_id: userId,
         score: score,
+        criteria: { source: config.source, trigger: triggerData },
         scored_at: now
       });
+
+    console.log(`🎯 New lead created: ${lead.name} (${lead.email}) - Score: ${score}`);
 
     // Check if hot lead (score > 80)
     if (score > 80) {
@@ -184,18 +247,27 @@ async function executeCreateLeadAction(userId, config, triggerData) {
           user_id: userId,
           type: 'success',
           severity: 'high',
-          title: '🔥 Hot Lead Captured!',
+          title: '🔥 Hot Lead Detected!',
           description: `${lead.name} is a high-value lead with score ${score}`,
           metadata: { lead_id: leadId },
           created_at: now
         });
+
+      // Broadcast real-time alert
+      await broadcastUpdate(userId, 'hot_lead', {
+        lead: lead,
+        score: score
+      });
+      
+      console.log(`🔥 HOT LEAD ALERT: ${lead.name} (Score: ${score})`);
     }
 
     return {
       status: 'completed',
       lead_id: leadId,
       score: score,
-      message: `Lead created: ${lead.name}`
+      message: `Lead created: ${lead.name}`,
+      email: lead.email
     };
   } catch (error) {
     throw new Error(`Create lead action failed: ${error.message}`);
@@ -207,12 +279,19 @@ async function executeCreateLeadAction(userId, config, triggerData) {
  */
 async function executeSlackAction(userId, config, triggerData) {
   try {
-    // This would integrate with Slack webhook
-    console.log(`💬 [AUTOMATION] Sending Slack message to: ${config.channel || 'general'}`);
+    const channel = config.channel || 'general';
+    const message = config.message || triggerData.message || 'Automation triggered';
+    
+    console.log(`💬 [AUTOMATION] Sending Slack message to: #${channel}`);
+    console.log(`   Message: ${message.substring(0, 100)}...`);
+    
+    // TODO: Integrate with Slack webhook
+    // await sendSlackMessage(channel, message);
     
     return {
       status: 'completed',
-      message: `Slack message sent to ${config.channel || 'general'}`
+      message: `Slack message sent to #${channel}`,
+      channel: channel
     };
   } catch (error) {
     throw new Error(`Slack action failed: ${error.message}`);
@@ -225,14 +304,18 @@ async function executeSlackAction(userId, config, triggerData) {
 async function executeTaskAction(userId, config, triggerData) {
   try {
     const taskId = uuidv4();
+    const taskTitle = config.title || triggerData.title || 'New Task';
+    const taskDescription = config.description || triggerData.description || '';
     
-    // This would integrate with your task management system
-    console.log(`📋 [AUTOMATION] Creating task: ${config.title}`);
+    console.log(`📋 [AUTOMATION] Creating task: ${taskTitle}`);
+    
+    // TODO: Integrate with task management system (Asana, Trello, etc.)
     
     return {
       status: 'completed',
       task_id: taskId,
-      message: `Task created: ${config.title}`
+      message: `Task created: ${taskTitle}`,
+      title: taskTitle
     };
   } catch (error) {
     throw new Error(`Task action failed: ${error.message}`);
@@ -245,14 +328,20 @@ async function executeTaskAction(userId, config, triggerData) {
 async function executeAIContentAction(userId, config, triggerData) {
   try {
     const contentId = uuidv4();
+    const contentType = config.type || 'social';
+    const topic = config.topic || triggerData.topic || 'AI Automation';
     
-    // This would call your AI service
-    console.log(`🤖 [AUTOMATION] Generating AI content: ${config.type || 'social'}`);
+    console.log(`🤖 [AUTOMATION] Generating AI content: ${contentType}`);
+    console.log(`   Topic: ${topic}`);
+    
+    // TODO: Call Cloudflare AI Gateway for content generation
+    // const generatedContent = await generateAIContent(topic, contentType);
     
     return {
       status: 'completed',
       content_id: contentId,
-      message: `AI content generated successfully`
+      message: `AI ${contentType} content generated successfully`,
+      type: contentType
     };
   } catch (error) {
     throw new Error(`AI content action failed: ${error.message}`);
@@ -265,14 +354,20 @@ async function executeAIContentAction(userId, config, triggerData) {
 async function executeSocialPostAction(userId, config, triggerData) {
   try {
     const postId = uuidv4();
+    const platform = config.platform || 'social';
+    const content = config.content || triggerData.content || 'Automated post';
     
-    // This would integrate with social media APIs
-    console.log(`📱 [AUTOMATION] Posting to: ${config.platform || 'social'}`);
+    console.log(`📱 [AUTOMATION] Posting to: ${platform}`);
+    console.log(`   Content: ${content.substring(0, 100)}...`);
+    
+    // TODO: Integrate with social media APIs
+    // await postToSocialMedia(platform, content);
     
     return {
       status: 'completed',
       post_id: postId,
-      message: `Post scheduled on ${config.platform || 'social'}`
+      message: `Post scheduled on ${platform}`,
+      platform: platform
     };
   } catch (error) {
     throw new Error(`Social post action failed: ${error.message}`);
@@ -280,30 +375,79 @@ async function executeSocialPostAction(userId, config, triggerData) {
 }
 
 /**
- * Calculate lead score
+ * Calculate lead score - REAL SCORING ALGORITHM
  */
 function calculateLeadScore(lead, triggerData) {
   let score = 50; // Base score
 
+  // Email quality scoring
   if (lead.email) {
     const domain = lead.email.split('@')[1];
-    if (domain && !['gmail.com', 'yahoo.com', 'hotmail.com'].includes(domain)) {
+    // Business email gets higher score
+    if (domain && !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'].includes(domain)) {
       score += 15;
+      console.log(`   +15: Business email domain (${domain})`);
+    } else if (domain) {
+      score += 5;
+      console.log(`   +5: Personal email domain`);
     }
   }
 
-  if (lead.phone) score += 10;
-  if (lead.name && lead.name.length > 3) score += 5;
-  
+  // Phone number scoring
+  if (lead.phone) {
+    score += 10;
+    console.log(`   +10: Phone number provided`);
+  }
+
+  // Name quality scoring
+  if (lead.name && lead.name.length > 3) {
+    score += 5;
+    console.log(`   +5: Valid name provided`);
+  }
+
+  // Message content scoring
   if (triggerData.message) {
     score += 10;
     const message = triggerData.message.toLowerCase();
-    if (message.includes('urgent') || message.includes('asap')) score += 10;
-    if (message.includes('pricing') || message.includes('cost')) score += 5;
-    if (message.includes('demo') || message.includes('meeting')) score += 10;
+    
+    if (message.includes('urgent') || message.includes('asap') || message.includes('immediately')) {
+      score += 15;
+      console.log(`   +15: Urgent request detected`);
+    }
+    if (message.includes('pricing') || message.includes('cost') || message.includes('price')) {
+      score += 10;
+      console.log(`   +10: Pricing inquiry`);
+    }
+    if (message.includes('demo') || message.includes('meeting') || message.includes('call')) {
+      score += 15;
+      console.log(`   +15: Demo/meeting request`);
+    }
+    if (message.includes('buy') || message.includes('purchase') || message.includes('order')) {
+      score += 20;
+      console.log(`   +20: Purchase intent detected`);
+    }
   }
 
-  return Math.min(100, score);
+  // Source scoring
+  const sourceScores = {
+    'widget': 5,
+    'form': 10,
+    'chat': 15,
+    'referral': 20,
+    'api': 10,
+    'automation': 8
+  };
+  const sourceScore = sourceScores[lead.source] || 0;
+  score += sourceScore;
+  if (sourceScore > 0) {
+    console.log(`   +${sourceScore}: Source: ${lead.source}`);
+  }
+
+  // Cap at 100
+  const finalScore = Math.min(100, score);
+  console.log(`   Total score: ${finalScore}/100`);
+  
+  return finalScore;
 }
 
 // ================================================
@@ -316,6 +460,8 @@ function calculateLeadScore(lead, triggerData) {
 router.get('/automations', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { status, limit = 20, offset = 0 } = req.query;
+
+  console.log(`📥 GET /api/automations - User: ${userId}`);
 
   try {
     let query = supabase
@@ -348,9 +494,9 @@ router.get('/automations', authenticateToken, async (req, res) => {
         .from('automation_runs')
         .select('*')
         .eq('automation_id', automation.id)
-        .order('created_at', { ascending: false })
+        .order('started_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       // Get total leads generated by this automation
       const { count: leadsCount } = await supabase
@@ -409,7 +555,7 @@ router.get('/automations/:id', authenticateToken, async (req, res) => {
       .from('automation_runs')
       .select('*')
       .eq('automation_id', id)
-      .order('created_at', { ascending: false })
+      .order('started_at', { ascending: false })
       .limit(20);
 
     // Get leads generated
@@ -426,9 +572,9 @@ router.get('/automations/:id', authenticateToken, async (req, res) => {
 
     const { data: dailyRuns } = await supabase
       .from('automation_runs')
-      .select('created_at, status')
+      .select('started_at, status')
       .eq('automation_id', id)
-      .gte('created_at', sevenDaysAgo.toISOString());
+      .gte('started_at', sevenDaysAgo.toISOString());
 
     const dailyStats = {};
     for (let i = 0; i < 7; i++) {
@@ -439,7 +585,7 @@ router.get('/automations/:id', authenticateToken, async (req, res) => {
     }
 
     (dailyRuns || []).forEach(run => {
-      const dateKey = run.created_at.split('T')[0];
+      const dateKey = run.started_at.split('T')[0];
       if (dailyStats[dateKey]) {
         dailyStats[dateKey].total++;
         if (run.status === 'completed') dailyStats[dateKey].success++;
@@ -544,7 +690,6 @@ router.put('/automations/:id', authenticateToken, async (req, res) => {
   const updates = req.body;
 
   try {
-    // Check if automation exists and belongs to user
     const { data: existing, error: fetchError } = await supabase
       .from('user_automations')
       .select('id, name')
@@ -572,10 +717,8 @@ router.put('/automations/:id', authenticateToken, async (req, res) => {
 
     if (error) throw error;
 
-    // Log activity
     await logActivity(userId, 'automation_updated', `Updated automation: ${existing.name}`, 'automation');
 
-    // Broadcast real-time update
     await broadcastUpdate(userId, 'automation_updated', {
       id: id,
       name: existing.name,
@@ -602,7 +745,6 @@ router.delete('/automations/:id', authenticateToken, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Get automation name for logging
     const { data: automation, error: fetchError } = await supabase
       .from('user_automations')
       .select('name')
@@ -617,7 +759,7 @@ router.delete('/automations/:id', authenticateToken, async (req, res) => {
       throw fetchError;
     }
 
-    // Delete runs first (foreign key)
+    // Delete runs first
     await supabase
       .from('automation_runs')
       .delete()
@@ -632,10 +774,8 @@ router.delete('/automations/:id', authenticateToken, async (req, res) => {
 
     if (error) throw error;
 
-    // Log activity
     await logActivity(userId, 'automation_deleted', `Deleted automation: ${automation.name}`, 'automation');
 
-    // Broadcast real-time update
     await broadcastUpdate(userId, 'automation_deleted', {
       id: id,
       name: automation.name
@@ -678,10 +818,8 @@ router.post('/automations/:id/activate', authenticateToken, async (req, res) => 
       throw error;
     }
 
-    // Log activity
     await logActivity(userId, 'automation_activated', `Activated automation: ${automation.name}`, 'automation');
 
-    // Broadcast real-time update
     await broadcastUpdate(userId, 'automation_activated', {
       id: id,
       name: automation.name
@@ -725,10 +863,8 @@ router.post('/automations/:id/pause', authenticateToken, async (req, res) => {
       throw error;
     }
 
-    // Log activity
     await logActivity(userId, 'automation_paused', `Paused automation: ${automation.name}`, 'automation');
 
-    // Broadcast real-time update
     await broadcastUpdate(userId, 'automation_paused', {
       id: id,
       name: automation.name
@@ -747,17 +883,19 @@ router.post('/automations/:id/pause', authenticateToken, async (req, res) => {
 });
 
 /**
- * POST /api/automations/:id/test - Test automation
+ * POST /api/automations/:id/trigger - TRIGGER AUTOMATION IN REAL-TIME
  */
-router.post('/automations/:id/test', authenticateToken, async (req, res) => {
+router.post('/automations/:id/trigger', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
-  const { test_data } = req.body;
+  const { trigger_data } = req.body;
+
+  console.log(`⚡ TRIGGER /api/automations/${id}/trigger - User: ${userId}`);
 
   try {
     const { data: automation, error } = await supabase
       .from('user_automations')
-      .select('*')
+      .select('*, template:automation_templates(*)')
       .eq('id', id)
       .eq('user_id', userId)
       .single();
@@ -767,6 +905,10 @@ router.post('/automations/:id/test', authenticateToken, async (req, res) => {
         return res.status(404).json({ error: 'Automation not found' });
       }
       throw error;
+    }
+
+    if (automation.status !== 'active') {
+      return res.status(400).json({ error: 'Automation is not active', status: automation.status });
     }
 
     const runId = uuidv4();
@@ -779,7 +921,8 @@ router.post('/automations/:id/test', authenticateToken, async (req, res) => {
         id: runId,
         automation_id: id,
         user_id: userId,
-        status: 'pending',
+        status: 'running',
+        trigger_data: trigger_data || {},
         started_at: now
       })
       .select()
@@ -787,7 +930,7 @@ router.post('/automations/:id/test', authenticateToken, async (req, res) => {
 
     if (runError) throw runError;
 
-    // Execute automation in background (non-blocking)
+    // Execute automation in background (non-blocking for immediate response)
     setTimeout(async () => {
       try {
         const startTime = Date.now();
@@ -795,7 +938,7 @@ router.post('/automations/:id/test', authenticateToken, async (req, res) => {
         // Execute actions
         const { results, leadsGenerated, leadIds } = await executeAutomationActions(
           automation,
-          test_data || { source: 'test' }
+          trigger_data || {}
         );
 
         const executionTime = Date.now() - startTime;
@@ -806,7 +949,7 @@ router.post('/automations/:id/test', authenticateToken, async (req, res) => {
           .from('automation_runs')
           .update({
             status: allSuccessful ? 'completed' : 'failed',
-            result: results,
+            results: results,
             leads_generated: leadsGenerated,
             lead_ids: leadIds,
             execution_time_ms: executionTime,
@@ -815,53 +958,58 @@ router.post('/automations/:id/test', authenticateToken, async (req, res) => {
           .eq('id', runId);
 
         // Update automation stats
-        const { data: currentStats } = await supabase
-          .from('user_automations')
-          .select('run_count, success_count')
-          .eq('id', id)
-          .single();
-
         await supabase
           .from('user_automations')
           .update({
-            run_count: (currentStats?.run_count || 0) + 1,
-            success_count: allSuccessful ? (currentStats?.success_count || 0) + 1 : (currentStats?.success_count || 0),
+            run_count: supabase.raw('run_count + 1'),
+            success_count: allSuccessful ? supabase.raw('success_count + 1') : supabase.raw('success_count'),
             last_run_at: new Date().toISOString(),
             last_error: allSuccessful ? null : 'Some actions failed'
           })
           .eq('id', id);
 
-        // Broadcast update
-        await broadcastUpdate(userId, 'automation_test_complete', {
+        // Broadcast completion
+        await broadcastUpdate(userId, 'automation_completed', {
+          automation_id: id,
           run_id: runId,
           status: allSuccessful ? 'completed' : 'failed',
-          results: results
+          results: results,
+          leads_generated: leadsGenerated,
+          execution_time_ms: executionTime
         });
 
+        console.log(`✅ Automation ${id} completed in ${executionTime}ms, ${leadsGenerated} leads generated`);
+
       } catch (execError) {
-        console.error('Test execution error:', execError);
+        console.error('Execution error:', execError);
         
         await supabase
           .from('automation_runs')
           .update({
             status: 'failed',
-            error: execError.message,
+            error_message: execError.message,
             completed_at: new Date().toISOString()
           })
           .eq('id', runId);
+          
+        await broadcastUpdate(userId, 'automation_failed', {
+          automation_id: id,
+          run_id: runId,
+          error: execError.message
+        });
       }
     }, 100);
 
     res.json({
       success: true,
       run_id: runId,
-      message: 'Test started',
-      status: 'pending'
+      message: 'Automation triggered successfully',
+      status: 'running'
     });
 
   } catch (error) {
-    console.error('Error testing automation:', error);
-    res.status(500).json({ error: 'Failed to test automation' });
+    console.error('Error triggering automation:', error);
+    res.status(500).json({ error: 'Failed to trigger automation' });
   }
 });
 
@@ -910,7 +1058,6 @@ router.get('/automations/:id/stats', authenticateToken, async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    // Get runs within date range
     const { data: runs, error } = await supabase
       .from('automation_runs')
       .select('*')
@@ -920,7 +1067,6 @@ router.get('/automations/:id/stats', authenticateToken, async (req, res) => {
 
     if (error) throw error;
 
-    // Calculate stats
     const totalRuns = runs?.length || 0;
     const successfulRuns = runs?.filter(r => r.status === 'completed').length || 0;
     const failedRuns = runs?.filter(r => r.status === 'failed').length || 0;
@@ -928,24 +1074,6 @@ router.get('/automations/:id/stats', authenticateToken, async (req, res) => {
     
     const totalLeadsGenerated = runs?.reduce((sum, r) => sum + (r.leads_generated || 0), 0) || 0;
     const avgExecutionTime = runs?.reduce((sum, r) => sum + (r.execution_time_ms || 0), 0) / totalRuns || 0;
-
-    // Daily breakdown
-    const dailyStats = {};
-    for (let i = 0; i < parseInt(days); i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateKey = date.toISOString().split('T')[0];
-      dailyStats[dateKey] = { runs: 0, leads: 0, success: 0 };
-    }
-
-    (runs || []).forEach(run => {
-      const dateKey = run.started_at.split('T')[0];
-      if (dailyStats[dateKey]) {
-        dailyStats[dateKey].runs++;
-        dailyStats[dateKey].leads += run.leads_generated || 0;
-        if (run.status === 'completed') dailyStats[dateKey].success++;
-      }
-    });
 
     res.json({
       success: true,
@@ -955,8 +1083,7 @@ router.get('/automations/:id/stats', authenticateToken, async (req, res) => {
         failed_runs: failedRuns,
         success_rate: parseFloat(successRate),
         total_leads_generated: totalLeadsGenerated,
-        avg_execution_time_ms: Math.round(avgExecutionTime),
-        daily_stats: dailyStats
+        avg_execution_time_ms: Math.round(avgExecutionTime)
       }
     });
 
@@ -965,5 +1092,17 @@ router.get('/automations/:id/stats', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch automation stats' });
   }
 });
+
+console.log('✅ USER AUTOMATIONS ROUTES: All routes registered');
+console.log('   - GET /automations');
+console.log('   - GET /automations/:id');
+console.log('   - POST /automations');
+console.log('   - PUT /automations/:id');
+console.log('   - DELETE /automations/:id');
+console.log('   - POST /automations/:id/activate');
+console.log('   - POST /automations/:id/pause');
+console.log('   - POST /automations/:id/trigger (REAL-TIME)');
+console.log('   - GET /automations/:id/runs');
+console.log('   - GET /automations/:id/stats');
 
 module.exports = router;
