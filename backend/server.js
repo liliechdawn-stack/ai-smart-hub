@@ -411,6 +411,272 @@ console.log('✅ User Automations routes mounted at /api/automations');
 app.use('/api', leadsRoutes);
 console.log('✅ Leads Management routes mounted at /api/leads');
 
+// ================================================
+// AI BUSINESS INTELLIGENCE ROUTES
+// ================================================
+
+// Save business profile
+app.post('/api/business/profile', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const profile = req.body;
+    
+    console.log(`📊 Business profile saved for user ${userId}:`, profile);
+    
+    try {
+        // Save profile to users table
+        const { error } = await supabase
+            .from('users')
+            .update({ 
+                business_profile: profile,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+        
+        if (error) throw error;
+        
+        res.json({ success: true, message: 'Profile saved' });
+        
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        res.status(500).json({ error: 'Failed to save profile' });
+    }
+});
+
+// Get business insights and recommendations
+app.get('/api/business/insights', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    
+    try {
+        // Get user profile
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('business_profile, plan, business_name')
+            .eq('id', userId)
+            .single();
+        
+        if (error) throw error;
+        
+        const hasProfile = user?.business_profile && Object.keys(user.business_profile).length > 0;
+        
+        if (!hasProfile) {
+            return res.json({ has_profile: false });
+        }
+        
+        const profile = user.business_profile;
+        
+        // Generate insights based on profile
+        const insights = [];
+        
+        // E-commerce insights
+        if (profile.industry === 'ecommerce' || profile.tools?.includes('shopify')) {
+            insights.push({
+                type: 'ecommerce',
+                title: '🛒 E-commerce Opportunity',
+                description: 'Based on your business type, you could recover 15% of abandoned carts with automated follow-up emails.',
+                priority: 'high'
+            });
+        }
+        
+        // Agency insights
+        if (profile.industry === 'agency') {
+            insights.push({
+                type: 'operations',
+                title: '📊 Agency Efficiency',
+                description: 'Automate client reporting and save 5 hours per week per client with AI-powered reports.',
+                priority: 'high'
+            });
+        }
+        
+        // Lead generation insights
+        if (profile.goal === 'leads') {
+            insights.push({
+                type: 'lead_generation',
+                title: '🎯 Lead Generation Potential',
+                description: 'AI lead scoring can increase conversion by 45%. Start with our lead capture template.',
+                priority: 'high'
+            });
+        }
+        
+        // Content creation insights
+        if (profile.goal === 'content') {
+            insights.push({
+                type: 'content',
+                title: '✍️ Content Scaling',
+                description: 'AI content generation can 3x your output. Repurpose one blog into 5 social posts.',
+                priority: 'medium'
+            });
+        }
+        
+        // Customer support insights
+        if (profile.goal === 'support') {
+            insights.push({
+                type: 'customer_support',
+                title: '💬 24/7 Support',
+                description: 'AI auto-responder can handle 70% of common questions automatically.',
+                priority: 'high'
+            });
+        }
+        
+        // Sales insights
+        if (profile.goal === 'sales') {
+            insights.push({
+                type: 'sales',
+                title: '💰 Sales Growth Opportunity',
+                description: 'Automated cart recovery and follow-up sequences can boost sales by 15-25%.',
+                priority: 'high'
+            });
+        }
+        
+        // Generate recommendations
+        const recommendations = [];
+        
+        // E-commerce recommendations
+        if (profile.industry === 'ecommerce' || profile.tools?.includes('shopify')) {
+            recommendations.push({
+                id: `rec_${Date.now()}_1`,
+                automation_template_id: 'cart-recovery',
+                title: 'Abandoned Cart Recovery',
+                reason: 'You use e-commerce tools. This automation recovers lost sales by sending follow-up emails to customers who leave items in cart.',
+                confidence: 95
+            });
+            
+            recommendations.push({
+                id: `rec_${Date.now()}_2`,
+                automation_template_id: 'price-monitoring',
+                title: 'Competitor Price Monitoring',
+                reason: 'Stay competitive with real-time price alerts when competitors change prices.',
+                confidence: 85
+            });
+        }
+        
+        // Lead generation recommendations
+        if (profile.goal === 'leads') {
+            recommendations.push({
+                id: `rec_${Date.now()}_3`,
+                automation_template_id: 'lead-scoring',
+                title: 'AI Lead Scoring',
+                reason: 'Automatically score leads based on behavior and engagement. Focus your sales team on hot leads first.',
+                confidence: 90
+            });
+            
+            recommendations.push({
+                id: `rec_${Date.now()}_4`,
+                automation_template_id: 'lead-to-crm',
+                title: 'Lead to CRM + Slack',
+                reason: 'Capture leads from your website and instantly notify your team on Slack.',
+                confidence: 88
+            });
+        }
+        
+        // Content creation recommendations
+        if (profile.goal === 'content') {
+            recommendations.push({
+                id: `rec_${Date.now()}_5`,
+                automation_template_id: 'social-scheduler',
+                title: 'AI Social Media Scheduler',
+                reason: 'Auto-generate and schedule posts across all platforms with optimal timing for maximum engagement.',
+                confidence: 92
+            });
+            
+            recommendations.push({
+                id: `rec_${Date.now()}_6`,
+                automation_template_id: 'video-script',
+                title: 'Video Script Generator',
+                reason: 'Generate engaging TikTok/Reel scripts in seconds. 10x your video output.',
+                confidence: 89
+            });
+        }
+        
+        // Customer support recommendations
+        if (profile.goal === 'support' || profile.tools?.includes('slack')) {
+            recommendations.push({
+                id: `rec_${Date.now()}_7`,
+                automation_template_id: 'auto-responder',
+                title: 'AI Auto-Responder',
+                reason: 'Automatically respond to common customer questions 24/7. Reduce response time by 80%.',
+                confidence: 94
+            });
+        }
+        
+        // Get existing recommendations from database
+        const { data: existingRecs } = await supabase
+            .from('ai_recommendations')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .limit(10);
+        
+        // If we have existing recommendations, use them
+        const finalRecommendations = existingRecs && existingRecs.length > 0 
+            ? existingRecs.map(rec => ({
+                id: rec.id,
+                automation_template_id: rec.automation_id,
+                title: rec.title,
+                reason: rec.reason,
+                confidence: rec.confidence_score
+            }))
+            : recommendations;
+        
+        // Save new recommendations to database
+        for (const rec of recommendations) {
+            const { error } = await supabase
+                .from('ai_recommendations')
+                .upsert({
+                    user_id: userId,
+                    automation_id: rec.automation_template_id,
+                    title: rec.title,
+                    reason: rec.reason,
+                    confidence_score: rec.confidence,
+                    status: 'pending'
+                }, { onConflict: 'id' });
+            
+            if (error) console.error('Error saving recommendation:', error);
+        }
+        
+        res.json({
+            has_profile: true,
+            profile: profile,
+            insights: insights,
+            recommendations: finalRecommendations
+        });
+        
+    } catch (error) {
+        console.error('Error getting insights:', error);
+        res.status(500).json({ error: 'Failed to get insights' });
+    }
+});
+
+// Accept/dismiss recommendation
+app.post('/api/business/recommendations/:recId/:action', authenticateToken, async (req, res) => {
+    const { recId, action } = req.params;
+    const userId = req.user.id;
+    
+    if (!['accept', 'dismiss'].includes(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+    
+    try {
+        const status = action === 'accept' ? 'accepted' : 'rejected';
+        
+        const { error } = await supabase
+            .from('ai_recommendations')
+            .update({ 
+                status: status,
+                deployed_at: action === 'accept' ? new Date().toISOString() : null
+            })
+            .eq('id', recId)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('Error updating recommendation:', error);
+        res.status(500).json({ error: 'Failed to update recommendation' });
+    }
+});
+
 // ================= PLAN LIMITS =================
 const PLAN_LIMITS = {
   free: { messages: 50, leads: 10 },
@@ -731,6 +997,9 @@ app.get("/api/dashboard/full", auth, async (req, res) => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
+    // Get business profile if exists
+    const businessProfile = user.business_profile || null;
+
     res.json({
       name: displayName, 
       business_name: displayName,
@@ -746,7 +1015,8 @@ app.get("/api/dashboard/full", auth, async (req, res) => {
       leads_limit: limits.leads,
       chats: chats || [], 
       leads: leads || [],
-      widget_key: user.widget_key || "generate-new-key"
+      widget_key: user.widget_key || "generate-new-key",
+      business_profile: businessProfile
     });
   } catch (err) {
     console.error("Dashboard error:", err);

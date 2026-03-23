@@ -2,490 +2,752 @@
 <html lang="en">
 <head>
     <script src="js/master-fix.js"></script>
-  <meta charset="UTF-8" />
-  <title>Dashboard - AI Platform</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-   <script src="js/master-fix.js"></script>
-    <script src="js/fix-all-html.js"></script>  <!-- ADD THIS LINE -->
     <meta charset="UTF-8" />
+    <title>Dashboard - AI Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/master-fix.js"></script>
+    <script src="js/fix-all-html.js"></script>
+    <meta charset="UTF-8" />
+    <!-- SweetAlert for better modals -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <style>
-    :root {
-      --bg-main: #0b0b0b;
-      --bg-card: #141414;
-      --text-primary: #f0f0f0;
-      --text-secondary: #aaaaaa;
-      --gold: #d4af37;
-      --gold-dark: #b8962e;
-      --border: #2a2a2a;
-      --danger: #ff4d4d;
-      --success: #2ecc71;
-    }
+    <style>
+        :root {
+            --bg-main: #0b0b0b;
+            --bg-card: #141414;
+            --text-primary: #f0f0f0;
+            --text-secondary: #aaaaaa;
+            --gold: #d4af37;
+            --gold-dark: #b8962e;
+            --border: #2a2a2a;
+            --danger: #ff4d4d;
+            --success: #2ecc71;
+            --info: #3498db;
+            --warning: #f39c12;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body,
-    html {
-      height: 100%;
-      font-family: 'Inter', sans-serif;
-      background: var(--bg-main);
-      color: var(--text-primary);
-    }
+        body,
+        html {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
 
-    .dashboard {
-      display: none;
-      flex-direction: row;
-      height: 100vh;
-    }
+        .dashboard {
+            display: none;
+            flex-direction: row;
+            height: 100vh;
+        }
 
-    .sidebar {
-      width: 240px;
-      background: #0f0f0f;
-      border-right: 1px solid var(--border);
-      padding: 32px 20px;
-      height: 100vh;
-      overflow-y: auto;
-    }
+        .sidebar {
+            width: 240px;
+            background: #0f0f0f;
+            border-right: 1px solid var(--border);
+            padding: 32px 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
 
-    .sidebar h2 {
-      color: var(--gold);
-      margin-bottom: 32px;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
+        .sidebar h2 {
+            color: var(--gold);
+            margin-bottom: 32px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
 
-    nav a {
-      display: block;
-      padding: 14px 0;
-      color: var(--text-secondary);
-      text-decoration: none;
-      transition: all 0.2s;
-      font-weight: 500;
-      cursor: pointer;
-    }
+        nav a {
+            display: block;
+            padding: 14px 0;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-weight: 500;
+            cursor: pointer;
+        }
 
-    nav a:hover,
-    nav a.active {
-      color: var(--gold);
-      font-weight: 600;
-    }
+        nav a:hover,
+        nav a.active {
+            color: var(--gold);
+            font-weight: 600;
+        }
 
-    .main {
-      flex: 1;
-      padding: 40px;
-      overflow-y: auto;
-    }
+        .main {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
 
-    h2,
-    h3 {
-      color: white;
-      margin-bottom: 1.2rem;
-    }
+        h2, h3 {
+            color: white;
+            margin-bottom: 1.2rem;
+        }
 
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
 
-    .hidden {
-      display: none !important;
-    }
+        .hidden {
+            display: none !important;
+        }
 
-    button {
-      cursor: pointer;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
 
-    .btn-gold {
-      background: var(--gold);
-      color: #000;
-      padding: 12px 24px;
-    }
+        .btn-gold {
+            background: var(--gold);
+            color: #000;
+            padding: 12px 24px;
+        }
 
-    .btn-gold:hover {
-      background: var(--gold-dark);
-    }
+        .btn-gold:hover {
+            background: var(--gold-dark);
+        }
 
-    .btn-danger {
-      background: var(--danger);
-      color: white;
-      padding: 8px 16px;
-      font-size: 0.9rem;
-    }
+        .btn-outline-gold {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 8px 16px;
+        }
 
-    .btn-danger:hover {
-      background: #cc0000;
-    }
+        .btn-outline-gold:hover {
+            background: var(--gold);
+            color: #000;
+        }
 
-    /* Verification Banner Styling */
-    #verification-banner {
-      background: #332b00;
-      border: 1px solid var(--gold);
-      padding: 15px;
-      margin-bottom: 25px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
 
-    .plan-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px 24px;
-      width: 360px;
-      transition: all 0.3s ease;
-    }
+        .btn-danger:hover {
+            background: #cc0000;
+        }
 
-    .plan-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 16px 40px rgba(212, 175, 55, 0.15);
-    }
+        /* Business Intelligence Section */
+        .bi-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
 
-    .plan-card.current {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2);
-    }
+        .bi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
 
-    #planCards {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 32px;
-      justify-content: center;
-      margin: 40px 0;
-    }
+        .bi-header h2 {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    .chat-bubble {
-      background: #1e1e1e;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      line-height: 1.5;
-    }
+        .bi-header h2 i {
+            color: var(--gold);
+            font-size: 1.8rem;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(46, 204, 113, 0.2);
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            color: var(--success);
+        }
 
-    th,
-    td {
-      padding: 14px 16px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
 
-    th {
-      background: #111;
-      color: var(--gold);
-      font-weight: 600;
-    }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
-    input,
-    textarea {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      background: #1a1a1a;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: white;
-      font-family: inherit;
-    }
+        .business-profile-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
 
-    textarea {
-      resize: vertical;
-      min-height: 90px;
-    }
+        .profile-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
 
-    .analytics {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin: 32px 0;
-    }
+        .insights-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-    .chart-container {
-      background: var(--bg-card);
-      padding: 24px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
+        .insight-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-left: 4px solid var(--gold);
+            transition: all 0.3s ease;
+        }
 
-    .lead-actions {
-      display: flex;
-      gap: 8px;
-    }
+        .insight-card:hover {
+            transform: translateX(4px);
+            background: rgba(212, 175, 55, 0.1);
+        }
 
-    .widget-key-section {
-      margin-top: 60px;
-      background: var(--bg-card);
-      padding: 24px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
+        .insight-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #000;
+        }
 
-    .key-display {
-      background: #000;
-      color: #0f0;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-family: monospace;
-      word-break: break-all;
-      margin: 16px 0;
-    }
+        .insight-content {
+            flex: 1;
+        }
 
-    .widget-code-box {
-      background: #000;
-      color: #0f0;
-      padding: 20px;
-      border-radius: 8px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      position: relative;
-      margin: 16px 0;
-    }
+        .insight-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
 
-    .copy-btn,
-    .regenerate-btn {
-      background: var(--gold);
-      color: #000;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      margin-left: 12px;
-    }
+        .insight-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
 
-    .copy-btn:hover,
-    .regenerate-btn:hover {
-      background: var(--gold-dark);
-    }
+        .insight-priority {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
 
-    /* Modal Styling for Chat History */
-    #chatModal {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: var(--bg-card);
-      width: 90%; max-width: 600px;
-      max-height: 80vh;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      display: flex; flex-direction: column;
-    }
-    .modal-header {
-      padding: 20px; border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    #modalChatBody {
-      padding: 20px; overflow-y: auto; flex: 1;
-    }
-  </style>
+        .priority-high { background: rgba(255, 77, 77, 0.2); color: var(--danger); }
+        .priority-medium { background: rgba(243, 156, 18, 0.2); color: var(--warning); }
+        .priority-low { background: rgba(52, 152, 219, 0.2); color: var(--info); }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 16px;
+        }
+
+        .recommendation-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .recommendation-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .recommendation-badge {
+            position: absolute;
+            top: -10px;
+            right: 16px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .recommendation-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            margin-top: 8px;
+        }
+
+        .recommendation-reason {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .recommendation-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .bi-settings-btn {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--gold);
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: var(--gold);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bi-settings-btn:hover {
+            background: var(--gold);
+            color: #000;
+        }
+
+        /* Onboarding Modal Styles */
+        .onboarding-step {
+            margin-bottom: 24px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .tools-grid label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        /* Existing styles continue... */
+        .verification-banner {
+            background: #332b00;
+            border: 1px solid var(--gold);
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .plan-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 24px;
+            width: 360px;
+            transition: all 0.3s ease;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(212, 175, 55, 0.15);
+        }
+
+        .plan-card.current {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2);
+        }
+
+        #planCards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            justify-content: center;
+            margin: 40px 0;
+        }
+
+        .chat-bubble {
+            background: #1e1e1e;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #111;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #1a1a1a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .analytics {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin: 32px 0;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .lead-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .widget-key-section {
+            margin-top: 60px;
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .key-display {
+            background: #000;
+            color: #0f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 16px 0;
+        }
+
+        .widget-code-box {
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            position: relative;
+            margin: 16px 0;
+        }
+
+        .copy-btn, .regenerate-btn {
+            background: var(--gold);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .copy-btn:hover, .regenerate-btn:hover {
+            background: var(--gold-dark);
+        }
+
+        #chatModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            width: 90%; max-width: 600px;
+            max-height: 80vh;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex; flex-direction: column;
+        }
+        .modal-header {
+            padding: 20px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        #modalChatBody {
+            padding: 20px; overflow-y: auto; flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+            .bi-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-  <div class="dashboard">
+<div class="dashboard">
 
     <aside class="sidebar">
-      <h2>AI PLATFORM</h2>
-      <nav>
-        <a href="index.html" style="color: var(--gold); border-bottom: 1px solid var(--border); margin-bottom: 10px;">🏠 Back to Home</a>
-        <a id="navAnalytics" class="active">Analytics</a>
-        <a id="navLeads">Leads</a>
-        <a id="navChats">Chats</a>
-        <a id="navSettings">Settings</a>
-        <a id="navWidget">AI Widget</a>
-      </nav>
+        <h2>AI PLATFORM</h2>
+        <nav>
+            <a href="index.html" style="color: var(--gold); border-bottom: 1px solid var(--border); margin-bottom: 10px;">🏠 Back to Home</a>
+            <a id="navAnalytics" class="active">Analytics</a>
+            <a id="navLeads">Leads</a>
+            <a id="navChats">Chats</a>
+            <a id="navSettings">Settings</a>
+            <a id="navWidget">AI Widget</a>
+        </nav>
 
-      <div style="margin-top: 40px; font-size: 0.95rem; color: var(--text-secondary);">
-        <p>Business: <strong id="businessName" style="color:white;">Business</strong></p>
-        <p>Plan: <strong id="currentPlan" style="color:var(--gold);">free</strong></p>
-        <p>Messages Left: <strong id="messagesUsed">0</strong></p>
-        <p>Leads Left: <strong id="leadsUsed">0</strong></p>
-      </div>
+        <div style="margin-top: 40px; font-size: 0.95rem; color: var(--text-secondary);">
+            <p>Business: <strong id="businessName" style="color:white;">Business</strong></p>
+            <p>Plan: <strong id="currentPlan" style="color:var(--gold);">free</strong></p>
+            <p>Messages Left: <strong id="messagesUsed">0</strong></p>
+            <p>Leads Left: <strong id="leadsUsed">0</strong></p>
+        </div>
 
-      <button id="logoutBtn" class="btn-gold" style="margin-top: 40px; width:100%;">Logout</button>
-      <button id="adminBtn" class="hidden"
-        style="margin-top: 12px; width:100%; background:transparent; border:2px solid var(--gold); color:var(--gold);">Admin Panel</button>
+        <button id="logoutBtn" class="btn-gold" style="margin-top: 40px; width:100%;">Logout</button>
+        <button id="adminBtn" class="hidden"
+                style="margin-top: 12px; width:100%; background:transparent; border:2px solid var(--gold); color:var(--gold);">Admin Panel</button>
     </aside>
 
     <main class="main">
 
-      <div id="verification-banner" class="hidden">
-        <span style="color: var(--gold);">⚠️ Your business email is not verified. Some features may be limited.</span>
-        <button onclick="window.location.href='verification.html'" class="btn-gold" style="padding: 8px 16px; font-size: 0.8rem;">Verify Now</button>
-      </div>
-
-      <section id="analyticsSection">
-        <h2>Business Overview</h2>
-        <div class="analytics">
-          <div class="card" style="flex: 1; min-width: 200px;">
-            <h3 id="totalChats" style="color: var(--gold); font-size: 2.6rem;">0</h3>
-            <p>Total Chats</p>
-          </div>
-          <div class="card" style="flex: 1; min-width: 200px;">
-            <h3 id="totalLeads" style="color: var(--gold); font-size: 2.6rem;">0</h3>
-            <p>Total Leads</p>
-          </div>
-          <div class="card" style="flex: 1; min-width: 200px;">
-            <h3 id="messagesRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3>
-            <p>Messages Left</p>
-          </div>
-          <div class="card" style="flex: 1; min-width: 200px;">
-            <h3 id="leadsRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3>
-            <p>Leads Left</p>
-          </div>
+        <div id="verification-banner" class="verification-banner hidden">
+            <span style="color: var(--gold);">⚠️ Your business email is not verified. Some features may be limited.</span>
+            <button onclick="window.location.href='verification.html'" class="btn-gold" style="padding: 8px 16px; font-size: 0.8rem;">Verify Now</button>
         </div>
 
-        <h3>Rise & Fall Trend</h3>
-        <div class="chart-container">
-          <canvas id="riseFallChart" height="260"></canvas>
-        </div>
-      </section>
+        <!-- ========== NEW: AI BUSINESS INTELLIGENCE SECTION ========== -->
+        <div class="bi-section" id="biSection">
+            <div class="bi-header">
+                <h2>
+                    <i class="fas fa-brain"></i>
+                    AI Business Intelligence
+                    <span class="live-badge pulse"><i class="fas fa-circle"></i> Live Analysis</span>
+                </h2>
+                <button class="bi-settings-btn" id="openBusinessSettingsBtn">
+                    <i class="fas fa-sliders-h"></i> Configure Business Profile
+                </button>
+            </div>
 
-      <section id="leadsSection" class="hidden">
-        <h2>Leads</h2>
-        <div style="margin: 24px 0; display: flex; flex-wrap: wrap; gap: 12px;">
-          <input id="leadName" placeholder="Name" style="flex: 1; min-width: 180px;" />
-          <input id="leadEmail" placeholder="Email" style="flex: 1; min-width: 220px;" />
-          <input id="leadPhone" placeholder="Phone (optional)" style="flex: 1; min-width: 160px;" />
-          <button id="addLeadBtn" class="btn-gold">Add Lead</button>
-        </div>
+            <div class="business-profile-card" id="businessProfileCard">
+                <div class="profile-status" id="businessStatus">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analyzing your business...</span>
+                </div>
+                <div id="businessInsights" class="insights-container">
+                    <div style="text-align: center; padding: 40px;">
+                        <div class="loading-spinner" style="width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.3); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                        <p>Loading insights...</p>
+                    </div>
+                </div>
+            </div>
 
-        <h3>Lead List</h3>
-        <table id="leadsTable">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Date Added</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </section>
-
-      <section id="chatSection" class="hidden">
-        <h2>Chat Conversations</h2>
-        <table id="chatTable" style="margin-bottom: 32px;">
-          <thead>
-            <tr>
-              <th>Client / Session</th>
-              <th>Messages</th>
-              <th>Last Message</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-
-        <div style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
-          <h3>Internal AI Tester</h3>
-          <input id="clientName" placeholder="Client Name" />
-          <textarea id="aiMessage" placeholder="Type your message to test your AI..." rows="3"></textarea>
-          <button id="sendBtn" class="btn-gold">Send</button>
-
-          <div id="chatResponses" style="margin-top: 24px; max-height: 340px; overflow-y: auto;"></div>
-        </div>
-      </section>
-
-      <section id="settingsSection" class="hidden">
-        <h2>Subscription Plans</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 32px;">
-          Upgrade your plan to unlock more messages, advanced features and business growth.
-        </p>
-
-        <div id="planCards"></div>
-
-        <div class="widget-key-section">
-          <h2>My AI Widget API Key</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 16px;">
-            Use this unique key to embed the AI chat widget on your website.
-          </p>
-
-          <div class="key-display">
-            <strong>Your Key:</strong> <span id="widgetKey">Loading...</span>
-            <button class="regenerate-btn" id="regenerateKeyBtn">Regenerate Key</button>
-          </div>
-
-          <div class="widget-code-box">
-            <button class="copy-btn" id="copyEmbedBtn">Copy Code</button>
-            <pre id="embedCode"></pre>
-          </div>
-        </div>
-      </section>
-
-      <section id="widgetSection" class="hidden">
-        <h2>AI Chat Widget Configuration</h2>
-        
-        <div style="background: var(--bg-card); padding: 28px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 32px;">
-          <h3>Train Your AI (Knowledge Base)</h3>
-          <p style="color: var(--text-secondary); margin-bottom: 16px;">
-            Input details about your business (pricing, FAQ, services) so the AI can answer accurately.
-          </p>
-          <textarea id="knowledge-input" placeholder="Example: Our office is located in Lagos. We offer web design starting at $500. We are closed on Sundays..." style="min-height: 150px;"></textarea>
-          <button id="saveKnowledgeBtn" class="btn-gold">Update AI Knowledge</button>
+            <div id="recommendationsSection" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3><i class="fas fa-magic" style="color: var(--gold);"></i> AI-Powered Recommendations</h3>
+                    <button class="btn-outline-gold" id="refreshRecommendationsBtn" style="padding: 6px 12px;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div id="recommendationsGrid" class="recommendations-grid"></div>
+            </div>
         </div>
 
-        <div style="background: var(--bg-card); padding: 28px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 32px;">
-          <h3>Installation Code</h3>
-          <pre id="widgetSectionCode" style="background: #000; color: #0f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin-top: 16px; font-family: monospace;">Loading code...</pre>
-          <button class="btn-gold" id="copyWidgetTabBtn" style="margin-top:15px">Copy Code</button>
-        </div>
+        <section id="analyticsSection">
+            <h2>Business Overview</h2>
+            <div class="analytics">
+                <div class="card" style="flex: 1; min-width: 200px;">
+                    <h3 id="totalChats" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+                    <p>Total Chats</p>
+                </div>
+                <div class="card" style="flex: 1; min-width: 200px;">
+                    <h3 id="totalLeads" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+                    <p>Total Leads</p>
+                </div>
+                <div class="card" style="flex: 1; min-width: 200px;">
+                    <h3 id="messagesRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+                    <p>Messages Left</p>
+                </div>
+                <div class="card" style="flex: 1; min-width: 200px;">
+                    <h3 id="leadsRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3>
+                    <p>Leads Left</p>
+                </div>
+            </div>
 
-        <h3>Widget Preview</h3>
-        <div style="height: 300px; border: 2px dashed #444; border-radius: 16px; position: relative; background: #111; display: flex; align-items: center; justify-content: center;">
-             <p style="color: #444;">Widget Live Preview Area</p>
-          <div style="position: absolute; bottom: 20px; right: 20px; background: var(--gold); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 10px 30px rgba(212,175,55,0.4);">
-            💬
-          </div>
-        </div>
-      </section>
+            <h3>Rise & Fall Trend</h3>
+            <div class="chart-container">
+                <canvas id="riseFallChart" height="260"></canvas>
+            </div>
+        </section>
+
+        <section id="leadsSection" class="hidden">
+            <h2>Leads</h2>
+            <div style="margin: 24px 0; display: flex; flex-wrap: wrap; gap: 12px;">
+                <input id="leadName" placeholder="Name" style="flex: 1; min-width: 180px;" />
+                <input id="leadEmail" placeholder="Email" style="flex: 1; min-width: 220px;" />
+                <input id="leadPhone" placeholder="Phone (optional)" style="flex: 1; min-width: 160px;" />
+                <button id="addLeadBtn" class="btn-gold">Add Lead</button>
+            </div>
+
+            <h3>Lead List</h3>
+            <table id="leadsTable">
+                <thead>
+                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Date Added</th><th>Actions</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section id="chatSection" class="hidden">
+            <h2>Chat Conversations</h2>
+            <table id="chatTable" style="margin-bottom: 32px;">
+                <thead>
+                    <tr><th>Client / Session</th><th>Messages</th><th>Last Message</th><th>Action</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
+                <h3>Internal AI Tester</h3>
+                <input id="clientName" placeholder="Client Name" />
+                <textarea id="aiMessage" placeholder="Type your message to test your AI..." rows="3"></textarea>
+                <button id="sendBtn" class="btn-gold">Send</button>
+
+                <div id="chatResponses" style="margin-top: 24px; max-height: 340px; overflow-y: auto;"></div>
+            </div>
+        </section>
+
+        <section id="settingsSection" class="hidden">
+            <h2>Subscription Plans</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 32px;">
+                Upgrade your plan to unlock more messages, advanced features and business growth.
+            </p>
+
+            <div id="planCards"></div>
+
+            <div class="widget-key-section">
+                <h2>My AI Widget API Key</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Use this unique key to embed the AI chat widget on your website.
+                </p>
+
+                <div class="key-display">
+                    <strong>Your Key:</strong> <span id="widgetKey">Loading...</span>
+                    <button class="regenerate-btn" id="regenerateKeyBtn">Regenerate Key</button>
+                </div>
+
+                <div class="widget-code-box">
+                    <button class="copy-btn" id="copyEmbedBtn">Copy Code</button>
+                    <pre id="embedCode"></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="widgetSection" class="hidden">
+            <h2>AI Chat Widget Configuration</h2>
+
+            <div style="background: var(--bg-card); padding: 28px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 32px;">
+                <h3>Train Your AI (Knowledge Base)</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Input details about your business (pricing, FAQ, services) so the AI can answer accurately.
+                </p>
+                <textarea id="knowledge-input" placeholder="Example: Our office is located in Lagos. We offer web design starting at $500. We are closed on Sundays..." style="min-height: 150px;"></textarea>
+                <button id="saveKnowledgeBtn" class="btn-gold">Update AI Knowledge</button>
+            </div>
+
+            <div style="background: var(--bg-card); padding: 28px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 32px;">
+                <h3>Installation Code</h3>
+                <pre id="widgetSectionCode" style="background: #000; color: #0f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin-top: 16px; font-family: monospace;">Loading code...</pre>
+                <button class="btn-gold" id="copyWidgetTabBtn" style="margin-top:15px">Copy Code</button>
+            </div>
+
+            <h3>Widget Preview</h3>
+            <div style="height: 300px; border: 2px dashed #444; border-radius: 16px; position: relative; background: #111; display: flex; align-items: center; justify-content: center;">
+                <p style="color: #444;">Widget Live Preview Area</p>
+                <div style="position: absolute; bottom: 20px; right: 20px; background: var(--gold); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 10px 30px rgba(212,175,55,0.4);">
+                    💬
+                </div>
+            </div>
+        </section>
 
     </main>
-  </div>
+</div>
 
-  <div id="chatModal" class="hidden">
+<div id="chatModal" class="hidden">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modalTitle" style="margin:0;">Conversation</h3>
-        <button id="closeModal" style="background:transparent; color:white; font-size:24px;">&times;</button>
-      </div>
-      <div id="modalChatBody"></div>
+        <div class="modal-header">
+            <h3 id="modalTitle" style="margin:0;">Conversation</h3>
+            <button id="closeModal" style="background:transparent; color:white; font-size:24px;">&times;</button>
+        </div>
+        <div id="modalChatBody"></div>
     </div>
-  </div>
-
+</div>
 
 <script>
     // ===== PRODUCTION BACKEND URL =====
     const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
-    const API_URL = BACKEND_URL; // Alias for compatibility
-    
+    const API_URL = BACKEND_URL;
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -495,12 +757,14 @@
 
     const GOLD_COLOR = '#d4af37';
     const GOLD_BG = 'rgba(212, 175, 55, 0.15)';
-    // Gemini-inspired styles for the widget attributes
     const GEMINI_GRADIENT = 'linear-gradient(135deg, #4285f4, #9b72cb, #d96570)';
+
+    // Business Profile Storage
+    let businessProfile = null;
 
     document.addEventListener("DOMContentLoaded", function () {
         console.log("[DASHBOARD] Initializing with backend:", BACKEND_URL);
-        
+
         const sections = {
             analytics: document.getElementById("analyticsSection"),
             leads: document.getElementById("leadsSection"),
@@ -531,7 +795,6 @@
 
                     const sectionToShow = navLinks[id];
                     if (sectionToShow) sectionToShow.classList.remove("hidden");
-                    
                     el.classList.add("active");
 
                     if (id === "navSettings" || id === "navWidget") {
@@ -539,9 +802,6 @@
                     }
                     if (id === "navSettings") {
                         renderPlanCards(currentPlanSpan ? currentPlanSpan.textContent.trim() : "free");
-                        // Populate business name input in settings if it exists
-                        const bNameInput = document.getElementById("settingsBusinessName");
-                        if(bNameInput) bNameInput.value = businessNameSpan.textContent;
                     }
                 };
             }
@@ -563,6 +823,328 @@
         var logoutBtn = document.getElementById("logoutBtn");
         var adminBtn = document.getElementById("adminBtn");
 
+        // ========== BUSINESS INTELLIGENCE FUNCTIONS ==========
+
+        // Load business insights from backend
+        async function loadBusinessInsights() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/business/insights`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        // No profile yet - show onboarding
+                        showBusinessOnboarding();
+                        return;
+                    }
+                    throw new Error("Failed to load insights");
+                }
+
+                const data = await res.json();
+
+                if (!data.has_profile) {
+                    showBusinessOnboarding();
+                    return;
+                }
+
+                businessProfile = data.profile;
+                updateBusinessStatus(data);
+                renderInsights(data.insights || []);
+                renderRecommendations(data.recommendations || []);
+
+            } catch (error) {
+                console.error("Error loading business insights:", error);
+                document.getElementById("businessStatus").innerHTML = `
+                    <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>
+                    <span>Click "Configure" to set up your business profile</span>
+                `;
+                document.getElementById("businessInsights").innerHTML = `
+                    <div class="insight-card" style="cursor: pointer;" onclick="showBusinessOnboarding()">
+                        <div class="insight-icon"><i class="fas fa-plus"></i></div>
+                        <div class="insight-content">
+                            <div class="insight-title">Set up your business profile</div>
+                            <div class="insight-description">Tell us about your business to get personalized AI recommendations.</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function updateBusinessStatus(data) {
+            const statusDiv = document.getElementById("businessStatus");
+            if (data.profile) {
+                const industryMap = {
+                    'agency': 'Digital Agency',
+                    'ecommerce': 'E-commerce Store',
+                    'saas': 'SaaS Company',
+                    'coach': 'Coach/Consultant',
+                    'local_business': 'Local Business',
+                    'creator': 'Content Creator'
+                };
+                const industry = industryMap[data.profile.industry] || data.profile.industry || 'Business';
+                const goalMap = {
+                    'leads': 'Lead Generation',
+                    'support': 'Customer Support',
+                    'content': 'Content Creation',
+                    'operations': 'Operations',
+                    'sales': 'Sales Growth'
+                };
+                const goal = goalMap[data.profile.goal] || data.profile.goal || 'Growth';
+                statusDiv.innerHTML = `
+                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                    <span>${industry} | Goal: ${goal} | Tools: ${data.profile.tools?.length || 0} connected</span>
+                `;
+            }
+        }
+
+        function renderInsights(insights) {
+            const container = document.getElementById("businessInsights");
+            if (!insights || insights.length === 0) {
+                container.innerHTML = `
+                    <div class="insight-card">
+                        <div class="insight-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="insight-content">
+                            <div class="insight-title">Complete your profile</div>
+                            <div class="insight-description">Add more business details to unlock AI-powered insights.</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = insights.map(insight => `
+                <div class="insight-card">
+                    <div class="insight-icon"><i class="fas ${getInsightIcon(insight.type)}"></i></div>
+                    <div class="insight-content">
+                        <div class="insight-title">${insight.title}</div>
+                        <div class="insight-description">${insight.description}</div>
+                        <span class="insight-priority priority-${insight.priority}">${insight.priority.toUpperCase()} Priority</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRecommendations(recommendations) {
+            const section = document.getElementById("recommendationsSection");
+            const grid = document.getElementById("recommendationsGrid");
+
+            if (!recommendations || recommendations.length === 0) {
+                section.style.display = "none";
+                return;
+            }
+
+            section.style.display = "block";
+            grid.innerHTML = recommendations.map(rec => `
+                <div class="recommendation-card">
+                    <div class="recommendation-badge">
+                        <i class="fas fa-robot"></i> AI Recommended
+                    </div>
+                    <div class="recommendation-title">${rec.title}</div>
+                    <div class="recommendation-reason">
+                        <i class="fas fa-lightbulb" style="color: var(--gold);"></i>
+                        ${rec.reason}
+                    </div>
+                    <div class="recommendation-actions">
+                        <button class="btn-gold" onclick="deployRecommendation('${rec.automation_template_id}', '${rec.id}')" style="flex: 2;">
+                            <i class="fas fa-rocket"></i> Deploy Now
+                        </button>
+                        <button class="btn-outline-gold" onclick="dismissRecommendation('${rec.id}')" style="flex: 1;">
+                            <i class="fas fa-times"></i> Dismiss
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getInsightIcon(type) {
+            const icons = {
+                'lead_generation': 'fa-users',
+                'customer_support': 'fa-headset',
+                'content': 'fa-pen-fancy',
+                'operations': 'fa-chart-line',
+                'sales': 'fa-chart-simple',
+                'ecommerce': 'fa-shopping-cart'
+            };
+            return icons[type] || 'fa-lightbulb';
+        }
+
+        // Show business onboarding modal
+        window.showBusinessOnboarding = function() {
+            Swal.fire({
+                title: '🎯 Let AI Understand Your Business',
+                html: `
+                    <div style="text-align: left;">
+                        <p>Answer 4 quick questions to get personalized automation recommendations:</p>
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">What best describes your business?</label>
+                            <select id="onboardIndustry" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
+                                <option value="">Select...</option>
+                                <option value="agency">Digital Marketing Agency</option>
+                                <option value="ecommerce">E-commerce Store</option>
+                                <option value="saas">SaaS / Software Company</option>
+                                <option value="coach">Coach / Consultant</option>
+                                <option value="local_business">Local Service Business</option>
+                                <option value="creator">Content Creator / Influencer</option>
+                            </select>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">Main business goal?</label>
+                            <select id="onboardGoal" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
+                                <option value="">Select...</option>
+                                <option value="leads">Generate More Leads</option>
+                                <option value="support">Automate Customer Support</option>
+                                <option value="content">Create & Repurpose Content</option>
+                                <option value="operations">Automate Operations/Reporting</option>
+                                <option value="sales">Increase Sales/Conversions</option>
+                            </select>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">Which tools do you use? (select all)</label>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                <label><input type="checkbox" value="shopify"> Shopify</label>
+                                <label><input type="checkbox" value="stripe"> Stripe</label>
+                                <label><input type="checkbox" value="gmail"> Gmail</label>
+                                <label><input type="checkbox" value="slack"> Slack</label>
+                                <label><input type="checkbox" value="instagram"> Instagram</label>
+                                <label><input type="checkbox" value="notion"> Notion</label>
+                                <label><input type="checkbox" value="hubspot"> HubSpot</label>
+                                <label><input type="checkbox" value="salesforce"> Salesforce</label>
+                            </div>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">Monthly revenue range?</label>
+                            <select id="onboardRevenue" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
+                                <option value="">Prefer not to say</option>
+                                <option value="0-1k">Less than $1,000</option>
+                                <option value="1k-10k">$1,000 - $10,000</option>
+                                <option value="10k-50k">$10,000 - $50,000</option>
+                                <option value="50k+">$50,000+</option>
+                            </select>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Get Recommendations',
+                cancelButtonText: 'Skip',
+                width: '550px',
+                background: '#1a1a1a',
+                color: 'white',
+                customClass: {
+                    confirmButton: 'btn-gold',
+                    cancelButton: 'btn-outline-gold'
+                },
+                preConfirm: () => {
+                    const industry = document.getElementById('onboardIndustry').value;
+                    const goal = document.getElementById('onboardGoal').value;
+                    const tools = Array.from(document.querySelectorAll('#onboardIndustry ~ div input:checked')).map(cb => cb.value);
+                    const revenue = document.getElementById('onboardRevenue').value;
+                    
+                    if (!industry || !goal) {
+                        Swal.showValidationMessage('Please select industry and goal');
+                        return false;
+                    }
+                    
+                    return { industry, goal, tools, revenue };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await saveBusinessProfile(result.value);
+                }
+            });
+        };
+
+        // Save business profile
+        async function saveBusinessProfile(profile) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/business/profile`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(profile)
+                });
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Profile Saved!',
+                        text: 'AI is now analyzing your business to provide personalized recommendations.',
+                        icon: 'success',
+                        background: '#1a1a1a',
+                        color: 'white',
+                        confirmButtonText: 'Great!',
+                        customClass: { confirmButton: 'btn-gold' }
+                    });
+                    await loadBusinessInsights();
+                    await loadDashboard();
+                } else {
+                    throw new Error('Failed to save');
+                }
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                Swal.fire('Error', 'Failed to save business profile', 'error');
+            }
+        }
+
+        // Deploy recommendation
+        window.deployRecommendation = async function(templateId, recId) {
+            Swal.fire({
+                title: 'Deploy Automation',
+                text: 'This automation will be created and activated for your business. Ready to deploy?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Deploy Now',
+                background: '#1a1a1a',
+                color: 'white',
+                customClass: { confirmButton: 'btn-gold', cancelButton: 'btn-outline-gold' }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`${BACKEND_URL}/api/automation/automations/from-template/${templateId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: JSON.stringify({
+                                name: `AI Recommended Automation`,
+                                customizations: { auto_configured: true, source: 'ai_recommendation' }
+                            })
+                        });
+
+                        if (res.ok) {
+                            Swal.fire({
+                                title: 'Deployed!',
+                                text: 'Your automation is now live and working for your business.',
+                                icon: 'success',
+                                background: '#1a1a1a',
+                                color: 'white',
+                                confirmButtonText: 'View Automations',
+                                customClass: { confirmButton: 'btn-gold' }
+                            }).then(() => {
+                                window.location.href = 'ai-powerhouse.html';
+                            });
+                        } else {
+                            throw new Error('Deployment failed');
+                        }
+                    } catch (error) {
+                        Swal.fire('Error', 'Failed to deploy automation', 'error');
+                    }
+                }
+            });
+        };
+
+        window.dismissRecommendation = async function(recId) {
+            // Just refresh the recommendations
+            await loadBusinessInsights();
+        };
+
+        document.getElementById("refreshRecommendationsBtn").onclick = () => loadBusinessInsights();
+        document.getElementById("openBusinessSettingsBtn").onclick = () => showBusinessOnboarding();
+
+        // ========== END BUSINESS INTELLIGENCE FUNCTIONS ==========
+
         var ALL_PLANS = [
             { name: "basic", id: "basic", price: "₦10,000 / month", messages: "500 AI messages", leads: "Unlimited leads", features: ["Email support", "Remove branding"] },
             { name: "pro", id: "pro", price: "₦25,000 / month", messages: "3,000 AI messages", leads: "Unlimited leads", features: ["Priority AI", "Custom prompts", "Analytics export"] },
@@ -572,15 +1154,12 @@
         function renderPlanCards(currentPlan) {
             var container = document.getElementById("planCards");
             if (!container) return;
-
             container.innerHTML = "";
 
             ALL_PLANS.forEach(function (plan) {
                 var isCurrent = currentPlan.toLowerCase() === plan.name.toLowerCase();
-
                 var card = document.createElement("div");
                 card.className = "plan-card" + (isCurrent ? " current" : "");
-
                 card.innerHTML =
                     '<h3 style="margin:0 0 16px; font-size:1.8rem; color:white;">' + plan.name.toUpperCase() + '</h3>' +
                     '<div style="font-size:2.4rem; font-weight:700; color:' + GOLD_COLOR + '; margin:12px 0;">' + plan.price + '</div>' +
@@ -595,7 +1174,6 @@
                     ' style="width:100%; padding:14px; font-size:1.1rem;">' +
                     (isCurrent ? "Current Plan" : "Upgrade Now") +
                     '</button>';
-
                 container.appendChild(card);
             });
 
@@ -605,21 +1183,13 @@
                     try {
                         var res = await fetch(`${BACKEND_URL}/api/subscription/create-checkout-session`, {
                             method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Authorization": "Bearer " + token
-                            },
+                            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
                             body: JSON.stringify({ plan: planId })
                         });
-
                         var data = await res.json();
-                        if (data.url) {
-                            window.location.href = data.url;
-                        } else {
-                            alert(data.error || "Failed to create checkout session");
-                        }
+                        if (data.url) window.location.href = data.url;
+                        else alert(data.error || "Failed to create checkout session");
                     } catch (err) {
-                        console.error(err);
                         alert("Connection error - please try again");
                     }
                 });
@@ -631,12 +1201,9 @@
             var canvas = document.getElementById("riseFallChart");
             if (!canvas) return;
             var ctx = canvas.getContext("2d");
-
             var labels = dataPoints.map(function (d) { return new Date(d.date).toLocaleDateString(); });
             var values = dataPoints.map(function (d) { return d.value; });
-
             if (riseFallChart) riseFallChart.destroy();
-
             riseFallChart = new Chart(ctx, {
                 type: "line",
                 data: {
@@ -671,101 +1238,46 @@
                 var res = await fetch(`${BACKEND_URL}/api/dashboard/full`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
-
                 if (!res.ok) throw new Error("Failed to load dashboard");
-
                 var data = await res.json();
-                console.log("[DASHBOARD] Data loaded:", data);
-
-                // --- START ADMIN BYPASS UPDATE ---
                 const isAdmin = (data.email && data.email.toLowerCase() === "ericchung992@gmail.com");
-                
                 if (verificationBanner) {
-                    if (isAdmin || data.is_verified === 1) {
-                        verificationBanner.classList.add("hidden");
-                    } else {
-                        verificationBanner.classList.remove("hidden");
-                    }
+                    if (isAdmin || data.is_verified === 1) verificationBanner.classList.add("hidden");
+                    else verificationBanner.classList.remove("hidden");
                 }
-                // --- END ADMIN BYPASS UPDATE ---
-
-                // AGGRESSIVE FIX: Check multiple possible keys from the API response
                 const bName = data.business_name || data.businessName || data.name || "My Business";
                 businessNameSpan.textContent = bName;
-                
                 currentPlanSpan.textContent = data.plan || "free";
                 messagesUsedSpan.textContent = data.messages_used || 0;
                 leadsUsedSpan.textContent = data.leads_used || 0;
-
                 totalChatsSpan.textContent = data.chats ? data.chats.length : 0;
                 messagesRemainingSpan.textContent = Math.max(0, (data.messages_limit || 0) - (data.messages_used || 0));
                 leadsRemainingSpan.textContent = Math.max(0, (data.leads_limit || 0) - (data.leads_used || 0));
-
                 if (isAdmin) {
                     adminBtn.classList.remove("hidden");
                     adminBtn.onclick = function () { window.location.href = "admin.html"; };
                 }
-
                 renderChats(data.chats || []);
                 renderLeads(data.leads || []);
                 renderRiseFallChart(data.riseFall || []);
-                
-                // Fix: Refresh widget code after business name is loaded
                 loadWidgetKey();
-
             } catch (err) {
                 console.error("Dashboard load error:", err);
-            }
-        }
-
-        // --- NEW SAAS UPDATE: UPDATE BUSINESS NAME MANUALLY ---
-        const updateNameBtn = document.getElementById("updateBusinessNameBtn");
-        if(updateNameBtn) {
-            updateNameBtn.onclick = async function() {
-                const newName = document.getElementById("settingsBusinessName").value.trim();
-                if(!newName) return alert("Please enter a name");
-                try {
-                    const res = await fetch(`${BACKEND_URL}/api/admin/users/update-profile`, {
-                        method: "PUT",
-                        headers: { 
-                            "Content-Type": "application/json",
-                            "Authorization": "Bearer " + token 
-                        },
-                        body: JSON.stringify({ business_name: newName })
-                    });
-                    if(res.ok) {
-                        alert("Business name updated!");
-                        loadDashboard();
-                    } else {
-                        const data = await res.json();
-                        alert(data.error || "Error updating name");
-                    }
-                } catch (e) { 
-                    console.error(e);
-                    alert("Error updating name"); 
-                }
             }
         }
 
         function renderChats(chats) {
             if (!chatTableBody) return;
             chatTableBody.innerHTML = "";
-
             const threads = {};
             chats.forEach(c => {
-              const session = c.session_id || 'manual';
-              if(!threads[session]) {
-                threads[session] = {
-                  client: c.client_name || "Guest",
-                  count: 0,
-                  last: c.created_at,
-                  messages: []
-                };
-              }
-              threads[session].count++;
-              threads[session].messages.push(c);
+                const session = c.session_id || 'manual';
+                if (!threads[session]) {
+                    threads[session] = { client: c.client_name || "Guest", count: 0, last: c.created_at, messages: [] };
+                }
+                threads[session].count++;
+                threads[session].messages.push(c);
             });
-
             Object.keys(threads).forEach(sid => {
                 const t = threads[sid];
                 const tr = document.createElement("tr");
@@ -775,241 +1287,159 @@
                     <td>${new Date(t.last).toLocaleString()}</td>
                     <td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>
                 `;
-                
                 tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages);
                 chatTableBody.appendChild(tr);
             });
         }
 
         function openChatModal(client, messages) {
-          const modal = document.getElementById("chatModal");
-          const body = document.getElementById("modalChatBody");
-          document.getElementById("modalTitle").textContent = "Chat with " + client;
-          
-          body.innerHTML = "";
-          // Sort messages by date
-          messages.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-
-          messages.forEach(m => {
-            // FIX: Robust date parsing to avoid "Invalid Date"
-            let msgDate = "Recently";
-            if (m.created_at) {
-                const d = new Date(m.created_at);
-                if (!isNaN(d.getTime())) msgDate = d.toLocaleString();
-            }
-
-            // FIX: Handle "undefined" by providing fallbacks for message and response
-            const userMsg = m.message || m.message_text || "<i>No message content</i>";
-            const aiResp = m.response || m.content || "<i>No AI response recorded</i>";
-
-            body.innerHTML += `
-              <div style="margin-bottom:20px; padding:15px; border-radius:12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <span style="color:${GOLD_COLOR}; font-weight:bold; font-size:12px;">GUEST</span>
-                    <span style="color:#666; font-size:10px;">${msgDate}</span>
-                </div>
-                <div style="margin-bottom:15px; color:#fff; line-height:1.5;">${userMsg}</div>
-                <div style="padding-top:10px; border-top: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color:#8ab4f8; font-weight:bold; font-size:12px; display:block; margin-bottom:5px;">AI ASSISTANT (Cloudflare)</span>
-                    <div style="color:#ccc; font-style:italic; line-height:1.5;">${aiResp}</div>
-                </div>
-              </div>
-            `;
-          });
-
-          modal.classList.remove("hidden");
+            const modal = document.getElementById("chatModal");
+            const body = document.getElementById("modalChatBody");
+            document.getElementById("modalTitle").textContent = "Chat with " + client;
+            body.innerHTML = "";
+            messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            messages.forEach(m => {
+                let msgDate = "Recently";
+                if (m.created_at) {
+                    const d = new Date(m.created_at);
+                    if (!isNaN(d.getTime())) msgDate = d.toLocaleString();
+                }
+                const userMsg = m.message || m.message_text || "<i>No message content</i>";
+                const aiResp = m.response || m.content || "<i>No AI response recorded</i>";
+                body.innerHTML += `
+                    <div style="margin-bottom:20px; padding:15px; border-radius:12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span style="color:${GOLD_COLOR}; font-weight:bold; font-size:12px;">GUEST</span>
+                            <span style="color:#666; font-size:10px;">${msgDate}</span>
+                        </div>
+                        <div style="margin-bottom:15px; color:#fff; line-height:1.5;">${userMsg}</div>
+                        <div style="padding-top:10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <span style="color:#8ab4f8; font-weight:bold; font-size:12px; display:block; margin-bottom:5px;">AI ASSISTANT</span>
+                            <div style="color:#ccc; font-style:italic; line-height:1.5;">${aiResp}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            modal.classList.remove("hidden");
         }
 
         document.getElementById("closeModal").onclick = () => {
-          document.getElementById("chatModal").classList.add("hidden");
+            document.getElementById("chatModal").classList.add("hidden");
         };
 
         function renderLeads(leads) {
             if (!leadsTableBody) return;
             leadsTableBody.innerHTML = "";
-
             leads.forEach(function (l) {
                 var tr = document.createElement("tr");
-                tr.innerHTML =
-                    "<td>" + l.name + "</td>" +
-                    "<td>" + l.email + "</td>" +
-                    "<td>" + (l.phone || "-") + "</td>" +
-                    "<td>" + new Date(l.created_at).toLocaleString() + "</td>" +
-                    '<td class="lead-actions">' +
-                    '<button class="btn-danger delete-lead-btn" data-id="' + l.id + '">Delete</button>' +
-                    "</td>";
+                tr.innerHTML = `
+                    <td>${l.name}</td><td>${l.email}</td><td>${l.phone || "-"}</td>
+                    <td>${new Date(l.created_at).toLocaleString()}</td>
+                    <td class="lead-actions"><button class="btn-danger delete-lead-btn" data-id="${l.id}">Delete</button></td>
+                `;
                 leadsTableBody.appendChild(tr);
             });
-
             document.querySelectorAll(".delete-lead-btn").forEach(function (btn) {
                 btn.onclick = async function () {
-                    if (!confirm("Are you sure you want to delete this lead?")) return;
-
+                    if (!confirm("Delete this lead?")) return;
                     var leadId = btn.dataset.id;
                     try {
                         var res = await fetch(`${BACKEND_URL}/api/leads/${leadId}`, {
-                            method: "DELETE",
-                            headers: { "Authorization": "Bearer " + token }
+                            method: "DELETE", headers: { "Authorization": "Bearer " + token }
                         });
-
-                        var data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to delete");
-
-                        alert("Lead deleted successfully");
+                        if (!res.ok) throw new Error();
+                        alert("Lead deleted");
                         loadDashboard();
-                    } catch (err) {
-                        alert("Could not delete lead: " + err.message);
-                    }
+                    } catch (err) { alert("Could not delete lead"); }
                 };
             });
         }
 
         const saveKnowledgeBtn = document.getElementById("saveKnowledgeBtn");
-        if(saveKnowledgeBtn) {
-            saveKnowledgeBtn.onclick = async function() {
-              const content = document.getElementById("knowledge-input").value.trim();
-              if(!content) return alert("Please enter business info.");
-
-              try {
-                const res = await fetch(`${BACKEND_URL}/api/knowledge/add`, {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token
-                    },
-                    body: JSON.stringify({ content })
-                });
-                const data = await res.json();
-                if(data.success) {
-                    alert("AI Knowledge Updated!");
-                    document.getElementById("knowledge-input").value = "";
-                } else {
-                    alert(data.error || "Error saving knowledge");
-                }
-              } catch (e) { 
-                  console.error(e);
-                  alert("Error saving knowledge"); 
-              }
+        if (saveKnowledgeBtn) {
+            saveKnowledgeBtn.onclick = async function () {
+                const content = document.getElementById("knowledge-input").value.trim();
+                if (!content) return alert("Please enter business info.");
+                try {
+                    const res = await fetch(`${BACKEND_URL}/api/knowledge/add`, {
+                        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                        body: JSON.stringify({ content })
+                    });
+                    const data = await res.json();
+                    if (data.success) alert("AI Knowledge Updated!");
+                    else alert(data.error || "Error saving knowledge");
+                } catch (e) { alert("Error saving knowledge"); }
             }
         }
 
         const sendBtn = document.getElementById("sendBtn");
-        if(sendBtn) {
+        if (sendBtn) {
             sendBtn.addEventListener("click", async function () {
                 var msg = document.getElementById("aiMessage").value.trim();
                 var name = document.getElementById("clientName").value.trim();
-
-                if (!msg || !name) {
-                    alert("Please fill client name and message");
-                    return;
-                }
-
+                if (!msg || !name) return alert("Please fill client name and message");
                 try {
                     var res = await fetch(`${BACKEND_URL}/api/widget/chat`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": "Bearer " + token
-                        },
+                        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
                         body: JSON.stringify({ message: msg, client_name: name })
                     });
-
                     var data = await res.json();
                     if (!res.ok) throw new Error(data.error || "Failed");
-
                     var bubble = document.createElement("div");
                     bubble.className = "chat-bubble";
-                    bubble.style.background = "rgba(255,255,255,0.05)";
-                    bubble.style.borderRadius = "12px";
-                    bubble.style.padding = "15px";
-                    bubble.style.marginBottom = "10px";
-                    bubble.innerHTML = `<div style="color:${GOLD_COLOR}; font-weight:bold; margin-bottom:5px;">You</div><div>${msg}</div><div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;"><span style="color:#8ab4f8; font-weight:bold;">AI:</span> ${data.reply || data.response || "No response"}</div>`;
+                    bubble.innerHTML = `<div style="color:${GOLD_COLOR}; font-weight:bold;">You</div><div>${msg}</div><div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;"><span style="color:#8ab4f8; font-weight:bold;">AI:</span> ${data.reply || data.response || "No response"}</div>`;
                     chatResponses.prepend(bubble);
-
                     document.getElementById("aiMessage").value = "";
                     document.getElementById("clientName").value = "";
                     loadDashboard();
-                } catch (err) {
-                    alert(err.message || "Could not send message");
-                }
+                } catch (err) { alert(err.message || "Could not send message"); }
             });
         }
 
         const addLeadBtn = document.getElementById("addLeadBtn");
-        if(addLeadBtn) {
+        if (addLeadBtn) {
             addLeadBtn.addEventListener("click", async function () {
                 var name = document.getElementById("leadName").value.trim();
                 var email = document.getElementById("leadEmail").value.trim();
                 var phone = document.getElementById("leadPhone").value.trim();
-
-                if (!name || !email) {
-                    alert("Name and email are required");
-                    return;
-                }
-
+                if (!name || !email) return alert("Name and email are required");
                 try {
                     var res = await fetch(`${BACKEND_URL}/api/leads`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": "Bearer " + token
-                        },
-                        body: JSON.stringify({ name: name, email: email, phone: phone })
+                        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                        body: JSON.stringify({ name, email, phone })
                     });
-
-                    var data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Failed");
-
-                    alert("Lead added successfully!");
+                    if (!res.ok) throw new Error();
+                    alert("Lead added!");
                     document.getElementById("leadName").value = "";
                     document.getElementById("leadEmail").value = "";
                     document.getElementById("leadPhone").value = "";
                     loadDashboard();
-                } catch (err) {
-                    alert(err.message || "Could not add lead");
-                }
+                } catch (err) { alert("Could not add lead"); }
             });
         }
 
-        if(logoutBtn) {
-            logoutBtn.onclick = function () {
-                localStorage.clear();
-                window.location.href = "login.html";
-            };
-        }
+        if (logoutBtn) logoutBtn.onclick = function () { localStorage.clear(); window.location.href = "login.html"; };
 
         async function loadWidgetKey() {
             var keySpan = document.getElementById("widgetKey");
             var codePre = document.getElementById("embedCode");
             var widgetTabPre = document.getElementById("widgetSectionCode");
-            
             var bName = businessNameSpan ? businessNameSpan.textContent || "Business" : "Business";
-
             if (!keySpan || !codePre) return;
-
             try {
-                var res = await fetch(`${BACKEND_URL}/api/widget/key`, {
-                    headers: { "Authorization": "Bearer " + token }
-                });
-
-                if (!res.ok) throw new Error(await res.text());
-
+                var res = await fetch(`${BACKEND_URL}/api/widget/key`, { headers: { "Authorization": "Bearer " + token } });
+                if (!res.ok) throw new Error();
                 var data = await res.json();
                 var key = data.key;
-
                 keySpan.textContent = key;
-
-                const baseUrl = BACKEND_URL; 
-                
                 var embedCode = `<script>
   (function() {
     const key = "${key}";
-    const baseUrl = "${baseUrl}";
+    const baseUrl = "${BACKEND_URL}";
     const script = document.createElement("script");
     script.src = baseUrl + "/widget.js";
     script.async = true;
     document.head.appendChild(script);
-
     const widgetDiv = document.createElement("div");
     widgetDiv.id = "ai-chat-widget";
     widgetDiv.setAttribute("data-key", key);
@@ -1018,66 +1448,31 @@
     widgetDiv.setAttribute("data-position", "bottom-right");
     widgetDiv.setAttribute("data-welcome", "Hi! I'm your AI assistant. How can I help?");
     widgetDiv.setAttribute("data-title", "${bName} AI");
-    
-    // Live Voice Features
     widgetDiv.setAttribute("data-voice-enabled", "true");
     widgetDiv.setAttribute("data-voice-gender", "female");
     widgetDiv.setAttribute("data-voice-mutable", "true");
-
     document.body.appendChild(widgetDiv);
-  })();
-<\/script>`;
-
+  })();<\/script>`;
                 codePre.textContent = embedCode;
                 if (widgetTabPre) widgetTabPre.textContent = embedCode;
-
-                const copyAction = (code) => {
-                    navigator.clipboard.writeText(code).then(function () {
-                        alert("Widget code copied to clipboard!");
-                    }).catch(function () {
-                        alert("Copy failed - select and copy manually");
-                    });
+                const copyAction = (code) => { navigator.clipboard.writeText(code).then(() => alert("Copied!")).catch(() => alert("Copy failed")); };
+                document.getElementById("copyEmbedBtn").onclick = () => copyAction(embedCode);
+                document.getElementById("copyWidgetTabBtn").onclick = () => copyAction(embedCode);
+                document.getElementById("regenerateKeyBtn").onclick = async function () {
+                    if (!confirm("Generate new API key?")) return;
+                    try {
+                        var res = await fetch(`${BACKEND_URL}/api/widget/regenerate-key`, { method: "POST", headers: { "Authorization": "Bearer " + token } });
+                        if (!res.ok) throw new Error();
+                        alert("New key generated!");
+                        loadWidgetKey();
+                    } catch (err) { alert("Error: " + err.message); }
                 };
-
-                const copyEmbedBtn = document.getElementById("copyEmbedBtn");
-                if(copyEmbedBtn) {
-                    copyEmbedBtn.onclick = () => copyAction(embedCode);
-                }
-                
-                const tabCopyBtn = document.getElementById("copyWidgetTabBtn");
-                if (tabCopyBtn) {
-                    tabCopyBtn.onclick = () => copyAction(embedCode);
-                }
-
-                const regenerateKeyBtn = document.getElementById("regenerateKeyBtn");
-                if(regenerateKeyBtn) {
-                    regenerateKeyBtn.onclick = async function () {
-                        if (!confirm("Generate new API key? Old key will stop working.")) return;
-
-                        try {
-                            var res = await fetch(`${BACKEND_URL}/api/widget/regenerate-key`, {
-                                method: "POST",
-                                headers: { "Authorization": "Bearer " + token }
-                            });
-
-                            if (!res.ok) throw new Error(await res.text());
-                            var data = await res.json();
-                            alert("New API key generated!");
-                            loadWidgetKey();
-                        } catch (err) {
-                            alert("Error regenerating key: " + err.message);
-                        }
-                    };
-                }
-
-            } catch (err) {
-                if(keySpan) keySpan.textContent = "Error loading key";
-                console.error("Widget key error:", err);
-            }
+            } catch (err) { if(keySpan) keySpan.textContent = "Error loading key"; }
         }
 
         document.querySelector(".dashboard").style.display = "flex";
         loadDashboard();
+        loadBusinessInsights();
     });
 </script>
 </body>
