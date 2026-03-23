@@ -527,7 +527,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             });
         }
         
-        // Generate recommendations
+        // Generate recommendations - UPDATED with correct slugs from your database
         const recommendations = [];
         
         // E-commerce recommendations
@@ -542,7 +542,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             
             recommendations.push({
                 id: `rec_${Date.now()}_2`,
-                automation_template_id: 'price-monitoring',
+                automation_template_id: 'price-monitoring-alert',
                 title: 'Competitor Price Monitoring',
                 reason: 'Stay competitive with real-time price alerts when competitors change prices.',
                 confidence: 85
@@ -561,7 +561,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             
             recommendations.push({
                 id: `rec_${Date.now()}_4`,
-                automation_template_id: 'lead-to-crm',
+                automation_template_id: 'lead-capture-crm-slack',
                 title: 'Lead to CRM + Slack',
                 reason: 'Capture leads from your website and instantly notify your team on Slack.',
                 confidence: 88
@@ -572,7 +572,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.goal === 'content') {
             recommendations.push({
                 id: `rec_${Date.now()}_5`,
-                automation_template_id: 'social-scheduler',
+                automation_template_id: 'ai-social-media-scheduler',
                 title: 'AI Social Media Scheduler',
                 reason: 'Auto-generate and schedule posts across all platforms with optimal timing for maximum engagement.',
                 confidence: 92
@@ -580,7 +580,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             
             recommendations.push({
                 id: `rec_${Date.now()}_6`,
-                automation_template_id: 'video-script',
+                automation_template_id: 'video-script-generator',
                 title: 'Video Script Generator',
                 reason: 'Generate engaging TikTok/Reel scripts in seconds. 10x your video output.',
                 confidence: 89
