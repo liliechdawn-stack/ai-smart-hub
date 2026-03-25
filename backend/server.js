@@ -176,6 +176,16 @@ try {
   leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
 }
 
+// ===== NEW: AI BUSINESS COACH ROUTES =====
+let coachRoutes;
+try {
+  coachRoutes = require('./routes/coach');
+  console.log('✅ coach.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load coach.js:', err.message);
+  coachRoutes = (req, res) => res.status(500).json({ error: 'Business Coach routes not available', details: err.message });
+}
+
 const app = express();
 
 // ================= MIDDLEWARE =================
@@ -410,6 +420,11 @@ console.log('✅ User Automations routes mounted at /api/automations');
 // ===== NEW: LEADS MANAGEMENT ROUTES =====
 app.use('/api', leadsRoutes);
 console.log('✅ Leads Management routes mounted at /api/leads');
+
+// ===== NEW: AI BUSINESS COACH ROUTES =====
+// Mount Business Coach routes (requires authentication)
+app.use('/api/coach', authenticateToken, coachRoutes);
+console.log('✅ AI Business Coach routes mounted at /api/coach');
 
 // ================================================
 // AI BUSINESS INTELLIGENCE ROUTES
