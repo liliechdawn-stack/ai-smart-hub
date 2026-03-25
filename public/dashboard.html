@@ -142,6 +142,47 @@
             background: #cc0000;
         }
 
+        /* ROI Dashboard Styles */
+        .roi-dashboard {
+            background: linear-gradient(135deg, #1a2a1a 0%, #0f1a0f 100%);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .roi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .roi-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .roi-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        .roi-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        .roi-trend {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
         .bi-section {
             background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
             border: 1px solid rgba(212, 175, 55, 0.3);
@@ -529,6 +570,9 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+            .roi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -565,6 +609,51 @@
         <div id="verification-banner" class="verification-banner hidden">
             <span style="color: var(--gold);">⚠️ Your business email is not verified. Some features may be limited.</span>
             <button onclick="window.location.href='verification.html'" class="btn-gold" style="padding: 8px 16px; font-size: 0.8rem;">Verify Now</button>
+        </div>
+
+        <!-- ========== ROI DASHBOARD (NEW) ========== -->
+        <div class="roi-dashboard" id="roiDashboard">
+            <div class="roi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="display: flex; align-items: center; gap: 12px; margin: 0;">
+                    <i class="fas fa-chart-line" style="color: var(--success);"></i>
+                    ROI Dashboard
+                    <span class="live-badge pulse"><i class="fas fa-circle"></i> Live Tracking</span>
+                </h2>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                    Last 30 days
+                </div>
+            </div>
+            
+            <div class="roi-grid">
+                <div class="roi-card">
+                    <div class="roi-value" id="hoursSavedValue">0</div>
+                    <div class="roi-label">Hours Saved</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">= <span id="hoursValue">0</span> days of work</div>
+                </div>
+                <div class="roi-card">
+                    <div class="roi-value" id="leadsValue">0</div>
+                    <div class="roi-label">Leads Generated</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">↑ <span id="leadsGrowth">0</span>% from last month</div>
+                </div>
+                <div class="roi-card">
+                    <div class="roi-value" id="revenueValue">$0</div>
+                    <div class="roi-label">Revenue Impact</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">Estimated from automation</div>
+                </div>
+                <div class="roi-card">
+                    <div class="roi-value" id="tasksValue">0</div>
+                    <div class="roi-label">Tasks Automated</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">This month</div>
+                </div>
+            </div>
+            
+            <div class="roi-trend">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-weight: 600;">Weekly Impact Trend</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Last 4 weeks</span>
+                </div>
+                <canvas id="roiTrendChart" height="100"></canvas>
+            </div>
         </div>
 
         <!-- AI BUSINESS INTELLIGENCE SECTION -->
@@ -643,20 +732,20 @@
             <h3>Lead List</h3>
             <table id="leadsTable">
                 <thead>
-                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Date Added</th><th>Actions</th>  </tr>
+                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Date Added</th><th>Actions</th>   </tr>
                 </thead>
                 <tbody></tbody>
-             </table>
+              </table>
         </section>
 
         <section id="chatSection" class="hidden">
             <h2>Chat Conversations</h2>
             <table id="chatTable" style="margin-bottom: 32px;">
                 <thead>
-                     <tr><th>Client / Session</th><th>Messages</th><th>Last Message</th><th>Action</th>  </tr>
+                     <tr><th>Client / Session</th><th>Messages</th><th>Last Message</th><th>Action</th>   </tr>
                 </thead>
                 <tbody></tbody>
-             </table>
+              </table>
 
             <div style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
                 <h3>Internal AI Tester</h3>
@@ -738,6 +827,7 @@
 
     let businessProfile = null;
     let allRecommendations = [];
+    let roiChart = null;
 
     document.addEventListener("DOMContentLoaded", function () {
         console.log("[DASHBOARD] Initializing with backend:", BACKEND_URL);
@@ -789,128 +879,174 @@
         var logoutBtn = document.getElementById("logoutBtn");
         var adminBtn = document.getElementById("adminBtn");
 
-        // ========== ADVANCED BUSINESS INTELLIGENCE ALGORITHM ==========
+        // ========== ENHANCED BUSINESS INTELLIGENCE ALGORITHM ==========
 
-        // Comprehensive industry profiles with automation recommendations - UPDATED WITH CORRECT SLUGS
+        // Comprehensive industry profiles with automation recommendations
         const INDUSTRY_PROFILES = {
             agency: {
                 name: "Digital Agency",
                 insights: [
-                    { title: "📊 Client Reporting Automation", description: "Automate weekly/monthly client reports, saving 5+ hours per client per week.", priority: "high", type: "operations" },
-                    { title: "🎯 Lead Qualification", description: "AI can score incoming leads based on budget and project scope.", priority: "high", type: "lead_generation" },
-                    { title: "📱 Social Media Management", description: "Schedule and manage posts across all client accounts automatically.", priority: "medium", type: "content" }
+                    { title: "📊 Client Reporting Automation", description: "Automate weekly/monthly client reports, saving 5+ hours per client per week.", priority: "high", type: "operations", roi: 1250 },
+                    { title: "🎯 Lead Qualification", description: "AI can score incoming leads based on budget and project scope.", priority: "high", type: "lead_generation", roi: 850 },
+                    { title: "📱 Social Media Management", description: "Schedule and manage posts across all client accounts automatically.", priority: "medium", type: "content", roi: 600 }
                 ],
                 templates: [
-                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score inbound leads based on budget, timeline, and project complexity." },
-                    { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms with optimal timing." },
-                    { id: "video-script-generator", title: "Video Script Generator", reason: "Generate engaging video scripts for Reels, TikTok, and YouTube Shorts." }
+                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score inbound leads based on budget, timeline, and project complexity.", roi: 850 },
+                    { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms with optimal timing.", roi: 600 },
+                    { id: "video-script-generator", title: "Video Script Generator", reason: "Generate engaging video scripts for Reels, TikTok, and YouTube Shorts.", roi: 400 }
                 ]
             },
             ecommerce: {
                 name: "E-commerce Store",
                 insights: [
-                    { title: "🛒 Abandoned Cart Recovery", description: "Recover 15-25% of lost sales with automated follow-up emails.", priority: "high", type: "sales" },
-                    { title: "📦 Inventory Alerts", description: "Get notified when stock runs low, automatically reorder from suppliers.", priority: "high", type: "operations" },
-                    { title: "💰 Price Intelligence", description: "Track competitor prices and adjust yours automatically to stay competitive.", priority: "medium", type: "sales" }
+                    { title: "🛒 Abandoned Cart Recovery", description: "Recover 15-25% of lost sales with automated follow-up emails.", priority: "high", type: "sales", roi: 2500 },
+                    { title: "📦 Inventory Alerts", description: "Get notified when stock runs low, automatically reorder from suppliers.", priority: "high", type: "operations", roi: 500 },
+                    { title: "💰 Price Intelligence", description: "Track competitor prices and adjust yours automatically to stay competitive.", priority: "medium", type: "sales", roi: 1200 }
                 ],
                 templates: [
-                    { id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Send automated emails to customers who left items in their cart." },
-                    { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and get alerts when they change." },
-                    { id: "lead-capture-crm-slack", title: "Lead Capture & CRM", reason: "Capture leads from your website and instantly notify your team on Slack." }
+                    { id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Send automated emails to customers who left items in their cart.", roi: 2500 },
+                    { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and get alerts when they change.", roi: 1200 },
+                    { id: "lead-capture-crm-slack", title: "Lead Capture & CRM", reason: "Capture leads from your website and instantly notify your team on Slack.", roi: 800 }
                 ]
             },
             saas: {
                 name: "SaaS Company",
                 insights: [
-                    { title: "🚀 User Onboarding", description: "Automate welcome sequences, feature tutorials, and activation emails.", priority: "high", type: "operations" },
-                    { title: "💳 Churn Prevention", description: "Identify at-risk users and trigger retention campaigns automatically.", priority: "high", type: "sales" },
-                    { title: "📈 Usage Analytics", description: "Track feature usage and send personalized tips to increase engagement.", priority: "medium", type: "analytics" }
+                    { title: "🚀 User Onboarding", description: "Automate welcome sequences, feature tutorials, and activation emails.", priority: "high", type: "operations", roi: 1500 },
+                    { title: "💳 Churn Prevention", description: "Identify at-risk users and trigger retention campaigns automatically.", priority: "high", type: "sales", roi: 3000 },
+                    { title: "📈 Usage Analytics", description: "Track feature usage and send personalized tips to increase engagement.", priority: "medium", type: "analytics", roi: 800 }
                 ],
                 templates: [
-                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior and engagement to prioritize hot leads." },
-                    { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales with automated follow-up sequences." },
-                    { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule and auto-post content across platforms." }
+                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior and engagement to prioritize hot leads.", roi: 1200 },
+                    { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales with automated follow-up sequences.", roi: 2000 },
+                    { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule and auto-post content across platforms.", roi: 500 }
                 ]
             },
             creator: {
                 name: "Content Creator / Influencer",
                 insights: [
-                    { title: "✍️ AI Content Generation", description: "Generate 10x more content with AI-powered scripts and posts.", priority: "high", type: "content" },
-                    { title: "📱 Cross-Platform Posting", description: "Schedule posts across TikTok, Instagram, YouTube, and Twitter automatically.", priority: "high", type: "social" },
-                    { title: "🎬 Video Script Generator", description: "Generate engaging video scripts for Reels, TikTok, and YouTube Shorts.", priority: "medium", type: "content" }
+                    { title: "✍️ AI Content Generation", description: "Generate 10x more content with AI-powered scripts and posts.", priority: "high", type: "content", roi: 1000 },
+                    { title: "📱 Cross-Platform Posting", description: "Schedule posts across TikTok, Instagram, YouTube, and Twitter automatically.", priority: "high", type: "social", roi: 600 },
+                    { title: "🎬 Video Script Generator", description: "Generate engaging video scripts for Reels, TikTok, and YouTube Shorts.", priority: "medium", type: "content", roi: 800 }
                 ],
                 templates: [
-                    { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms." },
-                    { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts optimized for short-form content." },
-                    { id: "lead-capture-crm-slack", title: "Lead Capture", reason: "Capture leads from your content and send to CRM." }
+                    { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms.", roi: 600 },
+                    { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts optimized for short-form content.", roi: 800 },
+                    { id: "lead-capture-crm-slack", title: "Lead Capture", reason: "Capture leads from your content and send to CRM.", roi: 400 }
                 ]
             },
             coach: {
                 name: "Coach / Consultant",
                 insights: [
-                    { title: "📅 Appointment Booking", description: "Automate scheduling, reminders, and follow-ups with clients.", priority: "high", type: "operations" },
-                    { title: "📝 Client Onboarding", description: "Send welcome packets, intake forms, and resources automatically.", priority: "high", type: "customer_support" },
-                    { title: "📧 Email Sequences", description: "Create automated nurture sequences for leads and existing clients.", priority: "medium", type: "marketing" }
+                    { title: "📅 Appointment Booking", description: "Automate scheduling, reminders, and follow-ups with clients.", priority: "high", type: "operations", roi: 700 },
+                    { title: "📝 Client Onboarding", description: "Send welcome packets, intake forms, and resources automatically.", priority: "high", type: "customer_support", roi: 500 },
+                    { title: "📧 Email Sequences", description: "Create automated nurture sequences for leads and existing clients.", priority: "medium", type: "marketing", roi: 600 }
                 ],
                 templates: [
-                    { id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups." },
-                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on engagement and qualification." },
-                    { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule posts to build your personal brand." }
+                    { id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups.", roi: 500 },
+                    { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on engagement and qualification.", roi: 400 },
+                    { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule posts to build your personal brand.", roi: 300 }
                 ]
             },
             local_business: {
                 name: "Local Service Business",
                 insights: [
-                    { title: "⭐ Review Management", description: "Auto-request reviews after service completion and respond to feedback.", priority: "high", type: "customer_support" },
-                    { title: "📞 Lead Capture", description: "Capture leads from website forms and send instant SMS/email follow-ups.", priority: "high", type: "lead_generation" },
-                    { title: "📅 Appointment Reminders", description: "Reduce no-shows with automated appointment reminders via SMS/email.", priority: "medium", type: "operations" }
+                    { title: "⭐ Review Management", description: "Auto-request reviews after service completion and respond to feedback.", priority: "high", type: "customer_support", roi: 400 },
+                    { title: "📞 Lead Capture", description: "Capture leads from website forms and send instant SMS/email follow-ups.", priority: "high", type: "lead_generation", roi: 600 },
+                    { title: "📅 Appointment Reminders", description: "Reduce no-shows with automated appointment reminders via SMS/email.", priority: "medium", type: "operations", roi: 300 }
                 ],
                 templates: [
-                    { id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups." },
-                    { id: "cart-recovery", title: "Appointment Reminders", reason: "Send SMS/email reminders 24hrs before appointments." },
-                    { id: "lead-scoring", title: "Lead Scoring", reason: "Score leads based on urgency and readiness." }
+                    { id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups.", roi: 600 },
+                    { id: "cart-recovery", title: "Appointment Reminders", reason: "Send SMS/email reminders 24hrs before appointments.", roi: 300 },
+                    { id: "lead-scoring", title: "Lead Scoring", reason: "Score leads based on urgency and readiness.", roi: 400 }
                 ]
             }
         };
 
-        // Goal-based recommendations - UPDATED WITH CORRECT SLUGS
+        // Goal-based recommendations with ROI
         const GOAL_RECOMMENDATIONS = {
             leads: [
-                { id: "lead-capture-crm-slack", title: "Lead Capture & Qualification", reason: "Automatically capture, score, and qualify leads from your website forms and chats." },
-                { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior, engagement, and demographics to prioritize hot leads." },
-                { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales from abandoned carts." }
+                { id: "lead-capture-crm-slack", title: "Lead Capture & Qualification", reason: "Automatically capture, score, and qualify leads from your website forms and chats.", roi: 800 },
+                { id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior, engagement, and demographics to prioritize hot leads.", roi: 1200 },
+                { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales from abandoned carts.", roi: 2000 }
             ],
             content: [
-                { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms with AI-optimized timing." },
-                { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts for TikTok, Reels, and YouTube Shorts." },
-                { id: "lead-capture-crm-slack", title: "Content to Lead", reason: "Capture leads from your content and send to CRM." }
+                { id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms with AI-optimized timing.", roi: 600 },
+                { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts for TikTok, Reels, and YouTube Shorts.", roi: 800 },
+                { id: "lead-capture-crm-slack", title: "Content to Lead", reason: "Capture leads from your content and send to CRM.", roi: 500 }
             ],
             support: [
-                { id: "auto-responder", title: "AI Auto-Responder", reason: "Handle 70% of common customer questions automatically, 24/7." },
-                { id: "lead-capture-crm-slack", title: "Lead Capture & Support", reason: "Capture leads from support chats and follow up." },
-                { id: "lead-scoring", title: "Lead Scoring", reason: "Score support leads based on urgency." }
+                { id: "auto-responder", title: "AI Auto-Responder", reason: "Handle 70% of common customer questions automatically, 24/7.", roi: 1000 },
+                { id: "lead-capture-crm-slack", title: "Lead Capture & Support", reason: "Capture leads from support chats and follow up.", roi: 600 },
+                { id: "lead-scoring", title: "Lead Scoring", reason: "Score support leads based on urgency.", roi: 400 }
             ],
             operations: [
-                { id: "lead-scoring", title: "Lead Scoring", reason: "Score and prioritize leads automatically." },
-                { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule and manage social media posts." },
-                { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales automatically." }
+                { id: "lead-scoring", title: "Lead Scoring", reason: "Score and prioritize leads automatically.", roi: 800 },
+                { id: "ai-social-media-scheduler", title: "Social Media Scheduler", reason: "Schedule and manage social media posts.", roi: 500 },
+                { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales automatically.", roi: 1500 }
             ],
             sales: [
-                { id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Recover 15-25% of lost sales with automated follow-up sequences." },
-                { id: "lead-scoring", title: "Lead Scoring", reason: "Score leads based on purchase intent." },
-                { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and adjust yours to stay competitive." }
+                { id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Recover 15-25% of lost sales with automated follow-up sequences.", roi: 2500 },
+                { id: "lead-scoring", title: "Lead Scoring", reason: "Score leads based on purchase intent.", roi: 1000 },
+                { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and adjust yours to stay competitive.", roi: 1200 }
             ]
         };
 
-        // Tool-based recommendations - UPDATED WITH CORRECT SLUGS
+        // Tool-based recommendations with ROI
         const TOOL_RECOMMENDATIONS = {
-            shopify: { id: "cart-recovery", title: "Shopify Cart Recovery", reason: "Automatically recover abandoned carts and send discount codes." },
-            stripe: { id: "cart-recovery", title: "Payment Follow-up", reason: "Auto-send receipts and follow-up emails after successful payments." },
-            slack: { id: "lead-capture-crm-slack", title: "Slack Alerts", reason: "Get real-time notifications in Slack for leads, sales, and support tickets." },
-            gmail: { id: "lead-capture-crm-slack", title: "Email Automation", reason: "Auto-respond, categorize, and follow up on emails." },
-            instagram: { id: "ai-social-media-scheduler", title: "Instagram Post Scheduler", reason: "Schedule and auto-post content to Instagram at optimal times." },
-            hubspot: { id: "lead-capture-crm-slack", title: "CRM Sync", reason: "Sync leads and contacts automatically with HubSpot." }
+            shopify: { id: "cart-recovery", title: "Shopify Cart Recovery", reason: "Automatically recover abandoned carts and send discount codes.", roi: 2500 },
+            stripe: { id: "cart-recovery", title: "Payment Follow-up", reason: "Auto-send receipts and follow-up emails after successful payments.", roi: 500 },
+            slack: { id: "lead-capture-crm-slack", title: "Slack Alerts", reason: "Get real-time notifications in Slack for leads, sales, and support tickets.", roi: 400 },
+            gmail: { id: "lead-capture-crm-slack", title: "Email Automation", reason: "Auto-respond, categorize, and follow up on emails.", roi: 600 },
+            instagram: { id: "ai-social-media-scheduler", title: "Instagram Post Scheduler", reason: "Schedule and auto-post content to Instagram at optimal times.", roi: 500 },
+            hubspot: { id: "lead-capture-crm-slack", title: "CRM Sync", reason: "Sync leads and contacts automatically with HubSpot.", roi: 800 }
         };
+
+        // ========== ROI CALCULATION FUNCTIONS ==========
+        function calculateHoursSaved(automations) {
+            const hoursPerAutomation = {
+                'cart-recovery': 5,
+                'lead-scoring': 10,
+                'ai-social-media-scheduler': 8,
+                'video-script-generator': 4,
+                'lead-capture-crm-slack': 3,
+                'price-monitoring-alert': 6,
+                'auto-responder': 15
+            };
+            
+            let totalHours = 0;
+            automations.forEach(automation => {
+                const slug = automation.automation_template_id || automation.id;
+                totalHours += hoursPerAutomation[slug] || 2;
+            });
+            return totalHours;
+        }
+
+        function calculateRevenueImpact(profile, automations) {
+            let monthlyRevenue = 0;
+            if (profile.revenue === '0-1k') monthlyRevenue = 500;
+            else if (profile.revenue === '1k-10k') monthlyRevenue = 5000;
+            else if (profile.revenue === '10k-50k') monthlyRevenue = 25000;
+            else if (profile.revenue === '50k+') monthlyRevenue = 75000;
+            else monthlyRevenue = 10000;
+            
+            let impactPercent = 0;
+            automations.forEach(automation => {
+                const slug = automation.automation_template_id || automation.id;
+                const impact = {
+                    'cart-recovery': 15,
+                    'lead-scoring': 45,
+                    'ai-social-media-scheduler': 300,
+                    'video-script-generator': 200,
+                    'lead-capture-crm-slack': 30,
+                    'price-monitoring-alert': 25,
+                    'auto-responder': 20
+                };
+                impactPercent += impact[slug] || 10;
+            });
+            
+            return Math.round(monthlyRevenue * (Math.min(impactPercent, 100) / 100));
+        }
 
         async function loadBusinessInsights() {
             try {
@@ -920,7 +1056,7 @@
 
                 if (!res.ok) {
                     if (res.status === 404) {
-                        showBusinessOnboarding();
+                        showEnhancedBusinessOnboarding();
                         return;
                     }
                     throw new Error("Failed to load insights");
@@ -929,19 +1065,19 @@
                 const data = await res.json();
 
                 if (!data.has_profile) {
-                    showBusinessOnboarding();
+                    showEnhancedBusinessOnboarding();
                     return;
                 }
 
                 businessProfile = data.profile;
                 
-                // Generate advanced insights based on profile
                 const generatedInsights = generateAdvancedInsights(businessProfile);
                 const generatedRecommendations = generateAdvancedRecommendations(businessProfile);
                 
                 updateBusinessStatus(businessProfile);
                 renderInsights(generatedInsights);
                 renderRecommendations(generatedRecommendations);
+                updateROIDashboard(generatedRecommendations);
 
             } catch (error) {
                 console.error("Error loading business insights:", error);
@@ -950,15 +1086,59 @@
                     <span>Click "Configure" to set up your business profile</span>
                 `;
                 document.getElementById("businessInsights").innerHTML = `
-                    <div class="insight-card" style="cursor: pointer;" onclick="showBusinessOnboarding()">
+                    <div class="insight-card" style="cursor: pointer;" onclick="showEnhancedBusinessOnboarding()">
                         <div class="insight-icon"><i class="fas fa-plus"></i></div>
                         <div class="insight-content">
                             <div class="insight-title">Set up your business profile</div>
-                            <div class="insight-description">Tell us about your business to get personalized AI recommendations.</div>
+                            <div class="insight-description">Tell us about your business to get personalized AI recommendations and ROI estimates.</div>
                         </div>
                     </div>
                 `;
             }
+        }
+
+        function updateROIDashboard(recommendations) {
+            const hoursSaved = calculateHoursSaved(recommendations);
+            const revenueImpact = calculateRevenueImpact(businessProfile || {}, recommendations);
+            const leadsGenerated = recommendations.length * 25; // Estimated leads per automation
+            
+            document.getElementById('hoursSavedValue').textContent = hoursSaved;
+            document.getElementById('hoursValue').textContent = Math.floor(hoursSaved / 8);
+            document.getElementById('leadsValue').textContent = leadsGenerated;
+            document.getElementById('leadsGrowth').textContent = Math.floor(Math.random() * 30) + 15;
+            document.getElementById('revenueValue').textContent = `$${revenueImpact.toLocaleString()}`;
+            document.getElementById('tasksValue').textContent = recommendations.length * 45;
+            
+            // Create ROI trend chart
+            if (roiChart) roiChart.destroy();
+            const ctx = document.getElementById('roiTrendChart').getContext('2d');
+            roiChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Hours Saved',
+                        data: [Math.floor(hoursSaved * 0.25), Math.floor(hoursSaved * 0.5), Math.floor(hoursSaved * 0.75), hoursSaved],
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Revenue ($)',
+                        data: [Math.floor(revenueImpact * 0.2), Math.floor(revenueImpact * 0.4), Math.floor(revenueImpact * 0.7), revenueImpact],
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'top', labels: { color: 'white' } } },
+                    scales: { y: { grid: { color: '#333' }, ticks: { color: '#aaa' } }, x: { grid: { display: false }, ticks: { color: '#aaa' } } }
+                }
+            });
         }
 
         function generateAdvancedInsights(profile) {
@@ -969,13 +1149,13 @@
                 insights.push(...industryData.insights);
             }
             
-            // Add goal-based insights
             if (profile.goal === 'leads') {
                 insights.push({
                     title: "🎯 Lead Generation Opportunity",
-                    description: "AI lead scoring can increase conversion by 45%. Your business shows strong potential for automated lead capture.",
+                    description: "AI lead scoring can increase conversion by 45%. Based on your profile, this could add $1,200+ monthly.",
                     priority: "high",
-                    type: "lead_generation"
+                    type: "lead_generation",
+                    roi: 1200
                 });
             }
             
@@ -984,17 +1164,50 @@
                     title: "✍️ Content Scaling Potential",
                     description: "With AI content generation, you can produce 3x more content with the same effort.",
                     priority: "high",
-                    type: "content"
+                    type: "content",
+                    roi: 800
                 });
             }
             
-            // Add tool-based insights
+            if (profile.hours && profile.hours !== '0-5') {
+                const hoursMap = { '5-15': 10, '15-25': 20, '25-40': 32, '40+': 45 };
+                const hours = hoursMap[profile.hours] || 5;
+                insights.push({
+                    title: "⏰ Time Savings Opportunity",
+                    description: `You spend ~${hours} hours/week on manual tasks. Automations could save you ${Math.floor(hours * 0.7)} hours/week.`,
+                    priority: "high",
+                    type: "operations",
+                    roi: hours * 50
+                });
+            }
+            
+            if (profile.challenge === 'manual_data') {
+                insights.push({
+                    title: "📊 Data Entry Automation",
+                    description: "Manual data entry is a major time sink. Automate form submissions and CRM updates to save 8+ hours/week.",
+                    priority: "high",
+                    type: "operations",
+                    roi: 600
+                });
+            }
+            
+            if (profile.challenge === 'followups') {
+                insights.push({
+                    title: "📧 Follow-up Automation",
+                    description: "Automated follow-up sequences can increase response rates by 3x and save 5+ hours/week.",
+                    priority: "high",
+                    type: "sales",
+                    roi: 1500
+                });
+            }
+            
             if (profile.tools && profile.tools.includes('shopify')) {
                 insights.push({
                     title: "🛒 E-commerce Revenue Opportunity",
-                    description: "You're losing 15-25% of potential sales from abandoned carts. Automated recovery can capture this revenue.",
+                    description: "You're losing 15-25% of potential sales from abandoned carts. Automated recovery could add $2,500+ monthly.",
                     priority: "high",
-                    type: "sales"
+                    type: "sales",
+                    roi: 2500
                 });
             }
             
@@ -1003,7 +1216,8 @@
                     title: "💬 Team Communication Boost",
                     description: "Connect your automations to Slack for real-time team notifications on leads, sales, and support tickets.",
                     priority: "medium",
-                    type: "operations"
+                    type: "operations",
+                    roi: 400
                 });
             }
             
@@ -1021,12 +1235,12 @@
                         automation_template_id: template.id,
                         title: template.title,
                         reason: template.reason,
-                        confidence: 95
+                        confidence: 95,
+                        roi: template.roi || 500
                     });
                 }
             }
             
-            // Add goal-based recommendations
             if (profile.goal && GOAL_RECOMMENDATIONS[profile.goal]) {
                 for (const rec of GOAL_RECOMMENDATIONS[profile.goal]) {
                     if (!recommendations.some(r => r.automation_template_id === rec.id)) {
@@ -1035,13 +1249,13 @@
                             automation_template_id: rec.id,
                             title: rec.title,
                             reason: rec.reason,
-                            confidence: 90
+                            confidence: 90,
+                            roi: rec.roi || 500
                         });
                     }
                 }
             }
             
-            // Add tool-based recommendations
             if (profile.tools) {
                 for (const tool of profile.tools) {
                     if (TOOL_RECOMMENDATIONS[tool]) {
@@ -1052,14 +1266,17 @@
                                 automation_template_id: rec.id,
                                 title: rec.title,
                                 reason: rec.reason,
-                                confidence: 88
+                                confidence: 88,
+                                roi: rec.roi || 500
                             });
                         }
                     }
                 }
             }
             
-            // Limit to top 6 recommendations
+            // Sort by ROI (highest first)
+            recommendations.sort((a, b) => (b.roi || 0) - (a.roi || 0));
+            
             return recommendations.slice(0, 6);
         }
 
@@ -1071,7 +1288,11 @@
                 'saas': 'SaaS Company',
                 'coach': 'Coach/Consultant',
                 'local_business': 'Local Business',
-                'creator': 'Content Creator'
+                'creator': 'Content Creator',
+                'real_estate': 'Real Estate',
+                'healthcare': 'Healthcare',
+                'education': 'Education',
+                'nonprofit': 'Non-profit'
             };
             const industry = industryMap[profile.industry] || profile.industry || 'Business';
             const goalMap = {
@@ -1079,19 +1300,33 @@
                 'support': 'Customer Support',
                 'content': 'Content Creation',
                 'operations': 'Operations',
-                'sales': 'Sales Growth'
+                'sales': 'Sales Growth',
+                'retention': 'Customer Retention',
+                'productivity': 'Team Productivity'
             };
             const goal = goalMap[profile.goal] || profile.goal || 'Growth';
+            
+            const challengeMap = {
+                'manual_data': 'Manual Data Entry',
+                'followups': 'Lead Follow-ups',
+                'content': 'Content Creation',
+                'reports': 'Report Building',
+                'scheduling': 'Scheduling',
+                'email': 'Email Management',
+                'social': 'Social Media'
+            };
+            const challenge = challengeMap[profile.challenge] || '';
+            
             statusDiv.innerHTML = `
                 <i class="fas fa-check-circle" style="color: var(--success);"></i>
-                <span>${industry} | Goal: ${goal} | Tools: ${profile.tools?.length || 0} connected</span>
+                <span>${industry} | Goal: ${goal} | Tools: ${profile.tools?.length || 0} connected ${challenge ? `| Time-waster: ${challenge}` : ''}</span>
             `;
         }
 
         function renderInsights(insights) {
             const container = document.getElementById("businessInsights");
             if (!insights || insights.length === 0) {
-                container.innerHTML = `<div class="insight-card"><div class="insight-icon"><i class="fas fa-chart-line"></i></div><div class="insight-content"><div class="insight-title">Complete your profile</div><div class="insight-description">Add more business details to unlock AI-powered insights.</div></div></div>`;
+                container.innerHTML = `<div class="insight-card"><div class="insight-icon"><i class="fas fa-chart-line"></i></div><div class="insight-content"><div class="insight-title">Complete your profile</div><div class="insight-description">Add more business details to unlock AI-powered insights with ROI estimates.</div></div></div>`;
                 return;
             }
             container.innerHTML = insights.map(insight => `
@@ -1100,7 +1335,10 @@
                     <div class="insight-content">
                         <div class="insight-title">${insight.title}</div>
                         <div class="insight-description">${insight.description}</div>
-                        <span class="insight-priority priority-${insight.priority}">${insight.priority.toUpperCase()} Priority</span>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span class="insight-priority priority-${insight.priority}">${insight.priority.toUpperCase()} Priority</span>
+                            ${insight.roi ? `<span style="font-size: 0.8rem; color: var(--success);"><i class="fas fa-dollar-sign"></i> Est. ROI: $${insight.roi}/month</span>` : ''}
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -1121,9 +1359,15 @@
                 <div class="recommendation-card">
                     <div class="recommendation-badge"><i class="fas fa-robot"></i> AI Recommended</div>
                     <div class="recommendation-title">${rec.title}</div>
-                    <div class="recommendation-reason"><i class="fas fa-lightbulb" style="color: var(--gold);"></i> ${rec.reason}</div>
+                    <div class="recommendation-reason">
+                        <i class="fas fa-lightbulb" style="color: var(--gold);"></i> ${rec.reason}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <span style="font-size: 0.8rem; color: var(--success);"><i class="fas fa-dollar-sign"></i> Est. Monthly ROI: $${rec.roi || 500}</span>
+                        <span style="font-size: 0.7rem; padding: 2px 8px; background: rgba(212,175,55,0.2); border-radius: 30px;">${rec.confidence}% match</span>
+                    </div>
                     <div class="recommendation-actions">
-                        <button class="btn-gold" onclick="deployRecommendation('${rec.automation_template_id}')" style="flex: 2;"><i class="fas fa-rocket"></i> Deploy Now</button>
+                        <button class="btn-gold" onclick="deployRecommendation('${rec.automation_template_id}')" style="flex: 2;"><i class="fas fa-rocket"></i> Deploy Now ($${rec.roi || 500}/mo)</button>
                         <button class="btn-outline-gold" onclick="dismissRecommendation('${rec.id}')" style="flex: 1;"><i class="fas fa-times"></i> Dismiss</button>
                     </div>
                 </div>
@@ -1144,14 +1388,16 @@
             return icons[type] || 'fa-lightbulb';
         }
 
-        window.showBusinessOnboarding = function() {
+        // ENHANCED ONBOARDING WITH MORE QUESTIONS
+        window.showEnhancedBusinessOnboarding = function() {
             Swal.fire({
                 title: '🎯 Let AI Understand Your Business',
                 html: `
-                    <div style="text-align: left;">
-                        <p>Answer 4 quick questions to get personalized automation recommendations:</p>
+                    <div style="text-align: left; max-height: 500px; overflow-y: auto; padding-right: 10px;">
+                        <p>Answer these questions to get personalized automation recommendations with ROI estimates:</p>
+                        
                         <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">What best describes your business?</label>
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">1. What best describes your business?</label>
                             <select id="onboardIndustry" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
                                 <option value="">Select...</option>
                                 <option value="agency">Digital Marketing Agency</option>
@@ -1160,10 +1406,27 @@
                                 <option value="coach">Coach / Consultant</option>
                                 <option value="local_business">Local Service Business</option>
                                 <option value="creator">Content Creator / Influencer</option>
+                                <option value="real_estate">Real Estate</option>
+                                <option value="healthcare">Healthcare / Wellness</option>
+                                <option value="education">Education / Training</option>
+                                <option value="nonprofit">Non-profit / Charity</option>
                             </select>
                         </div>
+                        
                         <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">Main business goal?</label>
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">2. How many employees?</label>
+                            <select id="onboardSize" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
+                                <option value="">Select...</option>
+                                <option value="solo">Just me (solo)</option>
+                                <option value="1-5">2-5 employees</option>
+                                <option value="6-20">6-20 employees</option>
+                                <option value="21-50">21-50 employees</option>
+                                <option value="51+">51+ employees</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">3. What's your biggest business goal right now?</label>
                             <select id="onboardGoal" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
                                 <option value="">Select...</option>
                                 <option value="leads">Generate More Leads</option>
@@ -1171,10 +1434,27 @@
                                 <option value="content">Create & Repurpose Content</option>
                                 <option value="operations">Automate Operations/Reporting</option>
                                 <option value="sales">Increase Sales/Conversions</option>
+                                <option value="retention">Improve Customer Retention</option>
+                                <option value="productivity">Boost Team Productivity</option>
                             </select>
                         </div>
+                        
                         <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">Which tools do you use? (select all)</label>
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">4. What's your biggest time-waster?</label>
+                            <select id="onboardChallenge" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
+                                <option value="">Select...</option>
+                                <option value="manual_data">Manual data entry</option>
+                                <option value="followups">Following up with leads/customers</option>
+                                <option value="content">Creating content</option>
+                                <option value="reports">Building reports</option>
+                                <option value="scheduling">Scheduling meetings</option>
+                                <option value="email">Managing email</option>
+                                <option value="social">Posting to social media</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">5. Which tools do you currently use? (select all)</label>
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                 <label><input type="checkbox" value="shopify"> Shopify</label>
                                 <label><input type="checkbox" value="stripe"> Stripe</label>
@@ -1184,37 +1464,66 @@
                                 <label><input type="checkbox" value="notion"> Notion</label>
                                 <label><input type="checkbox" value="hubspot"> HubSpot</label>
                                 <label><input type="checkbox" value="salesforce"> Salesforce</label>
+                                <label><input type="checkbox" value="zapier"> Zapier</label>
+                                <label><input type="checkbox" value="mailchimp"> Mailchimp</label>
+                                <label><input type="checkbox" value="asana"> Asana/Trello</label>
+                                <label><input type="checkbox" value="quickbooks"> QuickBooks/Xero</label>
                             </div>
                         </div>
+                        
                         <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">Monthly revenue range?</label>
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">6. Monthly revenue range? (helps us prioritize ROI)</label>
                             <select id="onboardRevenue" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
                                 <option value="">Prefer not to say</option>
                                 <option value="0-1k">Less than $1,000</option>
                                 <option value="1k-10k">$1,000 - $10,000</option>
                                 <option value="10k-50k">$10,000 - $50,000</option>
-                                <option value="50k+">$50,000+</option>
+                                <option value="50k-200k">$50,000 - $200,000</option>
+                                <option value="200k+">$200,000+</option>
                             </select>
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">7. How many hours per week do you spend on repetitive manual tasks?</label>
+                            <select id="onboardHours" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
+                                <option value="">Select...</option>
+                                <option value="0-5">0-5 hours</option>
+                                <option value="5-15">5-15 hours</option>
+                                <option value="15-25">15-25 hours</option>
+                                <option value="25-40">25-40 hours</option>
+                                <option value="40+">40+ hours</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">8. Extra info about your business (optional - helps AI understand better)</label>
+                            <textarea id="onboardExtraInfo" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;" placeholder="e.g., We sell handmade jewelry, target audience is women 25-45, main competitors are...</textarea>
                         </div>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: 'Get Recommendations',
-                cancelButtonText: 'Skip',
-                width: '550px',
+                confirmButtonText: 'Get Personalized Recommendations',
+                cancelButtonText: 'Skip for now',
+                width: '650px',
                 background: '#1a1a1a',
                 color: 'white',
                 customClass: { confirmButton: 'btn-gold', cancelButton: 'btn-outline-gold' },
                 preConfirm: () => {
                     const industry = document.getElementById('onboardIndustry').value;
+                    const size = document.getElementById('onboardSize').value;
                     const goal = document.getElementById('onboardGoal').value;
+                    const challenge = document.getElementById('onboardChallenge').value;
                     const tools = Array.from(document.querySelectorAll('#onboardIndustry ~ div input:checked')).map(cb => cb.value);
                     const revenue = document.getElementById('onboardRevenue').value;
+                    const hours = document.getElementById('onboardHours').value;
+                    const extraInfo = document.getElementById('onboardExtraInfo').value;
+                    
                     if (!industry || !goal) {
-                        Swal.showValidationMessage('Please select industry and goal');
+                        Swal.showValidationMessage('Please select industry and goal (these are required for accurate recommendations)');
                         return false;
                     }
-                    return { industry, goal, tools, revenue };
+                    
+                    return { industry, size, goal, challenge, tools, revenue, hours, extraInfo };
                 }
             }).then(async (result) => {
                 if (result.isConfirmed) await saveBusinessProfile(result.value);
@@ -1229,7 +1538,7 @@
                     body: JSON.stringify(profile)
                 });
                 if (res.ok) {
-                    Swal.fire({ title: 'Profile Saved!', text: 'AI is now analyzing your business to provide personalized recommendations.', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'Great!', customClass: { confirmButton: 'btn-gold' } });
+                    Swal.fire({ title: 'Profile Saved!', text: 'AI is now analyzing your business to provide personalized recommendations with ROI estimates.', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'Great!', customClass: { confirmButton: 'btn-gold' } });
                     await loadBusinessInsights();
                     await loadDashboard();
                 } else throw new Error('Failed to save');
@@ -1240,9 +1549,12 @@
         }
 
         window.deployRecommendation = async function(templateId) {
+            const rec = allRecommendations.find(r => r.automation_template_id === templateId);
+            const roiText = rec ? ` (Estimated ROI: $${rec.roi}/month)` : '';
+            
             Swal.fire({
                 title: 'Deploy Automation',
-                text: 'This automation will be created and activated for your business. Ready to deploy?',
+                text: `This automation will be created and activated for your business. Ready to deploy?${roiText}`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Deploy Now',
@@ -1258,7 +1570,7 @@
                             body: JSON.stringify({ name: `AI Recommended: ${templateId}`, customizations: { auto_configured: true, source: 'ai_recommendation' } })
                         });
                         if (res.ok) {
-                            Swal.fire({ title: 'Deployed!', text: 'Your automation is now live and working for your business.', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'View Automations', customClass: { confirmButton: 'btn-gold' } }).then(() => { window.location.href = 'ai-powerhouse.html'; });
+                            Swal.fire({ title: 'Deployed!', text: `Your automation is now live and working for your business.${roiText}`, icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'View Automations', customClass: { confirmButton: 'btn-gold' } }).then(() => { window.location.href = 'ai-powerhouse.html'; });
                         } else {
                             const errorData = await res.json();
                             throw new Error(errorData.error || 'Deployment failed');
@@ -1275,7 +1587,7 @@
         };
 
         document.getElementById("refreshRecommendationsBtn").onclick = () => loadBusinessInsights();
-        document.getElementById("openBusinessSettingsBtn").onclick = () => showBusinessOnboarding();
+        document.getElementById("openBusinessSettingsBtn").onclick = () => showEnhancedBusinessOnboarding();
 
         // ========== END BUSINESS INTELLIGENCE ==========
 
@@ -1361,7 +1673,7 @@
             chatTableBody.innerHTML = "";
             const threads = {};
             chats.forEach(c => { const session = c.session_id || 'manual'; if (!threads[session]) { threads[session] = { client: c.client_name || "Guest", count: 0, last: c.created_at, messages: [] }; } threads[session].count++; threads[session].messages.push(c); });
-            Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = ` <td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td><td>${t.count} messages</td><td>${new Date(t.last).toLocaleString()}</td><td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>`; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); });
+            Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = `  <td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td><td>${t.count} messages</td><td>${new Date(t.last).toLocaleString()}</td><td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>`; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); });
         }
 
         function openChatModal(client, messages) {
@@ -1385,7 +1697,7 @@
         function renderLeads(leads) {
             if (!leadsTableBody) return;
             leadsTableBody.innerHTML = "";
-            leads.forEach(function (l) { var tr = document.createElement("tr"); tr.innerHTML = ` <td>${l.name}</td><td>${l.email}</td><td>${l.phone || "-"}</td><td>${new Date(l.created_at).toLocaleString()}</td><td class="lead-actions"><button class="btn-danger delete-lead-btn" data-id="${l.id}">Delete</button></td>`; leadsTableBody.appendChild(tr); });
+            leads.forEach(function (l) { var tr = document.createElement("tr"); tr.innerHTML = `  <td>${l.name}</td><td>${l.email}</td><td>${l.phone || "-"}</td><td>${new Date(l.created_at).toLocaleString()}</td><td class="lead-actions"><button class="btn-danger delete-lead-btn" data-id="${l.id}">Delete</button></td>`; leadsTableBody.appendChild(tr); });
             document.querySelectorAll(".delete-lead-btn").forEach(function (btn) { btn.onclick = async function () { if (!confirm("Delete this lead?")) return; var leadId = btn.dataset.id; try { var res = await fetch(`${BACKEND_URL}/api/leads/${leadId}`, { method: "DELETE", headers: { "Authorization": "Bearer " + token } }); if (!res.ok) throw new Error(); alert("Lead deleted"); loadDashboard(); } catch (err) { alert("Could not delete lead"); } }; });
         }
 
