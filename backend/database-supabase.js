@@ -44,6 +44,153 @@ function getAll(result) {
 }
 
 // ===============================
+// TABLE INITIALIZATION FUNCTIONS
+// ===============================
+
+/**
+ * Ensure all required tables exist
+ */
+async function initializeTables() {
+  console.log('🔧 Initializing database tables...');
+  
+  // Check if users table has business_profile column
+  const { error: columnCheckError } = await supabase
+    .from('users')
+    .select('business_profile')
+    .limit(1);
+  
+  if (columnCheckError && columnCheckError.message.includes('column "business_profile" does not exist')) {
+    console.log('📝 Adding business_profile column to users table...');
+    const { error: alterError } = await supabase.rpc('add_business_profile_column', {});
+    if (alterError && alterError.message.includes('function')) {
+      console.log('⚠️ Could not add column automatically. Please run SQL manually.');
+      console.log('SQL: ALTER TABLE users ADD COLUMN business_profile JSONB DEFAULT \'{}\';');
+    }
+  }
+  
+  // Create weekly_reports table
+  await ensureWeeklyReportsTable();
+  
+  // Create health_scans table
+  await ensureHealthScansTable();
+  
+  // Create ai_recommendations table
+  await ensureAiRecommendationsTable();
+  
+  console.log('✅ Database tables initialized');
+}
+
+/**
+ * Ensure weekly_reports table exists
+ */
+async function ensureWeeklyReportsTable() {
+  try {
+    const { error: checkError } = await supabase
+      .from('weekly_reports')
+      .select('id')
+      .limit(1);
+    
+    if (checkError && checkError.code === '42P01') {
+      console.log('📝 Creating weekly_reports table...');
+      // Create table using SQL via REST API
+      const { error: createError } = await supabase.rpc('create_weekly_reports_table', {});
+      if (createError && createError.message.includes('function')) {
+        console.log('⚠️ Please create weekly_reports table manually with SQL:');
+        console.log(`
+          CREATE TABLE IF NOT EXISTS weekly_reports (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            week_start DATE NOT NULL,
+            report_data JSONB NOT NULL,
+            sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_weekly_reports_user_id ON weekly_reports(user_id);
+          CREATE INDEX IF NOT EXISTS idx_weekly_reports_week_start ON weekly_reports(week_start);
+        `);
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring weekly_reports table:', error.message);
+  }
+}
+
+/**
+ * Ensure health_scans table exists
+ */
+async function ensureHealthScansTable() {
+  try {
+    const { error: checkError } = await supabase
+      .from('health_scans')
+      .select('id')
+      .limit(1);
+    
+    if (checkError && checkError.code === '42P01') {
+      console.log('📝 Creating health_scans table...');
+      const { error: createError } = await supabase.rpc('create_health_scans_table', {});
+      if (createError && createError.message.includes('function')) {
+        console.log('⚠️ Please create health_scans table manually with SQL:');
+        console.log(`
+          CREATE TABLE IF NOT EXISTS health_scans (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            scan_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            findings JSONB NOT NULL,
+            recommendations JSONB NOT NULL,
+            stats JSONB,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_health_scans_user_id ON health_scans(user_id);
+          CREATE INDEX IF NOT EXISTS idx_health_scans_scan_date ON health_scans(scan_date);
+        `);
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring health_scans table:', error.message);
+  }
+}
+
+/**
+ * Ensure ai_recommendations table exists
+ */
+async function ensureAiRecommendationsTable() {
+  try {
+    const { error: checkError } = await supabase
+      .from('ai_recommendations')
+      .select('id')
+      .limit(1);
+    
+    if (checkError && checkError.code === '42P01') {
+      console.log('📝 Creating ai_recommendations table...');
+      const { error: createError } = await supabase.rpc('create_ai_recommendations_table', {});
+      if (createError && createError.message.includes('function')) {
+        console.log('⚠️ Please create ai_recommendations table manually with SQL:');
+        console.log(`
+          CREATE TABLE IF NOT EXISTS ai_recommendations (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            automation_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            confidence_score INTEGER DEFAULT 85,
+            roi INTEGER DEFAULT 500,
+            hours_saved INTEGER DEFAULT 5,
+            leads_generated INTEGER DEFAULT 20,
+            status TEXT DEFAULT 'pending',
+            deployed_at TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_ai_recommendations_user_id ON ai_recommendations(user_id);
+          CREATE INDEX IF NOT EXISTS idx_ai_recommendations_status ON ai_recommendations(status);
+        `);
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring ai_recommendations table:', error.message);
+  }
+}
+
+// ===============================
 // USERS / BUSINESSES
 // ===============================
 
@@ -51,7 +198,7 @@ async function createUser(email, password, business_id, business_name, vToken) {
   try {
     const cleanEmail = email.toLowerCase().trim();
     
-    // Insert user
+    // Insert user with business_profile default
     const { data: user, error: userError } = await supabase
       .from('users')
       .insert({
@@ -59,7 +206,8 @@ async function createUser(email, password, business_id, business_name, vToken) {
         password,
         business_id,
         business_name,
-        verification_token: vToken
+        verification_token: vToken,
+        business_profile: {}  // Initialize empty business profile
       })
       .select()
       .single();
@@ -147,6 +295,286 @@ async function getUserById(id) {
     return data;
   } catch (error) {
     handleError(error, 'getUserById');
+  }
+}
+
+// ===============================
+// BUSINESS PROFILE FUNCTIONS (AI Business Coach)
+// ===============================
+
+/**
+ * Get user's business profile
+ */
+async function getBusinessProfile(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('business_profile, business_name, plan')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    let profile = {};
+    if (data?.business_profile) {
+      profile = typeof data.business_profile === 'string' 
+        ? JSON.parse(data.business_profile) 
+        : data.business_profile;
+    }
+    
+    return {
+      ...profile,
+      business_name: data?.business_name,
+      plan: data?.plan
+    };
+  } catch (error) {
+    handleError(error, 'getBusinessProfile');
+  }
+}
+
+/**
+ * Update user's business profile
+ */
+async function updateBusinessProfile(userId, profileData) {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ 
+        business_profile: profileData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleError(error, 'updateBusinessProfile');
+  }
+}
+
+// ===============================
+// WEEKLY REPORTS FUNCTIONS
+// ===============================
+
+/**
+ * Save weekly report
+ */
+async function saveWeeklyReport(userId, reportData) {
+  try {
+    const { data, error } = await supabase
+      .from('weekly_reports')
+      .insert({
+        user_id: userId,
+        week_start: reportData.week,
+        report_data: reportData,
+        sent_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'saveWeeklyReport');
+  }
+}
+
+/**
+ * Get weekly reports for user
+ */
+async function getWeeklyReports(userId, limit = 12) {
+  try {
+    const { data, error } = await supabase
+      .from('weekly_reports')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_start', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    
+    return (data || []).map(r => ({
+      ...r,
+      report_data: typeof r.report_data === 'string' ? JSON.parse(r.report_data) : r.report_data
+    }));
+  } catch (error) {
+    handleError(error, 'getWeeklyReports');
+  }
+}
+
+/**
+ * Get latest weekly report
+ */
+async function getLatestWeeklyReport(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('weekly_reports')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_start', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    if (data) {
+      data.report_data = typeof data.report_data === 'string' ? JSON.parse(data.report_data) : data.report_data;
+    }
+    return data;
+  } catch (error) {
+    handleError(error, 'getLatestWeeklyReport');
+  }
+}
+
+// ===============================
+// HEALTH SCANS FUNCTIONS
+// ===============================
+
+/**
+ * Save health scan
+ */
+async function saveHealthScan(userId, scanData) {
+  try {
+    const { data, error } = await supabase
+      .from('health_scans')
+      .insert({
+        user_id: userId,
+        scan_date: scanData.scan_date,
+        findings: JSON.stringify(scanData.findings),
+        recommendations: JSON.stringify(scanData.recommendations),
+        stats: scanData.stats
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'saveHealthScan');
+  }
+}
+
+/**
+ * Get health scans for user
+ */
+async function getHealthScans(userId, limit = 10) {
+  try {
+    const { data, error } = await supabase
+      .from('health_scans')
+      .select('*')
+      .eq('user_id', userId)
+      .order('scan_date', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    
+    return (data || []).map(s => ({
+      ...s,
+      findings: typeof s.findings === 'string' ? JSON.parse(s.findings) : s.findings,
+      recommendations: typeof s.recommendations === 'string' ? JSON.parse(s.recommendations) : s.recommendations,
+      stats: typeof s.stats === 'string' ? JSON.parse(s.stats) : s.stats
+    }));
+  } catch (error) {
+    handleError(error, 'getHealthScans');
+  }
+}
+
+/**
+ * Get latest health scan
+ */
+async function getLatestHealthScan(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('health_scans')
+      .select('*')
+      .eq('user_id', userId)
+      .order('scan_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    if (data) {
+      data.findings = typeof data.findings === 'string' ? JSON.parse(data.findings) : data.findings;
+      data.recommendations = typeof data.recommendations === 'string' ? JSON.parse(data.recommendations) : data.recommendations;
+      data.stats = typeof data.stats === 'string' ? JSON.parse(data.stats) : data.stats;
+    }
+    return data;
+  } catch (error) {
+    handleError(error, 'getLatestHealthScan');
+  }
+}
+
+// ===============================
+// AI RECOMMENDATIONS FUNCTIONS
+// ===============================
+
+/**
+ * Save AI recommendation
+ */
+async function saveAiRecommendation(userId, recommendation) {
+  try {
+    const { data, error } = await supabase
+      .from('ai_recommendations')
+      .insert({
+        user_id: userId,
+        automation_id: recommendation.automationId || recommendation.templateId,
+        title: recommendation.title,
+        reason: recommendation.reason,
+        confidence_score: recommendation.confidence_score || 85,
+        roi: recommendation.roi || 500,
+        hours_saved: recommendation.hours_saved || 5,
+        leads_generated: recommendation.leads_generated || 20,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'saveAiRecommendation');
+  }
+}
+
+/**
+ * Get pending AI recommendations
+ */
+async function getPendingRecommendations(userId, limit = 10) {
+  try {
+    const { data, error } = await supabase
+      .from('ai_recommendations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getPendingRecommendations');
+  }
+}
+
+/**
+ * Update recommendation status
+ */
+async function updateRecommendationStatus(recId, userId, status) {
+  try {
+    const { error } = await supabase
+      .from('ai_recommendations')
+      .update({ 
+        status: status,
+        deployed_at: status === 'accepted' ? new Date().toISOString() : null
+      })
+      .eq('id', recId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleError(error, 'updateRecommendationStatus');
   }
 }
 
@@ -916,7 +1344,8 @@ async function createAdminIfNotExists(email, hashedPassword) {
         business_name: "Admin Business",
         plan: 'agency',
         is_verified: 1,
-        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        business_profile: {}
       })
       .select()
       .single();
@@ -1129,7 +1558,7 @@ async function getAutomationRuns(automation_id, user_id, limit = 50) {
 }
 
 // ===============================
-// AUTOMATION TEMPLATES (NEW)
+// AUTOMATION TEMPLATES
 // ===============================
 
 async function getAutomationTemplates(category = null, industry = null, featured = false) {
@@ -1190,7 +1619,7 @@ async function incrementTemplateUsage(templateId) {
 }
 
 // ===============================
-// USER AUTOMATIONS (NEW - Advanced)
+// USER AUTOMATIONS (Advanced)
 // ===============================
 
 async function createUserAutomation(user_id, template_id, name, description, trigger_type, trigger_config, actions, status = 'draft') {
@@ -1297,7 +1726,7 @@ async function deleteUserAutomation(id, user_id) {
 }
 
 // ===============================
-// LEAD SOURCES (NEW)
+// LEAD SOURCES
 // ===============================
 
 async function createLeadSource(user_id, name, type, automation_id = null, config = {}) {
@@ -1921,7 +2350,7 @@ async function removeSubscriber(email) {
 }
 
 // ===============================
-// GENERATED MEDIA (NEW)
+// GENERATED MEDIA
 // ===============================
 
 async function saveGeneratedMedia(user_id, media_type, file_url, metadata = {}) {
@@ -2007,6 +2436,11 @@ async function getMediaStats(user_id) {
 }
 
 // ===============================
+// INITIALIZE ON LOAD
+// ===============================
+initializeTables().catch(console.error);
+
+// ===============================
 // EXPORTS
 // ===============================
 
@@ -2014,12 +2448,34 @@ module.exports = {
   // Core database functions
   supabase,
   
+  // Table initialization
+  initializeTables,
+  
   // Users
   createUser,
   verifyUser,
   getUserByEmail,
   getUserByBusinessId,
   getUserById,
+  
+  // Business Profile (AI Business Coach)
+  getBusinessProfile,
+  updateBusinessProfile,
+  
+  // Weekly Reports
+  saveWeeklyReport,
+  getWeeklyReports,
+  getLatestWeeklyReport,
+  
+  // Health Scans
+  saveHealthScan,
+  getHealthScans,
+  getLatestHealthScan,
+  
+  // AI Recommendations
+  saveAiRecommendation,
+  getPendingRecommendations,
+  updateRecommendationStatus,
   
   // Settings
   updateWidgetSettings,
@@ -2093,19 +2549,19 @@ module.exports = {
   completeAutomationRun,
   getAutomationRuns,
   
-  // Automation Templates (NEW)
+  // Automation Templates
   getAutomationTemplates,
   getAutomationTemplateBySlug,
   incrementTemplateUsage,
   
-  // User Automations (NEW - Advanced)
+  // User Automations (Advanced)
   createUserAutomation,
   getUserAutomations,
   getUserAutomationById,
   updateUserAutomation,
   deleteUserAutomation,
   
-  // Lead Sources (NEW)
+  // Lead Sources
   createLeadSource,
   getLeadSources,
   updateLeadSourceStats,
@@ -2152,7 +2608,7 @@ module.exports = {
   getSubscribers,
   removeSubscriber,
   
-  // Generated Media (NEW)
+  // Generated Media
   saveGeneratedMedia,
   getGeneratedMedia,
   deleteGeneratedMedia,
