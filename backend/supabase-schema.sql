@@ -32,7 +32,14 @@ CREATE TABLE IF NOT EXISTS users (
   booking_url TEXT,
   sentiment_alerts INTEGER DEFAULT 0,
   plan_expires TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  business_profile JSONB DEFAULT '{}',
+  auto_deploy_settings JSONB DEFAULT '{
+    "auto_recommend": true,
+    "auto_deploy_new": false,
+    "notify_on_recommendation": true,
+    "deployed_automations": []
+  }'
 );
 
 -- ============================================
@@ -496,6 +503,9 @@ CREATE TABLE IF NOT EXISTS user_automations (
   last_error TEXT,
   next_run_at TIMESTAMP WITH TIME ZONE,
   leads_generated INTEGER DEFAULT 0,
+  roi_hours_saved INTEGER DEFAULT 0,
+  roi_revenue_impact INTEGER DEFAULT 0,
+  roi_leads_generated INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -523,6 +533,54 @@ CREATE TABLE IF NOT EXISTS generated_media (
   metadata JSONB DEFAULT '{}',
   views INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- AI BUSINESS INTELLIGENCE TABLES
+-- ============================================
+
+-- 5. AI RECOMMENDATIONS TABLE (with ROI fields)
+CREATE TABLE IF NOT EXISTS ai_recommendations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  automation_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  reason TEXT,
+  confidence_score INTEGER DEFAULT 0,
+  roi_hours_saved INTEGER DEFAULT 0,
+  roi_revenue_impact INTEGER DEFAULT 0,
+  roi_leads_generated INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  deployed_at TIMESTAMPTZ
+);
+
+-- 6. BUSINESS INSIGHTS TABLE (with ROI)
+CREATE TABLE IF NOT EXISTS business_insights (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  insight_type TEXT,
+  insight_data JSONB,
+  priority INTEGER DEFAULT 0,
+  roi_hours_saved INTEGER DEFAULT 0,
+  roi_revenue_impact INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. ROI STATS TABLE (for dashboard tracking)
+CREATE TABLE IF NOT EXISTS roi_stats (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  date DATE DEFAULT CURRENT_DATE,
+  hours_saved INTEGER DEFAULT 0,
+  leads_generated INTEGER DEFAULT 0,
+  revenue_impact INTEGER DEFAULT 0,
+  tasks_automated INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, date)
 );
 
 -- ============================================
@@ -559,6 +617,14 @@ CREATE INDEX IF NOT EXISTS idx_generated_media_user_id ON generated_media(user_i
 CREATE INDEX IF NOT EXISTS idx_automation_templates_category ON automation_templates(category);
 CREATE INDEX IF NOT EXISTS idx_automation_templates_featured ON automation_templates(is_featured);
 
+-- AI BUSINESS INTELLIGENCE INDEXES
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_user_id ON ai_recommendations(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_status ON ai_recommendations(status);
+CREATE INDEX IF NOT EXISTS idx_business_insights_user_id ON business_insights(user_id);
+CREATE INDEX IF NOT EXISTS idx_business_insights_insight_type ON business_insights(insight_type);
+CREATE INDEX IF NOT EXISTS idx_roi_stats_user_id ON roi_stats(user_id);
+CREATE INDEX IF NOT EXISTS idx_roi_stats_date ON roi_stats(date);
+
 -- ============================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================
@@ -566,6 +632,9 @@ ALTER TABLE automation_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_automations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lead_sources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE generated_media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_recommendations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE business_insights ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roi_stats ENABLE ROW LEVEL SECURITY;
 
 -- Templates are readable by all authenticated users
 CREATE POLICY "Templates are viewable by all authenticated users" 
@@ -591,6 +660,24 @@ CREATE POLICY "Users can view their own lead sources"
 -- Users can only see their own generated media
 CREATE POLICY "Users can view their own generated media" 
   ON generated_media FOR SELECT USING (auth.uid()::integer = user_id);
+
+-- AI Recommendations policies
+CREATE POLICY "Users can view their own recommendations" 
+  ON ai_recommendations FOR SELECT USING (auth.uid()::integer = user_id);
+
+CREATE POLICY "Users can insert their own recommendations" 
+  ON ai_recommendations FOR INSERT WITH CHECK (auth.uid()::integer = user_id);
+
+-- Business Insights policies
+CREATE POLICY "Users can view their own insights" 
+  ON business_insights FOR SELECT USING (auth.uid()::integer = user_id);
+
+-- ROI Stats policies
+CREATE POLICY "Users can view their own ROI stats" 
+  ON roi_stats FOR SELECT USING (auth.uid()::integer = user_id);
+
+CREATE POLICY "Users can insert their own ROI stats" 
+  ON roi_stats FOR INSERT WITH CHECK (auth.uid()::integer = user_id);
 
 -- ============================================
 -- INSERT SAMPLE INCIDENTS
