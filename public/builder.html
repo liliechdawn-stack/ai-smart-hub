@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Automation - AI Powerhouse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        :root {
+            --primary: #d4af37;
+            --primary-light: #f5e7b2;
+            --primary-dark: #b8962e;
+            --primary-gradient: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+            --dark: #0f172a;
+            --dark-accent: #1e293b;
+            --light: #ffffff;
+            --light-gray: #f8fafc;
+            --medium-gray: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #2563eb;
+            --border-color: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f1f5f9;
+            color: var(--text-primary);
+        }
+
+        nav {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 32px; 
+        }
+        
+        .nav-logo { 
+            font-weight: 800; 
+            font-size: 1.4rem; 
+            color: var(--primary-dark);
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        
+        .nav-links { 
+            display: flex; 
+            gap: 24px; 
+            align-items: center; 
+        }
+        
+        .nav-links a { 
+            text-decoration: none; 
+            color: var(--text-secondary); 
+            font-size: 0.95rem; 
+            font-weight: 500; 
+            transition: all 0.2s ease; 
+            padding: 6px 0;
+        }
+        
+        .nav-links a:hover { 
+            color: var(--primary-dark); 
+        }
+        
+        .nav-links a.active { 
+            color: var(--primary-dark); 
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* Template Header */
+        .template-header {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .template-icon-large {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .template-info h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .template-info p {
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .template-meta {
+            display: flex;
+            gap: 24px;
+        }
+
+        .template-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Form Sections */
+        .form-section {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* Action Cards */
+        .action-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .action-card {
+            background: var(--light-gray);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .action-card.selected {
+            border-color: var(--primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .action-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .action-card-header i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .action-card-header h4 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .action-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Trigger Options */
+        .trigger-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .trigger-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .trigger-option:hover {
+            border-color: var(--primary);
+        }
+
+        .trigger-option.selected {
+            border-color: var(--primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .trigger-option input {
+            width: auto;
+            margin: 0;
+        }
+
+        /* Preview Card */
+        .preview-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .preview-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-left: 3px solid var(--primary);
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .preview-step i {
+            width: 32px;
+            color: var(--primary);
+        }
+
+        /* Actions Bar */
+        .actions-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            border: 2px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .success-icon {
+            color: var(--success);
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .template-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .actions-bar {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo">
+                <i class="fas fa-bolt" style="color: var(--primary);"></i>
+                AI Powerhouse
+            </a>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="templates.html">Templates</a>
+                <a href="my-automations.html">My Automations</a>
+                <a href="ai-powerhouse.html">AI Powerhouse</a>
+                <a href="analytics.html">Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Template Info Section -->
+        <div class="template-header" id="templateHeader">
+            <div class="template-icon-large">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="template-info">
+                <h1 id="templateName">Loading template...</h1>
+                <p id="templateDescription">Please wait while we load the template details.</p>
+                <div class="template-meta">
+                    <span><i class="fas fa-chart-line"></i> <span id="templateROI">-</span></span>
+                    <span><i class="fas fa-clock"></i> <span id="templateTimeSaved">-</span></span>
+                    <span><i class="fas fa-users"></i> <span id="templateUsers">-</span> users</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Form -->
+        <form id="automationForm">
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-pen-fancy"></i>
+                    <span>Basic Configuration</span>
+                </div>
+                <div class="form-group">
+                    <label>Automation Name *</label>
+                    <input type="text" id="automationName" placeholder="e.g., My Lead Scoring Automation" required>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea id="automationDescription" rows="3" placeholder="What does this automation do?"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-bolt"></i>
+                    <span>Trigger</span>
+                </div>
+                <div class="trigger-options" id="triggerOptions">
+                    <!-- Trigger options will be populated based on template -->
+                </div>
+                <div class="form-group" id="triggerConfig" style="margin-top: 16px; display: none;">
+                    <label>Additional Settings</label>
+                    <div id="triggerConfigFields"></div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-cogs"></i>
+                    <span>Actions</span>
+                </div>
+                <div class="action-cards" id="actionCards">
+                    <!-- Action cards will be populated based on template -->
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-eye"></i>
+                    <span>Preview</span>
+                </div>
+                <div class="preview-card" id="previewCard">
+                    <div class="preview-step">
+                        <i class="fas fa-bolt"></i>
+                        <span><strong>When:</strong> <span id="previewTrigger">Select a trigger</span></span>
+                    </div>
+                    <div class="preview-step">
+                        <i class="fas fa-cogs"></i>
+                        <span><strong>Then:</strong> <span id="previewActions">Select actions</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions-bar">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='templates.html'">
+                    <i class="fas fa-arrow-left"></i> Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" id="deployBtn">
+                    <i class="fas fa-rocket"></i> Deploy Automation
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+        let currentTemplate = null;
+        let selectedTrigger = null;
+        let selectedActions = [];
+
+        // Template database (fallback and real templates)
+        const TEMPLATES_DB = {
+            'lead-scoring': {
+                id: 'lead-scoring',
+                name: 'AI Lead Scoring',
+                description: 'Automatically score and qualify leads based on behavior, engagement, and demographics.',
+                icon: 'fa-chart-line',
+                roi: '$1,200/month',
+                time_saved: '10 hrs/week',
+                users: 1234,
+                triggers: [
+                    { value: 'new_lead', label: 'New Lead Created', icon: 'fa-user-plus', config: { fields: ['score_threshold'] } },
+                    { value: 'lead_updated', label: 'Lead Updated', icon: 'fa-edit', config: { fields: [] } }
+                ],
+                actions: [
+                    { id: 'score_lead', name: 'Score Lead', description: 'Calculate lead score based on behavior', icon: 'fa-calculator' },
+                    { id: 'notify_slack', name: 'Send Slack Notification', description: 'Alert team about hot leads', icon: 'fa-slack' },
+                    { id: 'add_to_crm', name: 'Add to CRM', description: 'Sync lead to your CRM', icon: 'fa-database' }
+                ],
+                default_config: {
+                    trigger: { type: 'new_lead', config: { score_threshold: 75 } },
+                    actions: ['score_lead', 'notify_slack']
+                }
+            },
+            'cart-recovery': {
+                id: 'cart-recovery',
+                name: 'Abandoned Cart Recovery',
+                description: 'Recover lost sales by automatically sending follow-up emails to customers who abandon their carts.',
+                icon: 'fa-shopping-cart',
+                roi: '$2,500/month',
+                time_saved: '5 hrs/week',
+                users: 856,
+                triggers: [
+                    { value: 'abandoned_cart', label: 'Cart Abandoned', icon: 'fa-shopping-cart', config: { fields: ['delay_hours'] } }
+                ],
+                actions: [
+                    { id: 'send_email', name: 'Send Recovery Email', description: 'Email customer with discount code', icon: 'fa-envelope' },
+                    { id: 'send_sms', name: 'Send SMS Reminder', description: 'Text message reminder', icon: 'fa-mobile-alt' },
+                    { id: 'track_conversion', name: 'Track Conversion', description: 'Monitor recovery rate', icon: 'fa-chart-line' }
+                ],
+                default_config: {
+                    trigger: { type: 'abandoned_cart', config: { delay_hours: 1 } },
+                    actions: ['send_email', 'send_sms']
+                }
+            },
+            'ai-social-media-scheduler': {
+                id: 'ai-social-media-scheduler',
+                name: 'AI Social Media Scheduler',
+                description: 'Auto-generate and schedule posts across all platforms with AI-optimized timing.',
+                icon: 'fa-share-alt',
+                roi: '$600/month',
+                time_saved: '8 hrs/week',
+                users: 2341,
+                triggers: [
+                    { value: 'schedule_time', label: 'Scheduled Time', icon: 'fa-clock', config: { fields: ['post_time'] } }
+                ],
+                actions: [
+                    { id: 'generate_post', name: 'Generate Post with AI', description: 'Create engaging social media content', icon: 'fa-robot' },
+                    { id: 'post_to_instagram', name: 'Post to Instagram', description: 'Auto-post to Instagram', icon: 'fa-instagram' },
+                    { id: 'post_to_twitter', name: 'Post to Twitter/X', description: 'Auto-post to Twitter', icon: 'fa-twitter' }
+                ],
+                default_config: {
+                    trigger: { type: 'schedule_time', config: { post_time: '09:00' } },
+                    actions: ['generate_post', 'post_to_instagram']
+                }
+            },
+            'video-script-generator': {
+                id: 'video-script-generator',
+                name: 'Video Script Generator',
+                description: 'Generate viral video scripts for TikTok, Reels, and YouTube Shorts in seconds.',
+                icon: 'fa-video',
+                roi: '$800/month',
+                time_saved: '4 hrs/week',
+                users: 567,
+                triggers: [
+                    { value: 'on_demand', label: 'On Demand', icon: 'fa-hand-pointer', config: { fields: [] } }
+                ],
+                actions: [
+                    { id: 'generate_script', name: 'Generate Script', description: 'AI creates video script', icon: 'fa-file-alt' },
+                    { id: 'save_to_notion', name: 'Save to Notion', description: 'Store script in Notion', icon: 'fa-book' }
+                ],
+                default_config: {
+                    trigger: { type: 'on_demand', config: {} },
+                    actions: ['generate_script']
+                }
+            },
+            'auto-responder': {
+                id: 'auto-responder',
+                name: 'AI Auto-Responder',
+                description: 'Handle 70% of common customer questions automatically, 24/7.',
+                icon: 'fa-headset',
+                roi: '$1,000/month',
+                time_saved: '15 hrs/week',
+                users: 1892,
+                triggers: [
+                    { value: 'new_message', label: 'New Message Received', icon: 'fa-comment', config: { fields: ['response_tone'] } }
+                ],
+                actions: [
+                    { id: 'ai_response', name: 'Generate AI Response', description: 'Auto-reply with AI', icon: 'fa-robot' },
+                    { id: 'escalate_human', name: 'Escalate to Human', description: 'Forward complex queries', icon: 'fa-user' }
+                ],
+                default_config: {
+                    trigger: { type: 'new_message', config: { response_tone: 'professional' } },
+                    actions: ['ai_response']
+                }
+            },
+            'price-monitoring-alert': {
+                id: 'price-monitoring-alert',
+                name: 'Competitor Price Monitoring',
+                description: 'Track competitor prices and get alerts when they change.',
+                icon: 'fa-chart-simple',
+                roi: '$1,200/month',
+                time_saved: '6 hrs/week',
+                users: 423,
+                triggers: [
+                    { value: 'price_change', label: 'Price Change Detected', icon: 'fa-dollar-sign', config: { fields: ['alert_threshold'] } }
+                ],
+                actions: [
+                    { id: 'email_alert', name: 'Send Email Alert', description: 'Notify team of price changes', icon: 'fa-envelope' },
+                    { id: 'update_pricing', name: 'Update Pricing', description: 'Auto-adjust your prices', icon: 'fa-chart-line' }
+                ],
+                default_config: {
+                    trigger: { type: 'price_change', config: { alert_threshold: 5 } },
+                    actions: ['email_alert']
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const templateId = urlParams.get('template');
+            
+            if (!templateId) {
+                Swal.fire('Error', 'No template selected', 'error').then(() => {
+                    window.location.href = 'templates.html';
+                });
+                return;
+            }
+
+            // Load template from database or fallback
+            await loadTemplate(templateId);
+            setupFormListeners();
+        });
+
+        async function loadTemplate(templateId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${BACKEND_URL}/api/automation/templates/${templateId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentTemplate = data.template || data;
+                } else {
+                    // Use fallback template
+                    currentTemplate = TEMPLATES_DB[templateId];
+                    if (!currentTemplate) {
+                        throw new Error('Template not found');
+                    }
+                }
+                
+                renderTemplate();
+                
+            } catch (error) {
+                console.error('Error loading template:', error);
+                // Use fallback
+                currentTemplate = TEMPLATES_DB[templateId];
+                if (currentTemplate) {
+                    renderTemplate();
+                } else {
+                    Swal.fire('Error', 'Template not found', 'error').then(() => {
+                        window.location.href = 'templates.html';
+                    });
+                }
+            }
+        }
+
+        function renderTemplate() {
+            if (!currentTemplate) return;
+            
+            // Update header
+            document.getElementById('templateName').textContent = currentTemplate.name;
+            document.getElementById('templateDescription').textContent = currentTemplate.description;
+            document.getElementById('templateROI').textContent = currentTemplate.roi || 'Varies';
+            document.getElementById('templateTimeSaved').textContent = currentTemplate.time_saved || 'Varies';
+            document.getElementById('templateUsers').textContent = currentTemplate.users || 0;
+            
+            // Set default automation name
+            document.getElementById('automationName').value = `${currentTemplate.name} - My Automation`;
+            document.getElementById('automationDescription').value = currentTemplate.description;
+            
+            // Render triggers
+            renderTriggers();
+            
+            // Render actions
+            renderActions();
+            
+            // Set default config
+            if (currentTemplate.default_config) {
+                if (currentTemplate.default_config.trigger) {
+                    selectedTrigger = currentTemplate.default_config.trigger.type;
+                    updateTriggerUI(selectedTrigger);
+                }
+                if (currentTemplate.default_config.actions) {
+                    selectedActions = [...currentTemplate.default_config.actions];
+                    updateActionsUI();
+                }
+            }
+            
+            updatePreview();
+        }
+
+        function renderTriggers() {
+            const container = document.getElementById('triggerOptions');
+            if (!currentTemplate.triggers || currentTemplate.triggers.length === 0) {
+                container.innerHTML = '<p>No triggers available for this template.</p>';
+                return;
+            }
+            
+            container.innerHTML = currentTemplate.triggers.map(trigger => `
+                <div class="trigger-option" data-trigger="${trigger.value}" onclick="selectTrigger('${trigger.value}')">
+                    <i class="fas ${trigger.icon}"></i>
+                    <div style="flex: 1">
+                        <strong>${trigger.label}</strong>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                            ${getTriggerDescription(trigger.value)}
+                        </p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted);"></i>
+                </div>
+            `).join('');
+        }
+
+        function getTriggerDescription(triggerValue) {
+            const descriptions = {
+                'new_lead': 'Trigger when a new lead is captured',
+                'lead_updated': 'Trigger when lead information is updated',
+                'abandoned_cart': 'Trigger when customer leaves items in cart',
+                'schedule_time': 'Trigger at scheduled time each day',
+                'on_demand': 'Manual trigger when you need it',
+                'new_message': 'Trigger when new message is received',
+                'price_change': 'Trigger when competitor price changes'
+            };
+            return descriptions[triggerValue] || 'Configure this trigger to start your automation';
+        }
+
+        function renderActions() {
+            const container = document.getElementById('actionCards');
+            if (!currentTemplate.actions || currentTemplate.actions.length === 0) {
+                container.innerHTML = '<p>No actions available for this template.</p>';
+                return;
+            }
+            
+            container.innerHTML = currentTemplate.actions.map(action => `
+                <div class="action-card" data-action="${action.id}" onclick="toggleAction('${action.id}')">
+                    <div class="action-card-header">
+                        <i class="fas ${action.icon}"></i>
+                        <h4>${action.name}</h4>
+                    </div>
+                    <p>${action.description}</p>
+                </div>
+            `).join('');
+        }
+
+        window.selectTrigger = function(triggerValue) {
+            selectedTrigger = triggerValue;
+            
+            // Update UI
+            document.querySelectorAll('.trigger-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.dataset.trigger === triggerValue) {
+                    opt.classList.add('selected');
+                }
+            });
+            
+            updateTriggerConfig(triggerValue);
+            updatePreview();
+        };
+
+        function updateTriggerConfig(triggerValue) {
+            const trigger = currentTemplate.triggers.find(t => t.value === triggerValue);
+            const configDiv = document.getElementById('triggerConfig');
+            const fieldsDiv = document.getElementById('triggerConfigFields');
+            
+            if (trigger && trigger.config && trigger.config.fields && trigger.config.fields.length > 0) {
+                configDiv.style.display = 'block';
+                fieldsDiv.innerHTML = trigger.config.fields.map(field => `
+                    <div class="form-group">
+                        <label>${formatFieldName(field)}</label>
+                        <input type="text" id="config_${field}" placeholder="Enter value for ${field}" value="${getDefaultConfigValue(triggerValue, field)}">
+                    </div>
+                `).join('');
+            } else {
+                configDiv.style.display = 'none';
+            }
+        }
+
+        function getDefaultConfigValue(triggerValue, field) {
+            if (currentTemplate.default_config && currentTemplate.default_config.trigger.config) {
+                return currentTemplate.default_config.trigger.config[field] || '';
+            }
+            return field === 'delay_hours' ? '1' : field === 'score_threshold' ? '75' : '';
+        }
+
+        function formatFieldName(field) {
+            return field.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+
+        window.toggleAction = function(actionId) {
+            const index = selectedActions.indexOf(actionId);
+            const actionCard = document.querySelector(`.action-card[data-action="${actionId}"]`);
+            
+            if (index === -1) {
+                selectedActions.push(actionId);
+                actionCard.classList.add('selected');
+            } else {
+                selectedActions.splice(index, 1);
+                actionCard.classList.remove('selected');
+            }
+            
+            updatePreview();
+        };
+
+        function updateActionsUI() {
+            selectedActions.forEach(actionId => {
+                const card = document.querySelector(`.action-card[data-action="${actionId}"]`);
+                if (card) card.classList.add('selected');
+            });
+        }
+
+        function updatePreview() {
+            const triggerText = selectedTrigger ? 
+                currentTemplate.triggers.find(t => t.value === selectedTrigger)?.label || selectedTrigger : 
+                'Select a trigger';
+            
+            const actionsText = selectedActions.length > 0 ?
+                selectedActions.map(a => currentTemplate.actions.find(act => act.id === a)?.name || a).join(' → ') :
+                'Select actions';
+            
+            document.getElementById('previewTrigger').textContent = triggerText;
+            document.getElementById('previewActions').textContent = actionsText;
+        }
+
+        function setupFormListeners() {
+            const form = document.getElementById('automationForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await deployAutomation();
+            });
+        }
+
+        async function deployAutomation() {
+            if (!selectedTrigger) {
+                Swal.fire('Missing Trigger', 'Please select a trigger for your automation', 'warning');
+                return;
+            }
+            
+            if (selectedActions.length === 0) {
+                Swal.fire('Missing Actions', 'Please select at least one action for your automation', 'warning');
+                return;
+            }
+            
+            const name = document.getElementById('automationName').value.trim();
+            if (!name) {
+                Swal.fire('Missing Name', 'Please give your automation a name', 'warning');
+                return;
+            }
+            
+            const deployBtn = document.getElementById('deployBtn');
+            const originalText = deployBtn.innerHTML;
+            deployBtn.innerHTML = '<span class="loading-spinner"></span> Deploying...';
+            deployBtn.disabled = true;
+            
+            try {
+                const token = localStorage.getItem('token');
+                
+                // Get trigger config values
+                const triggerConfig = {};
+                const trigger = currentTemplate.triggers.find(t => t.value === selectedTrigger);
+                if (trigger && trigger.config && trigger.config.fields) {
+                    trigger.config.fields.forEach(field => {
+                        const input = document.getElementById(`config_${field}`);
+                        if (input) {
+                            triggerConfig[field] = input.value;
+                        }
+                    });
+                }
+                
+                // Prepare automation data
+                const automationData = {
+                    name: name,
+                    description: document.getElementById('automationDescription').value.trim(),
+                    template_id: currentTemplate.id,
+                    trigger_type: selectedTrigger,
+                    trigger_config: triggerConfig,
+                    actions: selectedActions,
+                    status: 'active'
+                };
+                
+                console.log('Deploying automation:', automationData);
+                
+                // Try to deploy via API
+                const response = await fetch(`${BACKEND_URL}/api/automation/automations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(automationData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Deployment successful:', result);
+                    
+                    Swal.fire({
+                        title: '🎉 Automation Deployed!',
+                        html: `
+                            <div class="success-icon">
+                                <i class="fas fa-check-circle" style="color: var(--success); font-size: 4rem;"></i>
+                            </div>
+                            <h3 style="margin-bottom: 12px;">${name}</h3>
+                            <p>Your automation has been successfully created and activated.</p>
+                            <p style="margin-top: 16px; color: var(--text-muted); font-size: 0.9rem;">
+                                <i class="fas fa-chart-line"></i> Estimated ROI: ${currentTemplate.roi || 'Varies'}<br>
+                                <i class="fas fa-clock"></i> Saves ${currentTemplate.time_saved || 'time'}
+                            </p>
+                        `,
+                        icon: 'success',
+                        background: 'white',
+                        confirmButtonText: 'View My Automations',
+                        customClass: { confirmButton: 'btn-primary' }
+                    }).then(() => {
+                        window.location.href = 'my-automations.html';
+                    });
+                    
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Deployment failed');
+                }
+                
+            } catch (error) {
+                console.error('Deployment error:', error);
+                
+                // Save to localStorage as fallback
+                const savedAutomations = JSON.parse(localStorage.getItem('my_automations') || '[]');
+                const newAutomation = {
+                    id: `auto_${Date.now()}`,
+                    name: name,
+                    description: document.getElementById('automationDescription').value.trim(),
+                    template_id: currentTemplate.id,
+                    template_name: currentTemplate.name,
+                    trigger_type: selectedTrigger,
+                    actions: selectedActions,
+                    status: 'active',
+                    created_at: new Date().toISOString(),
+                    roi: currentTemplate.roi,
+                    time_saved: currentTemplate.time_saved
+                };
+                savedAutomations.push(newAutomation);
+                localStorage.setItem('my_automations', JSON.stringify(savedAutomations));
+                
+                Swal.fire({
+                    title: '⚠️ Demo Mode',
+                    html: `
+                        <i class="fas fa-flask" style="font-size: 4rem; color: var(--warning); margin-bottom: 16px; display: block;"></i>
+                        <h3>Automation Saved Locally</h3>
+                        <p>Your automation has been saved to your browser.</p>
+                        <p style="margin-top: 12px; font-size: 0.9rem; color: var(--text-muted);">
+                            <strong>${name}</strong><br>
+                            Trigger: ${selectedTrigger}<br>
+                            Actions: ${selectedActions.length} action(s)
+                        </p>
+                        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--warning);">
+                            <i class="fas fa-info-circle"></i> This automation is saved locally. Connect to backend for real deployment.
+                        </p>
+                    `,
+                    icon: 'warning',
+                    confirmButtonText: 'View My Automations',
+                    customClass: { confirmButton: 'btn-primary' }
+                }).then(() => {
+                    window.location.href = 'my-automations.html';
+                });
+                
+            } finally {
+                deployBtn.innerHTML = originalText;
+                deployBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
