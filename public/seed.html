@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seed Templates</title>
+    <style>
+        body {
+            background: #0b0b0b;
+            color: white;
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .box {
+            background: #141414;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #d4af37;
+            text-align: center;
+            max-width: 500px;
+        }
+        button {
+            background: #d4af37;
+            color: black;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .success { color: #2ecc71; }
+        .error { color: #ff4d4d; }
+        pre {
+            text-align: left;
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>🌱 Seed Automation Templates</h1>
+        <p>Click to populate templates database</p>
+        <button id="seedBtn">Seed Templates</button>
+        <div id="result"></div>
+    </div>
+    <script>
+        const resultDiv = document.getElementById('result');
+        const seedBtn = document.getElementById('seedBtn');
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            resultDiv.innerHTML = '<pre class="error">❌ Not logged in. Please login first.</pre>';
+            seedBtn.disabled = true;
+        }
+        
+        seedBtn.onclick = async () => {
+            seedBtn.disabled = true;
+            seedBtn.textContent = 'Seeding...';
+            resultDiv.innerHTML = '<pre>⏳ Processing...</pre>';
+            
+            try {
+                const res = await fetch('https://ai-smart-hub.onrender.com/api/admin/seed-templates', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<pre class="success">✅ SUCCESS!\n\nInserted: ${data.inserted}\nUpdated: ${data.updated}\nTotal: ${data.total}\n\n${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<pre class="error">❌ Error: ${data.error}</pre>`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<pre class="error">❌ Error: ${err.message}</pre>`;
+            } finally {
+                seedBtn.disabled = false;
+                seedBtn.textContent = 'Seed Templates';
+            }
+        };
+    </script>
+</body>
+</html>
