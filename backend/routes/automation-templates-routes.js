@@ -2,6 +2,7 @@
 // AUTOMATION TEMPLATES ROUTES - REAL PRODUCTION CODE
 // 20+ Pre-built Templates for Lead Generation
 // Supports both UUID and Slug lookups
+// WITH ADVANCED WORKFLOW ENGINE (n8n-level)
 // ================================================
 
 const express = require('express');
@@ -9,8 +10,10 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { supabase } = require('../database-supabase');
 const { authenticateToken } = require('../auth-middleware');
+const nodeRegistry = require('../workflow/node-registry');
+const workflowExecutor = require('../workflow/workflow-executor');
 
-console.log('📋 AUTOMATION TEMPLATES ROUTES: Loading...');
+console.log('📋 AUTOMATION TEMPLATES ROUTES: Loading with Workflow Engine...');
 
 // ================================================
 // HELPER: Execute automation actions in real-time
@@ -500,6 +503,10 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
         actions: actions,
         connected_accounts: [],
         ai_config: customizations?.ai || {},
+        workflow_nodes: [],
+        workflow_edges: [],
+        workflow_version: 1,
+        execution_mode: 'sequential',
         created_at: now,
         updated_at: now,
         metadata: { source: 'ai_recommendation', reason: customizations?.reason || 'AI recommended' }
@@ -614,6 +621,290 @@ router.post('/automations/from-template/:templateId', authenticateToken, async (
 });
 
 // ================================================
+// CREATE/UPDATE WORKFLOW (Node-based)
+// ================================================
+router.post('/automations/:automationId/workflow', authenticateToken, async (req, res) => {
+  const { automationId } = req.params;
+  const { workflow_nodes, workflow_edges, execution_mode } = req.body;
+  const userId = req.user.id;
+  
+  try {
+    // Verify automation belongs to user
+    const { data: automation, error } = await supabase
+      .from('user_automations')
+      .select('id, user_id')
+      .eq('id', automationId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      return res.status(404).json({ error: 'Automation not found' });
+    }
+    
+    // Update with workflow data
+    const { data: updated, error: updateError } = await supabase
+      .from('user_automations')
+      .update({
+        workflow_nodes: workflow_nodes || [],
+        workflow_edges: workflow_edges || [],
+        execution_mode: execution_mode || 'sequential',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', automationId)
+      .select()
+      .single();
+    
+    if (updateError) throw updateError;
+    
+    res.json({
+      success: true,
+      automation: updated,
+      message: 'Workflow updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error updating workflow:', error);
+    res.status(500).json({ error: 'Failed to update workflow' });
+  }
+});
+
+// ================================================
+// GET WORKFLOW STRUCTURE
+// ================================================
+router.get('/automations/:automationId/workflow', authenticateToken, async (req, res) => {
+  const { automationId } = req.params;
+  const userId = req.user.id;
+  
+  try {
+    const { data: automation, error } = await supabase
+      .from('user_automations')
+      .select('workflow_nodes, workflow_edges, execution_mode')
+      .eq('id', automationId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Automation not found' });
+      }
+      throw error;
+    }
+    
+    res.json({
+      success: true,
+      workflow: {
+        nodes: automation.workflow_nodes || [],
+        edges: automation.workflow_edges || [],
+        mode: automation.execution_mode || 'sequential'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching workflow:', error);
+    res.status(500).json({ error: 'Failed to fetch workflow' });
+  }
+});
+
+// ================================================
+// EXECUTE WORKFLOW (Node-based)
+// ================================================
+router.post('/automations/:automationId/execute-workflow', authenticateToken, async (req, res) => {
+  const { automationId } = req.params;
+  const { trigger_data } = req.body;
+  const userId = req.user.id;
+  
+  try {
+    // Get automation with workflow data
+    const { data: automation, error } = await supabase
+      .from('user_automations')
+      .select('*, template:automation_templates(*)')
+      .eq('id', automationId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      return res.status(404).json({ error: 'Automation not found' });
+    }
+    
+    // Check if automation has workflow nodes
+    if (!automation.workflow_nodes || automation.workflow_nodes.length === 0) {
+      // Fall back to legacy execution
+      const runId = uuidv4();
+      const customizations = {
+        actions: automation.actions,
+        trigger: automation.trigger_config
+      };
+      
+      setTimeout(async () => {
+        try {
+          const { results, leadsGenerated, leadIds } = await executeAutomationActions(
+            userId, automation.template, automationId, customizations, trigger_data || {}
+          );
+          
+          const allSuccessful = results.every(r => r.status === 'completed');
+          
+          await supabase
+            .from('automation_runs')
+            .insert({
+              id: runId,
+              automation_id: automationId,
+              user_id: userId,
+              status: allSuccessful ? 'completed' : 'failed',
+              results: results,
+              leads_generated: leadsGenerated,
+              lead_ids: leadIds,
+              started_at: new Date().toISOString(),
+              completed_at: new Date().toISOString()
+            });
+          
+          if (global.io) {
+            global.io.to(`user:${userId}`).emit('automation_executed', {
+              automation_id: automationId,
+              run_id: runId,
+              status: allSuccessful ? 'completed' : 'failed',
+              results: results
+            });
+          }
+        } catch (execError) {
+          console.error('Legacy execution error:', execError);
+        }
+      }, 100);
+      
+      return res.json({
+        success: true,
+        run_id: runId,
+        message: 'Legacy automation triggered',
+        mode: 'legacy'
+      });
+    }
+    
+    // Execute workflow using new engine
+    const result = await workflowExecutor.executeWorkflow(
+      automation,
+      trigger_data || {},
+      userId
+    );
+    
+    res.json({
+      success: true,
+      execution_id: result.executionId,
+      status: 'executing',
+      message: 'Workflow execution started',
+      mode: 'workflow',
+      result: result
+    });
+    
+  } catch (error) {
+    console.error('Error executing workflow:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================================================
+// GET AVAILABLE NODES
+// ================================================
+router.get('/nodes', authenticateToken, async (req, res) => {
+  try {
+    const nodes = nodeRegistry.getAllNodes();
+    res.json({
+      success: true,
+      nodes: nodes.map(node => ({
+        type: node.type,
+        name: node.name,
+        description: node.description,
+        category: node.category,
+        icon: node.icon,
+        canBeStart: node.canBeStart,
+        canHaveMultipleOutputs: node.canHaveMultipleOutputs,
+        configSchema: node.configSchema
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching nodes:', error);
+    res.status(500).json({ error: 'Failed to fetch nodes' });
+  }
+});
+
+// ================================================
+// GET WORKFLOW EXECUTION STATUS
+// ================================================
+router.get('/executions/:executionId', authenticateToken, async (req, res) => {
+  const { executionId } = req.params;
+  const userId = req.user.id;
+  
+  try {
+    const { data: execution, error } = await supabase
+      .from('workflow_executions')
+      .select('*')
+      .eq('id', executionId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Execution not found' });
+      }
+      throw error;
+    }
+    
+    res.json({
+      success: true,
+      execution: execution
+    });
+    
+  } catch (error) {
+    console.error('Error fetching execution:', error);
+    res.status(500).json({ error: 'Failed to fetch execution' });
+  }
+});
+
+// ================================================
+// CANCEL WORKFLOW EXECUTION
+// ================================================
+router.post('/executions/:executionId/cancel', authenticateToken, async (req, res) => {
+  const { executionId } = req.params;
+  const userId = req.user.id;
+  
+  try {
+    // Verify execution belongs to user
+    const { data: execution, error } = await supabase
+      .from('workflow_executions')
+      .select('id, user_id, status')
+      .eq('id', executionId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      return res.status(404).json({ error: 'Execution not found' });
+    }
+    
+    if (execution.status !== 'running') {
+      return res.status(400).json({ error: 'Execution is not running' });
+    }
+    
+    const cancelled = await workflowExecutor.cancelExecution(executionId);
+    
+    if (cancelled) {
+      await supabase
+        .from('workflow_executions')
+        .update({
+          status: 'cancelled',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', executionId);
+      
+      res.json({ success: true, message: 'Execution cancelled' });
+    } else {
+      res.status(404).json({ error: 'Execution not found or already completed' });
+    }
+    
+  } catch (error) {
+    console.error('Error cancelling execution:', error);
+    res.status(500).json({ error: 'Failed to cancel execution' });
+  }
+});
+
+// ================================================
 // TRIGGER AUTOMATION MANUALLY - REAL-TIME EXECUTION
 // ================================================
 router.post('/automations/:automationId/trigger', authenticateToken, async (req, res) => {
@@ -640,6 +931,24 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
       return res.status(400).json({ error: 'Automation is not active' });
     }
     
+    // Check if this is a workflow-based automation
+    if (automation.workflow_nodes && automation.workflow_nodes.length > 0) {
+      // Execute using workflow engine
+      const result = await workflowExecutor.executeWorkflow(
+        automation,
+        trigger_data || {},
+        userId
+      );
+      
+      return res.json({
+        success: true,
+        execution_id: result.executionId,
+        message: 'Workflow triggered successfully',
+        mode: 'workflow'
+      });
+    }
+    
+    // Legacy execution
     const runId = uuidv4();
     const now = new Date().toISOString();
     
@@ -712,7 +1021,8 @@ router.post('/automations/:automationId/trigger', authenticateToken, async (req,
     res.json({
       success: true,
       run_id: runId,
-      message: 'Automation triggered successfully'
+      message: 'Automation triggered successfully',
+      mode: 'legacy'
     });
     
   } catch (error) {
@@ -759,8 +1069,14 @@ router.get('/automations', authenticateToken, async (req, res) => {
 router.get('/health', async (req, res) => {
   res.json({ 
     status: 'ok', 
-    message: 'Automation templates routes are working',
-    timestamp: new Date().toISOString()
+    message: 'Automation templates routes are working with Workflow Engine',
+    timestamp: new Date().toISOString(),
+    features: {
+      legacy_automations: true,
+      workflow_engine: true,
+      node_registry: nodeRegistry.getAllNodes().length,
+      real_time: !!global.io
+    }
   });
 });
 
@@ -799,12 +1115,18 @@ router.post('/admin/templates', authenticateToken, async (req, res) => {
   }
 });
 
-console.log('✅ AUTOMATION TEMPLATES ROUTES: All routes registered');
+console.log('✅ AUTOMATION TEMPLATES ROUTES: All routes registered with Workflow Engine');
 console.log('   - GET /test');
 console.log('   - GET /templates');
 console.log('   - GET /templates/:slug');
 console.log('   - POST /automations/from-template/:templateId (supports UUID or slug)');
-console.log('   - POST /automations/:automationId/trigger');
+console.log('   - POST /automations/:automationId/workflow (NEW - Save workflow)');
+console.log('   - GET /automations/:automationId/workflow (NEW - Get workflow)');
+console.log('   - POST /automations/:automationId/execute-workflow (NEW - Execute workflow)');
+console.log('   - GET /nodes (NEW - Get available nodes)');
+console.log('   - GET /executions/:executionId (NEW - Get execution status)');
+console.log('   - POST /executions/:executionId/cancel (NEW - Cancel execution)');
+console.log('   - POST /automations/:automationId/trigger (Updated - Supports workflow)');
 console.log('   - GET /automations');
 console.log('   - GET /health');
 console.log('   - POST /admin/templates');
