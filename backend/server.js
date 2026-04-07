@@ -187,28 +187,9 @@ try {
 }
 
 // ===== NEW: WORKFLOW ENGINE IMPORTS (REAL-TIME AUTOMATION) =====
-let workflowExecutor;
 let workflowRoutes;
 let webhookHandler;
-let scheduleHandler;
 
-// Create workflow directory if it doesn't exist
-const workflowDir = pathModule.join(__dirname, 'workflow');
-if (!fs.existsSync(workflowDir)) {
-  fs.mkdirSync(workflowDir, { recursive: true });
-  console.log('📁 Created workflow directory');
-}
-
-// Try to load workflow executor
-try {
-  workflowExecutor = require('./workflow/workflow-executor');
-  console.log('✅ workflow-executor.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load workflow-executor.js:', err.message);
-  workflowExecutor = null;
-}
-
-// Try to load workflow routes
 try {
   workflowRoutes = require('./routes/workflow-routes');
   console.log('✅ workflow-routes.js loaded successfully');
@@ -217,22 +198,12 @@ try {
   workflowRoutes = null;
 }
 
-// Try to load webhook handler
 try {
   webhookHandler = require('./webhook-handler');
   console.log('✅ webhook-handler.js loaded successfully');
 } catch (err) {
   console.error('❌ Failed to load webhook-handler.js:', err.message);
   webhookHandler = null;
-}
-
-// Try to load schedule handler
-try {
-  scheduleHandler = require('./schedule-handler');
-  console.log('✅ schedule-handler.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load schedule-handler.js:', err.message);
-  scheduleHandler = null;
 }
 
 const app = express();
@@ -486,10 +457,11 @@ if (webhookHandler) {
   console.log('✅ Webhook handler mounted at /webhook/*');
 }
 
-// Initialize schedule handler
-if (scheduleHandler) {
-  console.log('✅ Schedule handler initialized for cron jobs');
-}
+// ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
+app.post("/api/webhook-test", (req, res) => {
+  console.log("🔗 Webhook test received:", req.body);
+  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
+});
 
 // ================================================
 // ADMIN: SEED AUTOMATION TEMPLATES
@@ -2683,13 +2655,7 @@ app.get("/api/test", (req, res) => {
   });
 });
 
-// ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
-app.post("/api/webhook-test", (req, res) => {
-  console.log("🔗 Webhook test received:", req.body);
-  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
-});
-
-// ===== GET USER PROFILE =====
+// ================= GET USER PROFILE =================
 app.get("/api/user/profile", auth, (req, res) => {
   getUserById(req.user.id).then(user => {
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -2711,11 +2677,10 @@ app.get("/api/user/profile", auth, (req, res) => {
 // ================= START SERVER =================
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📋 API Endpoints:`);
-  console.log(`   - POST /api/workflows/:id/execute - Execute workflow`);
-  console.log(`   - POST /webhook/:path - Webhook trigger`);
+  console.log(`📋 Workflow API Endpoints:`);
   console.log(`   - GET /api/workflows - List workflows`);
   console.log(`   - POST /api/workflows - Create workflow`);
-  console.log(`   - GET /api/business/insights - AI insights with ROI`);
-  console.log(`   - POST /api/business/profile - Save business profile`);
+  console.log(`   - POST /api/workflows/:id/execute - Execute workflow`);
+  console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
+  console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
 });
