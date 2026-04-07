@@ -32,6 +32,7 @@
     "body-parser": "^1.20.4",
     "bull": "^4.16.5",
     "cors": "^2.8.6",
+    "cron-parser": "^5.5.0",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "ioredis": "^5.10.0",

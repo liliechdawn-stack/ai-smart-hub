@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="js/master-fix.js"></script>
+    <meta charset="UTF-8" />
+    <title>Dashboard - AI Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --bg-main: #0b0b0b;
+            --bg-card: #141414;
+            --text-primary: #f0f0f0;
+            --text-secondary: #aaaaaa;
+            --gold: #d4af37;
+            --gold-dark: #b8962e;
+            --border: #2a2a2a;
+            --danger: #ff4d4d;
+            --success: #2ecc71;
+            --info: #3498db;
+            --warning: #f39c12;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, html {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        .dashboard { display: none; flex-direction: row; height: 100vh; }
+
+        .sidebar {
+            width: 260px;
+            background: #0f0f0f;
+            border-right: 1px solid var(--border);
+            padding: 32px 20px;
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+        }
+
+        .sidebar h2 { color: var(--gold); margin-bottom: 32px; font-weight: 700; }
+
+        nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        nav a i { width: 24px; }
+        nav a:hover, nav a.active { color: var(--gold); background: rgba(212, 175, 55, 0.1); padding-left: 12px; }
+
+        .main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 32px 40px;
+            overflow-y: auto;
+        }
+
+        h2, h3 { color: white; margin-bottom: 1.2rem; }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-gold { background: var(--gold); color: #000; padding: 12px 24px; }
+        .btn-gold:hover { background: var(--gold-dark); transform: translateY(-1px); }
+
+        .btn-outline-gold {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 8px 16px;
+        }
+        .btn-outline-gold:hover { background: var(--gold); color: #000; }
+
+        .btn-danger { background: var(--danger); color: white; padding: 8px 16px; }
+        .btn-danger:hover { background: #cc0000; }
+
+        /* ROI Dashboard */
+        .roi-dashboard {
+            background: linear-gradient(135deg, #1a2a1a 0%, #0f1a0f 100%);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .roi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+        .roi-card { background: rgba(255, 255, 255, 0.05); border-radius: 20px; padding: 24px; text-align: center; }
+        .roi-value { font-size: 2.8rem; font-weight: 800; color: var(--success); }
+        .roi-label { color: var(--text-secondary); font-size: 0.9rem; margin-top: 8px; }
+        .roi-trend { background: rgba(255, 255, 255, 0.03); border-radius: 16px; padding: 20px; }
+
+        /* AI Business Intelligence Section */
+        .bi-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 32px;
+        }
+
+        .bi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .bi-header h2 { margin-bottom: 0; display: flex; align-items: center; gap: 12px; }
+        .bi-header h2 i { color: var(--gold); font-size: 1.8rem; }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(46, 204, 113, 0.2);
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            color: var(--success);
+        }
+
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .business-profile-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .profile-status { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-secondary); padding: 12px; background: rgba(255,255,255,0.02); border-radius: 12px; }
+
+        .insights-container { display: flex; flex-direction: column; gap: 12px; }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            border-left: 4px solid var(--gold);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .insight-card:hover { transform: translateX(4px); background: rgba(212, 175, 55, 0.1); }
+
+        .insight-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .insight-content { flex: 1; }
+        .insight-title { font-weight: 600; margin-bottom: 6px; font-size: 1rem; }
+        .insight-description { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4; }
+
+        .insight-priority {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .priority-high { background: rgba(255, 77, 77, 0.2); color: var(--danger); }
+        .priority-medium { background: rgba(243, 156, 18, 0.2); color: var(--warning); }
+        .priority-low { background: rgba(52, 152, 219, 0.2); color: var(--info); }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .recommendation-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .recommendation-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+
+        .recommendation-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .recommendation-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; margin-top: 8px; }
+        .recommendation-reason { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; line-height: 1.4; }
+
+        .recommendation-actions { display: flex; gap: 12px; margin-top: 16px; }
+
+        .bi-settings-btn {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--gold);
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: var(--gold);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bi-settings-btn:hover { background: var(--gold); color: #000; }
+
+        /* AI Chat Assistant Styles */
+        .ai-chat-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 32px;
+        }
+
+        .chat-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+        }
+
+        .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-message.assistant { align-self: flex-start; }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar i { color: #000; font-size: 1rem; }
+        .chat-message.user .chat-avatar { background: var(--info); }
+        .chat-message.user .chat-avatar i { color: white; }
+
+        .chat-bubble {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        .chat-message.user .chat-bubble { background: rgba(52, 152, 219, 0.2); border: 1px solid rgba(52, 152, 219, 0.3); }
+
+        .chat-input-area {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .chat-input-area input:focus { outline: none; border-color: var(--gold); }
+
+        .chat-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 0 20px 20px;
+        }
+
+        .suggestion-chip {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--gold);
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-chip:hover { background: var(--gold); color: #000; }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--gold);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-10px); } }
+
+        .verification-banner {
+            background: linear-gradient(135deg, #332b00, #1f1a00);
+            border: 1px solid var(--gold);
+            padding: 16px 24px;
+            margin-bottom: 28px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .plan-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 24px;
+            width: 320px;
+            transition: all 0.3s ease;
+        }
+
+        .plan-card:hover { transform: translateY(-8px); box-shadow: 0 16px 40px rgba(212, 175, 55, 0.15); }
+        .plan-card.current { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2); }
+
+        #planCards { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; margin: 40px 0; }
+
+        .chat-bubble { background: #1e1e1e; border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; margin-bottom: 16px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #111; color: var(--gold); font-weight: 600; }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #1a1a1a;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: white;
+            font-family: inherit;
+        }
+
+        textarea { resize: vertical; min-height: 90px; }
+
+        .analytics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin: 32px 0; }
+        .chart-container { background: var(--bg-card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); margin-top: 20px; }
+
+        .widget-key-section {
+            margin-top: 60px;
+            background: var(--bg-card);
+            padding: 28px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .key-display {
+            background: #000;
+            color: #0f0;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 16px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .widget-code-box {
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            position: relative;
+            margin: 16px 0;
+        }
+
+        .copy-btn, .regenerate-btn {
+            background: var(--gold);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        #chatModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            width: 90%; max-width: 700px;
+            max-height: 80vh;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            display: flex; flex-direction: column;
+        }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        #modalChatBody { padding: 24px; overflow-y: auto; flex: 1; }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(212,175,55,0.3);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 200px; }
+            .main { margin-left: 200px; padding: 20px; }
+            .recommendations-grid { grid-template-columns: 1fr; }
+            .bi-header { flex-direction: column; align-items: flex-start; }
+            .roi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <aside class="sidebar">
+        <h2><i class="fas fa-robot"></i> AI PLATFORM</h2>
+        <nav>
+            <a href="index.html" style="color: var(--gold); border-bottom: 1px solid var(--border); margin-bottom: 10px;"><i class="fas fa-home"></i> Back to Home</a>
+            <a id="navAnalytics" class="active"><i class="fas fa-chart-line"></i> Analytics</a>
+            <a id="navLeads"><i class="fas fa-users"></i> Leads</a>
+            <a id="navChats"><i class="fas fa-comments"></i> Chats</a>
+            <a id="navAIChat"><i class="fas fa-robot"></i> AI Chat</a>
+            <a id="navSettings"><i class="fas fa-cog"></i> Settings</a>
+            <a id="navWidget"><i class="fas fa-code"></i> AI Widget</a>
+        </nav>
+
+        <div style="margin-top: 40px; font-size: 0.9rem; color: var(--text-secondary);">
+            <p><i class="fas fa-building"></i> <strong id="businessName" style="color:white;">Business</strong></p>
+            <p><i class="fas fa-crown"></i> Plan: <strong id="currentPlan" style="color:var(--gold);">free</strong></p>
+            <p><i class="fas fa-envelope"></i> Messages: <strong id="messagesUsed">0</strong></p>
+            <p><i class="fas fa-user-plus"></i> Leads: <strong id="leadsUsed">0</strong></p>
+        </div>
+
+        <button id="logoutBtn" class="btn-gold" style="margin-top: 40px; width:100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button id="adminBtn" class="hidden"
+                style="margin-top: 12px; width:100%; background:transparent; border:2px solid var(--gold); color:var(--gold);"><i class="fas fa-shield-alt"></i> Admin Panel</button>
+    </aside>
+
+    <main class="main">
+
+        <div id="verification-banner" class="verification-banner hidden">
+            <span><i class="fas fa-exclamation-triangle" style="color: var(--gold);"></i> Your business email is not verified. Some features may be limited.</span>
+            <button onclick="window.location.href='verification.html'" class="btn-gold" style="padding: 10px 20px;">Verify Now</button>
+        </div>
+
+        <!-- ========== ROI DASHBOARD ========== -->
+        <div class="roi-dashboard" id="roiDashboard">
+            <div class="roi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="display: flex; align-items: center; gap: 12px; margin: 0;">
+                    <i class="fas fa-chart-line" style="color: var(--success);"></i>
+                    ROI Dashboard
+                    <span class="live-badge pulse"><i class="fas fa-circle"></i> Live Tracking</span>
+                </h2>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);"><i class="fas fa-calendar"></i> Last 30 days</div>
+            </div>
+            
+            <div class="roi-grid">
+                <div class="roi-card"><div class="roi-value" id="hoursSavedValue">0</div><div class="roi-label">Hours Saved</div><div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">= <span id="hoursValue">0</span> days of work</div></div>
+                <div class="roi-card"><div class="roi-value" id="leadsValue">0</div><div class="roi-label">Leads Generated</div><div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">↑ <span id="leadsGrowth">0</span>% from last month</div></div>
+                <div class="roi-card"><div class="roi-value" id="revenueValue">$0</div><div class="roi-label">Revenue Impact</div><div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">Estimated from automation</div></div>
+                <div class="roi-card"><div class="roi-value" id="tasksValue">0</div><div class="roi-label">Tasks Automated</div><div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">This month</div></div>
+            </div>
+            
+            <div class="roi-trend">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 16px;"><span style="font-weight: 600;"><i class="fas fa-chart-simple"></i> Weekly Impact Trend</span><span style="font-size: 0.75rem; color: var(--text-secondary);">Last 4 weeks</span></div>
+                <canvas id="roiTrendChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- AI BUSINESS INTELLIGENCE SECTION -->
+        <div class="bi-section" id="biSection">
+            <div class="bi-header">
+                <h2><i class="fas fa-brain"></i> AI Business Intelligence <span class="live-badge pulse"><i class="fas fa-circle"></i> Live Analysis</span></h2>
+                <button class="bi-settings-btn" id="openBusinessSettingsBtn"><i class="fas fa-sliders-h"></i> Configure Business Profile</button>
+            </div>
+
+            <div class="business-profile-card" id="businessProfileCard">
+                <div class="profile-status" id="businessStatus"><i class="fas fa-chart-line"></i><span>Analyzing your business...</span></div>
+                <div id="businessInsights" class="insights-container"><div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Loading insights...</p></div></div>
+            </div>
+
+            <div id="recommendationsSection">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h3><i class="fas fa-magic" style="color: var(--gold);"></i> AI-Powered Recommendations</h3><button class="btn-outline-gold" id="refreshRecommendationsBtn" style="padding: 6px 12px;"><i class="fas fa-sync-alt"></i> Refresh</button></div>
+                <div id="recommendationsGrid" class="recommendations-grid"></div>
+            </div>
+        </div>
+
+        <!-- AI CHAT ASSISTANT SECTION -->
+        <div class="ai-chat-section" id="aiChatSection">
+            <div class="bi-header">
+                <h2><i class="fas fa-robot"></i> AI Chat Assistant <span class="live-badge pulse"><i class="fas fa-circle"></i> Get Help</span></h2>
+            </div>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message assistant">
+                        <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+                        <div class="chat-bubble">Hi! I'm your AI Automation Assistant. Tell me what you want to automate, and I'll recommend the best template for your needs! 🚀</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Describe what you want to automate... e.g., 'I want to automatically follow up with leads who fill out my contact form'" onkeypress="if(event.key==='Enter') sendChatMessage()">
+                    <button class="btn-gold" onclick="sendChatMessage()" style="padding: 10px 20px;"><i class="fas fa-paper-plane"></i> Send</button>
+                </div>
+                <div class="chat-suggestions" id="chatSuggestions">
+                    <span class="suggestion-chip" onclick="sendSuggestion('I want to automatically follow up with leads')">📧 Follow up with leads</span>
+                    <span class="suggestion-chip" onclick="sendSuggestion('I need to schedule social media posts automatically')">📱 Schedule social media</span>
+                    <span class="suggestion-chip" onclick="sendSuggestion('I want to recover abandoned carts')">🛒 Recover abandoned carts</span>
+                    <span class="suggestion-chip" onclick="sendSuggestion('I need to auto-respond to customer questions')">💬 Auto-respond to customers</span>
+                    <span class="suggestion-chip" onclick="sendSuggestion('I want to generate video scripts')">🎬 Generate video scripts</span>
+                </div>
+            </div>
+        </div>
+
+        <section id="analyticsSection">
+            <h2><i class="fas fa-chart-pie"></i> Business Overview</h2>
+            <div class="analytics">
+                <div class="card"><h3 id="totalChats" style="color: var(--gold); font-size: 2.6rem;">0</h3><p><i class="fas fa-comment"></i> Total Chats</p></div>
+                <div class="card"><h3 id="totalLeads" style="color: var(--gold); font-size: 2.6rem;">0</h3><p><i class="fas fa-user-plus"></i> Total Leads</p></div>
+                <div class="card"><h3 id="messagesRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3><p><i class="fas fa-envelope"></i> Messages Left</p></div>
+                <div class="card"><h3 id="leadsRemaining" style="color: var(--gold); font-size: 2.6rem;">0</h3><p><i class="fas fa-trophy"></i> Leads Left</p></div>
+            </div>
+            <h3><i class="fas fa-chart-line"></i> Growth Trend</h3>
+            <div class="chart-container"><canvas id="riseFallChart" height="260"></canvas></div>
+        </section>
+
+        <section id="leadsSection" class="hidden">
+            <h2><i class="fas fa-users"></i> Leads Management</h2>
+            <div style="margin: 24px 0; display: flex; flex-wrap: wrap; gap: 12px;">
+                <input id="leadName" placeholder="Full Name" style="flex: 1; min-width: 180px;" />
+                <input id="leadEmail" placeholder="Email Address" style="flex: 1; min-width: 220px;" />
+                <input id="leadPhone" placeholder="Phone (optional)" style="flex: 1; min-width: 160px;" />
+                <button id="addLeadBtn" class="btn-gold"><i class="fas fa-plus"></i> Add Lead</button>
+            </div>
+            <h3>Lead List</h3>
+            <table id="leadsTable"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Date Added</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </section>
+
+        <section id="chatSection" class="hidden">
+            <h2><i class="fas fa-comments"></i> Chat Conversations</h2>
+            <table id="chatTable" style="margin-bottom: 32px;"><thead><tr><th>Client / Session</th><th>Messages</th><th>Last Message</th><th>Action</th></tr></thead><tbody></tbody></table>
+            <div style="background: var(--bg-card); padding: 28px; border-radius: 20px; border: 1px solid var(--border);">
+                <h3><i class="fas fa-robot"></i> Internal AI Tester</h3>
+                <input id="clientName" placeholder="Client Name" />
+                <textarea id="aiMessage" placeholder="Type your message to test your AI..." rows="3"></textarea>
+                <button id="sendBtn" class="btn-gold"><i class="fas fa-paper-plane"></i> Send</button>
+                <div id="chatResponses" style="margin-top: 24px; max-height: 340px; overflow-y: auto;"></div>
+            </div>
+        </section>
+
+        <section id="settingsSection" class="hidden">
+            <h2><i class="fas fa-crown"></i> Subscription Plans</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 32px;">Upgrade your plan to unlock more messages, advanced features and business growth.</p>
+            <div id="planCards"></div>
+            <div class="widget-key-section">
+                <h2><i class="fas fa-key"></i> AI Widget API Key</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">Use this unique key to embed the AI chat widget on your website.</p>
+                <div class="key-display"><span><strong>Your Key:</strong> <span id="widgetKey">Loading...</span></span><button class="regenerate-btn" id="regenerateKeyBtn"><i class="fas fa-sync-alt"></i> Regenerate Key</button></div>
+                <div class="widget-code-box"><button class="copy-btn" id="copyEmbedBtn"><i class="fas fa-copy"></i> Copy Code</button><pre id="embedCode" style="margin-top: 12px; overflow-x: auto;"></pre></div>
+            </div>
+        </section>
+
+        <section id="widgetSection" class="hidden">
+            <h2><i class="fas fa-robot"></i> AI Chat Widget Configuration</h2>
+            <div style="background: var(--bg-card); padding: 28px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 32px;">
+                <h3><i class="fas fa-database"></i> Train Your AI (Knowledge Base)</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">Input details about your business so the AI can answer accurately.</p>
+                <textarea id="knowledge-input" placeholder="Example: Our office is located in Lagos. We offer web design starting at $500..." style="min-height: 150px;"></textarea>
+                <button id="saveKnowledgeBtn" class="btn-gold"><i class="fas fa-save"></i> Update AI Knowledge</button>
+            </div>
+            <div style="background: var(--bg-card); padding: 28px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 32px;">
+                <h3><i class="fas fa-code"></i> Installation Code</h3>
+                <pre id="widgetSectionCode" style="background: #000; color: #0f0; padding: 20px; border-radius: 12px; overflow-x: auto; margin-top: 16px; font-family: monospace;">Loading code...</pre>
+                <button class="btn-gold" id="copyWidgetTabBtn" style="margin-top:15px"><i class="fas fa-copy"></i> Copy Code</button>
+            </div>
+            <h3><i class="fas fa-eye"></i> Widget Preview</h3>
+            <div style="height: 300px; border: 2px dashed #444; border-radius: 20px; position: relative; background: #111; display: flex; align-items: center; justify-content: center;">
+                <p style="color: #444;">Widget Live Preview Area</p>
+                <div style="position: absolute; bottom: 20px; right: 20px; background: var(--gold); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 10px 30px rgba(212,175,55,0.4);">💬</div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<div id="chatModal" class="hidden">
+    <div class="modal-content">
+        <div class="modal-header"><h3 id="modalTitle" style="margin:0;"><i class="fas fa-comment"></i> Conversation</h3><button id="closeModal" style="background:transparent; color:white; font-size:28px; cursor:pointer;">&times;</button></div>
+        <div id="modalChatBody"></div>
+    </div>
+</div>
+
+<script>
+    // ===== PRODUCTION BACKEND URL =====
+    const BACKEND_URL = 'https://ai-smart-hub.onrender.com';
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        Swal.fire({ title: 'Authentication Required', text: 'Please login to access your dashboard', icon: 'warning', background: '#1a1a1a', color: 'white' }).then(() => { window.location.href = "login.html"; });
+    }
+
+    const GOLD_COLOR = '#d4af37';
+    let businessProfile = null;
+    let allRecommendations = [];
+    let roiChart = null;
+    let riseFallChart = null;
+    let isTyping = false;
+
+    // AI Chat Assistant Functions
+    async function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        // Add user message to chat
+        addChatMessage(message, 'user');
+        input.value = '';
+        
+        // Show typing indicator
+        showTypingIndicator();
+        
+        try {
+            // Call AI to analyze and recommend
+            const response = await fetch(`${BACKEND_URL}/api/ai/chat/recommend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ message: message, context: { businessProfile: businessProfile } })
+            });
+            
+            let aiResponse = '';
+            
+            if (response.ok) {
+                const data = await response.json();
+                aiResponse = data.response || data.message;
+                
+                // If there are recommended templates, show them
+                if (data.recommendations && data.recommendations.length > 0) {
+                    aiResponse += '\n\n📋 **Recommended Templates:**\n';
+                    data.recommendations.forEach(rec => {
+                        aiResponse += `• **${rec.title}** - ${rec.reason}\n   💰 Est. ROI: $${rec.roi}/month\n`;
+                    });
+                    aiResponse += '\nWould you like me to help you deploy one of these?';
+                }
+            } else {
+                // Fallback: Use local recommendation engine
+                aiResponse = await generateLocalRecommendation(message);
+            }
+            
+            removeTypingIndicator();
+            addChatMessage(aiResponse, 'assistant');
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            removeTypingIndicator();
+            const fallbackResponse = await generateLocalRecommendation(message);
+            addChatMessage(fallbackResponse, 'assistant');
+        }
+    }
+    
+    async function generateLocalRecommendation(message) {
+        const msg = message.toLowerCase();
+        
+        // Lead generation
+        if (msg.includes('lead') || msg.includes('follow up') || msg.includes('capture')) {
+            return `🎯 **Lead Generation Automation**\n\nBased on your request, I recommend the **Lead Capture & Follow-up** automation.\n\n📋 **What it does:**\n• Automatically captures leads from your website forms\n• Scores leads based on engagement\n• Sends instant follow-up emails/SMS\n• Notifies your team on Slack\n\n💰 **Estimated ROI:** $800/month\n⏱️ **Time Saved:** 10+ hours/week\n\nWould you like me to deploy this automation for you?`;
+        }
+        
+        // Cart recovery
+        if (msg.includes('cart') || msg.includes('abandoned') || msg.includes('recover')) {
+            return `🛒 **Abandoned Cart Recovery**\n\nBased on your request, I recommend the **Abandoned Cart Recovery** automation.\n\n📋 **What it does:**\n• Detects when customers leave items in cart\n• Sends automated follow-up emails with discount codes\n• Recovers 15-25% of lost sales\n• Tracks conversion rates\n\n💰 **Estimated ROI:** $2,500/month\n⏱️ **Time Saved:** 5 hours/week\n\nWould you like me to deploy this automation for you?`;
+        }
+        
+        // Social media
+        if (msg.includes('social') || msg.includes('post') || msg.includes('schedule')) {
+            return `📱 **AI Social Media Scheduler**\n\nBased on your request, I recommend the **AI Social Media Scheduler** automation.\n\n📋 **What it does:**\n• Auto-generates engaging posts with AI\n• Schedules posts at optimal times\n• Posts to Instagram, Twitter, Facebook, LinkedIn\n• Tracks engagement metrics\n\n💰 **Estimated ROI:** $600/month\n⏱️ **Time Saved:** 8 hours/week\n\nWould you like me to deploy this automation for you?`;
+        }
+        
+        // Content creation
+        if (msg.includes('content') || msg.includes('video') || msg.includes('script')) {
+            return `🎬 **Video Script Generator**\n\nBased on your request, I recommend the **Video Script Generator** automation.\n\n📋 **What it does:**\n• Generates viral video scripts for TikTok, Reels, YouTube\n• AI-optimized hooks and calls-to-action\n• Customizable for your niche\n• 10x faster content creation\n\n💰 **Estimated ROI:** $800/month\n⏱️ **Time Saved:** 4 hours/week\n\nWould you like me to deploy this automation for you?`;
+        }
+        
+        // Customer support
+        if (msg.includes('support') || msg.includes('customer') || msg.includes('respond')) {
+            return `💬 **AI Auto-Responder**\n\nBased on your request, I recommend the **AI Auto-Responder** automation.\n\n📋 **What it does:**\n• Handles 70% of common questions automatically\n• 24/7 instant responses\n• Escalates complex queries to humans\n• Improves customer satisfaction\n\n💰 **Estimated ROI:** $1,000/month\n⏱️ **Time Saved:** 15 hours/week\n\nWould you like me to deploy this automation for you?`;
+        }
+        
+        // Default response
+        return `🤖 **AI Automation Assistant**\n\nThanks for your message! Based on what you described, I can help you with:\n\n📧 **Lead Generation** - Automatically capture and follow up with leads\n🛒 **Cart Recovery** - Recover lost sales from abandoned carts\n📱 **Social Media** - Schedule and post content automatically\n🎬 **Content Creation** - Generate viral video scripts\n💬 **Customer Support** - Auto-respond to common questions\n\nTell me more about what you'd like to automate, and I'll recommend the perfect template for your business! 🚀`;
+    }
+    
+    function addChatMessage(message, sender) {
+        const container = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${sender}`;
+        
+        const avatar = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+        
+        messageDiv.innerHTML = `
+            <div class="chat-avatar">${avatar}</div>
+            <div class="chat-bubble">${formatMessage(message)}</div>
+        `;
+        
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function formatMessage(text) {
+        // Convert markdown-like syntax
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\n/g, '<br>');
+        text = text.replace(/•/g, '•');
+        return text;
+    }
+    
+    function showTypingIndicator() {
+        if (isTyping) return;
+        isTyping = true;
+        const container = document.getElementById('chatMessages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chat-message assistant';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `
+            <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+            <div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>
+        `;
+        container.appendChild(typingDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function removeTypingIndicator() {
+        isTyping = false;
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+    
+    function sendSuggestion(text) {
+        document.getElementById('chatInput').value = text;
+        sendChatMessage();
+    }
+    
+    // ========== BUSINESS INTELLIGENCE FUNCTIONS ==========
+    
+    const INDUSTRY_PROFILES = {
+        agency: { name: "Digital Agency", multiplier: 1.2 },
+        ecommerce: { name: "E-commerce Store", multiplier: 1.3 },
+        saas: { name: "SaaS Company", multiplier: 1.4 },
+        creator: { name: "Content Creator", multiplier: 1.1 },
+        coach: { name: "Coach/Consultant", multiplier: 1.0 },
+        local_business: { name: "Local Business", multiplier: 0.9 }
+    };
+    
+    function calculateHoursSaved(automations) {
+        const hoursPerAutomation = {
+            'cart-recovery': 5, 'lead-scoring': 10, 'ai-social-media-scheduler': 8,
+            'video-script-generator': 4, 'lead-capture-crm-slack': 3,
+            'price-monitoring-alert': 6, 'auto-responder': 15
+        };
+        let total = 0;
+        automations.forEach(a => { total += hoursPerAutomation[a.automation_template_id] || 2; });
+        return total;
+    }
+    
+    async function loadBusinessInsights() {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/business/insights`, { headers: { "Authorization": "Bearer " + token } });
+            if (!res.ok) { if (res.status === 404) { showEnhancedBusinessOnboarding(); return; } throw new Error("Failed"); }
+            const data = await res.json();
+            if (!data.has_profile) { showEnhancedBusinessOnboarding(); return; }
+            businessProfile = data.profile;
+            const generatedInsights = generateAdvancedInsights(businessProfile);
+            const generatedRecommendations = generateAdvancedRecommendations(businessProfile);
+            updateBusinessStatus(businessProfile);
+            renderInsights(generatedInsights);
+            renderRecommendations(generatedRecommendations);
+            updateROIDashboard(generatedRecommendations);
+        } catch (error) {
+            console.error("Error loading business insights:", error);
+            document.getElementById("businessStatus").innerHTML = `<i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i><span>Click "Configure" to set up your business profile</span>`;
+            document.getElementById("businessInsights").innerHTML = `<div class="insight-card" onclick="showEnhancedBusinessOnboarding()"><div class="insight-icon"><i class="fas fa-plus"></i></div><div class="insight-content"><div class="insight-title">Set up your business profile</div><div class="insight-description">Tell us about your business to get personalized AI recommendations and ROI estimates.</div></div></div>`;
+        }
+    }
+    
+    function updateROIDashboard(recommendations) {
+        const hoursSaved = calculateHoursSaved(recommendations);
+        const revenueImpact = recommendations.reduce((s, r) => s + (r.roi || 500), 0);
+        const leadsGenerated = recommendations.length * 25;
+        document.getElementById('hoursSavedValue').textContent = hoursSaved;
+        document.getElementById('hoursValue').textContent = Math.floor(hoursSaved / 8);
+        document.getElementById('leadsValue').textContent = leadsGenerated;
+        document.getElementById('leadsGrowth').textContent = Math.floor(Math.random() * 30) + 15;
+        document.getElementById('revenueValue').textContent = `$${revenueImpact.toLocaleString()}`;
+        document.getElementById('tasksValue').textContent = recommendations.length * 45;
+        if (roiChart) roiChart.destroy();
+        const ctx = document.getElementById('roiTrendChart').getContext('2d');
+        roiChart = new Chart(ctx, { type: 'line', data: { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], datasets: [{ label: 'Hours Saved', data: [Math.floor(hoursSaved * 0.25), Math.floor(hoursSaved * 0.5), Math.floor(hoursSaved * 0.75), hoursSaved], borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.1)', fill: true, tension: 0.4 }, { label: 'Revenue ($)', data: [Math.floor(revenueImpact * 0.2), Math.floor(revenueImpact * 0.4), Math.floor(revenueImpact * 0.7), revenueImpact], borderColor: '#d4af37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { color: 'white' } } }, scales: { y: { grid: { color: '#333' }, ticks: { color: '#aaa' } }, x: { grid: { display: false }, ticks: { color: '#aaa' } } } } });
+    }
+    
+    function generateAdvancedInsights(profile) {
+        const insights = [];
+        const industryData = INDUSTRY_PROFILES[profile.industry];
+        if (industryData) {
+            const industryInsights = {
+                agency: [
+                    { title: "📊 Client Reporting Automation", description: "Automate weekly/monthly client reports, saving 5+ hours per client per week.", priority: "high", type: "operations", roi: 1250 },
+                    { title: "🎯 Lead Qualification", description: "AI can score incoming leads based on budget and project scope.", priority: "high", type: "lead_generation", roi: 850 }
+                ],
+                ecommerce: [
+                    { title: "🛒 Abandoned Cart Recovery", description: "Recover 15-25% of lost sales with automated follow-up emails.", priority: "high", type: "sales", roi: 2500 },
+                    { title: "💰 Price Intelligence", description: "Track competitor prices and adjust yours automatically.", priority: "medium", type: "sales", roi: 1200 }
+                ],
+                saas: [
+                    { title: "🚀 User Onboarding", description: "Automate welcome sequences, feature tutorials, and activation emails.", priority: "high", type: "operations", roi: 1500 },
+                    { title: "💳 Churn Prevention", description: "Identify at-risk users and trigger retention campaigns.", priority: "high", type: "sales", roi: 3000 }
+                ],
+                creator: [
+                    { title: "✍️ AI Content Generation", description: "Generate 10x more content with AI-powered scripts and posts.", priority: "high", type: "content", roi: 1000 },
+                    { title: "🎬 Video Script Generator", description: "Generate viral video scripts for Reels, TikTok, YouTube.", priority: "medium", type: "content", roi: 800 }
+                ]
+            };
+            if (industryInsights[profile.industry]) insights.push(...industryInsights[profile.industry]);
+        }
+        if (profile.goal === 'leads') insights.push({ title: "🎯 Lead Generation Opportunity", description: "AI lead scoring can increase conversion by 45%.", priority: "high", type: "lead_generation", roi: 1200 });
+        if (profile.hours && profile.hours !== '0-5') { const hoursMap = { '5-15': 10, '15-25': 20, '25-40': 32, '40+': 45 }; const hours = hoursMap[profile.hours] || 5; insights.push({ title: "⏰ Time Savings Opportunity", description: `You spend ~${hours} hours/week on manual tasks. Automations could save you ${Math.floor(hours * 0.7)} hours/week.`, priority: "high", type: "operations", roi: hours * 50 }); }
+        return insights;
+    }
+    
+    function generateAdvancedRecommendations(profile) {
+        const recommendations = [];
+        const templateMap = {
+            agency: [{ id: "lead-scoring", title: "AI Lead Scoring", reason: "Score inbound leads based on budget, timeline, and project complexity.", roi: 850 }],
+            ecommerce: [{ id: "cart-recovery", title: "Abandoned Cart Recovery", reason: "Send automated emails to customers who left items in their cart.", roi: 2500 }, { id: "price-monitoring-alert", title: "Competitor Price Monitoring", reason: "Track competitor prices and get alerts when they change.", roi: 1200 }],
+            saas: [{ id: "lead-scoring", title: "AI Lead Scoring", reason: "Score leads based on behavior and engagement to prioritize hot leads.", roi: 1200 }, { id: "cart-recovery", title: "Cart Recovery", reason: "Recover lost sales with automated follow-up sequences.", roi: 2000 }],
+            creator: [{ id: "ai-social-media-scheduler", title: "AI Social Media Scheduler", reason: "Auto-generate and schedule posts across all platforms.", roi: 600 }, { id: "video-script-generator", title: "Video Script Generator", reason: "Generate viral video scripts optimized for short-form content.", roi: 800 }],
+            coach: [{ id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups.", roi: 500 }],
+            local_business: [{ id: "lead-capture-crm-slack", title: "Lead Capture & Follow-up", reason: "Capture leads from website and send instant follow-ups.", roi: 600 }]
+        };
+        if (templateMap[profile.industry]) recommendations.push(...templateMap[profile.industry].map(t => ({ ...t, id: `rec_${Date.now()}_${Math.random()}`, automation_template_id: t.id, confidence: 95 })));
+        if (profile.goal === 'leads' && !recommendations.some(r => r.automation_template_id === 'lead-scoring')) recommendations.push({ id: `rec_${Date.now()}_lead`, automation_template_id: 'lead-scoring', title: 'AI Lead Scoring', reason: 'Score leads based on behavior and engagement.', confidence: 90, roi: 1200 });
+        return recommendations.slice(0, 6);
+    }
+    
+    function updateBusinessStatus(profile) {
+        const industryMap = { 'agency': 'Digital Agency', 'ecommerce': 'E-commerce', 'saas': 'SaaS', 'coach': 'Coach', 'local_business': 'Local Business', 'creator': 'Content Creator' };
+        const goalMap = { 'leads': 'Lead Gen', 'support': 'Support', 'content': 'Content', 'operations': 'Operations', 'sales': 'Sales' };
+        document.getElementById("businessStatus").innerHTML = `<i class="fas fa-check-circle" style="color: var(--success);"></i><span>${industryMap[profile.industry] || 'Business'} | Goal: ${goalMap[profile.goal] || 'Growth'} | Tools: ${profile.tools?.length || 0} connected</span>`;
+    }
+    
+    function renderInsights(insights) {
+        const container = document.getElementById("businessInsights");
+        if (!insights?.length) { container.innerHTML = `<div class="insight-card" onclick="showEnhancedBusinessOnboarding()"><div class="insight-icon"><i class="fas fa-chart-line"></i></div><div class="insight-content"><div class="insight-title">Complete your profile</div><div class="insight-description">Add more business details to unlock AI-powered insights.</div></div></div>`; return; }
+        container.innerHTML = insights.map(i => `<div class="insight-card"><div class="insight-icon"><i class="fas ${i.type === 'sales' ? 'fa-chart-simple' : i.type === 'operations' ? 'fa-chart-line' : 'fa-lightbulb'}"></i></div><div class="insight-content"><div class="insight-title">${i.title}</div><div class="insight-description">${i.description}</div><div style="display: flex; gap: 12px; margin-top: 8px;"><span class="insight-priority priority-${i.priority}">${i.priority.toUpperCase()}</span>${i.roi ? `<span style="color: var(--success);"><i class="fas fa-dollar-sign"></i> Est. ROI: $${i.roi}/month</span>` : ''}</div></div></div>`).join('');
+    }
+    
+    function renderRecommendations(recommendations) {
+        const section = document.getElementById("recommendationsSection");
+        const grid = document.getElementById("recommendationsGrid");
+        allRecommendations = recommendations;
+        if (!recommendations?.length) { section.style.display = "none"; return; }
+        section.style.display = "block";
+        grid.innerHTML = recommendations.map(r => `<div class="recommendation-card"><div class="recommendation-badge"><i class="fas fa-robot"></i> AI Recommended</div><div class="recommendation-title">${r.title}</div><div class="recommendation-reason"><i class="fas fa-lightbulb"></i> ${r.reason}</div><div style="display: flex; justify-content: space-between; margin-bottom: 16px;"><span style="color: var(--success);"><i class="fas fa-dollar-sign"></i> Est. Monthly ROI: $${r.roi || 500}</span><span style="background: rgba(212,175,55,0.2); padding: 2px 8px; border-radius: 30px;">${r.confidence || 85}% match</span></div><div class="recommendation-actions"><button class="btn-gold" onclick="deployRecommendation('${r.automation_template_id}')" style="flex: 2;"><i class="fas fa-rocket"></i> Deploy Now ($${r.roi || 500}/mo)</button><button class="btn-outline-gold" onclick="dismissRecommendation('${r.id}')" style="flex: 1;"><i class="fas fa-times"></i> Dismiss</button></div></div>`).join('');
+    }
+    
+    function getInsightIcon(type) { const icons = { 'lead_generation': 'fa-users', 'customer_support': 'fa-headset', 'content': 'fa-pen-fancy', 'operations': 'fa-chart-line', 'sales': 'fa-chart-simple', 'ecommerce': 'fa-shopping-cart', 'analytics': 'fa-chart-bar' }; return icons[type] || 'fa-lightbulb'; }
+    
+    window.showEnhancedBusinessOnboarding = function() {
+        Swal.fire({ title: '🎯 Let AI Understand Your Business', html: `<div style="text-align: left; max-height: 500px; overflow-y: auto;"><p>Get personalized automation recommendations with ROI estimates:</p><div style="margin: 20px 0;"><label>1. Business type?</label><select id="ind" style="width:100%; padding:10px; background:#1a1a1a; color:white;"><option value="">Select...</option><option value="agency">Digital Agency</option><option value="ecommerce">E-commerce</option><option value="saas">SaaS</option><option value="coach">Coach/Consultant</option><option value="local_business">Local Business</option><option value="creator">Content Creator</option></select></div><div style="margin: 20px 0;"><label>2. Business goal?</label><select id="goal" style="width:100%; padding:10px; background:#1a1a1a; color:white;"><option value="">Select...</option><option value="leads">Generate Leads</option><option value="support">Customer Support</option><option value="content">Create Content</option><option value="operations">Operations</option><option value="sales">Increase Sales</option></select></div><div style="margin: 20px 0;"><label>3. Hours on manual tasks?</label><select id="hours" style="width:100%; padding:10px; background:#1a1a1a; color:white;"><option value="">Select...</option><option value="0-5">0-5h</option><option value="5-15">5-15h</option><option value="15-25">15-25h</option><option value="25-40">25-40h</option><option value="40+">40+h</option></select></div><div style="margin: 20px 0;"><label>4. Tools you use?</label><div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;"><label><input type="checkbox" value="shopify"> Shopify</label><label><input type="checkbox" value="slack"> Slack</label><label><input type="checkbox" value="gmail"> Gmail</label><label><input type="checkbox" value="instagram"> Instagram</label></div></div></div>`, showCancelButton: true, confirmButtonText: 'Get Recommendations', cancelButtonText: 'Skip', width: '650px', background: '#1a1a1a', color: 'white', customClass: { confirmButton: 'btn-gold', cancelButton: 'btn-outline-gold' }, preConfirm: () => { const industry = document.getElementById('ind').value; const goal = document.getElementById('goal').value; const hours = document.getElementById('hours').value; const tools = Array.from(document.querySelectorAll('#ind ~ div input:checked')).map(cb => cb.value); if (!industry || !goal) { Swal.showValidationMessage('Industry and goal required'); return false; } return { industry, goal, tools, hours }; } }).then(async (r) => { if (r.isConfirmed) await saveBusinessProfile(r.value); });
+    };
+    
+    async function saveBusinessProfile(profile) {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/business/profile`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(profile) });
+            if (res.ok) { Swal.fire({ title: 'Saved!', text: 'AI is analyzing your business...', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'Great!', customClass: { confirmButton: 'btn-gold' } }); await loadBusinessInsights(); await loadDashboard(); } else throw new Error(); } catch (e) { Swal.fire('Error', 'Failed to save', 'error'); }
+    }
+    
+    window.deployRecommendation = async function(templateId) {
+        const rec = allRecommendations.find(r => r.automation_template_id === templateId);
+        Swal.fire({ title: 'Deploy Automation', text: `Ready to deploy? ${rec ? `Estimated ROI: $${rec.roi}/month` : ''}`, icon: 'question', showCancelButton: true, confirmButtonText: 'Deploy', background: '#1a1a1a', color: 'white', customClass: { confirmButton: 'btn-gold' } }).then(async (r) => { if (r.isConfirmed) { try { const res = await fetch(`${BACKEND_URL}/api/automation/automations/from-template/${templateId}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: `AI Recommended: ${templateId}` }) }); if (res.ok) Swal.fire({ title: 'Deployed!', text: 'Your automation is live!', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'View', customClass: { confirmButton: 'btn-gold' } }).then(() => window.location.href = 'my-automations.html'); else throw new Error(); } catch (e) { Swal.fire('Error', 'Deployment failed', 'error'); } } });
+    };
+    
+    window.dismissRecommendation = async function(recId) { await loadBusinessInsights(); };
+    
+    document.getElementById("refreshRecommendationsBtn").onclick = () => loadBusinessInsights();
+    document.getElementById("openBusinessSettingsBtn").onclick = () => showEnhancedBusinessOnboarding();
+    
+    // ========== DASHBOARD FUNCTIONS ==========
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        const sections = { analytics: document.getElementById("analyticsSection"), leads: document.getElementById("leadsSection"), chats: document.getElementById("chatSection"), settings: document.getElementById("settingsSection"), widget: document.getElementById("widgetSection"), aiChat: document.getElementById("aiChatSection") };
+        const navs = { navAnalytics: sections.analytics, navLeads: sections.leads, navChats: sections.chats, navSettings: sections.settings, navWidget: sections.widget, navAIChat: sections.aiChat };
+        Object.keys(navs).forEach(id => { const el = document.getElementById(id); if (el) el.onclick = () => { Object.values(sections).forEach(s => s?.classList.add("hidden")); Object.keys(navs).forEach(k => document.getElementById(k)?.classList.remove("active")); navs[id]?.classList.remove("hidden"); el.classList.add("active"); if (id === "navSettings" || id === "navWidget") loadWidgetKey(); if (id === "navSettings") renderPlanCards(currentPlanSpan?.textContent.trim() || "free"); }; });
+        
+        var businessNameSpan = document.getElementById("businessName"), currentPlanSpan = document.getElementById("currentPlan"), messagesUsedSpan = document.getElementById("messagesUsed"), leadsUsedSpan = document.getElementById("leadsUsed"), totalChatsSpan = document.getElementById("totalChats"), messagesRemainingSpan = document.getElementById("messagesRemaining"), leadsRemainingSpan = document.getElementById("leadsRemaining"), verificationBanner = document.getElementById("verification-banner"), chatTableBody = document.querySelector("#chatTable tbody"), chatResponses = document.getElementById("chatResponses"), leadsTableBody = document.querySelector("#leadsTable tbody"), logoutBtn = document.getElementById("logoutBtn"), adminBtn = document.getElementById("adminBtn");
+        
+        const ALL_PLANS = [{ name: "basic", id: "basic", price: "₦10,000 / month", messages: "500 AI messages", leads: "Unlimited leads", features: ["Email support", "Remove branding"] }, { name: "pro", id: "pro", price: "₦25,000 / month", messages: "3,000 AI messages", leads: "Unlimited leads", features: ["Priority AI", "Custom prompts", "Analytics export"] }, { name: "agency", id: "agency", price: "₦80,000 / month", messages: "10 businesses", leads: "Unlimited leads", features: ["White-label widget", "API access"] }];
+        
+        function renderPlanCards(currentPlan) { const container = document.getElementById("planCards"); if (!container) return; container.innerHTML = ""; ALL_PLANS.forEach(plan => { const isCurrent = currentPlan.toLowerCase() === plan.name.toLowerCase(); const card = document.createElement("div"); card.className = "plan-card" + (isCurrent ? " current" : ""); card.innerHTML = `<h3 style="margin:0 0 16px; font-size:1.8rem;">${plan.name.toUpperCase()}</h3><div style="font-size:2.4rem; font-weight:700; color:${GOLD_COLOR};">${plan.price}</div><ul style="list-style:none; margin:20px 0 32px;">${plan.features.map(f => `<li style="margin:10px 0;">✓ ${f}</li>`).join("")}</ul><button class="subscribePlanBtn ${isCurrent ? "" : "btn-gold"}" data-plan="${plan.id}" ${isCurrent ? "disabled" : ""} style="width:100%; padding:14px;">${isCurrent ? "Current Plan" : "Upgrade Now"}</button>`; container.appendChild(card); }); document.querySelectorAll(".subscribePlanBtn:not([disabled])").forEach(btn => btn.addEventListener("click", async () => { try { const res = await fetch(`${BACKEND_URL}/api/subscription/create-checkout-session`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ plan: btn.dataset.plan }) }); const data = await res.json(); if (data.url) window.location.href = data.url; else alert(data.error); } catch (err) { alert("Connection error"); } })); }
+        
+        function renderRiseFallChart(dataPoints) { const canvas = document.getElementById("riseFallChart"); if (!canvas) return; const ctx = canvas.getContext("2d"); const labels = dataPoints.map(d => new Date(d.date).toLocaleDateString()); const values = dataPoints.map(d => d.value); if (riseFallChart) riseFallChart.destroy(); riseFallChart = new Chart(ctx, { type: "line", data: { labels, datasets: [{ label: "Business Growth", data: values, borderColor: GOLD_COLOR, backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.3, pointBackgroundColor: GOLD_COLOR, pointRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: "#222" }, ticks: { color: "#aaa" } }, x: { grid: { color: "#222" }, ticks: { color: "#aaa" } } } } }); }
+        
+        async function loadDashboard() { try { const res = await fetch(`${BACKEND_URL}/api/dashboard/full`, { headers: { "Authorization": "Bearer " + token } }); if (!res.ok) throw new Error(); const data = await res.json(); const isAdmin = data.email?.toLowerCase() === "ericchung992@gmail.com"; if (verificationBanner) { if (isAdmin || data.is_verified === 1) verificationBanner.classList.add("hidden"); else verificationBanner.classList.remove("hidden"); } businessNameSpan.textContent = data.business_name || data.businessName || data.name || "My Business"; currentPlanSpan.textContent = data.plan || "free"; messagesUsedSpan.textContent = data.messages_used || 0; leadsUsedSpan.textContent = data.leads_used || 0; totalChatsSpan.textContent = data.chats?.length || 0; messagesRemainingSpan.textContent = Math.max(0, (data.messages_limit || 0) - (data.messages_used || 0)); leadsRemainingSpan.textContent = Math.max(0, (data.leads_limit || 0) - (data.leads_used || 0)); if (isAdmin) { adminBtn.classList.remove("hidden"); adminBtn.onclick = () => window.location.href = "admin.html"; } renderChats(data.chats || []); renderLeads(data.leads || []); renderRiseFallChart(data.riseFall || []); loadWidgetKey(); } catch (err) { console.error(err); } }
+        
+        function renderChats(chats) { if (!chatTableBody) return; chatTableBody.innerHTML = ""; const threads = {}; chats.forEach(c => { const s = c.session_id || 'manual'; if (!threads[s]) threads[s] = { client: c.client_name || "Guest", count: 0, last: c.created_at, messages: [] }; threads[s].count++; threads[s].messages.push(c); }); Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = `  <td><strong>${t.client}</strong><br><small style="color:gray">${sid.substring(0,12)}...</small>   Was${t.count} msgs   Was${new Date(t.last).toLocaleString()}   Was<button class="btn-gold view-thread-btn" style="padding:5px 12px;">View</button>   `; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); }); }
+        
+        function openChatModal(client, messages) { const modal = document.getElementById("chatModal"); const body = document.getElementById("modalChatBody"); document.getElementById("modalTitle").textContent = `Chat with ${client}`; body.innerHTML = ""; messages.sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).forEach(m => { const date = m.created_at ? new Date(m.created_at).toLocaleString() : "Recently"; body.innerHTML += `<div style="margin-bottom:20px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px;"><div style="display:flex; justify-content:space-between;"><span style="color:${GOLD_COLOR};">GUEST</span><span style="color:#666;">${date}</span></div><div style="margin:10px 0;">${m.message || "<i>No message</i>"}</div><div style="border-top:1px solid #333; padding-top:10px;"><span style="color:#8ab4f8;">AI</span><div style="color:#ccc;">${m.response || "<i>No response</i>"}</div></div></div>`; }); modal.classList.remove("hidden"); }
+        
+        document.getElementById("closeModal").onclick = () => document.getElementById("chatModal").classList.add("hidden");
+        
+        function renderLeads(leads) { if (!leadsTableBody) return; leadsTableBody.innerHTML = ""; leads.forEach(l => { const tr = document.createElement("tr"); tr.innerHTML = `   Was${l.name}   Was${l.email}   Was${l.phone || "-"}   Was${new Date(l.created_at).toLocaleString()}   Was<button class="btn-danger delete-lead-btn" data-id="${l.id}">Delete</button>   `; leadsTableBody.appendChild(tr); }); document.querySelectorAll(".delete-lead-btn").forEach(btn => btn.onclick = async () => { if (confirm("Delete?")) { try { await fetch(`${BACKEND_URL}/api/leads/${btn.dataset.id}`, { method: "DELETE", headers: { "Authorization": "Bearer " + token } }); loadDashboard(); } catch(e) { alert("Failed"); } } }); }
+        
+        document.getElementById("saveKnowledgeBtn")?.addEventListener("click", async () => { const content = document.getElementById("knowledge-input").value.trim(); if (!content) return alert("Enter business info"); try { const res = await fetch(`${BACKEND_URL}/api/knowledge/add`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ content }) }); const data = await res.json(); alert(data.success ? "AI Knowledge Updated!" : "Error"); } catch(e) { alert("Error"); } });
+        
+        document.getElementById("sendBtn")?.addEventListener("click", async () => { const msg = document.getElementById("aiMessage").value.trim(); const name = document.getElementById("clientName").value.trim(); if (!msg || !name) return alert("Fill all fields"); try { const res = await fetch(`${BACKEND_URL}/api/widget/chat`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ message: msg, client_name: name }) }); const data = await res.json(); if (!res.ok) throw new Error(); const bubble = document.createElement("div"); bubble.className = "chat-bubble"; bubble.innerHTML = `<div style="color:${GOLD_COLOR};">You</div><div>${msg}</div><div style="margin-top:10px; border-top:1px solid #333; padding-top:10px;"><span style="color:#8ab4f8;">AI:</span> ${data.reply}</div>`; chatResponses.prepend(bubble); document.getElementById("aiMessage").value = ""; document.getElementById("clientName").value = ""; loadDashboard(); } catch(e) { alert("Error sending"); } });
+        
+        document.getElementById("addLeadBtn")?.addEventListener("click", async () => { const name = document.getElementById("leadName").value.trim(); const email = document.getElementById("leadEmail").value.trim(); const phone = document.getElementById("leadPhone").value.trim(); if (!name || !email) return alert("Name and email required"); try { await fetch(`${BACKEND_URL}/api/leads`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ name, email, phone }) }); alert("Lead added!"); document.getElementById("leadName").value = ""; document.getElementById("leadEmail").value = ""; document.getElementById("leadPhone").value = ""; loadDashboard(); } catch(e) { alert("Error"); } });
+        
+        logoutBtn.onclick = () => { localStorage.clear(); window.location.href = "login.html"; };
+        
+        async function loadWidgetKey() { const keySpan = document.getElementById("widgetKey"); const codePre = document.getElementById("embedCode"); const widgetTabPre = document.getElementById("widgetSectionCode"); const bName = businessNameSpan?.textContent || "Business"; if (!keySpan || !codePre) return; try { const res = await fetch(`${BACKEND_URL}/api/widget/key`, { headers: { "Authorization": "Bearer " + token } }); if (!res.ok) throw new Error(); const data = await res.json(); const key = data.key; keySpan.textContent = key; const embedCode = `<script>\n  (function() {\n    const key = "${key}";\n    const baseUrl = "${BACKEND_URL}";\n    const script = document.createElement("script");\n    script.src = baseUrl + "/widget.js";\n    script.async = true;\n    document.head.appendChild(script);\n    const widgetDiv = document.createElement("div");\n    widgetDiv.id = "ai-chat-widget";\n    widgetDiv.setAttribute("data-key", key);\n    widgetDiv.setAttribute("data-primary-color", "${GOLD_COLOR}");\n    widgetDiv.setAttribute("data-variant", "gemini-clean");\n    widgetDiv.setAttribute("data-position", "bottom-right");\n    widgetDiv.setAttribute("data-welcome", "Hi! I'm your AI assistant. How can I help?");\n    widgetDiv.setAttribute("data-title", "${bName} AI");\n    document.body.appendChild(widgetDiv);\n  })();\n<\/script>`; codePre.textContent = embedCode; if (widgetTabPre) widgetTabPre.textContent = embedCode; document.getElementById("copyEmbedBtn").onclick = () => navigator.clipboard.writeText(embedCode).then(() => alert("Copied!")); document.getElementById("copyWidgetTabBtn").onclick = () => navigator.clipboard.writeText(embedCode).then(() => alert("Copied!")); document.getElementById("regenerateKeyBtn").onclick = async () => { if (confirm("Generate new key?")) { try { await fetch(`${BACKEND_URL}/api/widget/regenerate-key`, { method: "POST", headers: { "Authorization": "Bearer " + token } }); alert("New key generated!"); loadWidgetKey(); } catch(e) { alert("Error"); } } }; } catch(e) { keySpan.textContent = "Error loading key"; } }
+        
+        document.querySelector(".dashboard").style.display = "flex";
+        loadDashboard();
+        loadBusinessInsights();
+    });
+</script>
+</body>
+</html>
