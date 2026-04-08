@@ -1,131 +1,84 @@
-cat > backend/queue-service.js << 'EOF'
-const { Queue, Worker } = require('bullmq');
-const Redis = require('ioredis');
-const workflowExecutor = require('./workflow/workflow-executor');
+// ================================================
+// SIMPLE QUEUE SERVICE - No Redis Required
+// ================================================
+
+const { v4: uuidv4 } = require('uuid');
 const { supabase } = require('./database-supabase');
+const workflowExecutor = require('./workflow/workflow-executor');
 
-// Redis connection
-const redisConnection = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-});
-
-// Workflow execution queue
-const workflowQueue = new Queue('workflow-executions', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-    removeOnComplete: 100,
-    removeOnFail: 500,
-  },
-});
-
-// Worker to process jobs
-const workflowWorker = new Worker('workflow-executions', async (job) => {
-  const { workflowId, triggerData, userId, executionId } = job.data;
-  
-  console.log(`📦 [QUEUE] Processing job ${job.id} for workflow ${workflowId}`);
+async function addToQueue(workflowId, triggerData, userId, priority = 1) {
+  const executionId = uuidv4();
   
   try {
+    // Store job in database
+    await supabase.from('queue_jobs').insert({
+      id: uuidv4(),
+      job_id: executionId,
+      workflow_id: workflowId,
+      user_id: userId,
+      status: 'pending',
+      priority: priority,
+      created_at: new Date().toISOString(),
+    });
+    
+    // Execute immediately (simple queue)
     const result = await workflowExecutor.executeWorkflow(
       workflowId,
       triggerData,
       userId
     );
     
-    // Update job status in database
-    await supabase.from('queue_jobs').update({
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-      result: result,
-    }).eq('job_id', job.id);
+    // Update job status
+    await supabase.from('queue_jobs')
+      .update({
+        status: 'completed',
+        result: result,
+        completed_at: new Date().toISOString()
+      })
+      .eq('job_id', executionId);
     
-    return result;
+    return { jobId: executionId, result };
+    
   } catch (error) {
-    console.error(`❌ [QUEUE] Job ${job.id} failed:`, error);
-    
-    await supabase.from('queue_jobs').update({
-      status: 'failed',
-      error: error.message,
-      attempts: job.attemptsMade + 1,
-    }).eq('job_id', job.id);
+    await supabase.from('queue_jobs')
+      .update({
+        status: 'failed',
+        error: error.message,
+        completed_at: new Date().toISOString()
+      })
+      .eq('job_id', executionId);
     
     throw error;
   }
-}, {
-  connection: redisConnection,
-  concurrency: 10, // Process 10 jobs simultaneously
-  limiter: {
-    max: 100, // Max jobs per duration
-    duration: 1000, // Per second
-  },
-});
-
-// Monitor queue events
-workflowWorker.on('completed', (job) => {
-  console.log(`✅ [QUEUE] Job ${job.id} completed successfully`);
-});
-
-workflowWorker.on('failed', (job, err) => {
-  console.error(`❌ [QUEUE] Job ${job.id} failed:`, err);
-});
-
-workflowWorker.on('progress', (job, progress) => {
-  console.log(`📊 [QUEUE] Job ${job.id} progress: ${progress}%`);
-});
-
-// Function to add job to queue
-async function addToQueue(workflowId, triggerData, userId, priority = 1) {
-  const executionId = require('uuid').v4();
-  
-  // Store job in database
-  const { data: jobRecord } = await supabase.from('queue_jobs').insert({
-    id: require('uuid').v4(),
-    job_id: executionId,
-    workflow_id: workflowId,
-    user_id: userId,
-    status: 'pending',
-    priority: priority,
-    created_at: new Date().toISOString(),
-  }).select().single();
-  
-  // Add to BullMQ queue
-  const job = await workflowQueue.add(`workflow-${workflowId}`, {
-    workflowId,
-    triggerData,
-    userId,
-    executionId,
-  }, {
-    priority,
-    delay: 0,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-  });
-  
-  return { jobId: job.id, executionId };
 }
 
-// Get queue stats
 async function getQueueStats() {
-  const [waiting, active, completed, failed, delayed] = await Promise.all([
-    workflowQueue.getWaitingCount(),
-    workflowQueue.getActiveCount(),
-    workflowQueue.getCompletedCount(),
-    workflowQueue.getFailedCount(),
-    workflowQueue.getDelayedCount(),
-  ]);
+  const { data: pending } = await supabase
+    .from('queue_jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending');
   
-  return { waiting, active, completed, failed, delayed };
+  const { data: running } = await supabase
+    .from('queue_jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'running');
+  
+  const { data: completed } = await supabase
+    .from('queue_jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'completed');
+  
+  const { data: failed } = await supabase
+    .from('queue_jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'failed');
+  
+  return {
+    pending: pending || 0,
+    running: running || 0,
+    completed: completed || 0,
+    failed: failed || 0
+  };
 }
 
-module.exports = { addToQueue, getQueueStats, workflowQueue };
-EOF
+module.exports = { addToQueue, getQueueStats };
