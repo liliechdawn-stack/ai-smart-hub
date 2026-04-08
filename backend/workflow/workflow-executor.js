@@ -128,6 +128,95 @@ class WorkflowExecutor {
       this.activeExecutions.delete(executionId);
     }
   }
+
+  // ===== EXECUTE TEMPORARY WORKFLOW (for testing without saving to DB) =====
+  async executeTempWorkflow(nodes, edges, triggerData = {}, userId = null) {
+    const executionId = uuidv4();
+    const startTime = Date.now();
+    
+    console.log(`🧪 [TEMP WORKFLOW] Starting test execution with ${nodes?.length || 0} nodes`);
+    
+    try {
+      // Validate workflow
+      if (!nodes || nodes.length === 0) {
+        throw new Error('No nodes provided for temporary workflow');
+      }
+      
+      // Find start nodes (nodes with no incoming edges)
+      const startNodes = nodes.filter(node => {
+        const hasIncoming = edges?.some(edge => edge.target === node.id) || false;
+        return !hasIncoming;
+      });
+      
+      if (startNodes.length === 0) {
+        throw new Error('No start node found in workflow (every node has an incoming edge)');
+      }
+      
+      // Store execution context for cancellation support
+      this.activeExecutions.set(executionId, {
+        isTemp: true,
+        nodes,
+        edges,
+        triggerData,
+        userId,
+        startTime,
+        status: 'running'
+      });
+      
+      // Execute the workflow (reusing existing execution logic)
+      let results;
+      try {
+        results = await this.executeSequential(
+          startNodes, 
+          nodes, 
+          edges || [], 
+          triggerData || {}, 
+          executionId, 
+          userId || 'temp'
+        );
+      } catch (execError) {
+        // If sequential fails, try parallel as fallback
+        console.log('Sequential execution failed, trying parallel...');
+        results = await this.executeParallel(
+          startNodes, 
+          nodes, 
+          edges || [], 
+          triggerData || {}, 
+          executionId, 
+          userId || 'temp'
+        );
+      }
+      
+      const executionTime = Date.now() - startTime;
+      const allSuccessful = Object.values(results).every(r => r.status === 'completed');
+      
+      console.log(`✅ [TEMP WORKFLOW] Execution ${executionId} completed in ${executionTime}ms`);
+      
+      return {
+        success: true,
+        executionId,
+        results,
+        duration: executionTime,
+        status: allSuccessful ? 'completed' : 'completed_with_errors',
+        nodeCount: nodes.length,
+        completedNodes: Object.keys(results).length
+      };
+      
+    } catch (error) {
+      console.error(`❌ [TEMP WORKFLOW] Execution failed:`, error);
+      
+      return {
+        success: false,
+        executionId,
+        error: error.message,
+        status: 'failed',
+        duration: Date.now() - startTime
+      };
+      
+    } finally {
+      this.activeExecutions.delete(executionId);
+    }
+  }
   
   // Sequential execution - one node after another
   async executeSequential(startNodes, allNodes, edges, triggerData, executionId, userId) {
@@ -321,19 +410,21 @@ class WorkflowExecutor {
         
         const executionTime = Date.now() - startTime;
         
-        // Log node execution
-        await supabase.from('node_executions').insert({
-          id: uuidv4(),
-          execution_id: executionId,
-          node_id: node.id,
-          node_type: node.type,
-          input: input,
-          output: output.output,
-          status: 'completed',
-          execution_time_ms: executionTime,
-          attempt: attempt,
-          created_at: new Date().toISOString()
-        });
+        // Only log to database if we have a valid executionId (not temp)
+        if (executionId && !executionId.startsWith('temp_')) {
+          await supabase.from('node_executions').insert({
+            id: uuidv4(),
+            execution_id: executionId,
+            node_id: node.id,
+            node_type: node.type,
+            input: input,
+            output: output.output,
+            status: 'completed',
+            execution_time_ms: executionTime,
+            attempt: attempt,
+            created_at: new Date().toISOString()
+          });
+        }
         
         return {
           nodeId: node.id,
@@ -358,17 +449,20 @@ class WorkflowExecutor {
     // All retries failed
     const executionTime = Date.now() - startTime;
     
-    await supabase.from('node_executions').insert({
-      id: uuidv4(),
-      execution_id: executionId,
-      node_id: node.id,
-      node_type: node.type,
-      input: input,
-      error: lastError.message,
-      status: 'failed',
-      execution_time_ms: executionTime,
-      created_at: new Date().toISOString()
-    });
+    // Only log to database if we have a valid executionId (not temp)
+    if (executionId && !executionId.startsWith('temp_')) {
+      await supabase.from('node_executions').insert({
+        id: uuidv4(),
+        execution_id: executionId,
+        node_id: node.id,
+        node_type: node.type,
+        input: input,
+        error: lastError.message,
+        status: 'failed',
+        execution_time_ms: executionTime,
+        created_at: new Date().toISOString()
+      });
+    }
     
     throw new Error(`Node ${node.type} failed after ${this.maxRetries} attempts: ${lastError.message}`);
   }
