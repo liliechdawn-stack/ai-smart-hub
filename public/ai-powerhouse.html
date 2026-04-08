@@ -2031,6 +2031,7 @@
 // AI POWERHOUSE 2.0 - ULTIMATE AUTOMATION PLATFORM
 // 500+ Integrations - 47 Live Features - Real-Time Status
 // WITH WORKFLOW BUILDER (n8n-level)
+// ENTERPRISE REAL-TIME UPDATES - WebSocket Integrated
 // ================================================
 
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -2043,6 +2044,8 @@ const ADMIN_EMAIL = "ericchung992@gmail.com";
 
 // WebSocket for real-time updates
 let socket = null;
+let realTimeMonitor = null;
+let workflowExecutions = [];
 
 // Global state
 let activeAgents = 0;
@@ -2071,6 +2074,247 @@ let selectedWorkflowNode = null;
 let currentWorkflowId = null;
 let isConnecting = false;
 let connectionStartNode = null;
+
+// ===== REAL-TIME WEBSOCKET CONNECTION (ADDED) =====
+function initRealTimeWebSocket() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found, WebSocket will connect after login');
+            return;
+        }
+        
+        socket = io(BACKEND_URL, {
+            transports: ['websocket', 'polling'],
+            query: { token: token },
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000
+        });
+        
+        socket.on('connect', () => {
+            console.log('🔌 Real-time WebSocket connected');
+            const indicator = document.getElementById('liveIndicator');
+            if (indicator) {
+                indicator.innerHTML = '🔴 LIVE';
+                indicator.style.color = '#10B981';
+            }
+            // Join user room
+            if (userData.id) {
+                socket.emit('join', userData.id);
+            }
+        });
+        
+        socket.on('workflow_execution_start', (data) => {
+            console.log('🚀 Workflow started:', data);
+            addRealTimeActivity('workflow', `Workflow "${data.workflow_name}" started execution`, 'success');
+            updateWorkflowStatus(data.workflow_id, 'running');
+        });
+        
+        socket.on('workflow_execution_progress', (data) => {
+            console.log('📊 Workflow progress:', data);
+            updateWorkflowProgress(data.workflow_id, data.node_id, data.progress);
+        });
+        
+        socket.on('workflow_execution_complete', (data) => {
+            console.log('✅ Workflow completed:', data);
+            addRealTimeActivity('workflow', `Workflow "${data.workflow_name}" completed in ${data.duration}ms`, 'success');
+            updateWorkflowStatus(data.workflow_id, 'completed');
+            refreshWorkflowExecutions();
+        });
+        
+        socket.on('workflow_execution_failed', (data) => {
+            console.error('❌ Workflow failed:', data);
+            addRealTimeActivity('workflow', `Workflow "${data.workflow_name}" failed: ${data.error}`, 'error');
+            updateWorkflowStatus(data.workflow_id, 'failed');
+        });
+        
+        socket.on('webhook_received', (data) => {
+            console.log('🔔 Webhook received:', data);
+            addRealTimeActivity('webhook', `Webhook "${data.path}" triggered workflow`, 'info');
+        });
+        
+        socket.on('schedule_triggered', (data) => {
+            console.log('⏰ Schedule triggered:', data);
+            addRealTimeActivity('schedule', `Scheduled workflow "${data.workflow_name}" executed`, 'info');
+        });
+        
+        socket.on('node_executed', (data) => {
+            console.log('🔧 Node executed:', data);
+            addRealTimeActivity('node', `Node "${data.node_name}" executed in ${data.duration}ms`, 'success');
+        });
+        
+        socket.on('stats_update', (data) => {
+            if (data.activeAgents !== undefined) activeAgents = data.activeAgents;
+            if (data.imagesProcessed !== undefined) imagesProcessed = data.imagesProcessed;
+            if (data.totalLeads !== undefined) totalLeads = data.totalLeads;
+            if (data.hoursSaved !== undefined) hoursSaved = data.hoursSaved;
+            updateStats();
+        });
+        
+        socket.on('activity', (activity) => {
+            addRealTimeActivity(activity.type, activity.message, activity.status);
+        });
+        
+        socket.on('alert', (alert) => {
+            showToast(alert.message, 'warning');
+            addAlertToObservability(alert);
+        });
+        
+        socket.on('feature_activated', (feature) => {
+            console.log('✅ Feature activated:', feature);
+            addActiveFeature(feature);
+        });
+        
+        socket.on('feature_deactivated', (featureId) => {
+            console.log('⏸️ Feature deactivated:', featureId);
+            removeActiveFeature(featureId);
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('🔌 WebSocket disconnected');
+            const indicator = document.getElementById('liveIndicator');
+            if (indicator) {
+                indicator.innerHTML = '⭕ OFFLINE';
+                indicator.style.color = '#EF4444';
+            }
+        });
+        
+        socket.on('reconnect', () => {
+            console.log('🔄 WebSocket reconnected');
+            const indicator = document.getElementById('liveIndicator');
+            if (indicator) {
+                indicator.innerHTML = '🔴 LIVE';
+                indicator.style.color = '#10B981';
+            }
+        });
+        
+    } catch (error) {
+        console.warn('WebSocket not available, using polling mode');
+    }
+}
+
+// ===== ADD REAL-TIME ACTIVITY (ADDED) =====
+function addRealTimeActivity(type, message, status) {
+    const logEntry = {
+        id: Date.now(),
+        type: type,
+        message: message,
+        status: status,
+        time: new Date().toLocaleTimeString(),
+        icon: getActivityIcon(type),
+        color: getActivityColor(status)
+    };
+    
+    recentActivity.unshift(logEntry);
+    if (recentActivity.length > 50) recentActivity.pop();
+    loadActivityLog();
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'workflow': 'fa-project-diagram',
+        'webhook': 'fa-globe',
+        'schedule': 'fa-clock',
+        'node': 'fa-code-branch',
+        'ai': 'fa-brain',
+        'social': 'fa-share-alt',
+        'email': 'fa-envelope',
+        'slack': 'fa-slack',
+        'http': 'fa-code',
+        'automation': 'fa-robot',
+        'default': 'fa-info-circle'
+    };
+    return icons[type] || icons.default;
+}
+
+function getActivityColor(status) {
+    const colors = {
+        'success': '#10B981',
+        'error': '#EF4444',
+        'warning': '#F59E0B',
+        'info': '#3B82F6'
+    };
+    return colors[status] || colors.info;
+}
+
+// ===== REFRESH WORKFLOW EXECUTIONS (ADDED) =====
+async function refreshWorkflowExecutions() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/executions`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            workflowExecutions = await response.json();
+            updateExecutionsDisplay();
+        }
+    } catch (error) {
+        console.error('Error refreshing executions:', error);
+    }
+}
+
+function updateExecutionsDisplay() {
+    const container = document.getElementById('recentExecutions');
+    if (!container) return;
+    
+    if (workflowExecutions.length === 0) {
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No executions yet</div>';
+        return;
+    }
+    
+    container.innerHTML = workflowExecutions.slice(0, 5).map(exec => `
+        <div class="execution-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #2a2a2a;">
+            <div class="execution-status" style="width: 32px; text-align: center;">
+                <i class="fas ${exec.status === 'completed' ? 'fa-check-circle' : exec.status === 'failed' ? 'fa-times-circle' : 'fa-spinner fa-pulse'}" 
+                   style="color: ${exec.status === 'completed' ? '#10B981' : exec.status === 'failed' ? '#EF4444' : '#F59E0B'};"></i>
+            </div>
+            <div class="execution-details" style="flex: 1;">
+                <div class="execution-name" style="font-weight: 500; font-size: 13px;">${exec.workflow_name || 'Workflow'}</div>
+                <div class="execution-time" style="font-size: 11px; color: #666;">${new Date(exec.started_at).toLocaleString()}</div>
+            </div>
+            <div class="execution-duration" style="font-size: 12px; color: #888;">${exec.execution_time_ms ? (exec.execution_time_ms / 1000).toFixed(2) + 's' : 'pending'}</div>
+        </div>
+    `).join('');
+}
+
+function updateWorkflowStatus(workflowId, status) {
+    const workflowCard = document.getElementById(`workflow-${workflowId}`);
+    if (workflowCard) {
+        const statusBadge = workflowCard.querySelector('.workflow-status');
+        if (statusBadge) {
+            statusBadge.className = `workflow-status ${status}`;
+            statusBadge.innerHTML = status === 'running' ? '<i class="fas fa-spinner fa-pulse"></i> Running' : 
+                                   status === 'completed' ? '<i class="fas fa-check-circle"></i> Completed' :
+                                   '<i class="fas fa-exclamation-circle"></i> Failed';
+        }
+    }
+}
+
+function updateWorkflowProgress(workflowId, nodeId, progress) {
+    const progressBar = document.getElementById(`progress-${workflowId}`);
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+}
+
+// ===== START REAL-TIME MONITORING (ADDED) =====
+function startRealTimeMonitoring() {
+    if (realTimeMonitor) clearInterval(realTimeMonitor);
+    
+    realTimeMonitor = setInterval(async () => {
+        try {
+            await Promise.all([
+                refreshWorkflowExecutions(),
+                loadConnectedAccounts(),
+                loadUserAutomations()
+            ]);
+        } catch (error) {
+            console.debug('Monitor update failed');
+        }
+    }, 10000);
+}
 
 // Feature-platform mapping for auto-activation
 const FEATURE_PLATFORM_MAP = {
@@ -2415,6 +2659,7 @@ function showWorkflowBuilder(automationId = null, automationName = null) {
                     <div>
                         <button class="btn-outline" onclick="testWorkflow()" style="margin-right: 10px;"><i class="fas fa-play"></i> Test</button>
                         <button class="btn-primary" onclick="saveWorkflow()"><i class="fas fa-save"></i> Save</button>
+                        <button class="btn-primary" onclick="deployWorkflow()" style="background: #10B981; margin-right: 10px;"><i class="fas fa-rocket"></i> Deploy</button>
                         <button class="close-btn" onclick="closeWorkflowBuilder()">&times;</button>
                     </div>
                 </div>
@@ -2567,6 +2812,45 @@ function showWorkflowBuilder(automationId = null, automationName = null) {
                 justify-content: center;
                 font-size: 14px;
             }
+            .execution-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                border-bottom: 1px solid #2a2a2a;
+            }
+            .execution-status {
+                width: 32px;
+                text-align: center;
+            }
+            .execution-status.completed { color: #10B981; }
+            .execution-status.failed { color: #EF4444; }
+            .execution-status.running { color: #F59E0B; }
+            .execution-details {
+                flex: 1;
+            }
+            .execution-name {
+                font-weight: 500;
+                font-size: 13px;
+            }
+            .execution-time {
+                font-size: 11px;
+                color: #666;
+            }
+            .execution-duration {
+                font-size: 12px;
+                color: #888;
+            }
+            .active-feature-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #1e1e1e;
+                padding: 6px 12px;
+                border-radius: 20px;
+                margin: 4px;
+                font-size: 12px;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -2579,6 +2863,68 @@ function showWorkflowBuilder(automationId = null, automationName = null) {
     renderWorkflowCanvas();
     if (automationId) {
         loadWorkflowFromServer(automationId);
+    }
+}
+
+async function deployWorkflow() {
+    if (workflowNodes.length === 0) {
+        showToast('No nodes in workflow', 'error');
+        return;
+    }
+    
+    const name = document.getElementById('workflowNameDisplay')?.textContent || 'My Workflow';
+    
+    showToast('🚀 Deploying workflow...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/workflows`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: name,
+                nodes: workflowNodes,
+                edges: workflowEdges,
+                execution_mode: 'sequential',
+                status: 'active'
+            })
+        });
+        
+        if (response.ok) {
+            const workflow = await response.json();
+            showToast(`✅ Workflow "${name}" deployed successfully!`, 'success');
+            addRealTimeActivity('workflow', `Deployed workflow "${name}"`, 'success');
+            closeWorkflowBuilder();
+            await loadUserAutomations();
+            
+            // Register webhook if trigger node exists
+            const hasTrigger = workflowNodes.some(n => n.type === 'trigger');
+            if (hasTrigger) {
+                const webhookPath = `workflow_${workflow.id}`;
+                await fetch(`${API_BASE}/webhooks/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        path: webhookPath,
+                        workflow_id: workflow.id,
+                        method: 'POST'
+                    })
+                });
+                showToast(`🔔 Webhook created: /webhook/${webhookPath}`, 'success');
+                addRealTimeActivity('webhook', `Webhook registered for workflow "${name}"`, 'success');
+            }
+        } else {
+            throw new Error('Failed to deploy');
+        }
+    } catch (error) {
+        console.error('Deploy error:', error);
+        showToast('Failed to deploy workflow', 'error');
     }
 }
 
@@ -3022,12 +3368,14 @@ async function testWorkflow() {
         if (response.ok) {
             showToast('Workflow test completed! Check console for results', 'success');
             console.log('Workflow test results:', result);
+            addRealTimeActivity('workflow', 'Workflow test completed successfully', 'success');
         } else {
             throw new Error(result.error || 'Test failed');
         }
     } catch (error) {
         console.error('Workflow test error:', error);
         showToast('Workflow test failed: ' + error.message, 'error');
+        addRealTimeActivity('workflow', `Workflow test failed: ${error.message}`, 'error');
     }
 }
 
@@ -3306,6 +3654,7 @@ async function autoActivateFeaturesForAccount(account) {
     
     if (activated.length > 0) {
         showToast(`✨ Auto-activated ${activated.length} features for ${account.platform}!`, 'success');
+        addRealTimeActivity('automation', `Auto-activated ${activated.length} features for ${account.platform}`, 'success');
     }
     
     return activated;
@@ -3472,7 +3821,7 @@ function renderActiveFeatures() {
     }
 }
 
-// ===== INITIALIZATION =====
+// ===== INITIALIZATION (UPDATED with real-time features) =====
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 AI Powerhouse 2.0 Ultimate Edition Starting...');
     
@@ -3490,8 +3839,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadPlatformOptions();
     startLiveUpdates();
     initWebSocket();
+    initRealTimeWebSocket(); // New real-time WebSocket
+    startRealTimeMonitoring(); // New real-time monitoring
     renderFeatures();
     startAutomationScheduler();
+    refreshWorkflowExecutions(); // Load workflow executions
 });
 
 // ===== LOAD ALL DATA =====
@@ -4543,6 +4895,7 @@ function toggleFeatureLive(featureId) {
         removeActiveFeature(featureId);
         
         showToast(`⏸️ ${featureName} paused`, 'info');
+        addRealTimeActivity('feature', `${featureName} paused`, 'info');
     } else {
         featureCard.classList.remove('paused');
         featureCard.classList.add('live');
@@ -4554,6 +4907,7 @@ function toggleFeatureLive(featureId) {
         });
         
         showToast(`✅ ${featureName} activated`, 'success');
+        addRealTimeActivity('feature', `${featureName} activated`, 'success');
         
         if (socket && socket.connected) {
             socket.emit('feature_toggle', { id: featureId, status: 'active' });
@@ -5344,6 +5698,7 @@ window.showWorkflowBuilder = showWorkflowBuilder;
 window.closeWorkflowBuilder = closeWorkflowBuilder;
 window.saveWorkflow = saveWorkflow;
 window.testWorkflow = testWorkflow;
+window.deployWorkflow = deployWorkflow;
 window.deleteWorkflowNode = deleteWorkflowNode;
 window.handleNodeDragStart = handleNodeDragStart;
 window.startConnection = startConnection;
