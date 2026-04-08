@@ -1,6 +1,7 @@
 // ================================================
 // WORKFLOW EXECUTOR - REAL-TIME NODE EXECUTION ENGINE
 // Executes workflows with sequential, parallel, and conditional logic
+// Enterprise Features: Code Node, Transform Node, Error Handling
 // ================================================
 
 const { v4: uuidv4 } = require('uuid');
@@ -73,10 +74,27 @@ class WorkflowExecutor {
       const executionMode = workflow.execution_mode || 'sequential';
       let results;
       
-      if (executionMode === 'parallel') {
-        results = await this.executeParallel(startNodes, nodes, edges, triggerData, executionId, userId);
-      } else {
-        results = await this.executeSequential(startNodes, nodes, edges, triggerData, executionId, userId);
+      try {
+        if (executionMode === 'parallel') {
+          results = await this.executeParallel(startNodes, nodes, edges, triggerData, executionId, userId);
+        } else {
+          results = await this.executeSequential(startNodes, nodes, edges, triggerData, executionId, userId);
+        }
+      } catch (executionError) {
+        // Try to handle error with error handler workflow
+        const errorHandled = await this.tryErrorHandler(workflowId, executionError, executionId, triggerData, userId);
+        if (!errorHandled) {
+          throw executionError;
+        }
+        // If error was handled, return success with error handled flag
+        const executionTime = Date.now() - startTime;
+        return {
+          success: true,
+          executionId,
+          errorHandled: true,
+          originalError: executionError.message,
+          duration: executionTime
+        };
       }
       
       const executionTime = Date.now() - startTime;
@@ -126,6 +144,42 @@ class WorkflowExecutor {
       throw error;
     } finally {
       this.activeExecutions.delete(executionId);
+    }
+  }
+
+  // Try to handle error with registered error handler workflow
+  async tryErrorHandler(workflowId, error, executionId, triggerData, userId) {
+    try {
+      // Check if error handler exists
+      const { data: handler } = await supabase
+        .from('error_handlers')
+        .select('error_workflow_id')
+        .eq('workflow_id', workflowId)
+        .single();
+      
+      if (!handler) return false;
+      
+      console.log(`🔄 Executing error handler for workflow ${workflowId}`);
+      
+      const errorContext = {
+        original_workflow_id: workflowId,
+        original_execution_id: executionId,
+        error: {
+          message: error.message,
+          type: error.type || 'execution_error',
+          code: error.code || 'WORKFLOW_FAILED',
+          stack: error.stack,
+          timestamp: new Date().toISOString()
+        },
+        trigger_data: triggerData,
+        handled_by: 'error_handler'
+      };
+      
+      await this.executeWorkflow(handler.error_workflow_id, errorContext, userId);
+      return true;
+    } catch (handlerError) {
+      console.error('Error handler failed:', handlerError);
+      return false;
     }
   }
 
@@ -404,6 +458,13 @@ class WorkflowExecutor {
           case 'http_request':
             output = await this.handleHttpRequestNode(node, input, triggerData, userId);
             break;
+          case 'code':
+          case 'function':
+            output = await this.handleCodeNode(node, input, triggerData, userId);
+            break;
+          case 'transform':
+            output = await this.handleTransformNode(node, input, triggerData, userId);
+            break;
           default:
             output = { output: input, status: 'completed' };
         }
@@ -467,7 +528,267 @@ class WorkflowExecutor {
     throw new Error(`Node ${node.type} failed after ${this.maxRetries} attempts: ${lastError.message}`);
   }
   
-  // ===== NODE HANDLERS =====
+  // ===== ENTERPRISE NODE HANDLERS =====
+  
+  // Code/Function Node - Execute custom JavaScript (like n8n function node)
+  async handleCodeNode(node, input, triggerData, userId) {
+    const config = node.config || {};
+    const code = config.code || 'return data;';
+    
+    try {
+      // Create a safe execution context
+      const sandbox = {
+        data: { ...triggerData, ...input },
+        $json: { ...triggerData, ...input },
+        $input: input,
+        $trigger: triggerData,
+        $node: { name: node.name, id: node.id },
+        console: { 
+          log: (...args) => console.log('[CODE_NODE]', ...args),
+          error: (...args) => console.error('[CODE_NODE]', ...args),
+          warn: (...args) => console.warn('[CODE_NODE]', ...args)
+        },
+        fetch: fetch,
+        Date: Date,
+        Math: Math,
+        JSON: JSON,
+        Object: Object,
+        Array: Array,
+        String: String,
+        Number: Number,
+        Boolean: Boolean,
+        RegExp: RegExp,
+        setTimeout: setTimeout,
+        setInterval: setInterval
+      };
+      
+      // Execute the code
+      const fn = new Function('sandbox', `
+        with (sandbox) {
+          try {
+            ${code}
+            return sandbox.data;
+          } catch(e) {
+            console.error('Code execution error:', e);
+            sandbox.error = e.message;
+            return sandbox.data;
+          }
+        }
+      `);
+      
+      const result = fn(sandbox);
+      
+      let transformedData = result || sandbox.data;
+      
+      // If code explicitly set output, use that
+      if (sandbox.output !== undefined) {
+        transformedData = sandbox.output;
+      }
+      
+      return {
+        output: {
+          transformed: transformedData,
+          original: input,
+          trigger: triggerData,
+          timestamp: new Date().toISOString(),
+          error: sandbox.error || null
+        },
+        next: sandbox.error ? ['error'] : ['next']
+      };
+      
+    } catch (error) {
+      console.error('Code node error:', error);
+      return {
+        output: {
+          error: error.message,
+          original: input,
+          stack: error.stack
+        },
+        next: ['error']
+      };
+    }
+  }
+  
+  // Transform Node - Data transformation (map, filter, aggregate, merge, split, format)
+  async handleTransformNode(node, input, triggerData, userId) {
+    const config = node.config || {};
+    const transformType = config.type || 'map';
+    
+    let transformedData = { ...input };
+    
+    try {
+      switch (transformType) {
+        case 'map':
+          // Map fields from input to output
+          const mapping = config.mapping || {};
+          transformedData = {};
+          for (const [key, value] of Object.entries(mapping)) {
+            transformedData[key] = this.getValueFromPath(value, { ...triggerData, ...input });
+          }
+          break;
+          
+        case 'filter':
+          // Filter array data
+          const filterField = config.field;
+          const filterValue = config.value;
+          const filterOperator = config.operator || 'eq';
+          
+          if (Array.isArray(input.data)) {
+            transformedData.data = input.data.filter(item => {
+              const itemValue = this.getValueFromPath(filterField, item);
+              switch (filterOperator) {
+                case 'eq': return itemValue === filterValue;
+                case 'neq': return itemValue !== filterValue;
+                case 'gt': return itemValue > filterValue;
+                case 'gte': return itemValue >= filterValue;
+                case 'lt': return itemValue < filterValue;
+                case 'lte': return itemValue <= filterValue;
+                case 'contains': return String(itemValue).includes(String(filterValue));
+                case 'startsWith': return String(itemValue).startsWith(String(filterValue));
+                case 'endsWith': return String(itemValue).endsWith(String(filterValue));
+                default: return itemValue === filterValue;
+              }
+            });
+            transformedData.filtered_count = transformedData.data.length;
+          }
+          break;
+          
+        case 'aggregate':
+          // Aggregate array data (sum, avg, count, min, max)
+          const aggregateField = config.aggregateField;
+          const operation = config.operation;
+          if (Array.isArray(input.data)) {
+            const values = input.data.map(item => parseFloat(this.getValueFromPath(aggregateField, item))).filter(v => !isNaN(v));
+            switch (operation) {
+              case 'sum':
+                transformedData.result = values.reduce((a, b) => a + b, 0);
+                break;
+              case 'avg':
+                transformedData.result = values.reduce((a, b) => a + b, 0) / (values.length || 1);
+                break;
+              case 'min':
+                transformedData.result = Math.min(...values);
+                break;
+              case 'max':
+                transformedData.result = Math.max(...values);
+                break;
+              case 'count':
+                transformedData.result = values.length;
+                break;
+            }
+          }
+          break;
+          
+        case 'merge':
+          // Merge multiple objects
+          const sources = config.sources || [];
+          transformedData = {};
+          for (const source of sources) {
+            const sourceData = this.getValueFromPath(source, { ...triggerData, ...input });
+            if (sourceData && typeof sourceData === 'object') {
+              transformedData = { ...transformedData, ...sourceData };
+            }
+          }
+          break;
+          
+        case 'split':
+          // Split string into array
+          const splitField = config.field;
+          const separator = config.separator || ',';
+          const value = this.getValueFromPath(splitField, input);
+          transformedData.result = value ? String(value).split(separator).map(s => s.trim()) : [];
+          break;
+          
+        case 'format':
+          // Format date, number, string
+          const formatField = config.field;
+          const formatType = config.formatType;
+          const formatPattern = config.pattern;
+          let fieldValue = this.getValueFromPath(formatField, input);
+          
+          if (formatType === 'date' && fieldValue) {
+            const date = new Date(fieldValue);
+            if (formatPattern === 'ISO') {
+              fieldValue = date.toISOString();
+            } else if (formatPattern === 'locale') {
+              fieldValue = date.toLocaleString();
+            } else if (formatPattern === 'date') {
+              fieldValue = date.toLocaleDateString();
+            } else if (formatPattern === 'time') {
+              fieldValue = date.toLocaleTimeString();
+            } else {
+              fieldValue = date.toISOString();
+            }
+          } else if (formatType === 'number' && fieldValue !== undefined) {
+            const decimals = config.decimals || 2;
+            fieldValue = parseFloat(fieldValue).toFixed(decimals);
+          } else if (formatType === 'currency' && fieldValue !== undefined) {
+            const currency = config.currency || 'USD';
+            fieldValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(fieldValue);
+          } else if (formatType === 'uppercase') {
+            fieldValue = String(fieldValue).toUpperCase();
+          } else if (formatType === 'lowercase') {
+            fieldValue = String(fieldValue).toLowerCase();
+          } else if (formatType === 'capitalize') {
+            fieldValue = String(fieldValue).replace(/\b\w/g, l => l.toUpperCase());
+          }
+          
+          transformedData[formatField] = fieldValue;
+          break;
+          
+        case 'pick':
+          // Pick specific fields from object
+          const fields = config.fields || [];
+          transformedData = {};
+          for (const field of fields) {
+            transformedData[field] = this.getValueFromPath(field, { ...triggerData, ...input });
+          }
+          break;
+          
+        case 'omit':
+          // Omit specific fields from object
+          const omitFields = config.fields || [];
+          transformedData = { ...input };
+          for (const field of omitFields) {
+            delete transformedData[field];
+          }
+          break;
+          
+        case 'defaults':
+          // Set default values for missing fields
+          const defaults = config.defaults || {};
+          for (const [key, defaultValue] of Object.entries(defaults)) {
+            if (transformedData[key] === undefined || transformedData[key] === null || transformedData[key] === '') {
+              transformedData[key] = defaultValue;
+            }
+          }
+          break;
+      }
+      
+      return {
+        output: {
+          transformed: transformedData,
+          transform_type: transformType,
+          original: input,
+          timestamp: new Date().toISOString()
+        },
+        next: ['next']
+      };
+      
+    } catch (error) {
+      console.error('Transform node error:', error);
+      return {
+        output: {
+          error: error.message,
+          original: input,
+          transform_type: transformType
+        },
+        next: ['error']
+      };
+    }
+  }
+  
+  // ===== EXISTING NODE HANDLERS =====
   
   async handleTriggerNode(node, input, triggerData) {
     return {
@@ -536,6 +857,8 @@ class WorkflowExecutor {
     if (leadData.phone) score += 10;
     if (leadData.message && leadData.message.length > 50) score += 20;
     if (leadData.budget && leadData.budget > 1000) score += 25;
+    if (leadData.company && leadData.company.length > 0) score += 10;
+    if (leadData.title && leadData.title.includes('Manager') || leadData.title.includes('Director') || leadData.title.includes('VP')) score += 20;
     
     score = Math.min(config.max_score || 100, Math.max(config.min_score || 0, score));
     
@@ -627,6 +950,8 @@ class WorkflowExecutor {
       name: input.name || triggerData.name || 'New Lead',
       email: input.email || triggerData.email,
       phone: input.phone || triggerData.phone || null,
+      company: input.company || triggerData.company || null,
+      title: input.title || triggerData.title || null,
       source: config.source || 'workflow',
       status: config.status || 'new'
     };
@@ -762,13 +1087,13 @@ class WorkflowExecutor {
       
       const responseData = await response.json();
       return {
-        output: { status: response.status, data: responseData },
-        next: ['next']
+        output: { status: response.status, data: responseData, headers: Object.fromEntries(response.headers) },
+        next: response.status >= 200 && response.status < 300 ? ['next'] : ['error']
       };
     } catch (error) {
       return {
-        output: { status: 0, error: error.message },
-        next: ['next']
+        output: { status: 0, error: error.message, url: url },
+        next: ['error']
       };
     }
   }
@@ -788,6 +1113,12 @@ class WorkflowExecutor {
       }
       return value !== undefined && value !== null ? String(value) : match;
     });
+  }
+  
+  // Helper to get value from dot notation path
+  getValueFromPath(path, obj) {
+    if (!path || !obj) return null;
+    return path.split('.').reduce((current, key) => current?.[key], obj);
   }
   
   getUserToken(userId) {

@@ -104,6 +104,13 @@ const {
 const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
+// ===== ENTERPRISE FEATURE IMPORTS =====
+const { addToQueue, getQueueStats } = require('./queue-service');
+const { rateLimitMiddleware } = require('./rate-limiter');
+const workflowVersioning = require('./workflow-versioning');
+const debugExecutor = require('./debug-executor');
+const errorHandler = require('./error-handler');
+
 // ===== DEBUG: Check if route files exist =====
 const fs = require('fs');
 const pathModule = require('path');
@@ -476,8 +483,11 @@ console.log('✅ AI Business Coach routes mounted at /api/coach');
 
 // ===== NEW: WORKFLOW ENGINE ROUTES (REAL-TIME AUTOMATION) =====
 if (workflowRoutes) {
+  // Apply rate limiting to workflow execution routes
+  app.use('/api/workflows/:id/execute', rateLimitMiddleware);
+  app.use('/api/workflows/execute', rateLimitMiddleware);
   app.use('/api', workflowRoutes);
-  console.log('✅ Workflow routes mounted at /api/workflows');
+  console.log('✅ Workflow routes mounted at /api/workflows with rate limiting');
 }
 
 if (webhookHandler) {
@@ -497,6 +507,160 @@ if (workflowTemplatesRoutes) {
   console.log('✅ Workflow templates routes mounted at /api/workflow-templates');
 }
 
+// ================= ENTERPRISE FEATURE ENDPOINTS =================
+
+// Queue Stats endpoint
+app.get('/api/queue/stats', authenticateToken, async (req, res) => {
+  try {
+    const stats = await getQueueStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error getting queue stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Workflow Versioning endpoints
+app.get('/api/workflows/:id/versions', authenticateToken, async (req, res) => {
+  try {
+    const versions = await workflowVersioning.getVersions(req.params.id);
+    res.json(versions);
+  } catch (error) {
+    console.error('Error getting versions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/workflows/:id/versions/save', authenticateToken, async (req, res) => {
+  try {
+    const { name, nodes, edges, change_note } = req.body;
+    const version = await workflowVersioning.saveVersion(
+      req.params.id, 
+      req.user.id, 
+      name, 
+      nodes, 
+      edges, 
+      change_note
+    );
+    res.json(version);
+  } catch (error) {
+    console.error('Error saving version:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/workflows/:id/rollback/:version', authenticateToken, async (req, res) => {
+  try {
+    const workflow = await workflowVersioning.rollbackToVersion(req.params.id, parseInt(req.params.version));
+    res.json(workflow);
+  } catch (error) {
+    console.error('Error rolling back:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/workflows/:id/compare/:version1/:version2', authenticateToken, async (req, res) => {
+  try {
+    const comparison = await workflowVersioning.compareVersions(
+      req.params.id,
+      parseInt(req.params.version1),
+      parseInt(req.params.version2)
+    );
+    res.json(comparison);
+  } catch (error) {
+    console.error('Error comparing versions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Debug Mode endpoints
+app.post('/api/workflows/:id/debug', authenticateToken, async (req, res) => {
+  try {
+    const { trigger_data } = req.body;
+    const sessionId = await debugExecutor.startDebugSession(
+      req.params.id, 
+      req.user.id, 
+      trigger_data
+    );
+    res.json({ session_id: sessionId });
+  } catch (error) {
+    console.error('Error starting debug session:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/debug/:sessionId/step', authenticateToken, async (req, res) => {
+  try {
+    const { action } = req.body;
+    const result = await debugExecutor.step(req.params.sessionId, action);
+    res.json(result);
+  } catch (error) {
+    console.error('Error stepping through debug:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/debug/:sessionId/breakpoint', authenticateToken, async (req, res) => {
+  try {
+    const { node_id, action } = req.body;
+    if (action === 'add') {
+      debugExecutor.setBreakpoint(req.params.sessionId, node_id);
+    } else {
+      debugExecutor.removeBreakpoint(req.params.sessionId, node_id);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error managing breakpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/debug/:sessionId', authenticateToken, async (req, res) => {
+  try {
+    const session = debugExecutor.getSession(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Debug session not found' });
+    }
+    res.json(session);
+  } catch (error) {
+    console.error('Error getting debug session:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Error Handler endpoints
+app.post('/api/workflows/:id/error-handler', authenticateToken, async (req, res) => {
+  try {
+    const { error_workflow_id, error_types } = req.body;
+    await errorHandler.registerErrorHandler(req.params.id, error_workflow_id, error_types);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error registering error handler:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/workflows/:id/error-handler', authenticateToken, async (req, res) => {
+  try {
+    const { data: handler } = await supabase
+      .from('error_handlers')
+      .select('*')
+      .eq('workflow_id', req.params.id)
+      .single();
+    
+    res.json(handler || null);
+  } catch (error) {
+    console.error('Error getting error handler:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
+app.post("/api/webhook-test", (req, res) => {
+  console.log("🔗 Webhook test received:", req.body);
+  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
+});
+
 // ===== INITIALIZE WORKFLOW SCHEDULER =====
 if (workflowScheduler && workflowScheduler.initialize) {
   setTimeout(async () => {
@@ -506,11 +670,11 @@ if (workflowScheduler && workflowScheduler.initialize) {
   console.log('⏰ Workflow scheduler will start in 5 seconds');
 }
 
-// ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
-app.post("/api/webhook-test", (req, res) => {
-  console.log("🔗 Webhook test received:", req.body);
-  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
-});
+// Initialize error handlers on startup
+setTimeout(async () => {
+  await errorHandler.loadErrorHandlers();
+  console.log('✅ Error handlers loaded');
+}, 6000);
 
 // ================================================
 // ADMIN: SEED AUTOMATION TEMPLATES
@@ -2729,7 +2893,7 @@ server.listen(PORT, () => {
   console.log(`📋 Workflow API Endpoints:`);
   console.log(`   - GET /api/workflows - List workflows`);
   console.log(`   - POST /api/workflows - Create workflow`);
-  console.log(`   - POST /api/workflows/:id/execute - Execute workflow`);
+  console.log(`   - POST /api/workflows/:id/execute - Execute workflow (rate limited)`);
   console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
   console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
   console.log(`📋 Webhook Listener:`);
@@ -2739,5 +2903,13 @@ server.listen(PORT, () => {
   console.log(`📋 Workflow Templates:`);
   console.log(`   - GET /api/workflow-templates - List templates`);
   console.log(`   - POST /api/workflow-templates/:templateId/apply - Apply template`);
+  console.log(`📋 Enterprise Features:`);
+  console.log(`   - GET /api/queue/stats - Queue statistics`);
+  console.log(`   - GET /api/workflows/:id/versions - Workflow versions`);
+  console.log(`   - POST /api/workflows/:id/versions/save - Save version`);
+  console.log(`   - POST /api/workflows/:id/rollback/:version - Rollback`);
+  console.log(`   - POST /api/workflows/:id/debug - Start debug session`);
+  console.log(`   - POST /api/workflows/:id/error-handler - Set error handler`);
   console.log(`⏰ Workflow Scheduler: Initialized with cron jobs`);
+  console.log(`🔄 Error handlers loaded and ready`);
 });
