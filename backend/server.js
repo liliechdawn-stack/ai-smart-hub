@@ -189,6 +189,9 @@ try {
 // ===== NEW: WORKFLOW ENGINE IMPORTS (REAL-TIME AUTOMATION) =====
 let workflowRoutes;
 let webhookHandler;
+let webhookListener;
+let workflowScheduler;
+let workflowTemplatesRoutes;
 
 try {
   workflowRoutes = require('./routes/workflow-routes');
@@ -204,6 +207,31 @@ try {
 } catch (err) {
   console.error('❌ Failed to load webhook-handler.js:', err.message);
   webhookHandler = null;
+}
+
+try {
+  const { webhookRouter } = require('./webhook-listener');
+  webhookListener = webhookRouter;
+  console.log('✅ webhook-listener.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load webhook-listener.js:', err.message);
+  webhookListener = null;
+}
+
+try {
+  workflowScheduler = require('./scheduler');
+  console.log('✅ scheduler.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load scheduler.js:', err.message);
+  workflowScheduler = null;
+}
+
+try {
+  workflowTemplatesRoutes = require('./workflow-templates');
+  console.log('✅ workflow-templates.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load workflow-templates.js:', err.message);
+  workflowTemplatesRoutes = null;
 }
 
 const app = express();
@@ -455,6 +483,27 @@ if (workflowRoutes) {
 if (webhookHandler) {
   app.use('/', webhookHandler);
   console.log('✅ Webhook handler mounted at /webhook/*');
+}
+
+// ===== NEW: WEBHOOK LISTENER (for registered webhooks) =====
+if (webhookListener) {
+  app.use('/', webhookListener);
+  console.log('✅ Webhook listener mounted');
+}
+
+// ===== NEW: WORKFLOW TEMPLATES ROUTES =====
+if (workflowTemplatesRoutes) {
+  app.use('/', workflowTemplatesRoutes);
+  console.log('✅ Workflow templates routes mounted at /api/workflow-templates');
+}
+
+// ===== INITIALIZE WORKFLOW SCHEDULER =====
+if (workflowScheduler && workflowScheduler.initialize) {
+  setTimeout(async () => {
+    await workflowScheduler.initialize();
+    console.log('✅ Workflow scheduler initialized');
+  }, 5000);
+  console.log('⏰ Workflow scheduler will start in 5 seconds');
 }
 
 // ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
@@ -2683,4 +2732,12 @@ server.listen(PORT, () => {
   console.log(`   - POST /api/workflows/:id/execute - Execute workflow`);
   console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
   console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
+  console.log(`📋 Webhook Listener:`);
+  console.log(`   - POST /api/webhooks/register - Register webhook`);
+  console.log(`   - GET /api/webhooks - List webhooks`);
+  console.log(`   - DELETE /api/webhooks/:path - Delete webhook`);
+  console.log(`📋 Workflow Templates:`);
+  console.log(`   - GET /api/workflow-templates - List templates`);
+  console.log(`   - POST /api/workflow-templates/:templateId/apply - Apply template`);
+  console.log(`⏰ Workflow Scheduler: Initialized with cron jobs`);
 });
