@@ -1377,12 +1377,13 @@
 <script>
 // ================================================
 // AI AUTOMATIONS - ENTERPRISE SAAS VERSION
-// Real-time Lead & Business Automation Engine
+// REAL-TIME LEAD & BUSINESS AUTOMATION ENGINE
+// WITH WEBSOCKET LIVE UPDATES & ENTERPRISE FEATURES
 // ================================================
 
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
 const API_BASE = `${BACKEND_URL}/api/automations`;
-const TEMPLATE_API = `${BACKEND_URL}/api/automation`; // ADDED: For template routes
+const TEMPLATE_API = `${BACKEND_URL}/api/automation`;
 const WS_BASE = BACKEND_URL.replace('https', 'wss');
 
 let automations = [];
@@ -1390,6 +1391,8 @@ let activities = [];
 let performanceChart, triggerChart;
 let realtimeSocket = null;
 let autoRefreshInterval = null;
+let leadUpdateInterval = null;
+let activeAutomationExecutions = new Map();
 
 // Admin email
 const ADMIN_EMAIL = "ericchung992@gmail.com";
@@ -1506,6 +1509,308 @@ const templates = [
     }
 ];
 
+// ===== ENTERPRISE REAL-TIME WEBSOCKET CONNECTION =====
+function initEnterpriseWebSocket() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        realtimeSocket = io(BACKEND_URL, {
+            transports: ['websocket', 'polling'],
+            query: { token: token },
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000
+        });
+        
+        realtimeSocket.on('connect', () => {
+            console.log('🔌 Enterprise WebSocket connected - Real-time lead tracking active');
+            updateConnectionStatus(true);
+        });
+        
+        // Real-time lead capture events
+        realtimeSocket.on('new_lead', (data) => {
+            console.log('🆕 New lead captured in real-time:', data);
+            addRealTimeActivity('lead', `New lead captured: ${data.name} (${data.email})`, 'success');
+            updateLeadCounter();
+            showToast(`🎉 New lead: ${data.name}`, 'success', 3000);
+            
+            // Update the leads count in UI
+            const leadsGeneratedEl = document.getElementById('leads-generated');
+            if (leadsGeneratedEl) {
+                let currentLeads = parseInt(leadsGeneratedEl.textContent) || 0;
+                leadsGeneratedEl.textContent = currentLeads + 1;
+            }
+            
+            // Play notification sound if enabled
+            playNotificationSound('lead');
+        });
+        
+        // Real-time automation trigger events
+        realtimeSocket.on('automation_triggered', (data) => {
+            console.log('⚡ Automation triggered:', data);
+            addRealTimeActivity('automation', `Automation "${data.automation_name}" triggered by ${data.trigger_type}`, 'info');
+            updateAutomationStats(data.automation_id, 'triggered');
+        });
+        
+        // Real-time automation execution events
+        realtimeSocket.on('automation_executed', (data) => {
+            console.log('✅ Automation executed:', data);
+            addRealTimeActivity('automation', `Automation "${data.automation_name}" completed successfully`, 'success');
+            updateAutomationStats(data.automation_id, 'executed');
+            
+            // Update success rate
+            updateSuccessRate(data.automation_id, data.success);
+        });
+        
+        // Real-time lead scoring updates
+        realtimeSocket.on('lead_scored', (data) => {
+            console.log('📊 Lead scored:', data);
+            addRealTimeActivity('lead', `Lead "${data.lead_name}" scored ${data.score} (${data.rating})`, 'info');
+            
+            if (data.score >= 80) {
+                showToast(`🔥 Hot lead detected: ${data.lead_name} (Score: ${data.score})`, 'warning', 5000);
+                playNotificationSound('hot_lead');
+            }
+        });
+        
+        // Real-time workflow execution updates
+        realtimeSocket.on('workflow_execution_start', (data) => {
+            console.log('🚀 Workflow execution started:', data);
+            activeAutomationExecutions.set(data.execution_id, {
+                automation_id: data.automation_id,
+                status: 'running',
+                start_time: new Date()
+            });
+            updateExecutionDisplay(data.automation_id, 'running');
+        });
+        
+        realtimeSocket.on('workflow_execution_complete', (data) => {
+            console.log('✅ Workflow execution completed:', data);
+            activeAutomationExecutions.delete(data.execution_id);
+            updateExecutionDisplay(data.automation_id, 'completed');
+            addRealTimeActivity('workflow', `Workflow completed in ${data.duration}ms`, 'success');
+        });
+        
+        realtimeSocket.on('workflow_execution_failed', (data) => {
+            console.error('❌ Workflow execution failed:', data);
+            activeAutomationExecutions.delete(data.execution_id);
+            updateExecutionDisplay(data.automation_id, 'failed');
+            addRealTimeActivity('workflow', `Workflow failed: ${data.error}`, 'error');
+        });
+        
+        // Real-time sentiment analysis
+        realtimeSocket.on('sentiment_detected', (data) => {
+            console.log('😊 Sentiment detected:', data);
+            if (data.sentiment === 'negative') {
+                addRealTimeActivity('sentiment', `Negative sentiment detected from ${data.source}`, 'warning');
+                showToast(`⚠️ Negative sentiment alert from ${data.source}`, 'warning', 4000);
+                playNotificationSound('alert');
+            }
+        });
+        
+        // Real-time cart abandonment
+        realtimeSocket.on('cart_abandoned', (data) => {
+            console.log('🛒 Cart abandoned:', data);
+            addRealTimeActivity('ecommerce', `Cart abandoned: ${data.customer_name} - Value: $${data.cart_value}`, 'warning');
+            
+            if (data.cart_value > 100) {
+                showToast(`🛒 High-value cart abandoned: $${data.cart_value}`, 'warning', 5000);
+            }
+        });
+        
+        // Real-time review requests
+        realtimeSocket.on('review_requested', (data) => {
+            console.log('⭐ Review requested:', data);
+            addRealTimeActivity('review', `Review request sent to ${data.customer_name}`, 'success');
+        });
+        
+        realtimeSocket.on('disconnect', () => {
+            console.log('🔌 Enterprise WebSocket disconnected');
+            updateConnectionStatus(false);
+        });
+        
+        realtimeSocket.on('reconnect', () => {
+            console.log('🔄 Enterprise WebSocket reconnected');
+            updateConnectionStatus(true);
+        });
+        
+    } catch (error) {
+        console.warn('Enterprise WebSocket not available, using polling mode');
+    }
+}
+
+function updateConnectionStatus(connected) {
+    const statusIndicator = document.getElementById('connectionStatus');
+    if (statusIndicator) {
+        statusIndicator.innerHTML = connected ? 
+            '<span style="color:#10B981;"><i class="fas fa-circle"></i> LIVE</span>' : 
+            '<span style="color:#EF4444;"><i class="fas fa-circle"></i> OFFLINE</span>';
+    }
+}
+
+function addRealTimeActivity(type, message, status) {
+    const activityItem = {
+        id: Date.now(),
+        type: type,
+        message: message,
+        status: status,
+        time: new Date().toLocaleTimeString(),
+        icon: getActivityIcon(type),
+        color: getActivityColor(status)
+    };
+    
+    activities.unshift(activityItem);
+    if (activities.length > 50) activities.pop();
+    
+    // Update activity timeline in real-time
+    updateActivityTimeline(activityItem);
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'lead': 'fa-user-plus',
+        'automation': 'fa-robot',
+        'workflow': 'fa-project-diagram',
+        'sentiment': 'fa-smile',
+        'ecommerce': 'fa-shopping-cart',
+        'review': 'fa-star',
+        'default': 'fa-bell'
+    };
+    return icons[type] || icons.default;
+}
+
+function getActivityColor(status) {
+    const colors = {
+        'success': '#10B981',
+        'error': '#EF4444',
+        'warning': '#F59E0B',
+        'info': '#3B82F6'
+    };
+    return colors[status] || colors.info;
+}
+
+function updateActivityTimeline(activity) {
+    const timeline = document.getElementById('activity-timeline');
+    if (!timeline) return;
+    
+    const activityHtml = `
+        <div class="timeline-item" onclick="handleActivityClick('${activity.id}')" style="cursor:pointer; animation: fadeIn 0.3s ease;">
+            <div class="timeline-icon" style="color: ${activity.color};">
+                <i class="fas ${activity.icon}"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">${activity.message}</div>
+                <div class="timeline-time">${activity.time}</div>
+            </div>
+        </div>
+    `;
+    
+    timeline.insertAdjacentHTML('afterbegin', activityHtml);
+    
+    // Keep only last 20 items
+    while (timeline.children.length > 20) {
+        timeline.lastChild.remove();
+    }
+}
+
+function updateLeadCounter() {
+    // Trigger a refresh of lead stats from server
+    refreshLeadStats();
+}
+
+async function refreshLeadStats() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${BACKEND_URL}/api/leads/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const stats = await response.json();
+            const leadsGeneratedEl = document.getElementById('leads-generated');
+            if (leadsGeneratedEl) leadsGeneratedEl.textContent = stats.total || 0;
+        }
+    } catch (error) {
+        console.error('Error refreshing lead stats:', error);
+    }
+}
+
+function updateAutomationStats(automationId, event) {
+    const automationCard = document.querySelector(`.automation-card[data-id="${automationId}"]`);
+    if (automationCard) {
+        const triggerCountEl = automationCard.querySelector('.stat-value:first-child');
+        if (triggerCountEl && event === 'triggered') {
+            let currentCount = parseInt(triggerCountEl.textContent) || 0;
+            triggerCountEl.textContent = currentCount + 1;
+        }
+    }
+}
+
+function updateSuccessRate(automationId, success) {
+    // Update success rate in UI
+    refreshAutomationStats();
+}
+
+async function refreshAutomationStats() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const stats = await response.json();
+            const successRateEl = document.getElementById('success-rate');
+            if (successRateEl) successRateEl.textContent = `${stats.success_rate || 98}%`;
+            
+            const activeCountEl = document.getElementById('active-count');
+            if (activeCountEl) activeCountEl.textContent = stats.active_count || 0;
+            
+            const hoursSavedEl = document.getElementById('hours-saved');
+            if (hoursSavedEl) hoursSavedEl.textContent = stats.hours_saved || 0;
+        }
+    } catch (error) {
+        console.error('Error refreshing automation stats:', error);
+    }
+}
+
+function updateExecutionDisplay(automationId, status) {
+    const automationCard = document.querySelector(`.automation-card[data-id="${automationId}"]`);
+    if (automationCard) {
+        const statusBadge = automationCard.querySelector('.automation-status');
+        if (status === 'running') {
+            statusBadge.innerHTML = '🟡 RUNNING';
+            statusBadge.style.background = '#F59E0B20';
+            statusBadge.style.color = '#F59E0B';
+        } else if (status === 'completed') {
+            statusBadge.innerHTML = '🟢 LIVE';
+            statusBadge.style.background = '#10B98120';
+            statusBadge.style.color = '#10B981';
+            setTimeout(() => {
+                statusBadge.innerHTML = '🟢 LIVE';
+            }, 3000);
+        } else if (status === 'failed') {
+            statusBadge.innerHTML = '🔴 FAILED';
+            statusBadge.style.background = '#EF444420';
+            statusBadge.style.color = '#EF4444';
+            setTimeout(() => {
+                if (automationCard.querySelector('.toggle-switch input')?.checked) {
+                    statusBadge.innerHTML = '🟢 LIVE';
+                } else {
+                    statusBadge.innerHTML = '⏸️ PAUSED';
+                }
+            }, 5000);
+        }
+    }
+}
+
+function playNotificationSound(type) {
+    // Optional: Add sound notifications
+    // This is a silent function - you can add actual sound if desired
+    console.log(`🔔 Notification: ${type}`);
+}
+
 // ===== TOKEN HELPERS =====
 function getPlanFromToken() {
     try {
@@ -1560,6 +1865,23 @@ styleEl.textContent = `
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(100%); opacity: 0; }
     }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .automation-card {
+        transition: all 0.3s ease;
+    }
+    .automation-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+    }
+    .timeline-item {
+        transition: background 0.2s ease;
+    }
+    .timeline-item:hover {
+        background: rgba(212,175,55,0.1);
+    }
 `;
 document.head.appendChild(styleEl);
 
@@ -1579,13 +1901,26 @@ function unlockContent() {
     renderTemplates();
     loadActivity();
     loadAutomations();
-    loadRecommendedAutomations(); // NEW: Load AI recommended automations
+    loadRecommendedAutomations();
+    initEnterpriseWebSocket(); // Initialize enterprise WebSocket
     initRealTimeUpdates();
     startAutoRefresh();
+    startLeadPolling();
 }
 
-// ===== LOAD AI RECOMMENDED AUTOMATIONS (NEW) =====
-async function loadRecommendedAutomations() {
+// Start lead polling as fallback for WebSocket
+function startLeadPolling() {
+    if (leadUpdateInterval) clearInterval(leadUpdateInterval);
+    leadUpdateInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            refreshLeadStats();
+            refreshAutomationStats();
+        }
+    }, 15000);
+}
+
+// ===== LOAD AI RECOMMENDED AUTOMATIONS =====
+async function loadRecommendedAutomations(silent = false) {
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${BACKEND_URL}/api/automations?source=recommended`, {
@@ -1594,7 +1929,6 @@ async function loadRecommendedAutomations() {
         
         if (response.ok) {
             const data = await response.json();
-            // Filter automations that came from AI recommendations
             const recommended = (data.automations || []).filter(a => 
                 a.metadata?.source === 'ai_recommendation' || 
                 a.name?.includes('AI Recommended') ||
@@ -1605,75 +1939,8 @@ async function loadRecommendedAutomations() {
             const grid = document.getElementById('recommendedAutomationsGrid');
             
             if (recommended.length > 0) {
-                section.style.display = 'block';
-                grid.innerHTML = recommended.map(automation => `
-                    <div class="recommended-card">
-                        <div class="recommended-badge">
-                            <i class="fas fa-robot"></i> AI Recommended
-                        </div>
-                        <div class="recommended-icon">
-                            <i class="fas ${automation.icon || 'fa-magic'}"></i>
-                        </div>
-                        <div class="recommended-title">${automation.name || automation.title}</div>
-                        <div class="recommended-reason">
-                            <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
-                            ${automation.metadata?.reason || 'Deployed by AI based on your business profile'}
-                        </div>
-                        <div class="recommended-footer">
-                            <span class="automation-status status-live">🟢 ACTIVE</span>
-                            <button class="btn-ai-deploy" onclick="viewAutomation('${automation.id}')">
-                                <i class="fas fa-eye"></i> View Automation
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                // Try to fetch from business insights recommendations
-                const insightsRes = await fetch(`${BACKEND_URL}/api/business/insights`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (insightsRes.ok) {
-                    const insightsData = await insightsRes.json();
-                    if (insightsData.recommendations && insightsData.recommendations.length > 0) {
-                        section.style.display = 'block';
-                        grid.innerHTML = insightsData.recommendations.map(rec => `
-                            <div class="recommended-card">
-                                <div class="recommended-badge">
-                                    <i class="fas fa-robot"></i> AI Suggested
-                                </div>
-                                <div class="recommended-icon">
-                                    <i class="fas ${rec.icon || 'fa-magic'}"></i>
-                                </div>
-                                <div class="recommended-title">${rec.title}</div>
-                                <div class="recommended-reason">
-                                    <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
-                                    ${rec.reason}
-                                </div>
-                                <div class="recommended-footer">
-                                    <button class="btn-ai-deploy" onclick="deployAIAutomation('${rec.automation_template_id}')">
-                                        <i class="fas fa-rocket"></i> Deploy Now
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('');
-                    } else {
-                        section.style.display = 'none';
-                    }
-                } else {
-                    section.style.display = 'none';
-                }
-            }
-        } else {
-            // Try fallback - check if there are any automations marked as AI recommended
-            const allAutomations = await fetch(`${BACKEND_URL}/api/automations`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (allAutomations.ok) {
-                const allData = await allAutomations.json();
-                const recommended = (allData.automations || []).filter(a => a.ai_recommended === true);
-                if (recommended.length > 0) {
-                    section.style.display = 'block';
+                if (section) section.style.display = 'block';
+                if (grid) {
                     grid.innerHTML = recommended.map(automation => `
                         <div class="recommended-card">
                             <div class="recommended-badge">
@@ -1685,7 +1952,7 @@ async function loadRecommendedAutomations() {
                             <div class="recommended-title">${automation.name || automation.title}</div>
                             <div class="recommended-reason">
                                 <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
-                                ${automation.description || 'Deployed by AI based on your business profile'}
+                                ${automation.metadata?.reason || 'Deployed by AI based on your business profile'}
                             </div>
                             <div class="recommended-footer">
                                 <span class="automation-status status-live">🟢 ACTIVE</span>
@@ -1695,24 +1962,56 @@ async function loadRecommendedAutomations() {
                             </div>
                         </div>
                     `).join('');
-                } else {
-                    section.style.display = 'none';
                 }
             } else {
-                section.style.display = 'none';
+                const insightsRes = await fetch(`${BACKEND_URL}/api/business/insights`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (insightsRes.ok) {
+                    const insightsData = await insightsRes.json();
+                    if (insightsData.recommendations && insightsData.recommendations.length > 0) {
+                        if (section) section.style.display = 'block';
+                        if (grid) {
+                            grid.innerHTML = insightsData.recommendations.map(rec => `
+                                <div class="recommended-card">
+                                    <div class="recommended-badge">
+                                        <i class="fas fa-robot"></i> AI Suggested
+                                    </div>
+                                    <div class="recommended-icon">
+                                        <i class="fas ${rec.icon || 'fa-magic'}"></i>
+                                    </div>
+                                    <div class="recommended-title">${rec.title}</div>
+                                    <div class="recommended-reason">
+                                        <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
+                                        ${rec.reason}
+                                    </div>
+                                    <div class="recommended-footer">
+                                        <button class="btn-ai-deploy" onclick="deployAIAutomation('${rec.automation_template_id}')">
+                                            <i class="fas fa-rocket"></i> Deploy Now
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    } else if (section) {
+                        section.style.display = 'none';
+                    }
+                } else if (section) {
+                    section.style.display = 'none';
+                }
             }
         }
     } catch (error) {
         console.error('Error loading recommended automations:', error);
-        document.getElementById('recommendedAutomationsSection').style.display = 'none';
+        const section = document.getElementById('recommendedAutomationsSection');
+        if (section) section.style.display = 'none';
     }
 }
 
-// Deploy AI recommended automation - FIXED: Using correct endpoint
 async function deployAIAutomation(templateId) {
     try {
         const token = localStorage.getItem('token');
-        // FIXED: Use TEMPLATE_API which is /api/automation
         const response = await fetch(`${TEMPLATE_API}/automations/from-template/${templateId}`, {
             method: 'POST',
             headers: {
@@ -1729,6 +2028,11 @@ async function deployAIAutomation(templateId) {
             showToast('✅ AI automation deployed successfully!', 'success');
             loadAutomations();
             loadRecommendedAutomations();
+            
+            // Notify via WebSocket
+            if (realtimeSocket && realtimeSocket.connected) {
+                realtimeSocket.emit('automation_deployed', { templateId });
+            }
         } else {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Deployment failed');
@@ -1745,11 +2049,7 @@ function viewAutomation(id) {
 
 // ===== REAL-TIME UPDATES =====
 function initRealTimeUpdates() {
-    try {
-        console.log("📡 Real-time monitoring active");
-    } catch (err) {
-        console.warn("WebSocket not available, using polling");
-    }
+    console.log("📡 Real-time monitoring active with WebSocket");
 }
 
 function startAutoRefresh() {
@@ -1913,7 +2213,6 @@ function useTemplate(id) {
             triggerSelect.value = triggerMap[template.trigger];
         }
         
-        // Pre-configure based on template
         if (template.action === 'multi-channel') {
             document.getElementById('automation-action').value = 'send-email';
             document.getElementById('action-config').value = JSON.stringify({
@@ -2143,11 +2442,10 @@ function renderAutomations(items) {
             item.success_rate || 98;
         const categoryColor = getCategoryColor(item.category || 'lead-generation');
         
-        // Check if this automation is AI recommended
         const isAIRecommended = item.metadata?.source === 'ai_recommendation' || item.name?.includes('AI Recommended');
         
         return `
-        <div class="automation-card ${isAIRecommended ? 'ai-recommended' : ''}" data-category="${item.category || 'general'}">
+        <div class="automation-card ${isAIRecommended ? 'ai-recommended' : ''}" data-id="${item.id}" data-category="${item.category || 'general'}">
             <div class="automation-header">
                 <div class="automation-icon" style="background: linear-gradient(135deg, ${categoryColor}20 0%, ${categoryColor}10 100%);">
                     <i class="fas fa-${item.icon || 'robot'}" style="color:${categoryColor}"></i>
@@ -2282,6 +2580,11 @@ async function toggleAutomation(id, shouldEnable) {
             showToast(`Automation ${shouldEnable ? 'activated' : 'paused'}`);
             await loadAutomations(true);
             await loadRecommendedAutomations(true);
+            
+            // Notify via WebSocket
+            if (realtimeSocket && realtimeSocket.connected) {
+                realtimeSocket.emit('automation_toggle', { id, enabled: shouldEnable });
+            }
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Toggle failed');
@@ -2324,11 +2627,17 @@ async function testAutomation(id) {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ test: true })
+            body: JSON.stringify({ test: true, timestamp: new Date().toISOString() })
         });
 
         if (response.ok) {
-            showToast("Test triggered successfully", "success");
+            showToast("Test triggered successfully - check activity log", "success");
+            addRealTimeActivity('automation', `Test triggered for automation ID: ${id}`, 'info');
+            
+            // Show execution in real-time
+            setTimeout(() => {
+                loadActivity(true);
+            }, 1000);
         } else {
             throw new Error('Test failed');
         }
@@ -2478,6 +2787,11 @@ async function saveAutomation() {
             if (trigger.includes('lead') || action.includes('score')) {
                 showToast("⚡ Lead automation active - ready to convert!", "success", 5000);
             }
+            
+            // Notify via WebSocket
+            if (realtimeSocket && realtimeSocket.connected) {
+                realtimeSocket.emit('automation_saved', { id: result.id, name: title });
+            }
         } else {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Save failed');
@@ -2547,7 +2861,7 @@ async function checkPlan() {
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 AI Automations Studio Starting...");
-    console.log("📡 Real-time lead automation engine initializing...");
+    console.log("📡 Enterprise real-time lead automation engine initializing...");
 
     const hasAccess = await checkPlan();
     if (hasAccess) {
@@ -2561,6 +2875,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         window.addEventListener('beforeunload', () => {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (leadUpdateInterval) clearInterval(leadUpdateInterval);
+            if (realtimeSocket) realtimeSocket.disconnect();
         });
     }
 });
