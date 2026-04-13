@@ -111,12 +111,21 @@ class WorkflowExecutor {
         })
         .eq('id', executionId);
       
-      // Update workflow stats
+      // Update workflow stats - FIXED: replaced supabase.raw with manual increment
+      // First get current run_count
+      const { data: currentWorkflow } = await supabase
+        .from('workflows')
+        .select('run_count')
+        .eq('id', workflowId)
+        .single();
+      
+      const currentRunCount = currentWorkflow?.run_count || 0;
+      
       await supabase
         .from('workflows')
         .update({
           last_run_at: new Date().toISOString(),
-          run_count: supabase.raw('run_count + 1')
+          run_count: currentRunCount + 1
         })
         .eq('id', workflowId);
       
@@ -858,7 +867,7 @@ class WorkflowExecutor {
     if (leadData.message && leadData.message.length > 50) score += 20;
     if (leadData.budget && leadData.budget > 1000) score += 25;
     if (leadData.company && leadData.company.length > 0) score += 10;
-    if (leadData.title && leadData.title.includes('Manager') || leadData.title.includes('Director') || leadData.title.includes('VP')) score += 20;
+    if (leadData.title && (leadData.title.includes('Manager') || leadData.title.includes('Director') || leadData.title.includes('VP'))) score += 20;
     
     score = Math.min(config.max_score || 100, Math.max(config.min_score || 0, score));
     
@@ -1123,7 +1132,9 @@ class WorkflowExecutor {
   
   getUserToken(userId) {
     // In production, fetch from database
-    return localStorage ? localStorage.getItem('token') : null;
+    // This needs to be fixed to work in Node.js environment
+    // For now, return null and let individual handlers handle auth
+    return null;
   }
   
   getExecutionStatus(executionId) {
