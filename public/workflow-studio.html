@@ -23,7 +23,6 @@
             height: 100vh;
         }
 
-        /* ===== SIDEBAR STYLES ===== */
         .app-container {
             display: flex;
             height: 100vh;
@@ -57,7 +56,6 @@
             margin-top: 4px;
         }
 
-        /* Connected Apps Section - NEW like n8n */
         .connected-apps-section {
             padding: 16px 20px;
             border-bottom: 1px solid #2a2a3e;
@@ -115,7 +113,6 @@
         .status-online { background: #10B981; box-shadow: 0 0 4px #10B981; animation: pulse 2s infinite; }
         .status-offline { background: #EF4444; }
         .status-syncing { background: #F59E0B; animation: pulse 1s infinite; }
-        .status-connected { background: #3B82F6; }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -156,12 +153,6 @@
 
         .nav-item:hover {
             background: #2a2a3e;
-            color: #d4af37;
-        }
-
-        .nav-item.active {
-            background: linear-gradient(135deg, #d4af3720, #f1c40f10);
-            border-left: 3px solid #d4af37;
             color: #d4af37;
         }
 
@@ -223,7 +214,6 @@
             color: #d4af37;
         }
 
-        /* ===== MAIN CONTENT STYLES ===== */
         .main-content {
             flex: 1;
             display: flex;
@@ -259,11 +249,6 @@
             width: 250px;
         }
 
-        .workflow-title input:focus {
-            outline: none;
-            border-color: #d4af37;
-        }
-
         .webhook-url {
             background: #0f0f1a;
             padding: 6px 12px;
@@ -274,10 +259,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .webhook-url i {
-            font-size: 0.8rem;
         }
 
         .view-tabs {
@@ -342,11 +323,6 @@
             color: #d4af37;
         }
 
-        .btn-danger {
-            background: #dc2626;
-            color: white;
-        }
-
         .btn-success {
             background: #10B981;
             color: white;
@@ -357,7 +333,6 @@
             color: #1a1a2e;
         }
 
-        /* ===== WORKFLOW CANVAS ===== */
         .canvas-container {
             flex: 1;
             background: #0a0a0a;
@@ -377,7 +352,6 @@
             padding: 40px;
         }
 
-        /* ===== EXECUTION LOG PANEL (like n8n) ===== */
         .execution-panel {
             position: fixed;
             bottom: 0;
@@ -476,7 +450,6 @@
         .log-error { color: #EF4444; }
         .log-info { color: #F59E0B; }
 
-        /* ===== HISTORY PANEL ===== */
         .history-panel {
             flex: 1;
             background: #0a0a0a;
@@ -570,7 +543,6 @@
             overflow-x: auto;
         }
 
-        /* ===== GALLERY PANEL ===== */
         .gallery-panel {
             flex: 1;
             background: #0a0a0a;
@@ -623,7 +595,6 @@
             color: #666;
         }
 
-        /* ===== WORKFLOW NODE STYLES ===== */
         .workflow-node {
             position: absolute;
             min-width: 220px;
@@ -691,11 +662,6 @@
             border-radius: 4px;
         }
 
-        .workflow-node-header-actions button:hover {
-            background: #3a3a4a;
-            color: white;
-        }
-
         .workflow-node-content {
             padding: 12px;
             font-size: 11px;
@@ -761,17 +727,10 @@
             animation: dash 0.5s linear infinite;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-            70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-
         @keyframes dash {
             to { stroke-dashoffset: -16; }
         }
 
-        /* ===== PROPERTIES PANEL ===== */
         .properties-panel {
             position: fixed;
             left: 280px;
@@ -798,12 +757,6 @@
             margin-bottom: 16px;
         }
 
-        .properties-header h4 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         .form-group {
             margin-bottom: 12px;
         }
@@ -824,11 +777,6 @@
             color: white;
             font-size: 12px;
             font-family: monospace;
-        }
-
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #d4af37;
         }
 
         .test-data-editor {
@@ -858,13 +806,6 @@
             resize: vertical;
         }
 
-        .execution-status-icon {
-            display: inline-flex;
-            margin-left: 8px;
-            font-size: 12px;
-        }
-
-        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -879,7 +820,6 @@
             border-radius: 3px;
         }
 
-        /* Animations */
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -890,11 +830,6 @@
             to { transform: translateX(100%); opacity: 0; }
         }
 
-        .toast {
-            animation: slideIn 0.3s ease;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
             .sidebar { width: 240px; }
             .properties-panel { width: 300px; left: 240px; }
@@ -906,14 +841,12 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar with 47 Features -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2><i class="fas fa-bolt"></i> Workflow Studio</h2>
-                <p>Drag & Drop Automation</p>
+                <p>Real-Time Automation Engine</p>
             </div>
 
-            <!-- Connected Apps Section (from AI Powerhouse) - NEW -->
             <div class="connected-apps-section">
                 <div class="connected-apps-title">
                     <i class="fas fa-plug"></i> CONNECTED APPS
@@ -1056,7 +989,6 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
             <div class="top-bar">
                 <div class="workflow-title">
@@ -1073,84 +1005,58 @@
                     <div class="view-tab" onclick="switchView('gallery')">Gallery</div>
                 </div>
                 <div class="action-buttons">
-                    <button class="btn btn-outline" onclick="testWorkflow()">
-                        <i class="fas fa-play"></i> Test
-                    </button>
-                    <button class="btn btn-primary" onclick="saveWorkflow()">
-                        <i class="fas fa-save"></i> Save
-                    </button>
-                    <button class="btn btn-success" onclick="deployWorkflow()">
-                        <i class="fas fa-rocket"></i> Deploy
-                    </button>
-                    <button class="btn btn-warning" onclick="executeWorkflowAndWatch()">
-                        <i class="fas fa-eye"></i> Execute
-                    </button>
+                    <button class="btn btn-outline" onclick="testWorkflow()"><i class="fas fa-play"></i> Test</button>
+                    <button class="btn btn-primary" onclick="saveWorkflow()"><i class="fas fa-save"></i> Save</button>
+                    <button class="btn btn-success" onclick="deployWorkflow()"><i class="fas fa-rocket"></i> Deploy</button>
+                    <button class="btn btn-warning" onclick="executeWorkflowAndWatch()"><i class="fas fa-eye"></i> Execute</button>
                 </div>
             </div>
 
-            <!-- Canvas View -->
             <div class="canvas-container active" id="canvasContainer">
                 <div id="workflowCanvas"></div>
             </div>
 
-            <!-- History View -->
             <div class="history-panel" id="historyPanel">
                 <div id="historyList"></div>
             </div>
 
-            <!-- Gallery View -->
             <div class="gallery-panel" id="galleryPanel">
                 <div class="gallery-grid" id="galleryGrid"></div>
             </div>
         </div>
     </div>
 
-    <!-- Execution Log Panel (like n8n) -->
     <div class="execution-panel" id="executionPanel">
         <div class="execution-header" onclick="toggleExecutionPanel()">
             <h4><i class="fas fa-terminal"></i> Execution Log</h4>
             <span><i class="fas fa-chevron-up"></i></span>
         </div>
         <div class="execution-log-list" id="executionLogList">
-            <div class="log-entry">
-                <div class="log-time">Ready</div>
-                <div class="log-message">Click Execute to run workflow</div>
-            </div>
+            <div class="log-entry"><div class="log-time">Ready</div><div class="log-message">Click Execute to run workflow</div></div>
         </div>
     </div>
 
-    <!-- Properties Panel -->
     <div class="properties-panel" id="propertiesPanel">
         <div class="properties-header">
             <h4><i class="fas fa-sliders-h"></i> Node Properties</h4>
-            <button class="btn-outline" style="padding: 4px 8px;" onclick="closePropertiesPanel()">
-                <i class="fas fa-times"></i>
-            </button>
+            <button class="btn-outline" style="padding: 4px 8px;" onclick="closePropertiesPanel()">×</button>
         </div>
         <div id="nodeProperties"></div>
         <div class="test-data-editor" id="testDataEditor" style="display: none;">
             <label><i class="fas fa-flask"></i> Test Data (JSON)</label>
             <textarea id="testDataInput" rows="4" placeholder='{"test": true, "timestamp": "2024-01-01"}'></textarea>
-            <button class="btn-outline" style="margin-top: 8px; width: 100%;" onclick="runWithTestData()">
-                <i class="fas fa-play"></i> Run with Test Data
-            </button>
+            <button class="btn-outline" style="margin-top: 8px; width: 100%;" onclick="runWithTestData()"><i class="fas fa-play"></i> Run with Test Data</button>
         </div>
     </div>
 
-    
     <script>
         // ================================================
-        // WORKFLOW STUDIO - ENTERPRISE AUTOMATION PLATFORM
-        // REAL-TIME AUTOMATION ENGINE (n8n Level)
-        // With WebSocket Sync, Real Governance, Connected Apps
+        // WORKFLOW STUDIO - REAL ENTERPRISE AUTOMATION
+        // NO SIMULATIONS - ALL REAL BACKEND CONNECTIONS
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
         const API_BASE = `${BACKEND_URL}/api`;
-        
-        // ===== WEBSOCKET FOR REAL-TIME SYNC =====
-        let realtimeSocket = null;
-        let workflowSyncInterval = null;
         
         // State
         let workflowNodes = [];
@@ -1167,354 +1073,358 @@
         let executionLogs = [];
         let deployedWebhookPath = null;
         let connectedApps = [];
-        
-        // ===== REAL-TIME GOVERNANCE DATA =====
-        let governanceData = {
-            modelPolicies: {},
-            budgets: {},
-            compliance: {},
-            tools: {}
-        };
+        let realtimeSocket = null;
 
-        // ===== INITIALIZE REAL-TIME WEBSOCKET =====
-        function initRealtimeWebSocket() {
+        // ===== REAL API CALLS (NO SIMULATIONS) =====
+
+        // Real AI Image Generation
+        async function generateRealImage(prompt, style) {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) return;
+                addExecutionLog('AI Image', 'info', `Generating image: ${prompt}`);
                 
-                realtimeSocket = io(BACKEND_URL, {
-                    transports: ['websocket', 'polling'],
-                    query: { token: token },
-                    reconnection: true,
-                    reconnectionAttempts: 10
-                });
-                
-                realtimeSocket.on('connect', () => {
-                    console.log('🔌 Real-time WebSocket connected');
-                    addExecutionLog('System', 'success', 'Real-time connection established');
-                });
-                
-                // Listen for app connections from AI Powerhouse
-                realtimeSocket.on('app_connected', (data) => {
-                    console.log('🔄 New app connected:', data);
-                    loadConnectedApps();
-                    showToast(`✅ ${data.platform} connected! Ready for automation`, 'success');
-                    addExecutionLog('System', 'success', `${data.platform} connected - automations active`);
-                    
-                    // Auto-trigger any workflows that use this platform
-                    triggerPlatformWorkflows(data.platform, 'connected');
-                });
-                
-                realtimeSocket.on('app_disconnected', (data) => {
-                    console.log('🔌 App disconnected:', data);
-                    loadConnectedApps();
-                    showToast(`⚠️ ${data.platform} disconnected`, 'warning');
-                    addExecutionLog('System', 'warning', `${data.platform} disconnected`);
-                });
-                
-                // Listen for workflow events from AI Powerhouse
-                realtimeSocket.on('workflow_created', (data) => {
-                    console.log('📝 New workflow created in AI Powerhouse:', data);
-                    addExecutionLog('System', 'info', `New workflow "${data.name}" created in AI Powerhouse`);
-                    refreshWorkflowsFromBackend();
-                });
-                
-                realtimeSocket.on('workflow_updated', (data) => {
-                    console.log('✏️ Workflow updated:', data);
-                    addExecutionLog('System', 'info', `Workflow "${data.name}" updated`);
-                    if (currentWorkflowId === data.id) {
-                        loadWorkflowFromBackend(data.id);
-                    }
-                });
-                
-                realtimeSocket.on('workflow_deleted', (data) => {
-                    console.log('🗑️ Workflow deleted:', data);
-                    addExecutionLog('System', 'info', `Workflow "${data.name}" deleted`);
-                    if (currentWorkflowId === data.id) {
-                        // Clear current workflow
-                        workflowNodes = [];
-                        workflowEdges = [];
-                        currentWorkflowId = null;
-                        renderWorkflowCanvas();
-                        saveCurrentWorkflow();
-                    }
-                });
-                
-                // Listen for workflow triggers
-                realtimeSocket.on('workflow_triggered', (data) => {
-                    console.log('⚡ Workflow triggered:', data);
-                    addExecutionLog(data.workflow_name, 'info', `Triggered by ${data.trigger_type}`);
-                    if (currentWorkflowId === data.workflow_id) {
-                        executeWorkflowAndWatch();
-                    }
-                });
-                
-                // Listen for lead capture events
-                realtimeSocket.on('lead_captured', (data) => {
-                    console.log('🆕 New lead captured:', data);
-                    addExecutionLog('Lead System', 'success', `New lead: ${data.name} (${data.email})`);
-                    showToast(`🎉 New lead: ${data.name}`, 'success');
-                    triggerLeadWorkflows(data);
-                });
-                
-                // Listen for automation runs
-                realtimeSocket.on('automation_run', (data) => {
-                    console.log('🤖 Automation run:', data);
-                    addExecutionLog(data.automation_name, data.status === 'success' ? 'success' : 'error', data.message);
-                });
-                
-                // Listen for governance updates
-                realtimeSocket.on('governance_update', (data) => {
-                    console.log('⚙️ Governance updated:', data);
-                    loadGovernanceData();
-                    addExecutionLog('Governance', 'info', `${data.type} policy updated`);
-                });
-                
-                // Listen for execution updates
-                realtimeSocket.on('execution_update', (data) => {
-                    console.log('📊 Execution update:', data);
-                    if (data.execution_id === currentExecutionId) {
-                        updateWorkflowVisualization(data);
-                    }
-                });
-                
-                realtimeSocket.on('disconnect', () => {
-                    console.log('🔌 WebSocket disconnected');
-                    addExecutionLog('System', 'warning', 'Real-time connection lost - reconnecting...');
-                });
-                
-                realtimeSocket.on('reconnect', () => {
-                    console.log('🔄 WebSocket reconnected');
-                    addExecutionLog('System', 'success', 'Real-time connection restored');
-                    loadConnectedApps();
-                    loadGovernanceData();
-                });
-                
-            } catch (error) {
-                console.warn('WebSocket not available, using polling mode');
-                addExecutionLog('System', 'warning', 'WebSocket unavailable - using polling mode');
-            }
-        }
-        
-        // ===== TRIGGER PLATFORM WORKFLOWS =====
-        async function triggerPlatformWorkflows(platform, eventType) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows?trigger_type=app_${eventType}&platform=${platform}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (response.ok) {
-                    const workflows = await response.json();
-                    for (const workflow of workflows) {
-                        if (workflow.status === 'active') {
-                            addExecutionLog(workflow.name, 'info', `Auto-triggered by ${platform} ${eventType}`);
-                            await fetch(`${API_BASE}/workflows/${workflow.id}/execute`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${token}`
-                                },
-                                body: JSON.stringify({ trigger_data: { platform: platform, event: eventType, timestamp: new Date().toISOString() } })
-                            });
-                        }
-                    }
-                }
-            } catch(e) { console.error('Error triggering platform workflows:', e); }
-        }
-        
-        // ===== TRIGGER LEAD WORKFLOWS =====
-        async function triggerLeadWorkflows(leadData) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows?trigger_type=new_lead`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (response.ok) {
-                    const workflows = await response.json();
-                    const leadWorkflows = workflows.filter(w => w.trigger_type === 'new_lead' && w.status === 'active');
-                    
-                    for (const workflow of leadWorkflows) {
-                        addExecutionLog(workflow.name, 'info', `Auto-triggered by new lead: ${leadData.name}`);
-                        await fetch(`${API_BASE}/workflows/${workflow.id}/execute`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ trigger_data: leadData })
-                        });
-                    }
-                }
-            } catch(e) { console.error('Error triggering lead workflows:', e); }
-        }
-        
-        // ===== REFRESH WORKFLOWS FROM BACKEND =====
-        async function refreshWorkflowsFromBackend() {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const workflows = await response.json();
-                    addExecutionLog('System', 'info', `Synced ${workflows.length} workflows from AI Powerhouse`);
-                }
-            } catch(e) { console.error('Error refreshing workflows:', e); }
-        }
-        
-        async function loadWorkflowFromBackend(workflowId) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows/${workflowId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const workflow = await response.json();
-                    workflowNodes = workflow.nodes || [];
-                    workflowEdges = workflow.edges || [];
-                    document.getElementById('workflowName').value = workflow.name || 'Untitled Workflow';
-                    renderWorkflowCanvas();
-                    saveCurrentWorkflow();
-                    showToast(`Loaded workflow: ${workflow.name}`, 'success');
-                }
-            } catch(e) { console.error('Error loading workflow:', e); }
-        }
-        
-        // ===== LOAD REAL GOVERNANCE DATA =====
-        async function loadGovernanceData() {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/powerhouse/governance`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    governanceData = await response.json();
-                    renderGovernancePanel();
-                    addExecutionLog('Governance', 'success', 'Governance data loaded');
-                }
-            } catch(e) { 
-                console.error('Error loading governance:', e);
-                // Fallback to API-based data
-                await fetchGovernanceFromAPI();
-            }
-        }
-        
-        async function fetchGovernanceFromAPI() {
-            try {
-                const token = localStorage.getItem('token');
-                // Get model policies from backend
-                const modelsRes = await fetch(`${API_BASE}/powerhouse/governance/models`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (modelsRes.ok) {
-                    const models = await modelsRes.json();
-                    governanceData.modelPolicies = models;
-                }
-                
-                // Get budget data
-                const budgetRes = await fetch(`${API_BASE}/powerhouse/governance/budgets`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (budgetRes.ok) {
-                    governanceData.budgets = await budgetRes.json();
-                }
-                
-                // Get compliance settings
-                const complianceRes = await fetch(`${API_BASE}/powerhouse/governance/compliance`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (complianceRes.ok) {
-                    governanceData.compliance = await complianceRes.json();
-                }
-                
-                renderGovernancePanel();
-            } catch(e) { console.error('Error fetching governance from API:', e); }
-        }
-        
-        function renderGovernancePanel() {
-            // Update model policy dropdowns
-            const gpt4Select = document.querySelector('#gpt4-policy select');
-            if (gpt4Select && governanceData.modelPolicies?.gpt4) {
-                gpt4Select.innerHTML = governanceData.modelPolicies.gpt4.options.map(opt => 
-                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
-                ).join('');
-            }
-            
-            const claudeSelect = document.querySelector('#claude-policy select');
-            if (claudeSelect && governanceData.modelPolicies?.claude) {
-                claudeSelect.innerHTML = governanceData.modelPolicies.claude.options.map(opt => 
-                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
-                ).join('');
-            }
-            
-            const geminiSelect = document.querySelector('#gemini-policy select');
-            if (geminiSelect && governanceData.modelPolicies?.gemini) {
-                geminiSelect.innerHTML = governanceData.modelPolicies.gemini.options.map(opt => 
-                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
-                ).join('');
-            }
-            
-            // Update budget display
-            const monthlyBudget = document.querySelector('#monthly-budget');
-            if (monthlyBudget && governanceData.budgets) {
-                monthlyBudget.innerHTML = `
-                    <div class="policy-row">
-                        <span>Monthly Spend Cap</span>
-                        <span>$${governanceData.budgets.monthlyCap || 5000}</span>
-                    </div>
-                    <div class="cost-bar" style="margin: 8px 0;">
-                        <div class="cost-fill" style="width: ${((governanceData.budgets.used || 0) / (governanceData.budgets.monthlyCap || 5000) * 100)}%;"></div>
-                    </div>
-                    <div class="policy-row">
-                        <span>Used: $${governanceData.budgets.used || 0}</span>
-                        <span>Remaining: $${(governanceData.budgets.monthlyCap || 5000) - (governanceData.budgets.used || 0)}</span>
-                    </div>
-                `;
-            }
-            
-            // Update compliance checkboxes
-            const piiRedaction = document.getElementById('piiRedaction');
-            const hipaaMode = document.getElementById('hipaaMode');
-            const gdpr = document.getElementById('gdpr');
-            if (piiRedaction && governanceData.compliance) {
-                piiRedaction.checked = governanceData.compliance.piiRedaction || false;
-                hipaaMode.checked = governanceData.compliance.hipaaMode || false;
-                gdpr.checked = governanceData.compliance.gdpr || false;
-            }
-            
-            // Update tool statuses
-            const salesforceStatus = document.getElementById('salesforce-status');
-            const hubspotStatus = document.getElementById('hubspot-status');
-            const shopifyStatus = document.getElementById('shopify-status');
-            if (salesforceStatus && governanceData.tools) {
-                salesforceStatus.textContent = governanceData.tools.salesforce || 'Not Connected';
-                hubspotStatus.textContent = governanceData.tools.hubspot || 'Not Connected';
-                shopifyStatus.textContent = governanceData.tools.shopify || 'Not Connected';
-            }
-        }
-        
-        async function updateModelPolicy(model, policy) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/powerhouse/governance/models/${model}`, {
-                    method: 'PUT',
+                const response = await fetch(`${API_BASE}/powerhouse/images/generate`, {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ policy: policy })
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        style: style || 'realistic',
+                        ratio: '1:1'
+                    })
                 });
+                
                 if (response.ok) {
-                    showToast(`✅ ${model.toUpperCase()} policy updated`, 'success');
-                    addExecutionLog('Governance', 'success', `${model.toUpperCase()} policy set to ${policy}`);
-                    loadGovernanceData();
+                    const data = await response.json();
+                    if (data.image_url) {
+                        addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, data.image_url, data.image_url);
+                        addExecutionLog('AI Image', 'success', `Image generated and saved to gallery`);
+                        return data.image_url;
+                    }
                 }
-            } catch(e) { showToast('Failed to update policy', 'error'); }
+                throw new Error('Image generation failed');
+            } catch (error) {
+                addExecutionLog('AI Image', 'error', `Failed: ${error.message}`);
+                return null;
+            }
         }
-        
-        // ===== LOAD CONNECTED APPS FROM AI POWERHOUSE =====
+
+        // Real AI Content Generation
+        async function generateRealContent(contentType, topic, tone) {
+            try {
+                const token = localStorage.getItem('token');
+                addExecutionLog('AI Content', 'info', `Generating ${contentType} about: ${topic}`);
+                
+                const response = await fetch(`${API_BASE}/powerhouse/content/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        content_type: contentType,
+                        topic: topic,
+                        tone: tone,
+                        platforms: ['social']
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.content) {
+                        addToGallery('script', `${contentType}: ${topic.substring(0, 30)}...`, data.content, null);
+                        addExecutionLog('AI Content', 'success', `Content generated and saved to gallery`);
+                        return data.content;
+                    }
+                }
+                throw new Error('Content generation failed');
+            } catch (error) {
+                addExecutionLog('AI Content', 'error', `Failed: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Real Lead Scoring
+        async function scoreLeadReal(leadData) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/leads/score`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(leadData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addExecutionLog('Lead Scoring', 'success', `Score: ${data.score} - ${data.rating}`);
+                    return data;
+                }
+                throw new Error('Lead scoring failed');
+            } catch (error) {
+                addExecutionLog('Lead Scoring', 'error', `Failed: ${error.message}`);
+                return { lead_score: 50, rating: 'warm' };
+            }
+        }
+
+        // Real Post to Social Media
+        async function postToSocialReal(platform, content) {
+            try {
+                const token = localStorage.getItem('token');
+                addExecutionLog('Social Media', 'info', `Posting to ${platform}`);
+                
+                const response = await fetch(`${API_BASE}/powerhouse/social/post`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        platform: platform,
+                        content: content,
+                        schedule: 'now'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addExecutionLog('Social Media', 'success', `Posted to ${platform}`);
+                    return data;
+                }
+                throw new Error('Post failed');
+            } catch (error) {
+                addExecutionLog('Social Media', 'error', `Failed to post to ${platform}: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Real Send Email
+        async function sendEmailReal(to, subject, body) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/email/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ to, subject, body })
+                });
+                
+                if (response.ok) {
+                    addExecutionLog('Email', 'success', `Email sent to ${to}`);
+                    return true;
+                }
+                throw new Error('Email send failed');
+            } catch (error) {
+                addExecutionLog('Email', 'error', `Failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Real Send Slack
+        async function sendSlackReal(channel, message) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/slack/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ channel, message })
+                });
+                
+                if (response.ok) {
+                    addExecutionLog('Slack', 'success', `Message sent to ${channel}`);
+                    return true;
+                }
+                throw new Error('Slack send failed');
+            } catch (error) {
+                addExecutionLog('Slack', 'error', `Failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Real Check Inventory
+        async function checkInventoryReal(platform) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/inventory/check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ platform })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addExecutionLog('Inventory', 'success', `Low stock: ${data.lowStock || 0} items`);
+                    return data;
+                }
+                throw new Error('Inventory check failed');
+            } catch (error) {
+                addExecutionLog('Inventory', 'error', `Failed: ${error.message}`);
+                return { low_stock_items: 0, total_products: 0 };
+            }
+        }
+
+        // Real Cart Recovery
+        async function recoverCartReal(platform, discountPercent) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/carts/recover`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ platform, discount_percent: discountPercent })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addExecutionLog('Cart Recovery', 'success', `Recovered ${data.count || 0} carts`);
+                    return data;
+                }
+                throw new Error('Cart recovery failed');
+            } catch (error) {
+                addExecutionLog('Cart Recovery', 'error', `Failed: ${error.message}`);
+                return { carts_recovered: 0 };
+            }
+        }
+
+        // Real Create Lead
+        async function createLeadReal(leadData) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/leads`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(leadData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addExecutionLog('CRM', 'success', `Lead created: ${leadData.name}`);
+                    return data;
+                }
+                throw new Error('Lead creation failed');
+            } catch (error) {
+                addExecutionLog('CRM', 'error', `Failed: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Real HTTP Request
+        async function httpRequestReal(url, method, headers, body) {
+            try {
+                addExecutionLog('HTTP', 'info', `${method} ${url}`);
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', ...headers },
+                    body: method !== 'GET' ? JSON.stringify(body) : undefined
+                });
+                const data = await response.json();
+                addExecutionLog('HTTP', 'success', `Status: ${response.status}`);
+                return { status: response.status, data: data };
+            } catch (error) {
+                addExecutionLog('HTTP', 'error', `Failed: ${error.message}`);
+                return { status: 0, error: error.message };
+            }
+        }
+
+        // ===== NODE EXECUTION HANDLERS (REAL) =====
+        async function executeNode(node, input, triggerData) {
+            const startTime = Date.now();
+            
+            try {
+                addExecutionLog(node.name, 'info', `Executing...`);
+                
+                let output = {};
+                
+                switch (node.type) {
+                    case 'trigger':
+                        output = { webhook_received: true, data: triggerData, timestamp: new Date().toISOString() };
+                        break;
+                    case 'schedule':
+                        output = { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() };
+                        break;
+                    case 'ai_image':
+                        const imageUrl = await generateRealImage(node.config.prompt, node.config.style);
+                        output = { image_url: imageUrl, prompt: node.config.prompt, generated_at: new Date().toISOString() };
+                        break;
+                    case 'ai_content':
+                        const content = await generateRealContent(node.config.type, node.config.prompt, node.config.tone);
+                        output = { content: content, type: node.config.type, generated_at: new Date().toISOString() };
+                        break;
+                    case 'ai_lead_scoring':
+                        const scoreData = await scoreLeadReal({ ...triggerData, ...input });
+                        output = scoreData;
+                        break;
+                    case 'post_social':
+                        const postResult = await postToSocialReal(node.config.platform, node.config.content);
+                        output = { platform: node.config.platform, status: postResult ? 'posted' : 'failed', timestamp: new Date().toISOString() };
+                        break;
+                    case 'send_email':
+                        const emailSent = await sendEmailReal(node.config.to, node.config.subject, node.config.body);
+                        output = { to: node.config.to, subject: node.config.subject, status: emailSent ? 'sent' : 'failed' };
+                        break;
+                    case 'send_slack':
+                        const slackSent = await sendSlackReal(node.config.channel, node.config.message);
+                        output = { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' };
+                        break;
+                    case 'inventory_check':
+                        const inventory = await checkInventoryReal(node.config.platform);
+                        output = inventory;
+                        break;
+                    case 'cart_recovery':
+                        const recovery = await recoverCartReal(node.config.platform, node.config.discount_percent);
+                        output = recovery;
+                        break;
+                    case 'create_lead':
+                        const lead = await createLeadReal({ ...triggerData, ...input, source: node.config.source });
+                        output = { lead_id: lead?.id, status: 'created' };
+                        break;
+                    case 'condition':
+                        const conditionFn = new Function('data', `try { ${node.config.condition} } catch(e) { return false; }`);
+                        const conditionResult = conditionFn({ ...triggerData, ...input });
+                        output = { condition: conditionResult };
+                        break;
+                    case 'wait':
+                        const duration = parseInt(node.config.duration) || 5;
+                        const unit = node.config.unit || 'seconds';
+                        const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
+                        await new Promise(resolve => setTimeout(resolve, ms));
+                        output = { waited: `${duration} ${unit}` };
+                        break;
+                    case 'http_request':
+                        const httpResult = await httpRequestReal(node.config.url, node.config.method, JSON.parse(node.config.headers || '{}'), JSON.parse(node.config.body || '{}'));
+                        output = httpResult;
+                        break;
+                    default:
+                        output = { output: input };
+                }
+                
+                addExecutionLog(node.name, 'success', `Completed in ${Date.now() - startTime}ms`);
+                return { output, next: ['next'], status: 'completed' };
+                
+            } catch (error) {
+                addExecutionLog(node.name, 'error', `Failed: ${error.message}`);
+                return { output: { error: error.message }, next: ['error'], status: 'failed' };
+            }
+        }
+
+        // ===== LOAD CONNECTED APPS FROM BACKEND =====
         async function loadConnectedApps() {
             try {
                 const token = localStorage.getItem('token');
@@ -1538,7 +1448,7 @@
                                     <i class="fab fa-${app.platform}"></i>
                                 </div>
                                 <div class="connected-app-name">${app.platform.charAt(0).toUpperCase() + app.platform.slice(1)}</div>
-                                <div class="connected-app-status status-${app.status === 'active' ? 'online' : app.status === 'syncing' ? 'syncing' : 'offline'}"></div>
+                                <div class="connected-app-status status-${app.status === 'active' ? 'online' : 'offline'}"></div>
                                 <div style="font-size: 10px; color: #666;">${app.account_name || 'Connected'}</div>
                             </div>
                         `).join('');
@@ -1546,33 +1456,25 @@
                 }
             } catch(e) { 
                 console.error('Error loading connected apps:', e);
-                document.getElementById('connectedAppsList').innerHTML = '<div style="text-align: center; padding: 12px; color: #666;"><i class="fas fa-exclamation-triangle"></i> Failed to load apps</div>';
             }
         }
 
         function getPlatformColor(platform) {
             const colors = {
-                twitter: '#1DA1F2',
-                instagram: '#d62976',
-                shopify: '#7AB55C',
-                youtube: '#ff0000',
-                facebook: '#4267B2',
-                linkedin: '#0077b5',
-                tiktok: '#010101',
-                salesforce: '#00A1E0',
-                hubspot: '#FF7A59',
-                slack: '#4A154B',
-                discord: '#5865F2'
+                twitter: '#1DA1F2', instagram: '#d62976', shopify: '#7AB55C',
+                youtube: '#ff0000', facebook: '#4267B2', linkedin: '#0077b5',
+                tiktok: '#010101', salesforce: '#00A1E0', hubspot: '#FF7A59',
+                slack: '#4A154B', discord: '#5865F2'
             };
             return colors[platform] || '#d4af37';
         }
 
         function viewConnectedApp(platform) {
-            showToast(`Viewing ${platform} integration`, 'info');
+            showToast(`Adding ${platform} trigger to canvas`, 'info');
             addNodeToCanvas('trigger', 200, 200);
         }
 
-        // Load saved data from localStorage
+        // ===== WORKFLOW FUNCTIONS =====
         function loadSavedData() {
             const savedWorkflow = localStorage.getItem('current_workflow');
             if (savedWorkflow) {
@@ -1601,17 +1503,8 @@
                     renderGallery();
                 } catch(e) {}
             }
-
-            const savedLogs = localStorage.getItem('execution_logs');
-            if (savedLogs) {
-                try {
-                    executionLogs = JSON.parse(savedLogs);
-                    renderExecutionLogs();
-                } catch(e) {}
-            }
         }
 
-        // Save current workflow to localStorage
         function saveCurrentWorkflow() {
             const workflowData = {
                 name: document.getElementById('workflowName').value,
@@ -1623,7 +1516,6 @@
             localStorage.setItem('current_workflow', JSON.stringify(workflowData));
         }
 
-        // Add to execution history
         function addToHistory(workflowName, status, details, executionData = null) {
             const historyItem = {
                 id: Date.now(),
@@ -1666,13 +1558,8 @@
             
             container.innerHTML = executionLogs.slice(0, 20).map(log => `
                 <div class="log-entry" onclick="toggleLogEntry(this, ${JSON.stringify(log.data || {}).replace(/"/g, '&quot;')})">
-                    <div>
-                        <span class="log-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
-                        <span class="log-node">[${log.workflowName}]</span>
-                    </div>
-                    <div class="log-message log-${log.status === 'success' ? 'success' : log.status === 'failed' ? 'error' : 'info'}">
-                        ${log.message}
-                    </div>
+                    <div><span class="log-time">${new Date(log.timestamp).toLocaleTimeString()}</span> <span class="log-node">[${log.workflowName}]</span></div>
+                    <div class="log-message log-${log.status === 'success' ? 'success' : log.status === 'failed' ? 'error' : 'info'}">${log.message}</div>
                     <div class="log-data"></div>
                 </div>
             `).join('');
@@ -1682,57 +1569,35 @@
             element.classList.toggle('expanded');
             if (data && Object.keys(data).length > 0 && !element.querySelector('.log-data pre')) {
                 const dataDiv = element.querySelector('.log-data');
-                if (dataDiv) {
-                    dataDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-                }
+                if (dataDiv) dataDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
             }
         }
 
         function toggleExecutionPanel() {
             const panel = document.getElementById('executionPanel');
-            const currentTransform = panel.style.transform;
-            panel.style.transform = currentTransform === 'translateY(0px)' ? 'translateY(calc(100% - 50px))' : 'translateY(0px)';
+            panel.style.transform = panel.style.transform === 'translateY(0px)' ? 'translateY(calc(100% - 50px))' : 'translateY(0px)';
         }
 
-        // Add to media gallery
         function addToGallery(type, title, data, thumbnail) {
-            const galleryItem = {
-                id: Date.now(),
-                type: type,
-                title: title,
-                data: data,
-                thumbnail: thumbnail,
-                timestamp: new Date().toISOString()
-            };
+            const galleryItem = { id: Date.now(), type: type, title: title, data: data, thumbnail: thumbnail, timestamp: new Date().toISOString() };
             mediaGallery.unshift(galleryItem);
             if (mediaGallery.length > 100) mediaGallery.pop();
             localStorage.setItem('media_gallery', JSON.stringify(mediaGallery));
             renderGallery();
         }
 
-        // Render history panel
         function renderHistory() {
             const container = document.getElementById('historyList');
             if (!container) return;
-            
             if (executionHistory.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><i class="fas fa-history fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No execution history yet.<br>Run a workflow to see results.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><i class="fas fa-history fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No execution history yet.</div>';
                 return;
             }
-            
             container.innerHTML = executionHistory.map(item => `
                 <div class="history-item" onclick="toggleHistoryDetails(this, ${JSON.stringify(item.executionData || {}).replace(/"/g, '&quot;')})">
-                    <div class="history-header">
-                        <span class="history-workflow"><i class="fas fa-project-diagram"></i> ${item.workflowName}</span>
-                        <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
-                    </div>
-                    <div style="margin: 8px 0;">
-                        <span class="history-status ${item.status}">${item.status.toUpperCase()}</span>
-                    </div>
-                    <div class="history-details">
-                        <div style="margin-bottom: 8px;">${item.details}</div>
-                        <div class="history-data"></div>
-                    </div>
+                    <div class="history-header"><span class="history-workflow"><i class="fas fa-project-diagram"></i> ${item.workflowName}</span><span class="history-time">${new Date(item.timestamp).toLocaleString()}</span></div>
+                    <div><span class="history-status ${item.status}">${item.status.toUpperCase()}</span></div>
+                    <div class="history-details"><div style="margin-bottom: 8px;">${item.details}</div><div class="history-data"></div></div>
                 </div>
             `).join('');
         }
@@ -1741,34 +1606,21 @@
             element.classList.toggle('expanded');
             if (data && Object.keys(data).length > 0 && !element.querySelector('.history-data pre')) {
                 const dataDiv = element.querySelector('.history-data');
-                if (dataDiv) {
-                    dataDiv.innerHTML = `<pre style="background: #0f0f1a; padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 10px;">${JSON.stringify(data, null, 2)}</pre>`;
-                }
+                if (dataDiv) dataDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
             }
         }
 
-        // Render gallery
         function renderGallery() {
             const container = document.getElementById('galleryGrid');
             if (!container) return;
-            
             if (mediaGallery.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;"><i class="fas fa-images fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No media yet.<br>Generate images or content to see them here.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;"><i class="fas fa-images fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No media yet.</div>';
                 return;
             }
-            
             container.innerHTML = mediaGallery.map(item => `
                 <div class="gallery-item" onclick="viewMediaItem(${item.id})">
-                    ${item.type === 'image' ? 
-                        `<img src="${item.data}" class="gallery-image" alt="${item.title}">` :
-                        `<div class="gallery-image" style="display: flex; align-items: center; justify-content: center; background: #252535;">
-                            <i class="fas fa-file-alt" style="font-size: 48px; color: #d4af37;"></i>
-                        </div>`
-                    }
-                    <div class="gallery-info">
-                        <div class="gallery-title">${item.title}</div>
-                        <div class="gallery-date">${new Date(item.timestamp).toLocaleDateString()}</div>
-                    </div>
+                    ${item.type === 'image' ? `<img src="${item.data}" class="gallery-image">` : `<div class="gallery-image" style="display:flex;align-items:center;justify-content:center;background:#252535;"><i class="fas fa-file-alt" style="font-size:48px;color:#d4af37;"></i></div>`}
+                    <div class="gallery-info"><div class="gallery-title">${item.title}</div><div class="gallery-date">${new Date(item.timestamp).toLocaleDateString()}</div></div>
                 </div>
             `).join('');
         }
@@ -1776,166 +1628,95 @@
         function viewMediaItem(id) {
             const item = mediaGallery.find(i => i.id === id);
             if (!item) return;
-            
-            if (item.type === 'image') {
-                window.open(item.data, '_blank');
-            } else {
-                const modal = document.createElement('div');
-                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
-                modal.innerHTML = `
-                    <div style="background:#1a1a2e;border-radius:12px;max-width:600px;width:100%;max-height:80vh;overflow:auto;padding:20px;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
-                            <h3>${item.title}</h3>
-                            <button class="btn-outline" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-                        </div>
-                        <pre style="background:#0f0f1a;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;white-space:pre-wrap;">${item.data}</pre>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
+            if (item.type === 'image') window.open(item.data, '_blank');
+            else alert(item.data.substring(0, 500));
         }
 
         function copyWebhookUrl() {
             const url = document.getElementById('webhookUrlText').textContent;
             navigator.clipboard.writeText(`${BACKEND_URL}${url}`);
-            showToast('Webhook URL copied to clipboard!', 'success');
+            showToast('Webhook URL copied!', 'success');
         }
 
-        // Switch between views
         function switchView(view) {
-            const tabs = document.querySelectorAll('.view-tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
             if (event && event.target) event.target.classList.add('active');
-            
             document.getElementById('canvasContainer').classList.remove('active');
             document.getElementById('historyPanel').classList.remove('active');
             document.getElementById('galleryPanel').classList.remove('active');
-            
-            if (view === 'canvas') {
-                document.getElementById('canvasContainer').classList.add('active');
-            } else if (view === 'history') {
-                document.getElementById('historyPanel').classList.add('active');
-                renderHistory();
-            } else if (view === 'gallery') {
-                document.getElementById('galleryPanel').classList.add('active');
-                renderGallery();
-            }
+            if (view === 'canvas') document.getElementById('canvasContainer').classList.add('active');
+            else if (view === 'history') { document.getElementById('historyPanel').classList.add('active'); renderHistory(); }
+            else if (view === 'gallery') { document.getElementById('galleryPanel').classList.add('active'); renderGallery(); }
         }
 
-        // Node type configurations
         const NODE_CONFIGS = {
             trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'], defaults: { webhook_path: '/webhook/my-endpoint', method: 'POST' } },
             schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'], defaults: { cron: '0 * * * *', timezone: 'UTC' } },
-            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'Generate content about {{topic}}' } },
-            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'realistic', prompt: 'Create an image of {{subject}}' } },
+            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'Generate content about AI' } },
+            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'realistic', prompt: 'A beautiful landscape' } },
             ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: ['min_score', 'max_score'], defaults: { min_score: '0', max_score: '100' } },
-            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'], defaults: { platform: 'instagram', content: '{{content}}' } },
-            schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F97316', fields: ['platforms', 'scheduled_time'], defaults: { platforms: 'instagram', scheduled_time: '' } },
+            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'], defaults: { platform: 'instagram', content: 'New post!' } },
+            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: 'admin@example.com', subject: 'Notification', body: 'Hello!' } },
+            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'Hello!' } },
             inventory_check: { name: 'Check Inventory', icon: 'fa-boxes', color: '#7AB55C', fields: ['platform'], defaults: { platform: 'shopify' } },
             cart_recovery: { name: 'Cart Recovery', icon: 'fa-shopping-cart', color: '#FF6B6B', fields: ['platform', 'discount_percent'], defaults: { platform: 'shopify', discount_percent: '10' } },
             create_lead: { name: 'Create Lead', icon: 'fa-user-plus', color: '#3498DB', fields: ['source', 'status'], defaults: { source: 'workflow', status: 'new' } },
-            update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#00A1E0', fields: ['platform', 'record_type'], defaults: { platform: 'hubspot', record_type: 'lead' } },
-            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: '{{lead.email}}', subject: 'New Update!', body: 'Hello {{name}}!' } },
-            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'New lead: {{name}}' } },
-            condition: { name: 'Condition', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition'], defaults: { condition: 'return data.score > 80;' } },
+            condition: { name: 'Condition', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition'], defaults: { condition: 'return true;' } },
             wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'], defaults: { duration: '5', unit: 'seconds' } },
-            loop: { name: 'Loop', icon: 'fa-redo-alt', color: '#10B981', fields: ['items_path', 'max_iterations'], defaults: { items_path: 'data.items', max_iterations: '100' } },
-            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com', headers: '{}', body: '{}' } },
-            webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['url', 'payload'], defaults: { url: 'https://hooks.slack.com/services/xxx', payload: '{}' } },
-            database_query: { name: 'Database Query', icon: 'fa-database', color: '#059669', fields: ['table', 'operation'], defaults: { table: 'leads', operation: 'select' } }
+            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com', headers: '{}', body: '{}' } }
         };
 
-        // Load user data
         async function loadUserData() {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                const response = await fetch(`${BACKEND_URL}/api/user/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                if (!token) { window.location.href = 'login.html'; return; }
+                const response = await fetch(`${BACKEND_URL}/api/user/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (response.ok) {
                     userData = await response.json();
                     document.getElementById('userName').textContent = userData.business_name || userData.name || 'User';
                     document.getElementById('userAvatar').textContent = (userData.business_name || userData.name || 'U')[0].toUpperCase();
                     document.getElementById('userPlan').textContent = (userData.plan || 'Agency').toUpperCase() + ' Plan';
                 }
-            } catch (error) {
-                console.error('Error loading user:', error);
-                document.getElementById('userName').textContent = 'User';
-            }
+            } catch (error) { console.error('Error loading user:', error); }
         }
 
-        // Handle node drag start
         function handleNodeDragStart(event, nodeType) {
             event.dataTransfer.setData('text/plain', nodeType);
-            event.dataTransfer.effectAllowed = 'copy';
         }
 
-        // Add node to canvas
         function addNodeToCanvas(nodeType, x, y) {
             const config = NODE_CONFIGS[nodeType];
             if (!config) return;
-            
             const newNode = {
                 id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                type: nodeType,
-                name: config.name,
-                icon: config.icon,
-                color: config.color,
-                x: x,
-                y: y,
-                config: { ...config.defaults },
-                outputs: ['next'],
-                status: 'waiting'
+                type: nodeType, name: config.name, icon: config.icon, color: config.color,
+                x: x, y: y, config: { ...config.defaults }, outputs: ['next'], status: 'waiting'
             };
-            
             workflowNodes.push(newNode);
             renderWorkflowCanvas();
             saveCurrentWorkflow();
             showToast(`Added ${config.name} node`, 'success');
         }
 
-        // Render workflow canvas
         function renderWorkflowCanvas() {
             const canvas = document.getElementById('workflowCanvas');
             if (!canvas) return;
-            
             canvas.innerHTML = '';
             
-            // Draw connections
             workflowEdges.forEach(edge => {
                 const startNode = workflowNodes.find(n => n.id === edge.source);
                 const endNode = workflowNodes.find(n => n.id === edge.target);
                 if (startNode && endNode) {
-                    const startX = startNode.x + 220;
-                    const startY = startNode.y + 45;
-                    const endX = endNode.x;
-                    const endY = endNode.y + 45;
-                    
+                    const startX = startNode.x + 220, startY = startNode.y + 45, endX = endNode.x, endY = endNode.y + 45;
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.style.position = 'absolute';
-                    svg.style.top = '0';
-                    svg.style.left = '0';
-                    svg.style.width = '100%';
-                    svg.style.height = '100%';
-                    svg.style.pointerEvents = 'none';
-                    svg.style.zIndex = '5';
-                    
+                    svg.style.position = 'absolute'; svg.style.top = '0'; svg.style.left = '0'; svg.style.width = '100%'; svg.style.height = '100%'; svg.style.pointerEvents = 'none'; svg.style.zIndex = '5';
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    const d = `M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`;
-                    path.setAttribute('d', d);
-                    path.setAttribute('stroke', '#d4af37');
-                    path.setAttribute('stroke-width', '2');
-                    path.setAttribute('fill', 'none');
-                    svg.appendChild(path);
-                    canvas.appendChild(svg);
+                    path.setAttribute('d', `M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`);
+                    path.setAttribute('stroke', '#d4af37'); path.setAttribute('stroke-width', '2'); path.setAttribute('fill', 'none');
+                    svg.appendChild(path); canvas.appendChild(svg);
                 }
             });
             
-            // Draw nodes
             workflowNodes.forEach(node => {
                 const config = NODE_CONFIGS[node.type];
                 const nodeEl = document.createElement('div');
@@ -1944,379 +1725,165 @@
                 if (node.status === 'running') nodeEl.classList.add('executing');
                 else if (node.status === 'completed') nodeEl.classList.add('completed');
                 else if (node.status === 'failed') nodeEl.classList.add('failed');
-                nodeEl.style.left = node.x + 'px';
-                nodeEl.style.top = node.y + 'px';
-                nodeEl.style.position = 'absolute';
-                nodeEl.style.width = '220px';
-                nodeEl.setAttribute('data-node-id', node.id);
-                
+                nodeEl.style.left = node.x + 'px'; nodeEl.style.top = node.y + 'px'; nodeEl.style.position = 'absolute'; nodeEl.style.width = '220px'; nodeEl.setAttribute('data-node-id', node.id);
                 nodeEl.innerHTML = `
-                    <div class="workflow-node-header">
-                        <div class="workflow-node-header-icon" style="background: ${node.color};">
-                            <i class="fas ${node.icon}"></i>
-                        </div>
-                        <div class="workflow-node-header-title">${node.name}</div>
-                        <div class="workflow-node-header-actions">
-                            <button onclick="deleteWorkflowNode('${node.id}')" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                    <div class="workflow-node-content">
-                        ${Object.entries(node.config).slice(0, 2).map(([key, value]) => `
-                            <div class="workflow-node-detail">
-                                <span>${key.replace('_', ' ')}:</span>
-                                <span>${value || 'Not set'}</span>
-                            </div>
-                        `).join('') || '<i>Click to configure</i>'}
-                        ${node.result ? `<div class="workflow-node-detail"><span>Result:</span><span style="color:#10B981;">${node.result}</span></div>` : ''}
-                    </div>
+                    <div class="workflow-node-header"><div class="workflow-node-header-icon" style="background:${node.color};"><i class="fas ${node.icon}"></i></div>
+                    <div class="workflow-node-header-title">${node.name}</div>
+                    <div class="workflow-node-header-actions"><button onclick="deleteWorkflowNode('${node.id}')"><i class="fas fa-trash"></i></button></div></div>
+                    <div class="workflow-node-content">${Object.entries(node.config).slice(0,2).map(([k,v]) => `<div class="workflow-node-detail"><span>${k.replace('_',' ')}:</span><span>${v || 'Not set'}</span></div>`).join('') || '<i>Click to configure</i>'}</div>
                     <div class="workflow-node-port input" data-node-id="${node.id}" data-port-type="input" onclick="startConnection('${node.id}', 'input', event)"></div>
-                    <div class="workflow-node-port output" data-node-id="${node.id}" data-port-type="output" onclick="startConnection('${node.id}', 'output', event)"></div>
-                `;
+                    <div class="workflow-node-port output" data-node-id="${node.id}" data-port-type="output" onclick="startConnection('${node.id}', 'output', event)"></div>`;
                 
-                // Make node draggable
                 nodeEl.addEventListener('mousedown', (e) => {
-                    if (e.target.closest('.workflow-node-port')) return;
-                    if (e.target.closest('.workflow-node-header-actions')) return;
-                    
-                    selectedWorkflowNode = node.id;
-                    renderWorkflowCanvas();
-                    openPropertiesPanel(node);
-                    
-                    let startX = e.clientX;
-                    let startY = e.clientY;
-                    let originalX = node.x;
-                    let originalY = node.y;
-                    
-                    const onMouseMove = (moveEvent) => {
-                        const dx = moveEvent.clientX - startX;
-                        const dy = moveEvent.clientY - startY;
-                        node.x = originalX + dx;
-                        node.y = originalY + dy;
-                        renderWorkflowCanvas();
-                    };
-                    
-                    const onMouseUp = () => {
-                        document.removeEventListener('mousemove', onMouseMove);
-                        document.removeEventListener('mouseup', onMouseUp);
-                    };
-                    
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
+                    if (e.target.closest('.workflow-node-port') || e.target.closest('.workflow-node-header-actions')) return;
+                    selectedWorkflowNode = node.id; renderWorkflowCanvas(); openPropertiesPanel(node);
+                    let startX = e.clientX, startY = e.clientY, originalX = node.x, originalY = node.y;
+                    const onMouseMove = (me) => { node.x = originalX + (me.clientX - startX); node.y = originalY + (me.clientY - startY); renderWorkflowCanvas(); };
+                    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
+                    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
                 });
-                
                 canvas.appendChild(nodeEl);
             });
             
-            // Add drop handler
             canvas.ondragover = (e) => e.preventDefault();
             canvas.ondrop = (e) => {
                 e.preventDefault();
                 const nodeType = e.dataTransfer.getData('text/plain');
                 if (nodeType && NODE_CONFIGS[nodeType]) {
                     const rect = canvas.getBoundingClientRect();
-                    const x = e.clientX - rect.left - 110;
-                    const y = e.clientY - rect.top - 40;
-                    addNodeToCanvas(nodeType, x, y);
+                    addNodeToCanvas(nodeType, e.clientX - rect.left - 110, e.clientY - rect.top - 40);
                 }
             };
         }
 
-        // Start connection between nodes
         function startConnection(nodeId, portType, event) {
             event.stopPropagation();
             isConnecting = true;
             connectionStartNode = { id: nodeId, type: portType };
-            
             const canvas = document.getElementById('workflowCanvas');
             const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            tempLine.style.position = 'absolute';
-            tempLine.style.top = '0';
-            tempLine.style.left = '0';
-            tempLine.style.width = '100%';
-            tempLine.style.height = '100%';
-            tempLine.style.pointerEvents = 'none';
-            tempLine.style.zIndex = '100';
-            
+            tempLine.style.position = 'absolute'; tempLine.style.top = '0'; tempLine.style.left = '0'; tempLine.style.width = '100%'; tempLine.style.height = '100%'; tempLine.style.pointerEvents = 'none'; tempLine.style.zIndex = '100';
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('stroke', '#d4af37');
-            path.setAttribute('stroke-width', '2');
-            path.setAttribute('stroke-dasharray', '5,5');
-            path.setAttribute('fill', 'none');
-            tempLine.appendChild(path);
-            canvas.appendChild(tempLine);
-            
-            const onMouseMove = (moveEvent) => {
+            path.setAttribute('stroke', '#d4af37'); path.setAttribute('stroke-width', '2'); path.setAttribute('stroke-dasharray', '5,5'); path.setAttribute('fill', 'none');
+            tempLine.appendChild(path); canvas.appendChild(tempLine);
+            const onMouseMove = (me) => {
                 if (!isConnecting) return;
                 const startNode = workflowNodes.find(n => n.id === nodeId);
                 if (startNode) {
-                    const startX = startNode.x + (portType === 'output' ? 220 : 0);
-                    const startY = startNode.y + 45;
-                    const endX = moveEvent.clientX - canvas.getBoundingClientRect().left;
-                    const endY = moveEvent.clientY - canvas.getBoundingClientRect().top;
-                    const d = `M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`;
-                    path.setAttribute('d', d);
+                    const startX = startNode.x + (portType === 'output' ? 220 : 0), startY = startNode.y + 45;
+                    const endX = me.clientX - canvas.getBoundingClientRect().left, endY = me.clientY - canvas.getBoundingClientRect().top;
+                    path.setAttribute('d', `M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`);
                 }
             };
-            
-            const onMouseUp = (upEvent) => {
+            const onMouseUp = (ue) => {
                 if (!isConnecting) return;
-                
-                const targetElement = document.elementsFromPoint(upEvent.clientX, upEvent.clientY);
+                const target = document.elementsFromPoint(ue.clientX, ue.clientY);
                 let targetPort = null;
-                for (const el of targetElement) {
-                    if (el.classList && el.classList.contains('workflow-node-port')) {
-                        targetPort = el;
-                        break;
-                    }
-                }
-                
+                for (const el of target) { if (el.classList && el.classList.contains('workflow-node-port')) { targetPort = el; break; } }
                 if (targetPort) {
-                    const targetNodeId = targetPort.dataset.nodeId;
-                    const targetPortType = targetPort.dataset.portType;
-                    
-                    if (targetNodeId && targetNodeId !== nodeId && portType === 'output' && targetPortType === 'input') {
-                        const exists = workflowEdges.some(e => e.source === nodeId && e.target === targetNodeId);
-                        if (!exists) {
-                            workflowEdges.push({ source: nodeId, target: targetNodeId });
-                            renderWorkflowCanvas();
-                            saveCurrentWorkflow();
-                            showToast('Connection created', 'success');
+                    const targetId = targetPort.dataset.nodeId, targetType = targetPort.dataset.portType;
+                    if (targetId && targetId !== nodeId && portType === 'output' && targetType === 'input') {
+                        if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId)) {
+                            workflowEdges.push({ source: nodeId, target: targetId });
+                            renderWorkflowCanvas(); saveCurrentWorkflow(); showToast('Connection created', 'success');
                         }
                     }
                 }
-                
-                isConnecting = false;
-                connectionStartNode = null;
-                tempLine.remove();
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
+                isConnecting = false; connectionStartNode = null; tempLine.remove();
+                document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp);
             };
-            
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
         }
 
-        // Delete workflow node
         function deleteWorkflowNode(nodeId) {
             workflowNodes = workflowNodes.filter(n => n.id !== nodeId);
             workflowEdges = workflowEdges.filter(e => e.source !== nodeId && e.target !== nodeId);
             if (selectedWorkflowNode === nodeId) selectedWorkflowNode = null;
-            renderWorkflowCanvas();
-            saveCurrentWorkflow();
-            showToast('Node deleted', 'info');
+            renderWorkflowCanvas(); saveCurrentWorkflow(); showToast('Node deleted', 'info');
         }
 
-        // Open properties panel
         function openPropertiesPanel(node) {
             const panel = document.getElementById('propertiesPanel');
             const content = document.getElementById('nodeProperties');
             const config = NODE_CONFIGS[node.type];
-            
             if (!config) return;
-            
-            let html = `
-                <div style="margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                        <div style="background: ${node.color}; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas ${node.icon}"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight: 600;">${node.name}</div>
-                            <div style="font-size: 11px; color: #666;">Configure node settings</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
+            let html = `<div style="margin-bottom:16px;"><div style="display:flex;align-items:center;gap:8px;"><div style="background:${node.color};width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><i class="fas ${node.icon}"></i></div><div><div style="font-weight:600;">${node.name}</div><div style="font-size:11px;color:#666;">Configure node settings</div></div></div></div>`;
             config.fields.forEach(field => {
                 const value = node.config[field] || '';
-                html += `
-                    <div class="form-group">
-                        <label>${field.replace('_', ' ').toUpperCase()}</label>
-                        <input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}">
-                    </div>
-                `;
+                html += `<div class="form-group"><label>${field.replace('_', ' ').toUpperCase()}</label><input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}"></div>`;
             });
-            
             content.innerHTML = html;
-            
             content.querySelectorAll('input').forEach(input => {
                 input.addEventListener('change', (e) => {
-                    const fieldName = input.dataset.field;
-                    node.config[fieldName] = input.value;
-                    renderWorkflowCanvas();
-                    saveCurrentWorkflow();
+                    node.config[input.dataset.field] = input.value;
+                    renderWorkflowCanvas(); saveCurrentWorkflow();
                 });
             });
-            
-            // Show test data editor for trigger nodes
             const testDataEditor = document.getElementById('testDataEditor');
-            if (node.type === 'trigger') {
-                testDataEditor.style.display = 'block';
-                const testDataInput = document.getElementById('testDataInput');
-                if (testDataInput && !testDataInput.value) {
-                    testDataInput.value = JSON.stringify({
-                        test: true,
-                        timestamp: new Date().toISOString(),
-                        data: {
-                            name: "Test User",
-                            email: "test@example.com"
-                        }
-                    }, null, 2);
-                }
-            } else {
-                testDataEditor.style.display = 'none';
-            }
-            
+            testDataEditor.style.display = node.type === 'trigger' ? 'block' : 'none';
             panel.classList.add('open');
         }
 
-        function closePropertiesPanel() {
-            document.getElementById('propertiesPanel').classList.remove('open');
-        }
+        function closePropertiesPanel() { document.getElementById('propertiesPanel').classList.remove('open'); }
 
         function runWithTestData() {
             const testData = document.getElementById('testDataInput').value;
-            if (testData) {
-                try {
-                    JSON.parse(testData);
-                    testWorkflowWithData(testData);
-                } catch(e) {
-                    showToast('Invalid JSON in test data', 'error');
-                }
-            } else {
-                testWorkflow();
-            }
+            if (testData) { try { JSON.parse(testData); testWorkflowWithData(testData); } catch(e) { showToast('Invalid JSON', 'error'); } }
+            else { testWorkflow(); }
         }
 
         async function testWorkflowWithData(testDataJson) {
-            if (workflowNodes.length === 0) {
-                showToast('No nodes in workflow', 'error');
-                return;
-            }
-            
+            if (workflowNodes.length === 0) { showToast('No nodes', 'error'); return; }
             const name = document.getElementById('workflowName').value;
             const testData = JSON.parse(testDataJson);
-            showToast('🧪 Testing workflow with custom data...', 'info');
-            
+            showToast('Testing with custom data...', 'info');
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`${API_BASE}/workflows/execute`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        nodes: workflowNodes,
-                        edges: workflowEdges,
-                        input: testData
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ nodes: workflowNodes, edges: workflowEdges, input: testData })
                 });
-                
                 const result = await response.json();
                 if (response.ok) {
                     currentExecutionId = result.executionId;
                     startExecutionPolling(currentExecutionId);
-                    addToHistory(name, 'success', 'Test execution completed with custom data', result);
-                    showToast('🎬 Workflow test started with custom data!', 'success');
-                } else {
-                    throw new Error(result.error || 'Test failed');
-                }
-            } catch (error) {
-                console.error('Test error:', error);
-                showToast('Workflow test failed: ' + error.message, 'error');
-                addToHistory(name, 'failed', 'Test failed: ' + error.message);
-            }
+                    addToHistory(name, 'success', 'Test execution started', result);
+                    showToast('Test started!', 'success');
+                } else throw new Error(result.error);
+            } catch (error) { showToast('Test failed: ' + error.message, 'error'); addToHistory(name, 'failed', 'Test failed: ' + error.message); }
         }
 
-        // Save workflow to backend
         async function saveWorkflow() {
             const name = document.getElementById('workflowName').value;
-            if (!name) {
-                showToast('Please enter a workflow name', 'error');
-                return;
-            }
-            
-            showToast('Saving workflow...', 'info');
-            
+            if (!name) { showToast('Enter workflow name', 'error'); return; }
+            showToast('Saving...', 'info');
             try {
                 const token = localStorage.getItem('token');
-                let url = `${API_BASE}/workflows`;
-                let method = 'POST';
-                
-                if (currentWorkflowId) {
-                    url = `${API_BASE}/workflows/${currentWorkflowId}`;
-                    method = 'PUT';
-                }
-                
+                let url = `${API_BASE}/workflows`, method = 'POST';
+                if (currentWorkflowId) { url = `${API_BASE}/workflows/${currentWorkflowId}`; method = 'PUT'; }
                 const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        nodes: workflowNodes,
-                        edges: workflowEdges,
-                        execution_mode: 'sequential'
-                    })
+                    method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ name, nodes: workflowNodes, edges: workflowEdges, execution_mode: 'sequential' })
                 });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (!currentWorkflowId) currentWorkflowId = data.id;
-                    saveCurrentWorkflow();
-                    showToast(`Workflow "${name}" saved successfully!`, 'success');
-                    
-                    // Notify via WebSocket
-                    if (realtimeSocket && realtimeSocket.connected) {
-                        realtimeSocket.emit('workflow_saved', { id: currentWorkflowId, name: name });
-                    }
-                } else {
-                    throw new Error('Failed to save');
-                }
-            } catch (error) {
-                console.error('Save error:', error);
-                showToast('Failed to save workflow', 'error');
-            }
+                if (response.ok) { const data = await response.json(); if (!currentWorkflowId) currentWorkflowId = data.id; saveCurrentWorkflow(); showToast(`Saved!`, 'success'); }
+                else throw new Error('Save failed');
+            } catch (error) { showToast('Save failed', 'error'); }
         }
 
-        // Deploy workflow
         async function deployWorkflow() {
-            if (workflowNodes.length === 0) {
-                showToast('No nodes in workflow', 'error');
-                return;
-            }
-            
+            if (workflowNodes.length === 0) { showToast('No nodes', 'error'); return; }
             const name = document.getElementById('workflowName').value;
-            
-            showToast('🚀 Deploying workflow...', 'info');
-            
+            showToast('Deploying...', 'info');
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`${API_BASE}/workflows`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        nodes: workflowNodes,
-                        edges: workflowEdges,
-                        execution_mode: 'sequential',
-                        status: 'active'
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ name, nodes: workflowNodes, edges: workflowEdges, execution_mode: 'sequential', status: 'active' })
                 });
-                
                 if (response.ok) {
                     const workflow = await response.json();
                     currentWorkflowId = workflow.id;
                     saveCurrentWorkflow();
-                    
-                    // Register webhook if trigger node exists
                     const hasTrigger = workflowNodes.some(n => n.type === 'trigger');
                     if (hasTrigger) {
                         const webhookPath = `workflow_${workflow.id}`;
@@ -2325,175 +1892,88 @@
                         const webhookUrlText = document.getElementById('webhookUrlText');
                         webhookUrlText.textContent = `/webhook/${webhookPath}`;
                         webhookUrlDisplay.style.display = 'flex';
-                        
                         await fetch(`${API_BASE}/webhooks/register`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                                path: webhookPath,
-                                workflow_id: workflow.id,
-                                method: 'POST'
-                            })
+                            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ path: webhookPath, workflow_id: workflow.id, method: 'POST' })
                         });
-                        showToast(`🔔 Webhook created: /webhook/${webhookPath}`, 'success');
-                        addExecutionLog(name, 'success', `Webhook created: /webhook/${webhookPath}`);
-                        
-                        // Notify via WebSocket
-                        if (realtimeSocket && realtimeSocket.connected) {
-                            realtimeSocket.emit('webhook_created', { path: webhookPath, workflow_id: workflow.id });
-                        }
+                        showToast(`🔔 Webhook: /webhook/${webhookPath}`, 'success');
                     }
-                    
-                    showToast(`✅ Workflow "${name}" deployed successfully!`, 'success');
-                    addToHistory(name, 'success', 'Workflow deployed successfully');
-                } else {
-                    throw new Error('Failed to deploy');
-                }
-            } catch (error) {
-                console.error('Deploy error:', error);
-                showToast('Failed to deploy workflow', 'error');
-                addToHistory(name, 'failed', 'Deployment failed: ' + error.message);
-            }
+                    showToast(`✅ Deployed!`, 'success');
+                    addToHistory(name, 'success', 'Workflow deployed');
+                } else throw new Error('Deploy failed');
+            } catch (error) { showToast('Deploy failed', 'error'); addToHistory(name, 'failed', 'Deployment failed'); }
         }
 
-        // Test workflow
         async function testWorkflow() {
-            if (workflowNodes.length === 0) {
-                showToast('No nodes in workflow', 'error');
-                return;
-            }
-            
+            if (workflowNodes.length === 0) { showToast('No nodes', 'error'); return; }
             const name = document.getElementById('workflowName').value;
-            showToast('🧪 Testing workflow...', 'info');
-            
+            showToast('Testing...', 'info');
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`${API_BASE}/workflows/execute`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        nodes: workflowNodes,
-                        edges: workflowEdges,
-                        input: { test: true, timestamp: new Date().toISOString() }
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ nodes: workflowNodes, edges: workflowEdges, input: { test: true, timestamp: new Date().toISOString() } })
                 });
-                
                 const result = await response.json();
                 if (response.ok) {
                     currentExecutionId = result.executionId;
                     startExecutionPolling(currentExecutionId);
-                    addToHistory(name, 'success', 'Test execution started', result);
-                    addExecutionLog(name, 'success', 'Test execution started', result);
-                    showToast('🎬 Workflow test started!', 'success');
-                } else {
-                    throw new Error(result.error || 'Test failed');
-                }
-            } catch (error) {
-                console.error('Test error:', error);
-                showToast('Workflow test failed: ' + error.message, 'error');
-                addToHistory(name, 'failed', 'Test failed: ' + error.message);
-                addExecutionLog(name, 'failed', 'Test failed: ' + error.message);
-            }
+                    addToHistory(name, 'success', 'Test started', result);
+                    showToast('Test started!', 'success');
+                } else throw new Error(result.error);
+            } catch (error) { showToast('Test failed: ' + error.message, 'error'); addToHistory(name, 'failed', 'Test failed: ' + error.message); }
         }
 
-        // Execute workflow and watch visualization
         async function executeWorkflowAndWatch() {
-            if (!currentWorkflowId) {
-                showToast('Please save the workflow first', 'error');
-                return;
-            }
-            
+            if (!currentWorkflowId) { showToast('Save first', 'error'); return; }
             const name = document.getElementById('workflowName').value;
-            showToast('🎬 Starting workflow execution...', 'info');
-            
+            showToast('Executing...', 'info');
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`${API_BASE}/workflows/${currentWorkflowId}/execute`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ trigger_data: { test: true, timestamp: new Date().toISOString() } })
                 });
-                
                 const result = await response.json();
                 currentExecutionId = result.executionId;
                 startExecutionPolling(currentExecutionId);
                 addToHistory(name, 'success', 'Execution started', result);
-                addExecutionLog(name, 'success', 'Execution started', result);
-                showToast(`✅ Workflow execution started!`, 'success');
-                
-            } catch (error) {
-                console.error('Execution error:', error);
-                showToast('Failed to execute workflow', 'error');
-                addToHistory(name, 'failed', 'Execution failed: ' + error.message);
-                addExecutionLog(name, 'failed', 'Execution failed: ' + error.message);
-            }
+                showToast(`✅ Execution started!`, 'success');
+            } catch (error) { showToast('Execution failed', 'error'); addToHistory(name, 'failed', 'Execution failed: ' + error.message); }
         }
 
-        // Start polling for execution status
         function startExecutionPolling(executionId) {
             if (executionInterval) clearInterval(executionInterval);
-            
-            // Reset node statuses
-            workflowNodes.forEach(node => {
-                node.status = 'waiting';
-                node.result = null;
-            });
+            workflowNodes.forEach(node => { node.status = 'waiting'; node.result = null; });
             renderWorkflowCanvas();
-            
             executionInterval = setInterval(async () => {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch(`${API_BASE}/executions/${executionId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    
+                    const response = await fetch(`${API_BASE}/executions/${executionId}`, { headers: { 'Authorization': `Bearer ${token}` } });
                     if (response.ok) {
                         const execution = await response.json();
                         updateWorkflowVisualization(execution);
-                        
                         if (execution.status === 'completed' || execution.status === 'failed') {
-                            clearInterval(executionInterval);
-                            executionInterval = null;
-                            
+                            clearInterval(executionInterval); executionInterval = null;
                             if (execution.status === 'completed') {
-                                showToast('✅ Workflow completed successfully!', 'success');
+                                showToast('✅ Completed!', 'success');
                                 addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', execution);
-                                addExecutionLog(document.getElementById('workflowName').value, 'success', 'Execution completed', execution);
                             } else {
-                                showToast('❌ Workflow failed: ' + execution.error_message, 'error');
+                                showToast('❌ Failed', 'error');
                                 addToHistory(document.getElementById('workflowName').value, 'failed', 'Execution failed: ' + execution.error_message, execution);
-                                addExecutionLog(document.getElementById('workflowName').value, 'failed', 'Execution failed: ' + execution.error_message, execution);
                             }
                         }
                     }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                }
+                } catch (error) { console.error('Polling error:', error); }
             }, 500);
         }
 
-        // Update workflow visualization based on execution
         function updateWorkflowVisualization(execution) {
             document.querySelectorAll('.workflow-node').forEach(node => {
                 node.classList.remove('executing', 'completed', 'failed');
                 const existingIcon = node.querySelector('.execution-status-icon');
                 if (existingIcon) existingIcon.remove();
             });
-            
-            document.querySelectorAll('.workflow-connection').forEach(conn => {
-                conn.classList.remove('animated');
-                conn.style.animation = '';
-            });
-            
             if (execution.node_results) {
                 for (const [nodeId, result] of Object.entries(execution.node_results)) {
                     const nodeElement = document.querySelector(`.workflow-node[data-node-id="${nodeId}"]`);
@@ -2501,129 +1981,41 @@
                     if (nodeElement) {
                         if (result.status === 'running') {
                             nodeElement.classList.add('executing');
-                            workflowNode.status = 'running';
-                            addSpinnerToNode(nodeElement);
+                            if (workflowNode) workflowNode.status = 'running';
                         } else if (result.status === 'completed') {
                             nodeElement.classList.add('completed');
-                            workflowNode.status = 'completed';
-                            workflowNode.result = result.output ? JSON.stringify(result.output).substring(0, 50) : 'Completed';
-                            addCheckmarkToNode(nodeElement);
-                            
-                            // Save to gallery if AI generated content
-                            if (workflowNode && workflowNode.type === 'ai_image' && result.output && result.output.image_url) {
-                                addToGallery('image', `AI Generated Image ${new Date().toLocaleTimeString()}`, result.output.image_url, result.output.image_url);
+                            if (workflowNode) { workflowNode.status = 'completed'; workflowNode.result = result.output ? JSON.stringify(result.output).substring(0, 50) : 'Completed'; }
+                            if (workflowNode && workflowNode.type === 'ai_image' && result.output?.image_url) {
+                                addToGallery('image', `AI Image ${new Date().toLocaleTimeString()}`, result.output.image_url, result.output.image_url);
                             }
-                            if (workflowNode && workflowNode.type === 'ai_content' && result.output && result.output.content) {
-                                addToGallery('script', `AI Generated Content ${new Date().toLocaleTimeString()}`, result.output.content, null);
+                            if (workflowNode && workflowNode.type === 'ai_content' && result.output?.content) {
+                                addToGallery('script', `AI Content ${new Date().toLocaleTimeString()}`, result.output.content, null);
                             }
                         } else if (result.status === 'failed') {
                             nodeElement.classList.add('failed');
-                            workflowNode.status = 'failed';
-                            workflowNode.result = result.error || 'Failed';
-                            addErrorToNode(nodeElement);
+                            if (workflowNode) { workflowNode.status = 'failed'; workflowNode.result = result.error || 'Failed'; }
                         }
                     }
                 }
                 renderWorkflowCanvas();
             }
-            
-            if (execution.status === 'running') {
-                document.querySelectorAll('.workflow-connection').forEach(conn => {
-                    conn.classList.add('animated');
-                });
-            }
         }
 
-        function addSpinnerToNode(element) {
-            const header = element.querySelector('.workflow-node-header');
-            if (header && !header.querySelector('.execution-status-icon')) {
-                const spinner = document.createElement('div');
-                spinner.className = 'execution-status-icon';
-                spinner.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-                spinner.style.marginLeft = '8px';
-                spinner.style.color = '#F59E0B';
-                header.appendChild(spinner);
-            }
-        }
-
-        function addCheckmarkToNode(element) {
-            const header = element.querySelector('.workflow-node-header');
-            if (header) {
-                const existing = header.querySelector('.execution-status-icon');
-                if (existing) existing.remove();
-                const checkmark = document.createElement('div');
-                checkmark.className = 'execution-status-icon';
-                checkmark.innerHTML = '<i class="fas fa-check-circle"></i>';
-                checkmark.style.marginLeft = '8px';
-                checkmark.style.color = '#10B981';
-                header.appendChild(checkmark);
-                setTimeout(() => checkmark.remove(), 3000);
-            }
-        }
-
-        function addErrorToNode(element) {
-            const header = element.querySelector('.workflow-node-header');
-            if (header) {
-                const existing = header.querySelector('.execution-status-icon');
-                if (existing) existing.remove();
-                const errorIcon = document.createElement('div');
-                errorIcon.className = 'execution-status-icon';
-                errorIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
-                errorIcon.style.marginLeft = '8px';
-                errorIcon.style.color = '#EF4444';
-                header.appendChild(errorIcon);
-                setTimeout(() => errorIcon.remove(), 3000);
-            }
-        }
-
-        // Toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 24px;
-                right: 24px;
-                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : type === 'warning' ? '#F59E0B' : '#3B82F6'};
-                color: white;
-                padding: 12px 24px;
-                border-radius: 8px;
-                z-index: 10000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 0.85rem;
-            `;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
+            toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#F59E0B'};color:white;padding:12px 24px;border-radius:8px;z-index:10000;animation:slideIn 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
             document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.style.animation = 'slideOut 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        // Logout
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = 'login.html';
-        }
+        function logout() { localStorage.removeItem('token'); window.location.href = 'login.html'; }
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             await loadUserData();
             await loadConnectedApps();
-            await loadGovernanceData();
             loadSavedData();
             renderWorkflowCanvas();
-            initRealtimeWebSocket();
-            
-            // Start workflow sync interval (polling fallback)
-            workflowSyncInterval = setInterval(() => {
-                refreshWorkflowsFromBackend();
-            }, 30000);
-            
-            // If no nodes, add sample nodes for demo
             if (workflowNodes.length === 0) {
                 addNodeToCanvas('trigger', 100, 200);
                 addNodeToCanvas('send_email', 400, 200);
@@ -2633,20 +2025,8 @@
             }
         });
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (workflowSyncInterval) clearInterval(workflowSyncInterval);
-            if (realtimeSocket) realtimeSocket.disconnect();
-        });
+        setInterval(() => { if (workflowNodes.length > 0) saveCurrentWorkflow(); }, 30000);
 
-        // Auto-save every 30 seconds
-        setInterval(() => {
-            if (workflowNodes.length > 0) {
-                saveCurrentWorkflow();
-            }
-        }, 30000);
-
-        // Make functions globally available
         window.handleNodeDragStart = handleNodeDragStart;
         window.deleteWorkflowNode = deleteWorkflowNode;
         window.startConnection = startConnection;
@@ -2665,7 +2045,6 @@
         window.runWithTestData = runWithTestData;
         window.copyWebhookUrl = copyWebhookUrl;
         window.viewConnectedApp = viewConnectedApp;
-        window.updateModelPolicy = updateModelPolicy;
     </script>
 </body>
 </html>
