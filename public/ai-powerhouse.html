@@ -2029,7 +2029,7 @@
 <script>
 // ================================================
 // AI POWERHOUSE 2.0 - ULTIMATE AUTOMATION PLATFORM
-// 500+ Integrations - 47 Live Features - Real-Time Status
+// 500+ Integrations - Real-Time Status
 // WITH WORKFLOW BUILDER (n8n-level)
 // ENTERPRISE REAL-TIME UPDATES - WebSocket Integrated
 // ================================================
@@ -2074,6 +2074,10 @@ let selectedWorkflowNode = null;
 let currentWorkflowId = null;
 let isConnecting = false;
 let connectionStartNode = null;
+
+// ===== REAL-TIME WORKFLOW VISUALIZATION STATE (ADDED) =====
+let executionInterval = null;
+let currentExecutionId = null;
 
 // ===== REAL-TIME WEBSOCKET CONNECTION (ADDED) =====
 function initRealTimeWebSocket() {
@@ -2314,6 +2318,292 @@ function startRealTimeMonitoring() {
             console.debug('Monitor update failed');
         }
     }, 10000);
+}
+
+// ===== REAL-TIME WORKFLOW EXECUTION VISUALIZATION (ADDED) =====
+async function executeWorkflowAndWatch(workflowId) {
+    if (!workflowId) {
+        showToast('Please save the workflow first', 'error');
+        return;
+    }
+    
+    showToast('🎬 Starting workflow execution with real-time visualization...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/workflows/${workflowId}/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ trigger_data: { test: true, timestamp: new Date().toISOString() } })
+        });
+        
+        const result = await response.json();
+        currentExecutionId = result.executionId;
+        startExecutionPolling(currentExecutionId);
+        showToast(`✅ Workflow execution started! Watch the nodes light up!`, 'success');
+        
+    } catch (error) {
+        console.error('Execution error:', error);
+        showToast('Failed to execute workflow', 'error');
+    }
+}
+
+function startExecutionPolling(executionId) {
+    if (executionInterval) clearInterval(executionInterval);
+    
+    executionInterval = setInterval(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE}/executions/${executionId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const execution = await response.json();
+                updateWorkflowVisualization(execution);
+                
+                if (execution.status === 'completed' || execution.status === 'failed') {
+                    clearInterval(executionInterval);
+                    executionInterval = null;
+                    currentExecutionId = null;
+                    
+                    if (execution.status === 'completed') {
+                        showToast('✅ Workflow completed successfully!', 'success');
+                        addRealTimeActivity('workflow', `Workflow execution completed in ${execution.execution_time_ms}ms`, 'success');
+                    } else {
+                        showToast('❌ Workflow failed: ' + execution.error_message, 'error');
+                        addRealTimeActivity('workflow', `Workflow execution failed: ${execution.error_message}`, 'error');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 500);
+}
+
+function updateWorkflowVisualization(execution) {
+    const canvas = document.getElementById('workflowCanvas');
+    if (!canvas) return;
+    
+    // Clear previous highlights
+    document.querySelectorAll('.workflow-node').forEach(node => {
+        node.classList.remove('executing', 'completed', 'failed');
+        // Remove any existing status icons
+        const existingIcon = node.querySelector('.execution-status-icon');
+        if (existingIcon) existingIcon.remove();
+    });
+    
+    // Remove temporary connection animations
+    document.querySelectorAll('.workflow-connection.animated').forEach(conn => {
+        conn.classList.remove('animated');
+        conn.style.animation = '';
+    });
+    
+    // Highlight nodes based on execution results
+    if (execution.node_results) {
+        for (const [nodeId, result] of Object.entries(execution.node_results)) {
+            const nodeElement = document.querySelector(`.workflow-node[data-node-id="${nodeId}"]`);
+            if (nodeElement) {
+                if (result.status === 'running') {
+                    nodeElement.classList.add('executing');
+                    addPulseAnimation(nodeElement);
+                } else if (result.status === 'completed') {
+                    nodeElement.classList.add('completed');
+                    addCheckmarkToNode(nodeElement);
+                } else if (result.status === 'failed') {
+                    nodeElement.classList.add('failed');
+                    addErrorToNode(nodeElement);
+                }
+            }
+        }
+    }
+    
+    // Animate connections for active execution
+    if (execution.status === 'running') {
+        animateConnections();
+    }
+}
+
+function addPulseAnimation(element) {
+    element.style.animation = 'pulse 0.8s ease-in-out infinite';
+    element.style.borderColor = '#F59E0B';
+    
+    const header = element.querySelector('.workflow-node-header');
+    if (header && !header.querySelector('.execution-status-icon')) {
+        const spinner = document.createElement('div');
+        spinner.className = 'execution-status-icon';
+        spinner.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+        spinner.style.marginLeft = '8px';
+        spinner.style.color = '#F59E0B';
+        header.appendChild(spinner);
+    }
+}
+
+function addCheckmarkToNode(element) {
+    element.style.borderColor = '#10B981';
+    const header = element.querySelector('.workflow-node-header');
+    if (header) {
+        const existingIcon = header.querySelector('.execution-status-icon');
+        if (existingIcon) existingIcon.remove();
+        
+        const checkmark = document.createElement('div');
+        checkmark.className = 'execution-status-icon';
+        checkmark.innerHTML = '<i class="fas fa-check-circle"></i>';
+        checkmark.style.marginLeft = '8px';
+        checkmark.style.color = '#10B981';
+        header.appendChild(checkmark);
+        
+        setTimeout(() => checkmark.remove(), 3000);
+    }
+}
+
+function addErrorToNode(element) {
+    element.style.borderColor = '#EF4444';
+    const header = element.querySelector('.workflow-node-header');
+    if (header) {
+        const existingIcon = header.querySelector('.execution-status-icon');
+        if (existingIcon) existingIcon.remove();
+        
+        const errorIcon = document.createElement('div');
+        errorIcon.className = 'execution-status-icon';
+        errorIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
+        errorIcon.style.marginLeft = '8px';
+        errorIcon.style.color = '#EF4444';
+        header.appendChild(errorIcon);
+        
+        setTimeout(() => errorIcon.remove(), 3000);
+    }
+}
+
+function animateConnections() {
+    const connections = document.querySelectorAll('.workflow-connection');
+    connections.forEach(conn => {
+        conn.classList.add('animated');
+        conn.style.strokeDasharray = '8,4';
+        conn.style.animation = 'dash 0.5s linear infinite';
+    });
+}
+
+// Add CSS animations for real-time visualization
+const visualizationStyles = document.createElement('style');
+visualizationStyles.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+        70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    
+    @keyframes dash {
+        to { stroke-dashoffset: -16; }
+    }
+    
+    .workflow-node.executing {
+        animation: pulse 0.8s ease-in-out infinite;
+        border-color: #F59E0B !important;
+        background: linear-gradient(135deg, #1e1e1e 0%, #1a1505 100%);
+    }
+    
+    .workflow-node.completed {
+        border-color: #10B981 !important;
+        background: linear-gradient(135deg, #1e1e1e 0%, #0a2a1a 100%);
+    }
+    
+    .workflow-node.failed {
+        border-color: #EF4444 !important;
+        background: linear-gradient(135deg, #1e1e1e 0%, #2a0a0a 100%);
+    }
+    
+    .workflow-connection.animated {
+        stroke: #F59E0B !important;
+        stroke-width: 3;
+        stroke-dasharray: 8,4;
+        animation: dash 0.5s linear infinite;
+    }
+    
+    .execution-status-icon {
+        display: inline-flex;
+        margin-left: 8px;
+        font-size: 12px;
+    }
+`;
+document.head.appendChild(visualizationStyles);
+
+// Update the testWorkflow function to also show visualization
+const originalTestWorkflow = testWorkflow;
+testWorkflow = async function() {
+    if (workflowNodes.length === 0) {
+        showToast('No nodes in workflow', 'error');
+        return;
+    }
+    
+    showToast('🧪 Testing workflow with real-time visualization...', 'info');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/workflows/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                nodes: workflowNodes,
+                edges: workflowEdges,
+                input: { test: true, timestamp: new Date().toISOString() }
+            })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            currentExecutionId = result.executionId;
+            startExecutionPolling(currentExecutionId);
+            showToast('🎬 Workflow test started! Watch the nodes light up!', 'success');
+            addRealTimeActivity('workflow', 'Workflow test started with real-time visualization', 'success');
+        } else {
+            throw new Error(result.error || 'Test failed');
+        }
+    } catch (error) {
+        console.error('Workflow test error:', error);
+        showToast('Workflow test failed: ' + error.message, 'error');
+        addRealTimeActivity('workflow', `Workflow test failed: ${error.message}`, 'error');
+    }
+};
+
+// Add execute button to deployed workflows in the automations list
+function addExecuteButtonToDeployedWorkflows() {
+    const workflowCards = document.querySelectorAll('.automation-card');
+    workflowCards.forEach(card => {
+        const footer = card.querySelector('.automation-footer');
+        if (footer && !footer.querySelector('.execute-visual-btn')) {
+            const executeBtn = document.createElement('button');
+            executeBtn.className = 'btn-icon';
+            executeBtn.innerHTML = '<i class="fas fa-play-circle" style="color: #10B981;"></i>';
+            executeBtn.title = 'Execute with Real-Time Visualization';
+            executeBtn.style.color = '#10B981';
+            const workflowId = card.getAttribute('data-id');
+            if (workflowId) {
+                executeBtn.onclick = () => executeWorkflowAndWatch(workflowId);
+            }
+            const btnContainer = footer.querySelector('div:first-child');
+            if (btnContainer) {
+                btnContainer.appendChild(executeBtn);
+                executeBtn.classList.add('execute-visual-btn');
+            }
+        }
+    });
+}
+
+// Monitor for new workflows being added
+const originalRenderAutomations = renderAutomations;
+if (typeof renderAutomations === 'function') {
+    renderAutomations = function(items) {
+        originalRenderAutomations(items);
+        setTimeout(addExecuteButtonToDeployedWorkflows, 100);
+    };
 }
 
 // Feature-platform mapping for auto-activation
@@ -2660,6 +2950,7 @@ function showWorkflowBuilder(automationId = null, automationName = null) {
                         <button class="btn-outline" onclick="testWorkflow()" style="margin-right: 10px;"><i class="fas fa-play"></i> Test</button>
                         <button class="btn-primary" onclick="saveWorkflow()"><i class="fas fa-save"></i> Save</button>
                         <button class="btn-primary" onclick="deployWorkflow()" style="background: #10B981; margin-right: 10px;"><i class="fas fa-rocket"></i> Deploy</button>
+                        <button class="btn-primary" onclick="executeWorkflowAndWatch(currentWorkflowId)" style="background: #F59E0B; margin-right: 10px;"><i class="fas fa-eye"></i> Execute & Watch</button>
                         <button class="close-btn" onclick="closeWorkflowBuilder()">&times;</button>
                     </div>
                 </div>
@@ -2919,6 +3210,9 @@ async function deployWorkflow() {
                 showToast(`🔔 Webhook created: /webhook/${webhookPath}`, 'success');
                 addRealTimeActivity('webhook', `Webhook registered for workflow "${name}"`, 'success');
             }
+            
+            // Add execute button to the new workflow card
+            setTimeout(() => addExecuteButtonToDeployedWorkflows(), 500);
         } else {
             throw new Error('Failed to deploy');
         }
@@ -2934,6 +3228,10 @@ function closeWorkflowBuilder() {
     workflowNodes = [];
     workflowEdges = [];
     selectedWorkflowNode = null;
+    if (executionInterval) {
+        clearInterval(executionInterval);
+        executionInterval = null;
+    }
 }
 
 function renderNodeTypesPanel() {
@@ -3065,6 +3363,7 @@ function renderWorkflowCanvas() {
         nodeEl.style.top = node.y + 'px';
         nodeEl.style.position = 'absolute';
         nodeEl.style.width = '200px';
+        nodeEl.setAttribute('data-node-id', node.id);
         
         nodeEl.innerHTML = `
             <div class="workflow-node-header">
@@ -3338,44 +3637,6 @@ async function saveWorkflow() {
     } catch (error) {
         console.error('Error saving workflow:', error);
         showToast('Failed to save workflow', 'error');
-    }
-}
-
-async function testWorkflow() {
-    if (workflowNodes.length === 0) {
-        showToast('No nodes in workflow', 'error');
-        return;
-    }
-    
-    showToast('Testing workflow...', 'info');
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/workflows/execute`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                nodes: workflowNodes,
-                edges: workflowEdges,
-                input: { test: true, timestamp: new Date().toISOString() }
-            })
-        });
-        
-        const result = await response.json();
-        if (response.ok) {
-            showToast('Workflow test completed! Check console for results', 'success');
-            console.log('Workflow test results:', result);
-            addRealTimeActivity('workflow', 'Workflow test completed successfully', 'success');
-        } else {
-            throw new Error(result.error || 'Test failed');
-        }
-    } catch (error) {
-        console.error('Workflow test error:', error);
-        showToast('Workflow test failed: ' + error.message, 'error');
-        addRealTimeActivity('workflow', `Workflow test failed: ${error.message}`, 'error');
     }
 }
 
@@ -3934,6 +4195,9 @@ async function loadUserAutomations() {
             const score = Math.round(((fullSaaS * 100) + (gateways * 80) + (wrappers * 30)) / total);
             const governanceScoreEl = document.getElementById('governanceScore');
             if (governanceScoreEl) governanceScoreEl.textContent = score + '%';
+            
+            // Add execute buttons to deployed workflows
+            setTimeout(addExecuteButtonToDeployedWorkflows, 500);
         }
     } catch (error) {
         console.error('Error loading automations:', error);
@@ -4940,419 +5204,7 @@ async function generateHashtags() {
     }
 }
 
-// ===== FEATURE FUNCTIONS =====
-async function scanPrices() { 
-    showToast('💰 Scanning competitor prices...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/prices/scan`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.status === 401) { 
-            localStorage.removeItem('token'); 
-            window.location.href = 'login.html'; 
-            return; 
-        } 
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`💰 Found ${data.price_drops || 0} price drops`, 'success');
-            await loadActivityLog();
-            toggleFeatureLive('feature-price');
-        }
-    } catch (error) {
-        showToast('💰 Price scan started', 'info');
-    }
-}
-
-async function createEmailSequence() { 
-    showToast('📧 Creating email sequence...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/email-sequence/create`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('📧 Email sequence created', 'success');
-            toggleFeatureLive('feature-email');
-        }
-    } catch (error) {
-        showToast('📧 Email sequence started', 'info');
-    }
-}
-
-async function processTasks() { 
-    showToast('📋 Processing tasks...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/tasks/process`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`📋 Processed ${data.tasks_processed} tasks`, 'success');
-            toggleFeatureLive('feature-task');
-        }
-    } catch (error) {
-        showToast('📋 Tasks processed', 'success');
-    }
-}
-
-async function schedulePosts() { 
-    showToast('📅 Scheduling posts...', 'info');
-    showContentModal();
-}
-
-async function analyzeAds() { 
-    showToast('📊 Analyzing ad campaigns...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/ads/analyze`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('📊 Analysis complete', 'success');
-            toggleFeatureLive('feature-ad');
-        }
-    } catch (error) {
-        showToast('📊 Analysis complete', 'success');
-    }
-}
-
-async function checkSEO() { 
-    showToast('🔍 Checking SEO rankings...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/seo/check`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('🔍 SEO check complete', 'success');
-            toggleFeatureLive('feature-seo');
-        }
-    } catch (error) {
-        showToast('🔍 SEO check complete', 'success');
-    }
-}
-
-async function routeTickets() { 
-    showToast('🎫 Routing support tickets...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/tickets/route`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('🎫 Tickets routed', 'success');
-            toggleFeatureLive('feature-ticket');
-        }
-    } catch (error) {
-        showToast('🎫 Tickets routed', 'success');
-    }
-}
-
-async function enableAutoResponder() { 
-    showToast('🤖 Enabling auto-responder...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/auto-responder/enable`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('🤖 Auto-responder enabled', 'success');
-            toggleFeatureLive('feature-responder');
-        }
-    } catch (error) {
-        showToast('🤖 Auto-responder enabled', 'success');
-    }
-}
-
-async function sendCSAT() { 
-    showToast('📝 Sending CSAT surveys...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/csat/send`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('📝 Surveys sent', 'success');
-            toggleFeatureLive('feature-csat');
-        }
-    } catch (error) {
-        showToast('📝 Surveys sent', 'success');
-    }
-}
-
-async function processInvoices() { 
-    showToast('💰 Processing invoices...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/invoices/process`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('💰 Invoices processed', 'success');
-            toggleFeatureLive('feature-invoice');
-        }
-    } catch (error) {
-        showToast('💰 Invoices processed', 'success');
-    }
-}
-
-async function scanReceipts() { 
-    showToast('🧾 Scanning receipts...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/receipts/scan`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('🧾 Receipts scanned', 'success');
-            toggleFeatureLive('feature-expense');
-        }
-    } catch (error) {
-        showToast('🧾 Receipts scanned', 'success');
-    }
-}
-
-async function runPayroll() { 
-    showToast('💵 Running payroll...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/payroll/run`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('💵 Payroll complete', 'success');
-            toggleFeatureLive('feature-payroll');
-        }
-    } catch (error) {
-        showToast('💵 Payroll complete', 'success');
-    }
-}
-
-async function processLeave() { 
-    showToast('🏖️ Processing leave requests...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/leave/process`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('🏖️ Leave requests processed', 'success');
-            toggleFeatureLive('feature-leave');
-        }
-    } catch (error) {
-        showToast('🏖️ Leave requests processed', 'success');
-    }
-}
-
-async function startOnboarding() { 
-    showToast('👋 Starting employee onboarding...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/onboarding/start`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('👋 Onboarding complete', 'success');
-            toggleFeatureLive('feature-onboarding');
-        }
-    } catch (error) {
-        showToast('👋 Onboarding started', 'info');
-    }
-}
-
-async function scheduleReviews() { 
-    showToast('⭐ Scheduling performance reviews...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/reviews/schedule`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('⭐ Reviews scheduled', 'success');
-            toggleFeatureLive('feature-review');
-        }
-    } catch (error) {
-        showToast('⭐ Reviews scheduled', 'success');
-    }
-}
-
-async function assignTasks() { 
-    showToast('👥 Assigning tasks...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/tasks/assign`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('👥 Tasks assigned', 'success');
-            toggleFeatureLive('feature-assign');
-        }
-    } catch (error) {
-        showToast('👥 Tasks assigned', 'success');
-    }
-}
-
-async function checkDeadlines() { 
-    showToast('⏰ Checking deadlines...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/deadlines/check`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('⏰ Deadlines checked', 'success');
-            toggleFeatureLive('feature-deadline');
-        }
-    } catch (error) {
-        showToast('⏰ Deadlines checked', 'success');
-    }
-}
-
-async function generateReports() { 
-    showToast('📊 Generating reports...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/reports/generate`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('📊 Reports generated', 'success');
-            toggleFeatureLive('feature-report');
-        }
-    } catch (error) {
-        showToast('📊 Reports generated', 'success');
-    }
-}
-
-async function createContent() { 
-    showToast('✍️ Creating content...', 'info');
-    showContentModal();
-}
-
-async function trackEngagement() { 
-    showToast('❤️ Tracking engagement...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/engagement/track`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('❤️ Engagement tracked', 'success');
-        }
-    } catch (error) {
-        showToast('❤️ Engagement tracked', 'success');
-    }
-}
-
-async function trackInfluencers() { 
-    showToast('🌟 Tracking influencers...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/influencers/track`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            showToast('🌟 Influencers tracked', 'success');
-        }
-    } catch (error) {
-        showToast('🌟 Influencers tracked', 'success');
-    }
-}
-
-// ===== ORIGINAL FUNCTIONS =====
-async function runInventoryCheck() { 
-    showToast('📦 Checking inventory...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/inventory/check`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.status === 401) { 
-            localStorage.removeItem('token'); 
-            window.location.href = 'login.html'; 
-            return; 
-        } 
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`📦 Found ${data.lowStock || 0} low stock items`, 'success');
-            await loadActivityLog();
-            toggleFeatureLive('feature-inventory');
-        }
-    } catch (error) {
-        showToast('📦 Inventory check started', 'info');
-    }
-}
-
-async function recoverCarts() { 
-    showToast('🛒 Starting cart recovery...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/carts/recover`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.status === 401) { 
-            localStorage.removeItem('token'); 
-            window.location.href = 'login.html'; 
-            return; 
-        } 
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`🛒 Recovered ${data.count || 0} carts`, 'success');
-            await loadActivityLog();
-            toggleFeatureLive('feature-cart');
-        }
-    } catch (error) {
-        showToast('🛒 Cart recovery started', 'info');
-    }
-}
-
-async function scoreLeads() { 
-    showToast('📊 Scoring leads...', 'info');
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/powerhouse/leads/score`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.status === 401) { 
-            localStorage.removeItem('token'); 
-            window.location.href = 'login.html'; 
-            return; 
-        } 
-        if (response.ok) {
-            const data = await response.json();
-            showToast(`📊 Found ${data.hotLeads || 0} hot leads`, 'success');
-            await loadActivityLog();
-            toggleFeatureLive('feature-lead');
-        }
-    } catch (error) {
-        showToast('📊 Lead scoring started', 'info');
-    }
-}
-
+// ===== ORIGINAL FUNCTIONS (KEPT) =====
 async function configureGateway() {
     showToast('⚙️ Configuring Cloudflare AI Gateway...', 'info');
     openSettings();
@@ -5632,9 +5484,6 @@ window.closeSettings = closeSettings;
 window.openObservability = openObservability;
 window.closeObservability = closeObservability;
 window.toggleConnectionMethod = toggleConnectionMethod;
-window.runInventoryCheck = runInventoryCheck;
-window.recoverCarts = recoverCarts;
-window.scoreLeads = scoreLeads;
 window.configureGateway = configureGateway;
 window.deployAgent = deployAgent;
 window.viewAuditLogs = viewAuditLogs;
@@ -5664,27 +5513,6 @@ window.openPortal = openPortal;
 window.contactSupport = contactSupport;
 window.viewLogs = viewLogs;
 window.exportLogs = exportLogs;
-window.scanPrices = scanPrices;
-window.createEmailSequence = createEmailSequence;
-window.processTasks = processTasks;
-window.schedulePosts = schedulePosts;
-window.analyzeAds = analyzeAds;
-window.checkSEO = checkSEO;
-window.routeTickets = routeTickets;
-window.enableAutoResponder = enableAutoResponder;
-window.sendCSAT = sendCSAT;
-window.processInvoices = processInvoices;
-window.scanReceipts = scanReceipts;
-window.runPayroll = runPayroll;
-window.processLeave = processLeave;
-window.startOnboarding = startOnboarding;
-window.scheduleReviews = scheduleReviews;
-window.assignTasks = assignTasks;
-window.checkDeadlines = checkDeadlines;
-window.generateReports = generateReports;
-window.createContent = createContent;
-window.trackEngagement = trackEngagement;
-window.trackInfluencers = trackInfluencers;
 window.showContentModal = showContentModal;
 window.closeContentModal = closeContentModal;
 window.switchContentTab = switchContentTab;
@@ -5703,6 +5531,8 @@ window.deleteWorkflowNode = deleteWorkflowNode;
 window.handleNodeDragStart = handleNodeDragStart;
 window.startConnection = startConnection;
 window.createWorkflowFromAccount = createWorkflowFromAccount;
+window.executeWorkflowAndWatch = executeWorkflowAndWatch;
+window.addExecuteButtonToDeployedWorkflows = addExecuteButtonToDeployedWorkflows;
 </script>
 </body>
 </html>
