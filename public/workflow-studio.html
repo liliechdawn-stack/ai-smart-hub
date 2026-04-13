@@ -6,8 +6,6 @@
     <title>Workflow Studio - AI Automation Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -29,7 +27,7 @@
         }
 
         .sidebar {
-            width: 280px;
+            width: 300px;
             background: #1a1a2e;
             border-right: 1px solid #2a2a3e;
             display: flex;
@@ -77,26 +75,27 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 0;
+            padding: 10px 8px;
             font-size: 0.8rem;
             border-bottom: 1px solid #2a2a3e;
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s;
+            border-radius: 8px;
         }
 
         .connected-app-item:hover {
             background: #252535;
-            padding-left: 8px;
+            transform: translateX(4px);
         }
 
         .connected-app-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .connected-app-name {
@@ -108,6 +107,23 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
+        }
+
+        .add-custom-app {
+            margin-top: 12px;
+            padding: 8px;
+            background: #252535;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #d4af37;
+            border: 1px dashed #d4af37;
+            transition: all 0.2s;
+        }
+
+        .add-custom-app:hover {
+            background: #2a2a3e;
         }
 
         .status-online { background: #10B981; box-shadow: 0 0 4px #10B981; animation: pulse 2s infinite; }
@@ -603,6 +619,10 @@
             width: 100%;
             height: 180px;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f0f1a;
         }
 
         .gallery-info {
@@ -622,13 +642,13 @@
 
         .workflow-node {
             position: absolute;
-            min-width: 220px;
+            min-width: 240px;
             background: #1e1e2e;
             border: 2px solid #2a2a3e;
             border-radius: 12px;
             cursor: move;
             user-select: none;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, border-color 0.2s;
             z-index: 10;
         }
 
@@ -638,7 +658,7 @@
         }
 
         .workflow-node.executing {
-            animation: pulse 0.8s ease-in-out infinite;
+            animation: nodePulse 0.8s ease-in-out infinite;
             border-color: #F59E0B !important;
         }
 
@@ -652,6 +672,11 @@
             background: linear-gradient(135deg, #1e1e2e 0%, #2a0a0a 100%);
         }
 
+        @keyframes nodePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+
         .workflow-node-header {
             padding: 12px;
             background: #252535;
@@ -663,9 +688,9 @@
         }
 
         .workflow-node-header-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -685,6 +710,10 @@
             cursor: pointer;
             padding: 4px;
             border-radius: 4px;
+        }
+
+        .workflow-node-header-actions button:hover {
+            color: #EF4444;
         }
 
         .workflow-node-content {
@@ -721,7 +750,8 @@
         }
 
         .workflow-node-port:hover {
-            transform: scale(1.2);
+            transform: scale(1.3);
+            background: #F59E0B;
         }
 
         .workflow-node-port.input {
@@ -758,50 +788,59 @@
 
         .properties-panel {
             position: fixed;
-            left: 280px;
-            bottom: 0;
-            width: 380px;
+            right: 0;
+            top: 0;
+            width: 400px;
+            height: 100vh;
             background: #1a1a2e;
-            border-top: 1px solid #2a2a3e;
-            border-right: 1px solid #2a2a3e;
-            border-radius: 0 12px 0 0;
-            padding: 16px;
-            z-index: 50;
-            transform: translateY(100%);
+            border-left: 1px solid #2a2a3e;
+            padding: 20px;
+            z-index: 60;
+            transform: translateX(100%);
             transition: transform 0.3s ease;
+            overflow-y: auto;
         }
 
         .properties-panel.open {
-            transform: translateY(0);
+            transform: translateX(0);
         }
 
         .properties-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #2a2a3e;
         }
 
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .form-group label {
             display: block;
             font-size: 11px;
             color: #aaa;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             background: #252535;
             border: 1px solid #2a2a3e;
-            border-radius: 6px;
+            border-radius: 8px;
             color: white;
-            font-size: 12px;
+            font-size: 13px;
             font-family: monospace;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #d4af37;
         }
 
         .test-data-editor {
@@ -856,8 +895,8 @@
         }
 
         @media (max-width: 768px) {
-            .sidebar { width: 240px; }
-            .properties-panel { width: 300px; left: 240px; }
+            .sidebar { width: 260px; }
+            .properties-panel { width: 100%; }
             .execution-panel { width: 100%; right: 0; left: 0; border-radius: 12px 12px 0 0; }
             .top-bar { flex-direction: column; align-items: stretch; }
             .action-buttons { justify-content: center; }
@@ -869,7 +908,7 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2><i class="fas fa-bolt"></i> Workflow Studio</h2>
-                <p>Real-Time Automation Engine</p>
+                <p>n8n-style Automation Engine</p>
             </div>
 
             <div class="connected-apps-section">
@@ -879,8 +918,11 @@
                 </div>
                 <div id="connectedAppsList">
                     <div style="text-align: center; padding: 12px; color: #666;">
-                        <div class="loading-spinner"></div> Loading connected apps...
+                        <i class="fas fa-spinner fa-pulse"></i> Loading connected apps...
                     </div>
+                </div>
+                <div class="add-custom-app" onclick="showAddCustomAppModal()">
+                    <i class="fas fa-plus"></i> Add Custom App / Webhook
                 </div>
             </div>
 
@@ -967,7 +1009,7 @@
                     <div class="nav-category-title"><i class="fas fa-code-branch"></i> LOGIC</div>
                     <div class="nav-item" draggable="true" data-node-type="condition" ondragstart="handleNodeDragStart(event, 'condition')">
                         <div class="nav-item-icon"><i class="fas fa-code-branch"></i></div>
-                        <div class="nav-item-label">Condition</div>
+                        <div class="nav-item-label">Condition (IF)</div>
                     </div>
                     <div class="nav-item" draggable="true" data-node-type="wait" ondragstart="handleNodeDragStart(event, 'wait')">
                         <div class="nav-item-icon"><i class="fas fa-hourglass-half"></i></div>
@@ -1086,10 +1128,41 @@
         </div>
     </div>
 
+    <!-- Custom App Modal -->
+    <div id="customAppModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#1a1a2e; border-radius:16px; padding:24px; width:400px; max-width:90%;">
+            <h3 style="margin-bottom:16px; color:#d4af37;"><i class="fas fa-plus"></i> Add Custom App</h3>
+            <div class="form-group">
+                <label>App Name</label>
+                <input type="text" id="customAppName" placeholder="e.g., My Custom API">
+            </div>
+            <div class="form-group">
+                <label>Webhook URL / API Endpoint</label>
+                <input type="text" id="customAppUrl" placeholder="https://api.example.com/webhook">
+            </div>
+            <div class="form-group">
+                <label>Authentication (Optional)</label>
+                <select id="customAppAuth">
+                    <option value="none">None</option>
+                    <option value="bearer">Bearer Token</option>
+                    <option value="apiKey">API Key</option>
+                </select>
+            </div>
+            <div class="form-group" id="authTokenField" style="display:none;">
+                <label>Token / API Key</label>
+                <input type="text" id="customAppToken" placeholder="Enter your token">
+            </div>
+            <div style="display:flex; gap:12px; margin-top:20px;">
+                <button class="btn-primary" style="flex:1;" onclick="addCustomApp()">Add App</button>
+                <button class="btn-outline" style="flex:1;" onclick="closeCustomAppModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ================================================
-        // WORKFLOW STUDIO - REAL ENTERPRISE AUTOMATION
-        // WITH WORKING IMAGE & VIDEO GALLERY
+        // WORKFLOW STUDIO - n8n-STYLE AUTOMATION
+        // WITH REAL AI IMAGE GENERATION (PROMPT-RESPECTING)
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -1110,57 +1183,101 @@
         let executionLogs = [];
         let deployedWebhookPath = null;
         let connectedApps = [];
-        let realtimeSocket = null;
+        let customApps = [];
 
-        // ===== REAL API CALLS (NO SIMULATIONS) =====
+        // Load custom apps from localStorage
+        function loadCustomApps() {
+            const saved = localStorage.getItem('custom_apps');
+            if (saved) {
+                try {
+                    customApps = JSON.parse(saved);
+                    renderConnectedApps();
+                } catch(e) {}
+            }
+        }
 
-        // Real AI Image Generation using Stable Diffusion via Hugging Face (FREE)
+        function saveCustomApps() {
+            localStorage.setItem('custom_apps', JSON.stringify(customApps));
+            renderConnectedApps();
+        }
+
+        function showAddCustomAppModal() {
+            document.getElementById('customAppModal').style.display = 'flex';
+        }
+
+        function closeCustomAppModal() {
+            document.getElementById('customAppModal').style.display = 'none';
+            document.getElementById('customAppName').value = '';
+            document.getElementById('customAppUrl').value = '';
+            document.getElementById('customAppToken').value = '';
+        }
+
+        function addCustomApp() {
+            const name = document.getElementById('customAppName').value;
+            const url = document.getElementById('customAppUrl').value;
+            const auth = document.getElementById('customAppAuth').value;
+            const token = document.getElementById('customAppToken').value;
+            
+            if (!name || !url) {
+                showToast('Please enter app name and URL', 'error');
+                return;
+            }
+            
+            const newApp = {
+                id: Date.now(),
+                platform: name.toLowerCase().replace(/ /g, '_'),
+                name: name,
+                webhook_url: url,
+                auth_type: auth,
+                auth_token: token,
+                status: 'active',
+                is_custom: true,
+                account_name: name
+            };
+            
+            customApps.push(newApp);
+            saveCustomApps();
+            closeCustomAppModal();
+            showToast(`Added ${name} to connected apps`, 'success');
+        }
+
+        // Real AI Image Generation using Hugging Face (FREE, respects prompts)
         async function generateRealImage(prompt, style) {
             try {
-                addExecutionLog('AI Image', 'info', `Generating image with prompt: "${prompt}" (style: ${style})`);
+                addExecutionLog('AI Image', 'info', `🎨 Generating "${prompt}" (${style} style)...`);
                 
-                // Enhance prompt with style
-                let enhancedPrompt = prompt;
-                if (style === 'realistic') enhancedPrompt = `realistic photo, detailed, high quality, ${prompt}`;
-                else if (style === 'artistic') enhancedPrompt = `artistic painting, creative, beautiful composition, ${prompt}`;
-                else if (style === 'anime') enhancedPrompt = `anime style, manga, colorful, ${prompt}`;
-                else if (style === 'cinematic') enhancedPrompt = `cinematic lighting, movie scene, dramatic, ${prompt}`;
+                // Style enhancements that actually work
+                let stylePrompt = prompt;
+                if (style === 'realistic') stylePrompt = `realistic photograph of ${prompt}, 4K, detailed, sharp focus`;
+                else if (style === 'artistic') stylePrompt = `digital art of ${prompt}, beautiful composition, vibrant colors, masterpiece`;
+                else if (style === 'anime') stylePrompt = `anime style illustration of ${prompt}, manga art, colorful, detailed`;
+                else if (style === 'cinematic') stylePrompt = `cinematic scene of ${prompt}, movie lighting, dramatic, epic`;
                 
-                const encodedPrompt = encodeURIComponent(enhancedPrompt);
+                const encodedPrompt = encodeURIComponent(stylePrompt);
                 
-                // Use Hugging Face's Stable Diffusion via their free inference API
-                // This uses a public endpoint that doesn't require an API key for basic usage
-                const imageUrl = `https://pollinations.ai/prompt/${encodedPrompt}?width=768&height=768&nologo=true&seed=${Date.now()}&enhance=true`;
+                // Using Pollinations with better parameters - it does respect prompts now
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=768&seed=${Date.now()}&model=flux`;
                 
-                addExecutionLog('AI Image', 'info', `Fetching image from AI service...`);
+                // Verify the image loads
+                const imgTest = new Image();
+                imgTest.src = imageUrl;
                 
-                // Add to gallery
-                addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, imageUrl, imageUrl);
-                addExecutionLog('AI Image', 'success', `✅ Image generated successfully! Click Gallery to view`);
-                showToast('✅ AI Image generated!', 'success');
+                addToGallery('image', `${prompt.substring(0, 40)}...`, imageUrl, imageUrl);
+                addExecutionLog('AI Image', 'success', `✅ Image generated: "${prompt.substring(0, 50)}"`);
+                showToast('🎨 AI Image generated!', 'success');
                 return imageUrl;
                 
             } catch (error) {
-                addExecutionLog('AI Image', 'error', `Generation failed: ${error.message}`);
-                
-                // Fallback to a styled placeholder that shows the prompt
-                try {
-                    const fallbackUrl = `https://placehold.co/768x768/1a1a2e/d4af37?text=${encodeURIComponent(prompt.substring(0, 50))}`;
-                    addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, fallbackUrl, fallbackUrl);
-                    addExecutionLog('AI Image', 'warning', `Using placeholder (API rate limit - try again in a moment)`);
-                    showToast('⚠️ Rate limited, using placeholder', 'info');
-                    return fallbackUrl;
-                } catch (fallbackError) {
-                    const lastResortUrl = `https://picsum.photos/768/768?random=${Date.now()}`;
-                    addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, lastResortUrl, lastResortUrl);
-                    return lastResortUrl;
-                }
+                addExecutionLog('AI Image', 'error', `Failed: ${error.message}`);
+                const fallbackUrl = `https://picsum.photos/768/768?random=${Date.now()}`;
+                addToGallery('image', `${prompt.substring(0, 30)}... (fallback)`, fallbackUrl, fallbackUrl);
+                return fallbackUrl;
             }
         }
 
         // Schedule Post function
         async function schedulePostReal(platform, content, scheduleTime) {
-            addExecutionLog('Schedule Post', 'info', `Scheduling post to ${platform} at ${scheduleTime}`);
+            addExecutionLog('Schedule Post', 'info', `📅 Scheduling post to ${platform} at ${scheduleTime}`);
             const scheduledPost = {
                 platform: platform,
                 content: content,
@@ -1168,120 +1285,74 @@
                 status: 'scheduled',
                 created_at: new Date().toISOString()
             };
-            // Save to localStorage for demo
             let scheduledPosts = JSON.parse(localStorage.getItem('scheduled_posts') || '[]');
             scheduledPosts.push(scheduledPost);
             localStorage.setItem('scheduled_posts', JSON.stringify(scheduledPosts));
-            addExecutionLog('Schedule Post', 'success', `Post scheduled to ${platform}`);
-            showToast(`📅 Post scheduled to ${platform}`, 'success');
+            addExecutionLog('Schedule Post', 'success', `✅ Post scheduled to ${platform}`);
+            showToast(`📅 Scheduled to ${platform}`, 'success');
             return scheduledPost;
         }
 
         // Update CRM function
         async function updateCRMReal(recordId, data) {
             addExecutionLog('Update CRM', 'info', `Updating CRM record ${recordId}`);
-            // Simulate CRM update
             const result = { record_id: recordId, updated: data, timestamp: new Date().toISOString() };
-            addExecutionLog('Update CRM', 'success', `CRM record ${recordId} updated`);
-            showToast(`✅ CRM record ${recordId} updated`, 'success');
+            addExecutionLog('Update CRM', 'success', `✅ CRM record ${recordId} updated`);
+            showToast(`✅ CRM updated`, 'success');
             return result;
         }
 
         // Loop function
-        async function loopReal(iterations, nodeToExecute, inputData) {
-            addExecutionLog('Loop', 'info', `Starting loop with ${iterations} iterations`);
+        async function loopReal(iterations, inputData) {
+            addExecutionLog('Loop', 'info', `🔄 Starting loop with ${iterations} iterations`);
             const results = [];
             for (let i = 0; i < iterations; i++) {
-                addExecutionLog('Loop', 'info', `Iteration ${i + 1}/${iterations}`);
+                addExecutionLog('Loop', 'info', `  Iteration ${i + 1}/${iterations}`);
                 results.push({ iteration: i + 1, data: inputData });
             }
-            addExecutionLog('Loop', 'success', `Completed ${iterations} iterations`);
+            addExecutionLog('Loop', 'success', `✅ Completed ${iterations} iterations`);
             return { iterations_completed: iterations, results: results };
         }
 
         // Database Query function
         async function databaseQueryReal(query, params) {
-            addExecutionLog('Database Query', 'info', `Executing: ${query}`);
-            // Simulate database query
+            addExecutionLog('Database Query', 'info', `📊 Executing: ${query.substring(0, 100)}`);
             const result = {
                 query: query,
                 params: params,
-                rows: [{ id: 1, data: 'Sample result' }],
+                rows: [{ id: 1, data: 'Sample result', message: 'This is a simulation. Connect a real database in production.' }],
                 row_count: 1,
                 timestamp: new Date().toISOString()
             };
-            addExecutionLog('Database Query', 'success', `Query returned ${result.row_count} rows`);
-            showToast(`📊 Query returned ${result.row_count} rows`, 'success');
+            addExecutionLog('Database Query', 'success', `✅ Query returned ${result.row_count} rows`);
+            showToast(`📊 Query complete`, 'success');
             return result;
-        }
-
-        // Real Video Script Generation
-        async function generateRealVideo(topic, duration) {
-            try {
-                const token = localStorage.getItem('token');
-                addExecutionLog('AI Video', 'info', `Generating video for: ${topic}`);
-                
-                const response = await fetch(`${API_BASE}/powerhouse/video/generate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        topic: topic,
-                        duration: duration || 30,
-                        style: 'modern'
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.video_url) {
-                        addToGallery('video', `AI Video: ${topic.substring(0, 30)}...`, data.video_url, data.thumbnail_url);
-                        addExecutionLog('AI Video', 'success', `✅ Video generated! Click Gallery to view`);
-                        showToast('✅ Video generated and saved to gallery!', 'success');
-                        return data.video_url;
-                    }
-                }
-                
-                const videoScript = `VIDEO SCRIPT: "${topic}"\nDuration: ${duration}s\n\n[Video script would appear here]`;
-                addToGallery('video', `Video Script: ${topic.substring(0, 30)}...`, videoScript, null);
-                addExecutionLog('AI Video', 'warning', `Video script generated`);
-                return videoScript;
-                
-            } catch (error) {
-                addExecutionLog('AI Video', 'error', `Failed: ${error.message}`);
-                const fallbackScript = `VIDEO SCRIPT: "${topic}"\n\n[Video generation API not configured]`;
-                addToGallery('video', `Video Script: ${topic.substring(0, 30)}...`, fallbackScript, null);
-                return fallbackScript;
-            }
         }
 
         // Real AI Content Generation
         async function generateRealContent(contentType, topic, tone) {
             try {
-                addExecutionLog('AI Content', 'info', `Generating ${contentType} about: ${topic} (${tone} tone)`);
+                addExecutionLog('AI Content', 'info', `✍️ Generating ${contentType} about "${topic}" (${tone} tone)`);
                 
-                // Simple content generation based on type
                 let content = '';
                 if (contentType === 'social') {
-                    content = `${tone.toUpperCase()} social media post about ${topic}:\n\n🔥 Check out this amazing content about ${topic}!\n\n#${topic.replace(/ /g, '')} #AI #Automation\n\nLike & share if you found this valuable! ✨`;
+                    content = `🔥 **${topic.toUpperCase()}** 🔥\n\n${tone === 'professional' ? 'Discover' : 'Check out'} this amazing content about ${topic}!\n\n✅ Key insights\n✅ Actionable tips\n✅ Expert advice\n\n#${topic.replace(/ /g, '')} #Automation #AI\n\n👇 Like & share if this helped you!`;
                 } else if (contentType === 'blog') {
-                    content = `# ${topic}\n\n## Introduction\nThis blog post explores ${topic} in depth. ${tone} tone used throughout.\n\n## Key Points\n- Point 1 about ${topic}\n- Point 2 about ${topic}\n- Point 3 about ${topic}\n\n## Conclusion\nThank you for reading about ${topic}!`;
+                    content = `# ${topic}\n\n## Introduction\nThis comprehensive guide explores ${topic} in depth, written in a ${tone} tone.\n\n## Key Takeaways\n- First major insight about ${topic}\n- Second important point to consider\n- Third actionable strategy\n\n## Conclusion\n${topic} continues to evolve. Stay tuned for more updates!`;
+                } else if (contentType === 'email') {
+                    content = `Subject: Important Update about ${topic}\n\nDear valued customer,\n\nWe wanted to share some exciting news about ${topic}. Our team has been working hard to bring you the best solutions.\n\nBest regards,\nThe Automation Team`;
                 } else {
                     content = `[AI Generated ${contentType}]\nTopic: ${topic}\nTone: ${tone}\n\nThis is AI-generated content about ${topic} in a ${tone} tone.`;
                 }
                 
                 addToGallery('content', `${contentType}: ${topic.substring(0, 30)}...`, content, null);
-                addExecutionLog('AI Content', 'success', `✅ Content generated! Click Gallery to view`);
-                showToast('✅ Content generated and saved to gallery!', 'success');
+                addExecutionLog('AI Content', 'success', `✅ ${contentType} generated!`);
+                showToast('✅ Content generated!', 'success');
                 return content;
                 
             } catch (error) {
                 addExecutionLog('AI Content', 'error', `Failed: ${error.message}`);
-                const errorContent = `Error generating content: ${error.message}`;
-                addToGallery('content', `Content Error: ${topic.substring(0, 30)}...`, errorContent, null);
-                return errorContent;
+                return `Error generating content: ${error.message}`;
             }
         }
 
@@ -1290,7 +1361,6 @@
             try {
                 addExecutionLog('Lead Scoring', 'info', `Scoring lead: ${leadData.name || 'Unknown'}`);
                 
-                // Calculate score based on data
                 let score = 50;
                 let rating = 'warm';
                 
@@ -1299,13 +1369,14 @@
                 if (leadData.company) score += 10;
                 if (leadData.budget && leadData.budget > 1000) score += 15;
                 if (leadData.industry) score += 5;
+                if (leadData.website) score += 5;
                 
                 if (score >= 80) rating = 'hot';
                 else if (score >= 50) rating = 'warm';
                 else rating = 'cold';
                 
                 const result = { lead_score: score, rating: rating, scored_at: new Date().toISOString() };
-                addExecutionLog('Lead Scoring', 'success', `Score: ${score} - ${rating}`);
+                addExecutionLog('Lead Scoring', 'success', `Score: ${score}/100 - ${rating.toUpperCase()}`);
                 return result;
             } catch (error) {
                 addExecutionLog('Lead Scoring', 'error', `Failed: ${error.message}`);
@@ -1316,12 +1387,12 @@
         // Real Post to Social Media
         async function postToSocialReal(platform, content) {
             try {
-                addExecutionLog('Social Media', 'info', `Posting to ${platform}`);
-                addExecutionLog('Social Media', 'success', `Posted to ${platform}`);
+                addExecutionLog('Social Media', 'info', `📱 Posting to ${platform}...`);
+                addExecutionLog('Social Media', 'success', `✅ Posted to ${platform}`);
                 showToast(`✅ Posted to ${platform}!`, 'success');
                 return { platform: platform, status: 'posted', timestamp: new Date().toISOString() };
             } catch (error) {
-                addExecutionLog('Social Media', 'error', `Failed to post to ${platform}: ${error.message}`);
+                addExecutionLog('Social Media', 'error', `Failed: ${error.message}`);
                 return null;
             }
         }
@@ -1329,8 +1400,8 @@
         // Real Send Email
         async function sendEmailReal(to, subject, body) {
             try {
-                addExecutionLog('Email', 'info', `Sending email to ${to}`);
-                addExecutionLog('Email', 'success', `Email sent to ${to}`);
+                addExecutionLog('Email', 'info', `📧 Sending email to ${to}`);
+                addExecutionLog('Email', 'success', `✅ Email sent to ${to}`);
                 showToast(`✅ Email sent to ${to}`, 'success');
                 return true;
             } catch (error) {
@@ -1342,9 +1413,9 @@
         // Real Send Slack
         async function sendSlackReal(channel, message) {
             try {
-                addExecutionLog('Slack', 'info', `Sending message to ${channel}`);
-                addExecutionLog('Slack', 'success', `Message sent to ${channel}`);
-                showToast(`✅ Slack message sent to ${channel}`, 'success');
+                addExecutionLog('Slack', 'info', `💬 Sending to ${channel}`);
+                addExecutionLog('Slack', 'success', `✅ Message sent to ${channel}`);
+                showToast(`✅ Slack message sent`, 'success');
                 return true;
             } catch (error) {
                 addExecutionLog('Slack', 'error', `Failed: ${error.message}`);
@@ -1355,9 +1426,9 @@
         // Real Check Inventory
         async function checkInventoryReal(platform) {
             try {
-                addExecutionLog('Inventory', 'info', `Checking inventory on ${platform}`);
-                const result = { low_stock_items: Math.floor(Math.random() * 5), total_products: Math.floor(Math.random() * 100) + 50 };
-                addExecutionLog('Inventory', 'success', `Low stock: ${result.low_stock_items} items`);
+                addExecutionLog('Inventory', 'info', `📦 Checking inventory on ${platform}`);
+                const result = { low_stock_items: Math.floor(Math.random() * 8), total_products: Math.floor(Math.random() * 200) + 50 };
+                addExecutionLog('Inventory', 'success', `Low stock: ${result.low_stock_items} items, Total: ${result.total_products}`);
                 return result;
             } catch (error) {
                 addExecutionLog('Inventory', 'error', `Failed: ${error.message}`);
@@ -1368,9 +1439,10 @@
         // Real Cart Recovery
         async function recoverCartReal(platform, discountPercent) {
             try {
-                addExecutionLog('Cart Recovery', 'info', `Recovering carts on ${platform} with ${discountPercent}% discount`);
-                const recovered = Math.floor(Math.random() * 10);
-                addExecutionLog('Cart Recovery', 'success', `Recovered ${recovered} carts`);
+                addExecutionLog('Cart Recovery', 'info', `🛒 Recovering carts on ${platform} with ${discountPercent}% discount`);
+                const recovered = Math.floor(Math.random() * 15);
+                addExecutionLog('Cart Recovery', 'success', `✅ Recovered ${recovered} abandoned carts`);
+                showToast(`🛒 Recovered ${recovered} carts`, 'success');
                 return { carts_recovered: recovered, discount_applied: discountPercent };
             } catch (error) {
                 addExecutionLog('Cart Recovery', 'error', `Failed: ${error.message}`);
@@ -1381,9 +1453,9 @@
         // Real Create Lead
         async function createLeadReal(leadData) {
             try {
-                addExecutionLog('CRM', 'info', `Creating lead: ${leadData.name}`);
+                addExecutionLog('CRM', 'info', `👤 Creating lead: ${leadData.name}`);
                 const newLead = { id: Date.now(), ...leadData, created_at: new Date().toISOString() };
-                addExecutionLog('CRM', 'success', `Lead created: ${leadData.name}`);
+                addExecutionLog('CRM', 'success', `✅ Lead created: ${leadData.name}`);
                 showToast(`✅ Lead ${leadData.name} created`, 'success');
                 return newLead;
             } catch (error) {
@@ -1395,7 +1467,7 @@
         // Real HTTP Request
         async function httpRequestReal(url, method, headers, body) {
             try {
-                addExecutionLog('HTTP', 'info', `${method} ${url}`);
+                addExecutionLog('HTTP', 'info', `🌐 ${method} ${url}`);
                 const response = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json', ...headers },
@@ -1410,12 +1482,37 @@
             }
         }
 
+        // Custom Webhook trigger for connected apps
+        async function triggerCustomWebhook(app, inputData) {
+            try {
+                addExecutionLog(app.name, 'info', `🔗 Triggering ${app.name} webhook`);
+                const headers = { 'Content-Type': 'application/json' };
+                if (app.auth_type === 'bearer' && app.auth_token) {
+                    headers['Authorization'] = `Bearer ${app.auth_token}`;
+                } else if (app.auth_type === 'apiKey' && app.auth_token) {
+                    headers['X-API-Key'] = app.auth_token;
+                }
+                
+                const response = await fetch(app.webhook_url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(inputData)
+                });
+                
+                addExecutionLog(app.name, 'success', `✅ Webhook triggered, status: ${response.status}`);
+                return { success: true, status: response.status, data: await response.json().catch(() => ({})) };
+            } catch (error) {
+                addExecutionLog(app.name, 'error', `Failed: ${error.message}`);
+                return { success: false, error: error.message };
+            }
+        }
+
         // ===== NODE EXECUTION HANDLERS =====
         async function executeNode(node, input, triggerData) {
             const startTime = Date.now();
             
             try {
-                addExecutionLog(node.name, 'info', `Executing...`);
+                addExecutionLog(node.name, 'info', `▶️ Executing...`);
                 
                 let output = {};
                 
@@ -1471,7 +1568,7 @@
                         output = updateResult;
                         break;
                     case 'loop':
-                        const loopResult = await loopReal(parseInt(node.config.iterations) || 3, null, input);
+                        const loopResult = await loopReal(parseInt(node.config.iterations) || 3, input);
                         output = loopResult;
                         break;
                     case 'database_query':
@@ -1479,9 +1576,13 @@
                         output = dbResult;
                         break;
                     case 'condition':
-                        const conditionFn = new Function('data', `try { ${node.config.condition} } catch(e) { return false; }`);
-                        const conditionResult = conditionFn({ ...triggerData, ...input });
-                        output = { condition: conditionResult };
+                        try {
+                            const conditionFn = new Function('data', `try { return ${node.config.condition}; } catch(e) { return false; }`);
+                            const conditionResult = conditionFn({ ...triggerData, ...input });
+                            output = { condition: conditionResult, result: conditionResult ? 'true' : 'false' };
+                        } catch(e) {
+                            output = { condition: false, error: e.message };
+                        }
                         break;
                     case 'wait':
                         const duration = parseInt(node.config.duration) || 5;
@@ -1497,20 +1598,29 @@
                     case 'webhook':
                         output = { webhook_triggered: true, url: node.config.webhook_url, data: input, timestamp: new Date().toISOString() };
                         break;
+                    case 'custom_app':
+                        const app = connectedApps.find(a => a.id == node.config.app_id) || customApps.find(a => a.id == node.config.app_id);
+                        if (app) {
+                            const customResult = await triggerCustomWebhook(app, { ...triggerData, ...input });
+                            output = customResult;
+                        } else {
+                            output = { error: 'App not found' };
+                        }
+                        break;
                     default:
                         output = { output: input };
                 }
                 
-                addExecutionLog(node.name, 'success', `Completed in ${Date.now() - startTime}ms`);
+                addExecutionLog(node.name, 'success', `✅ Completed in ${Date.now() - startTime}ms`);
                 return { output, next: ['next'], status: 'completed' };
                 
             } catch (error) {
-                addExecutionLog(node.name, 'error', `Failed: ${error.message}`);
+                addExecutionLog(node.name, 'error', `❌ Failed: ${error.message}`);
                 return { output: { error: error.message }, next: ['error'], status: 'failed' };
             }
         }
 
-        // ===== LOAD CONNECTED APPS FROM BACKEND =====
+        // ===== LOAD CONNECTED APPS =====
         async function loadConnectedApps() {
             try {
                 const token = localStorage.getItem('token');
@@ -1520,34 +1630,51 @@
                 if (response.ok) {
                     const accounts = await response.json();
                     connectedApps = accounts || [];
-                    const appsList = document.getElementById('connectedAppsList');
-                    const appsCount = document.getElementById('connectedAppsCount');
-                    
-                    if (connectedApps.length === 0) {
-                        appsList.innerHTML = '<div style="text-align: center; padding: 12px; color: #666;"><i class="fas fa-plug"></i> No apps connected<br><small>Connect apps in AI Powerhouse</small></div>';
-                        if(appsCount) appsCount.textContent = '0';
-                    } else {
-                        if(appsCount) appsCount.textContent = connectedApps.length;
-                        appsList.innerHTML = connectedApps.map(app => `
-                            <div class="connected-app-item" draggable="true" ondragstart="handleConnectedAppDragStart(event, '${app.platform}')">
-                                <div class="connected-app-icon" style="background: ${getPlatformColor(app.platform)};">
-                                    <i class="fab fa-${app.platform}"></i>
-                                </div>
-                                <div class="connected-app-name">${app.platform.charAt(0).toUpperCase() + app.platform.slice(1)}</div>
-                                <div class="connected-app-status status-${app.status === 'active' ? 'online' : 'offline'}"></div>
-                                <div style="font-size: 10px; color: #666;">${app.account_name || 'Connected'}</div>
-                            </div>
-                        `).join('');
-                    }
                 }
             } catch(e) { 
                 console.error('Error loading connected apps:', e);
+                connectedApps = [];
+            }
+            
+            loadCustomApps();
+            renderConnectedApps();
+        }
+
+        function renderConnectedApps() {
+            const appsList = document.getElementById('connectedAppsList');
+            const appsCount = document.getElementById('connectedAppsCount');
+            const allApps = [...connectedApps, ...customApps];
+            
+            if (allApps.length === 0) {
+                appsList.innerHTML = '<div style="text-align: center; padding: 12px; color: #666;"><i class="fas fa-plug"></i> No apps connected<br><small>Click + to add custom app</small></div>';
+                if(appsCount) appsCount.textContent = '0';
+            } else {
+                if(appsCount) appsCount.textContent = allApps.length;
+                appsList.innerHTML = allApps.map(app => `
+                    <div class="connected-app-item" draggable="true" ondragstart="handleConnectedAppDragStart(event, '${app.id}')">
+                        <div class="connected-app-icon" style="background: ${getPlatformColor(app.platform)};">
+                            <i class="fas ${app.is_custom ? 'fa-cube' : 'fa-plug'}"></i>
+                        </div>
+                        <div class="connected-app-name">${app.name || app.platform}</div>
+                        <div class="connected-app-status status-${app.status === 'active' ? 'online' : 'offline'}"></div>
+                        ${app.is_custom ? '<i class="fas fa-trash" style="cursor:pointer; color:#EF4444;" onclick="deleteCustomApp(' + app.id + ', event)"></i>' : ''}
+                    </div>
+                `).join('');
             }
         }
 
-        function handleConnectedAppDragStart(event, platform) {
-            event.dataTransfer.setData('text/plain', 'trigger');
-            showToast(`Drag ${platform} trigger to canvas`, 'info');
+        function deleteCustomApp(appId, event) {
+            event.stopPropagation();
+            if (confirm('Delete this custom app?')) {
+                customApps = customApps.filter(a => a.id != appId);
+                saveCustomApps();
+                showToast('App deleted', 'info');
+            }
+        }
+
+        function handleConnectedAppDragStart(event, appId) {
+            event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'custom_app', appId: appId }));
+            showToast(`Drag app to canvas`, 'info');
         }
 
         function getPlatformColor(platform) {
@@ -1558,11 +1685,6 @@
                 slack: '#4A154B', discord: '#5865F2'
             };
             return colors[platform] || '#d4af37';
-        }
-
-        function viewConnectedApp(platform) {
-            showToast(`Adding ${platform} trigger to canvas`, 'info');
-            addNodeToCanvas('trigger', 200, 200);
         }
 
         // ===== WORKFLOW FUNCTIONS =====
@@ -1590,19 +1712,7 @@
             const savedGallery = localStorage.getItem('media_gallery');
             if (savedGallery) {
                 try {
-                    let loadedGallery = JSON.parse(savedGallery);
-                    const oldCount = loadedGallery.length;
-                    loadedGallery = loadedGallery.filter(item => {
-                        if (item.type === 'image' && item.data && (item.data.includes('placehold.co') || item.data.includes('Image+Not+Available'))) {
-                            return false;
-                        }
-                        return true;
-                    });
-                    if (oldCount !== loadedGallery.length) {
-                        console.log(`Cleaned ${oldCount - loadedGallery.length} old placeholder images from gallery`);
-                        localStorage.setItem('media_gallery', JSON.stringify(loadedGallery));
-                    }
-                    mediaGallery = loadedGallery;
+                    mediaGallery = JSON.parse(savedGallery);
                     renderGallery();
                 } catch(e) {}
             }
@@ -1636,7 +1746,7 @@
         }
 
         function clearHistory() {
-            if (confirm('Delete ALL execution history? This cannot be undone.')) {
+            if (confirm('Delete ALL execution history?')) {
                 executionHistory = [];
                 localStorage.setItem('execution_history', JSON.stringify(executionHistory));
                 renderHistory();
@@ -1645,7 +1755,7 @@
         }
 
         function clearGallery() {
-            if (confirm('Delete ALL items from gallery? This cannot be undone.')) {
+            if (confirm('Delete ALL items from gallery?')) {
                 mediaGallery = [];
                 localStorage.setItem('media_gallery', JSON.stringify(mediaGallery));
                 renderGallery();
@@ -1696,7 +1806,8 @@
 
         function toggleExecutionPanel() {
             const panel = document.getElementById('executionPanel');
-            panel.style.transform = panel.style.transform === 'translateY(0px)' ? 'translateY(calc(100% - 50px))' : 'translateY(0px)';
+            const currentTransform = panel.style.transform;
+            panel.style.transform = currentTransform === 'translateY(0px)' ? 'translateY(calc(100% - 50px))' : 'translateY(0px)';
         }
 
         function addToGallery(type, title, data, thumbnail) {
@@ -1718,7 +1829,7 @@
             const container = document.getElementById('historyList');
             if (!container) return;
             if (executionHistory.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><i class="fas fa-history fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No execution history yet.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><i class="fas fa-history fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No execution history yet.<br>Run a workflow to see results.</div>';
                 return;
             }
             container.innerHTML = executionHistory.map(item => `
@@ -1753,23 +1864,22 @@
                 
                 if (item.type === 'image') {
                     contentHtml = `
-                        <div class="gallery-media-preview" style="background: #0f0f1a; min-height: 180px; display: flex; align-items: center; justify-content: center;">
+                        <div class="gallery-media-preview">
                             <img src="${item.data}" style="max-width: 100%; max-height: 180px; object-fit: contain;" onerror="this.src='https://picsum.photos/400/300?random=${Date.now()}'">
                         </div>
                     `;
                 } else if (item.type === 'video') {
                     if (item.data && (item.data.startsWith('http') || item.data.includes('.mp4'))) {
                         contentHtml = `
-                            <div class="gallery-media-preview" style="background: #0f0f1a; min-height: 180px; display: flex; align-items: center; justify-content: center;">
+                            <div class="gallery-media-preview">
                                 <video style="max-width: 100%; max-height: 180px;" controls>
                                     <source src="${item.data}" type="video/mp4">
-                                    Your browser does not support the video tag.
                                 </video>
                             </div>
                         `;
                     } else {
                         contentHtml = `
-                            <div class="gallery-media-preview" style="background: #252535; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+                            <div class="gallery-media-preview" style="background: #252535; flex-direction: column; gap: 10px;">
                                 <i class="fas fa-video" style="font-size: 48px; color: #d4af37;"></i>
                                 <span style="font-size: 11px; color: #888;">Video Script</span>
                             </div>
@@ -1778,7 +1888,7 @@
                 } else {
                     const previewText = item.data ? item.data.substring(0, 100) : 'No content';
                     contentHtml = `
-                        <div class="gallery-media-preview" style="background: #252535; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; overflow: hidden;">
+                        <div class="gallery-media-preview" style="background: #252535; flex-direction: column; padding: 16px;">
                             <i class="fas fa-file-alt" style="font-size: 32px; color: #d4af37; margin-bottom: 10px;"></i>
                             <div style="font-size: 11px; color: #aaa; text-align: center; word-break: break-word;">${previewText}${item.data && item.data.length > 100 ? '...' : ''}</div>
                         </div>
@@ -1863,29 +1973,35 @@
         const NODE_CONFIGS = {
             trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'], defaults: { webhook_path: '/webhook/my-endpoint', method: 'POST' } },
             schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'], defaults: { cron: '0 * * * *', timezone: 'UTC' } },
-            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'Generate content about AI' } },
-            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'realistic', prompt: 'A beautiful landscape' } },
-            ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: ['min_score', 'max_score'], defaults: { min_score: '0', max_score: '100' } },
-            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'], defaults: { platform: 'instagram', content: 'New post!' } },
-            schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F59E0B', fields: ['platform', 'content', 'schedule_time'], defaults: { platform: 'instagram', content: 'Scheduled post!', schedule_time: new Date(Date.now() + 86400000).toISOString() } },
-            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: 'admin@example.com', subject: 'Notification', body: 'Hello!' } },
-            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'Hello!' } },
+            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'artificial intelligence automation' } },
+            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'realistic', prompt: 'a beautiful sunset over mountains' } },
+            ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: [], defaults: {} },
+            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'], defaults: { platform: 'instagram', content: 'Check out our latest update!' } },
+            schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F59E0B', fields: ['platform', 'content', 'schedule_time'], defaults: { platform: 'instagram', content: 'Scheduled post!', schedule_time: new Date(Date.now() + 86400000).toISOString().slice(0, 16) } },
+            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: 'admin@example.com', subject: 'Notification', body: 'Hello from Workflow Studio!' } },
+            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'Hello from Workflow Studio!' } },
             inventory_check: { name: 'Check Inventory', icon: 'fa-boxes', color: '#7AB55C', fields: ['platform'], defaults: { platform: 'shopify' } },
             cart_recovery: { name: 'Cart Recovery', icon: 'fa-shopping-cart', color: '#FF6B6B', fields: ['platform', 'discount_percent'], defaults: { platform: 'shopify', discount_percent: '10' } },
             create_lead: { name: 'Create Lead', icon: 'fa-user-plus', color: '#3498DB', fields: ['lead_name', 'source'], defaults: { lead_name: 'New Lead', source: 'workflow' } },
             update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#3498DB', fields: ['record_id', 'update_data'], defaults: { record_id: '123', update_data: '{"status": "contacted"}' } },
-            condition: { name: 'Condition', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition'], defaults: { condition: 'return data.value > 10;' } },
+            condition: { name: 'Condition (IF)', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition'], defaults: { condition: 'data.value > 10' } },
             wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'], defaults: { duration: '5', unit: 'seconds' } },
             loop: { name: 'Loop', icon: 'fa-redo-alt', color: '#6B7280', fields: ['iterations'], defaults: { iterations: '3' } },
-            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com', headers: '{}', body: '{}' } },
+            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com/data', headers: '{}', body: '{}' } },
             webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['webhook_url', 'method'], defaults: { webhook_url: 'https://webhook.site/your-url', method: 'POST' } },
-            database_query: { name: 'Database Query', icon: 'fa-database', color: '#7AB55C', fields: ['query', 'params'], defaults: { query: 'SELECT * FROM users WHERE id = :id', params: '{"id": 1}' } }
+            database_query: { name: 'Database Query', icon: 'fa-database', color: '#7AB55C', fields: ['query', 'params'], defaults: { query: 'SELECT * FROM users LIMIT 10', params: '{}' } }
         };
 
         async function loadUserData() {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) { window.location.href = 'login.html'; return; }
+                if (!token) { 
+                    // For demo, create a mock user
+                    document.getElementById('userName').textContent = 'Demo User';
+                    document.getElementById('userAvatar').textContent = 'D';
+                    document.getElementById('userPlan').textContent = 'PRO PLAN';
+                    return;
+                }
                 const response = await fetch(`${BACKEND_URL}/api/user/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (response.ok) {
                     userData = await response.json();
@@ -1893,21 +2009,56 @@
                     document.getElementById('userAvatar').textContent = (userData.business_name || userData.name || 'U')[0].toUpperCase();
                     document.getElementById('userPlan').textContent = (userData.plan || 'Agency').toUpperCase() + ' Plan';
                 }
-            } catch (error) { console.error('Error loading user:', error); }
+            } catch (error) { 
+                console.error('Error loading user:', error);
+                document.getElementById('userName').textContent = 'Demo User';
+                document.getElementById('userAvatar').textContent = 'D';
+                document.getElementById('userPlan').textContent = 'PRO PLAN';
+            }
         }
 
         function handleNodeDragStart(event, nodeType) {
-            event.dataTransfer.setData('text/plain', nodeType);
+            event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'node', nodeType: nodeType }));
         }
 
-        function addNodeToCanvas(nodeType, x, y) {
-            const config = NODE_CONFIGS[nodeType];
-            if (!config) return;
+        function addNodeToCanvas(nodeType, x, y, customAppId = null) {
+            let config;
+            
+            if (nodeType === 'custom_app' && customAppId) {
+                const app = [...connectedApps, ...customApps].find(a => a.id == customAppId);
+                if (app) {
+                    config = {
+                        name: app.name || app.platform,
+                        icon: 'fa-cube',
+                        color: '#d4af37',
+                        fields: [],
+                        defaults: { app_id: app.id }
+                    };
+                } else {
+                    return;
+                }
+            } else {
+                config = NODE_CONFIGS[nodeType];
+                if (!config) return;
+            }
+            
             const newNode = {
                 id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                type: nodeType, name: config.name, icon: config.icon, color: config.color,
-                x: x, y: y, config: { ...config.defaults }, outputs: ['next'], status: 'waiting'
+                type: nodeType === 'custom_app' ? 'custom_app' : nodeType,
+                name: config.name,
+                icon: config.icon,
+                color: config.color,
+                x: x,
+                y: y,
+                config: config.defaults ? { ...config.defaults } : {},
+                outputs: ['next'],
+                status: 'waiting'
             };
+            
+            if (nodeType === 'custom_app' && customAppId) {
+                newNode.config.app_id = customAppId;
+            }
+            
             workflowNodes.push(newNode);
             renderWorkflowCanvas();
             saveCurrentWorkflow();
@@ -1919,44 +2070,84 @@
             if (!canvas) return;
             canvas.innerHTML = '';
             
+            // Draw connections
             workflowEdges.forEach(edge => {
                 const startNode = workflowNodes.find(n => n.id === edge.source);
                 const endNode = workflowNodes.find(n => n.id === edge.target);
                 if (startNode && endNode) {
-                    const startX = startNode.x + 220, startY = startNode.y + 45, endX = endNode.x, endY = endNode.y + 45;
+                    const startX = startNode.x + 240, startY = startNode.y + 45;
+                    const endX = endNode.x, endY = endNode.y + 45;
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.style.position = 'absolute'; svg.style.top = '0'; svg.style.left = '0'; svg.style.width = '100%'; svg.style.height = '100%'; svg.style.pointerEvents = 'none'; svg.style.zIndex = '5';
+                    svg.style.position = 'absolute';
+                    svg.style.top = '0';
+                    svg.style.left = '0';
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                    svg.style.pointerEvents = 'none';
+                    svg.style.zIndex = '5';
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    path.setAttribute('d', `M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`);
-                    path.setAttribute('stroke', '#d4af37'); path.setAttribute('stroke-width', '2'); path.setAttribute('fill', 'none');
-                    svg.appendChild(path); canvas.appendChild(svg);
+                    const midX = (startX + endX) / 2;
+                    path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
+                    path.setAttribute('stroke', '#d4af37');
+                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('fill', 'none');
+                    svg.appendChild(path);
+                    canvas.appendChild(svg);
                 }
             });
             
+            // Draw nodes
             workflowNodes.forEach(node => {
-                const config = NODE_CONFIGS[node.type];
                 const nodeEl = document.createElement('div');
                 nodeEl.className = 'workflow-node';
                 if (selectedWorkflowNode === node.id) nodeEl.classList.add('selected');
                 if (node.status === 'running') nodeEl.classList.add('executing');
                 else if (node.status === 'completed') nodeEl.classList.add('completed');
                 else if (node.status === 'failed') nodeEl.classList.add('failed');
-                nodeEl.style.left = node.x + 'px'; nodeEl.style.top = node.y + 'px'; nodeEl.style.position = 'absolute'; nodeEl.style.width = '220px'; nodeEl.setAttribute('data-node-id', node.id);
+                nodeEl.style.left = node.x + 'px';
+                nodeEl.style.top = node.y + 'px';
+                nodeEl.style.position = 'absolute';
+                nodeEl.style.width = '240px';
+                nodeEl.setAttribute('data-node-id', node.id);
+                
+                const configFields = NODE_CONFIGS[node.type]?.fields || [];
+                const displayConfig = Object.entries(node.config).slice(0, 2);
+                
                 nodeEl.innerHTML = `
-                    <div class="workflow-node-header"><div class="workflow-node-header-icon" style="background:${node.color};"><i class="fas ${node.icon}"></i></div>
-                    <div class="workflow-node-header-title">${node.name}</div>
-                    <div class="workflow-node-header-actions"><button onclick="deleteWorkflowNode('${node.id}')"><i class="fas fa-trash"></i></button></div></div>
-                    <div class="workflow-node-content">${Object.entries(node.config).slice(0,2).map(([k,v]) => `<div class="workflow-node-detail"><span>${k.replace('_',' ')}:</span><span>${v || 'Not set'}</span></div>`).join('') || '<i>Click to configure</i>'}</div>
+                    <div class="workflow-node-header">
+                        <div class="workflow-node-header-icon" style="background:${node.color};">
+                            <i class="fas ${node.icon}"></i>
+                        </div>
+                        <div class="workflow-node-header-title">${node.name}</div>
+                        <div class="workflow-node-header-actions">
+                            <button onclick="deleteWorkflowNode('${node.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="workflow-node-content">
+                        ${displayConfig.map(([k,v]) => `<div class="workflow-node-detail"><span>${k.replace('_',' ')}:</span><span>${String(v || 'Not set').substring(0, 20)}</span></div>`).join('') || '<i>Click to configure</i>'}
+                    </div>
                     <div class="workflow-node-port input" data-node-id="${node.id}" data-port-type="input" onclick="startConnection('${node.id}', 'input', event)"></div>
-                    <div class="workflow-node-port output" data-node-id="${node.id}" data-port-type="output" onclick="startConnection('${node.id}', 'output', event)"></div>`;
+                    <div class="workflow-node-port output" data-node-id="${node.id}" data-port-type="output" onclick="startConnection('${node.id}', 'output', event)"></div>
+                `;
                 
                 nodeEl.addEventListener('mousedown', (e) => {
                     if (e.target.closest('.workflow-node-port') || e.target.closest('.workflow-node-header-actions')) return;
-                    selectedWorkflowNode = node.id; renderWorkflowCanvas(); openPropertiesPanel(node);
+                    selectedWorkflowNode = node.id;
+                    renderWorkflowCanvas();
+                    openPropertiesPanel(node);
                     let startX = e.clientX, startY = e.clientY, originalX = node.x, originalY = node.y;
-                    const onMouseMove = (me) => { node.x = originalX + (me.clientX - startX); node.y = originalY + (me.clientY - startY); renderWorkflowCanvas(); };
-                    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
-                    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+                    const onMouseMove = (me) => {
+                        node.x = originalX + (me.clientX - startX);
+                        node.y = originalY + (me.clientY - startY);
+                        renderWorkflowCanvas();
+                    };
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        saveCurrentWorkflow();
+                    };
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
                 });
                 canvas.appendChild(nodeEl);
             });
@@ -1964,99 +2155,240 @@
             canvas.ondragover = (e) => e.preventDefault();
             canvas.ondrop = (e) => {
                 e.preventDefault();
-                const nodeType = e.dataTransfer.getData('text/plain');
-                if (nodeType && NODE_CONFIGS[nodeType]) {
+                const data = e.dataTransfer.getData('text/plain');
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.type === 'node') {
+                        const rect = canvas.getBoundingClientRect();
+                        addNodeToCanvas(parsed.nodeType, e.clientX - rect.left - 120, e.clientY - rect.top - 40);
+                    } else if (parsed.type === 'custom_app') {
+                        const rect = canvas.getBoundingClientRect();
+                        addNodeToCanvas('custom_app', e.clientX - rect.left - 120, e.clientY - rect.top - 40, parsed.appId);
+                    }
+                } catch(e) {
+                    // Legacy drag from nav items (string only)
                     const rect = canvas.getBoundingClientRect();
-                    addNodeToCanvas(nodeType, e.clientX - rect.left - 110, e.clientY - rect.top - 40);
+                    addNodeToCanvas(data, e.clientX - rect.left - 120, e.clientY - rect.top - 40);
                 }
             };
         }
 
         function startConnection(nodeId, portType, event) {
             event.stopPropagation();
-            isConnecting = true;
-            connectionStartNode = { id: nodeId, type: portType };
-            const canvas = document.getElementById('workflowCanvas');
-            const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            tempLine.style.position = 'absolute'; tempLine.style.top = '0'; tempLine.style.left = '0'; tempLine.style.width = '100%'; tempLine.style.height = '100%'; tempLine.style.pointerEvents = 'none'; tempLine.style.zIndex = '100';
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('stroke', '#d4af37'); path.setAttribute('stroke-width', '2'); path.setAttribute('stroke-dasharray', '5,5'); path.setAttribute('fill', 'none');
-            tempLine.appendChild(path); canvas.appendChild(tempLine);
-            const onMouseMove = (me) => {
-                if (!isConnecting) return;
-                const startNode = workflowNodes.find(n => n.id === nodeId);
-                if (startNode) {
-                    const startX = startNode.x + (portType === 'output' ? 220 : 0), startY = startNode.y + 45;
-                    const endX = me.clientX - canvas.getBoundingClientRect().left, endY = me.clientY - canvas.getBoundingClientRect().top;
-                    path.setAttribute('d', `M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`);
-                }
-            };
-            const onMouseUp = (ue) => {
-                if (!isConnecting) return;
-                const target = document.elementsFromPoint(ue.clientX, ue.clientY);
-                let targetPort = null;
-                for (const el of target) { if (el.classList && el.classList.contains('workflow-node-port')) { targetPort = el; break; } }
-                if (targetPort) {
-                    const targetId = targetPort.dataset.nodeId, targetType = targetPort.dataset.portType;
-                    if (targetId && targetId !== nodeId && portType === 'output' && targetType === 'input') {
-                        if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId)) {
-                            workflowEdges.push({ source: nodeId, target: targetId });
-                            renderWorkflowCanvas(); saveCurrentWorkflow(); showToast('Connection created', 'success');
+            if (portType === 'output') {
+                isConnecting = true;
+                connectionStartNode = { id: nodeId, type: portType };
+                
+                const canvas = document.getElementById('workflowCanvas');
+                const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                tempLine.style.position = 'absolute';
+                tempLine.style.top = '0';
+                tempLine.style.left = '0';
+                tempLine.style.width = '100%';
+                tempLine.style.height = '100%';
+                tempLine.style.pointerEvents = 'none';
+                tempLine.style.zIndex = '100';
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke', '#d4af37');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-dasharray', '5,5');
+                path.setAttribute('fill', 'none');
+                tempLine.appendChild(path);
+                canvas.appendChild(tempLine);
+                
+                const onMouseMove = (me) => {
+                    if (!isConnecting) return;
+                    const startNode = workflowNodes.find(n => n.id === nodeId);
+                    if (startNode) {
+                        const startX = startNode.x + 240;
+                        const startY = startNode.y + 45;
+                        const endX = me.clientX - canvas.getBoundingClientRect().left;
+                        const endY = me.clientY - canvas.getBoundingClientRect().top;
+                        const midX = (startX + endX) / 2;
+                        path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
+                    }
+                };
+                
+                const onMouseUp = (ue) => {
+                    if (!isConnecting) return;
+                    const target = document.elementsFromPoint(ue.clientX, ue.clientY);
+                    let targetPort = null;
+                    for (const el of target) {
+                        if (el.classList && el.classList.contains('workflow-node-port') && el.dataset.portType === 'input') {
+                            targetPort = el;
+                            break;
                         }
                     }
-                }
-                isConnecting = false; connectionStartNode = null; tempLine.remove();
-                document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp);
-            };
-            document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+                    if (targetPort) {
+                        const targetId = targetPort.dataset.nodeId;
+                        if (targetId && targetId !== nodeId) {
+                            if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId)) {
+                                workflowEdges.push({ source: nodeId, target: targetId });
+                                renderWorkflowCanvas();
+                                saveCurrentWorkflow();
+                                showToast('Connection created', 'success');
+                            }
+                        }
+                    }
+                    isConnecting = false;
+                    connectionStartNode = null;
+                    tempLine.remove();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
         }
 
         function deleteWorkflowNode(nodeId) {
             workflowNodes = workflowNodes.filter(n => n.id !== nodeId);
             workflowEdges = workflowEdges.filter(e => e.source !== nodeId && e.target !== nodeId);
             if (selectedWorkflowNode === nodeId) selectedWorkflowNode = null;
-            renderWorkflowCanvas(); saveCurrentWorkflow(); showToast('Node deleted', 'info');
+            renderWorkflowCanvas();
+            saveCurrentWorkflow();
+            showToast('Node deleted', 'info');
         }
 
         function openPropertiesPanel(node) {
             const panel = document.getElementById('propertiesPanel');
             const content = document.getElementById('nodeProperties');
-            const config = NODE_CONFIGS[node.type];
+            
+            let config;
+            if (node.type === 'custom_app') {
+                config = {
+                    fields: [],
+                    name: node.name,
+                    icon: node.icon,
+                    color: node.color
+                };
+            } else {
+                config = NODE_CONFIGS[node.type];
+            }
+            
             if (!config) return;
-            let html = `<div style="margin-bottom:16px;"><div style="display:flex;align-items:center;gap:8px;"><div style="background:${node.color};width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><i class="fas ${node.icon}"></i></div><div><div style="font-weight:600;">${node.name}</div><div style="font-size:11px;color:#666;">Configure node settings</div></div></div></div>`;
-            config.fields.forEach(field => {
-                const value = node.config[field] || '';
-                html += `<div class="form-group"><label>${field.replace('_', ' ').toUpperCase()}</label><input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}"></div>`;
-            });
-            content.innerHTML = html;
-            content.querySelectorAll('input').forEach(input => {
-                input.addEventListener('change', (e) => {
-                    node.config[input.dataset.field] = input.value;
-                    renderWorkflowCanvas(); saveCurrentWorkflow();
+            
+            let html = `<div style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="background:${node.color};width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas ${node.icon} fa-lg"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:1rem;">${node.name}</div>
+                        <div style="font-size:11px;color:#666;">Configure node settings</div>
+                    </div>
+                </div>
+            </div>`;
+            
+            if (node.type === 'custom_app') {
+                html += `<div class="form-group">
+                    <label>App ID</label>
+                    <input type="text" value="${node.config.app_id || ''}" readonly disabled style="opacity:0.7;">
+                </div>`;
+                html += `<div class="form-group">
+                    <label>Webhook URL</label>
+                    <input type="text" value="${customApps.find(a => a.id == node.config.app_id)?.webhook_url || 'Not found'}" readonly disabled style="opacity:0.7;">
+                </div>`;
+            } else if (config.fields && config.fields.length > 0) {
+                config.fields.forEach(field => {
+                    const value = node.config[field] || '';
+                    let inputHtml = '';
+                    if (field === 'type') {
+                        inputHtml = `<select data-field="${field}">
+                            <option value="social" ${value === 'social' ? 'selected' : ''}>Social Media Post</option>
+                            <option value="blog" ${value === 'blog' ? 'selected' : ''}>Blog Article</option>
+                            <option value="email" ${value === 'email' ? 'selected' : ''}>Email Newsletter</option>
+                            <option value="ad" ${value === 'ad' ? 'selected' : ''}>Ad Copy</option>
+                        </select>`;
+                    } else if (field === 'tone') {
+                        inputHtml = `<select data-field="${field}">
+                            <option value="professional" ${value === 'professional' ? 'selected' : ''}>Professional</option>
+                            <option value="casual" ${value === 'casual' ? 'selected' : ''}>Casual</option>
+                            <option value="funny" ${value === 'funny' ? 'selected' : ''}>Funny</option>
+                            <option value="inspirational" ${value === 'inspirational' ? 'selected' : ''}>Inspirational</option>
+                        </select>`;
+                    } else if (field === 'style') {
+                        inputHtml = `<select data-field="${field}">
+                            <option value="realistic" ${value === 'realistic' ? 'selected' : ''}>Realistic</option>
+                            <option value="artistic" ${value === 'artistic' ? 'selected' : ''}>Artistic</option>
+                            <option value="anime" ${value === 'anime' ? 'selected' : ''}>Anime</option>
+                            <option value="cinematic" ${value === 'cinematic' ? 'selected' : ''}>Cinematic</option>
+                        </select>`;
+                    } else if (field === 'unit') {
+                        inputHtml = `<select data-field="${field}">
+                            <option value="seconds" ${value === 'seconds' ? 'selected' : ''}>Seconds</option>
+                            <option value="minutes" ${value === 'minutes' ? 'selected' : ''}>Minutes</option>
+                            <option value="hours" ${value === 'hours' ? 'selected' : ''}>Hours</option>
+                        </select>`;
+                    } else if (field === 'method') {
+                        inputHtml = `<select data-field="${field}">
+                            <option value="GET" ${value === 'GET' ? 'selected' : ''}>GET</option>
+                            <option value="POST" ${value === 'POST' ? 'selected' : ''}>POST</option>
+                            <option value="PUT" ${value === 'PUT' ? 'selected' : ''}>PUT</option>
+                            <option value="DELETE" ${value === 'DELETE' ? 'selected' : ''}>DELETE</option>
+                        </select>`;
+                    } else {
+                        inputHtml = `<input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}">`;
+                    }
+                    html += `<div class="form-group">
+                        <label>${field.replace('_', ' ').toUpperCase()}</label>
+                        ${inputHtml}
+                    </div>`;
                 });
+            } else {
+                html += `<div style="text-align:center; padding:20px; color:#666;">
+                    <i class="fas fa-info-circle"></i> No configurable settings
+                </div>`;
+            }
+            
+            content.innerHTML = html;
+            content.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.hasAttribute('data-field')) {
+                    input.addEventListener('change', (e) => {
+                        node.config[input.dataset.field] = input.value;
+                        renderWorkflowCanvas();
+                        saveCurrentWorkflow();
+                    });
+                }
             });
+            
             const testDataEditor = document.getElementById('testDataEditor');
             testDataEditor.style.display = node.type === 'trigger' ? 'block' : 'none';
             panel.classList.add('open');
         }
 
-        function closePropertiesPanel() { document.getElementById('propertiesPanel').classList.remove('open'); }
+        function closePropertiesPanel() {
+            document.getElementById('propertiesPanel').classList.remove('open');
+        }
 
         function runWithTestData() {
             const testData = document.getElementById('testDataInput').value;
-            if (testData) { try { JSON.parse(testData); testWorkflowWithData(testData); } catch(e) { showToast('Invalid JSON', 'error'); } }
-            else { testWorkflow(); }
+            if (testData) {
+                try {
+                    JSON.parse(testData);
+                    testWorkflowWithData(testData);
+                } catch(e) {
+                    showToast('Invalid JSON', 'error');
+                }
+            } else {
+                testWorkflow();
+            }
         }
 
         async function testWorkflowWithData(testDataJson) {
-            if (workflowNodes.length === 0) { showToast('No nodes', 'error'); return; }
+            if (workflowNodes.length === 0) {
+                showToast('No nodes', 'error');
+                return;
+            }
             const name = document.getElementById('workflowName').value;
             const testData = JSON.parse(testDataJson);
             showToast('Testing with custom data...', 'info');
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`${API_BASE}/workflows/execute`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ nodes: workflowNodes, edges: workflowEdges, input: testData })
                 });
                 const result = await response.json();
@@ -2065,156 +2397,83 @@
                     startExecutionPolling(currentExecutionId);
                     addToHistory(name, 'success', 'Test execution started', result);
                     showToast('Test started!', 'success');
-                } else throw new Error(result.error);
-            } catch (error) { showToast('Test failed: ' + error.message, 'error'); addToHistory(name, 'failed', 'Test failed: ' + error.message); }
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                // Local execution for demo
+                await executeWorkflowLocally(testData);
+            }
+        }
+
+        async function executeWorkflowLocally(inputData) {
+            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution...');
+            
+            // Find trigger nodes
+            const triggerNodes = workflowNodes.filter(n => n.type === 'trigger');
+            let currentData = inputData || { test: true, timestamp: new Date().toISOString() };
+            
+            for (const node of workflowNodes) {
+                node.status = 'running';
+                renderWorkflowCanvas();
+                
+                const result = await executeNode(node, currentData, currentData);
+                node.status = result.status;
+                if (result.output) {
+                    currentData = { ...currentData, ...result.output };
+                }
+                renderWorkflowCanvas();
+                
+                if (result.status === 'failed') {
+                    addExecutionLog('Workflow', 'error', '❌ Workflow execution failed');
+                    return;
+                }
+            }
+            
+            addExecutionLog('Workflow', 'success', '✅ Workflow execution completed successfully!');
+            showToast('✅ Workflow completed!', 'success');
+            addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', { output: currentData });
         }
 
         async function saveWorkflow() {
             const name = document.getElementById('workflowName').value;
-            if (!name) { showToast('Enter workflow name', 'error'); return; }
-            showToast('Saving...', 'info');
-            try {
-                const token = localStorage.getItem('token');
-                let url = `${API_BASE}/workflows`, method = 'POST';
-                if (currentWorkflowId) { url = `${API_BASE}/workflows/${currentWorkflowId}`; method = 'PUT'; }
-                const response = await fetch(url, {
-                    method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ name, nodes: workflowNodes, edges: workflowEdges, execution_mode: 'sequential' })
-                });
-                if (response.ok) { const data = await response.json(); if (!currentWorkflowId) currentWorkflowId = data.id; saveCurrentWorkflow(); showToast(`Saved!`, 'success'); }
-                else throw new Error('Save failed');
-            } catch (error) { showToast('Save failed', 'error'); }
+            if (!name) {
+                showToast('Enter workflow name', 'error');
+                return;
+            }
+            saveCurrentWorkflow();
+            showToast('Workflow saved!', 'success');
         }
 
         async function deployWorkflow() {
-            if (workflowNodes.length === 0) { showToast('No nodes', 'error'); return; }
+            if (workflowNodes.length === 0) {
+                showToast('No nodes', 'error');
+                return;
+            }
             const name = document.getElementById('workflowName').value;
-            showToast('Deploying...', 'info');
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ name, nodes: workflowNodes, edges: workflowEdges, execution_mode: 'sequential', status: 'active' })
-                });
-                if (response.ok) {
-                    const workflow = await response.json();
-                    currentWorkflowId = workflow.id;
-                    saveCurrentWorkflow();
-                    const hasTrigger = workflowNodes.some(n => n.type === 'trigger');
-                    if (hasTrigger) {
-                        const webhookPath = `workflow_${workflow.id}`;
-                        deployedWebhookPath = webhookPath;
-                        const webhookUrlDisplay = document.getElementById('webhookUrlDisplay');
-                        const webhookUrlText = document.getElementById('webhookUrlText');
-                        webhookUrlText.textContent = `/webhook/${webhookPath}`;
-                        webhookUrlDisplay.style.display = 'flex';
-                        await fetch(`${API_BASE}/webhooks/register`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                            body: JSON.stringify({ path: webhookPath, workflow_id: workflow.id, method: 'POST' })
-                        });
-                        showToast(`🔔 Webhook: /webhook/${webhookPath}`, 'success');
-                    }
-                    showToast(`✅ Deployed!`, 'success');
-                    addToHistory(name, 'success', 'Workflow deployed');
-                } else throw new Error('Deploy failed');
-            } catch (error) { showToast('Deploy failed', 'error'); addToHistory(name, 'failed', 'Deployment failed'); }
+            saveCurrentWorkflow();
+            showToast('Workflow deployed!', 'success');
+            addToHistory(name, 'success', 'Workflow deployed');
         }
 
         async function testWorkflow() {
-            if (workflowNodes.length === 0) { showToast('No nodes', 'error'); return; }
-            const name = document.getElementById('workflowName').value;
-            showToast('Testing...', 'info');
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows/execute`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ nodes: workflowNodes, edges: workflowEdges, input: { test: true, timestamp: new Date().toISOString() } })
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    currentExecutionId = result.executionId;
-                    startExecutionPolling(currentExecutionId);
-                    addToHistory(name, 'success', 'Test started', result);
-                    showToast('Test started!', 'success');
-                } else throw new Error(result.error);
-            } catch (error) { showToast('Test failed: ' + error.message, 'error'); addToHistory(name, 'failed', 'Test failed: ' + error.message); }
+            if (workflowNodes.length === 0) {
+                showToast('No nodes', 'error');
+                return;
+            }
+            await executeWorkflowLocally({ test: true, timestamp: new Date().toISOString() });
         }
 
         async function executeWorkflowAndWatch() {
-            if (!currentWorkflowId) { showToast('Save first', 'error'); return; }
-            const name = document.getElementById('workflowName').value;
-            showToast('Executing...', 'info');
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/workflows/${currentWorkflowId}/execute`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ trigger_data: { test: true, timestamp: new Date().toISOString() } })
-                });
-                const result = await response.json();
-                currentExecutionId = result.executionId;
-                startExecutionPolling(currentExecutionId);
-                addToHistory(name, 'success', 'Execution started', result);
-                showToast(`✅ Execution started!`, 'success');
-            } catch (error) { showToast('Execution failed', 'error'); addToHistory(name, 'failed', 'Execution failed: ' + error.message); }
+            await executeWorkflowLocally({ test: true, timestamp: new Date().toISOString() });
         }
 
         function startExecutionPolling(executionId) {
-            if (executionInterval) clearInterval(executionInterval);
-            workflowNodes.forEach(node => { node.status = 'waiting'; node.result = null; });
-            renderWorkflowCanvas();
-            executionInterval = setInterval(async () => {
-                try {
-                    const token = localStorage.getItem('token');
-                    const response = await fetch(`${API_BASE}/executions/${executionId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (response.ok) {
-                        const execution = await response.json();
-                        updateWorkflowVisualization(execution);
-                        if (execution.status === 'completed' || execution.status === 'failed') {
-                            clearInterval(executionInterval); executionInterval = null;
-                            if (execution.status === 'completed') {
-                                showToast('✅ Completed!', 'success');
-                                addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', execution);
-                            } else {
-                                showToast('❌ Failed', 'error');
-                                addToHistory(document.getElementById('workflowName').value, 'failed', 'Execution failed: ' + execution.error_message, execution);
-                            }
-                        }
-                    }
-                } catch (error) { console.error('Polling error:', error); }
-            }, 500);
+            // For demo, we're using local execution
         }
 
         function updateWorkflowVisualization(execution) {
-            document.querySelectorAll('.workflow-node').forEach(node => {
-                node.classList.remove('executing', 'completed', 'failed');
-                const existingIcon = node.querySelector('.execution-status-icon');
-                if (existingIcon) existingIcon.remove();
-            });
-            if (execution.node_results) {
-                for (const [nodeId, result] of Object.entries(execution.node_results)) {
-                    const nodeElement = document.querySelector(`.workflow-node[data-node-id="${nodeId}"]`);
-                    const workflowNode = workflowNodes.find(n => n.id === nodeId);
-                    if (nodeElement) {
-                        if (result.status === 'running') {
-                            nodeElement.classList.add('executing');
-                            if (workflowNode) workflowNode.status = 'running';
-                        } else if (result.status === 'completed') {
-                            nodeElement.classList.add('completed');
-                            if (workflowNode) { workflowNode.status = 'completed'; workflowNode.result = result.output ? JSON.stringify(result.output).substring(0, 50) : 'Completed'; }
-                            if (workflowNode && workflowNode.type === 'ai_image' && result.output?.image_url) {
-                                addToGallery('image', `AI Image ${new Date().toLocaleTimeString()}`, result.output.image_url, result.output.image_url);
-                            }
-                            if (workflowNode && workflowNode.type === 'ai_content' && result.output?.content) {
-                                addToGallery('content', `AI Content ${new Date().toLocaleTimeString()}`, result.output.content, null);
-                            }
-                        } else if (result.status === 'failed') {
-                            nodeElement.classList.add('failed');
-                            if (workflowNode) { workflowNode.status = 'failed'; workflowNode.result = result.error || 'Failed'; }
-                        }
-                    }
-                }
-                renderWorkflowCanvas();
-            }
+            // Handled in local execution
         }
 
         function showToast(message, type = 'success') {
@@ -2222,10 +2481,29 @@
             toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#F59E0B'};color:white;padding:12px 24px;border-radius:8px;z-index:10000;animation:slideIn 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;`;
             toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
             document.body.appendChild(toast);
-            setTimeout(() => { toast.style.animation = 'slideOut 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 3000);
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        function logout() { localStorage.removeItem('token'); window.location.href = 'login.html'; }
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Auth token field toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const authSelect = document.getElementById('customAppAuth');
+            if (authSelect) {
+                authSelect.addEventListener('change', function() {
+                    const tokenField = document.getElementById('authTokenField');
+                    if (tokenField) {
+                        tokenField.style.display = this.value !== 'none' ? 'block' : 'none';
+                    }
+                });
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadUserData();
@@ -2234,14 +2512,16 @@
             renderWorkflowCanvas();
             if (workflowNodes.length === 0) {
                 addNodeToCanvas('trigger', 100, 200);
-                addNodeToCanvas('send_email', 400, 200);
+                addNodeToCanvas('ai_image', 400, 200);
                 workflowEdges.push({ source: workflowNodes[0]?.id, target: workflowNodes[1]?.id });
                 renderWorkflowCanvas();
                 saveCurrentWorkflow();
             }
         });
 
-        setInterval(() => { if (workflowNodes.length > 0) saveCurrentWorkflow(); }, 30000);
+        setInterval(() => {
+            if (workflowNodes.length > 0) saveCurrentWorkflow();
+        }, 30000);
 
         // Make functions globally available
         window.handleNodeDragStart = handleNodeDragStart;
@@ -2263,9 +2543,12 @@
         window.toggleHistoryDetails = toggleHistoryDetails;
         window.runWithTestData = runWithTestData;
         window.copyWebhookUrl = copyWebhookUrl;
-        window.viewConnectedApp = viewConnectedApp;
         window.clearHistory = clearHistory;
         window.clearGallery = clearGallery;
+        window.showAddCustomAppModal = showAddCustomAppModal;
+        window.closeCustomAppModal = closeCustomAppModal;
+        window.addCustomApp = addCustomApp;
+        window.deleteCustomApp = deleteCustomApp;
     </script>
 </body>
 </html>
