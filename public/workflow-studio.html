@@ -57,6 +57,71 @@
             margin-top: 4px;
         }
 
+        /* Connected Apps Section - NEW like n8n */
+        .connected-apps-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid #2a2a3e;
+            background: #1a1a2e;
+        }
+
+        .connected-apps-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #d4af37;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .connected-app-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid #2a2a3e;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .connected-app-item:hover {
+            background: #252535;
+            padding-left: 8px;
+        }
+
+        .connected-app-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .connected-app-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .connected-app-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-online { background: #10B981; box-shadow: 0 0 4px #10B981; animation: pulse 2s infinite; }
+        .status-offline { background: #EF4444; }
+        .status-syncing { background: #F59E0B; animation: pulse 1s infinite; }
+        .status-connected { background: #3B82F6; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .sidebar-nav {
             flex: 1;
             padding: 20px;
@@ -83,7 +148,7 @@
             gap: 12px;
             padding: 10px 12px;
             border-radius: 8px;
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s;
             margin-bottom: 4px;
             color: #aaa;
@@ -173,12 +238,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .workflow-title {
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .workflow-title input {
@@ -196,7 +264,22 @@
             border-color: #d4af37;
         }
 
-        /* Tabs for switching views */
+        .webhook-url {
+            background: #0f0f1a;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-family: monospace;
+            color: #d4af37;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .webhook-url i {
+            font-size: 0.8rem;
+        }
+
         .view-tabs {
             display: flex;
             gap: 4px;
@@ -222,6 +305,7 @@
         .action-buttons {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -268,6 +352,11 @@
             color: white;
         }
 
+        .btn-warning {
+            background: #F59E0B;
+            color: #1a1a2e;
+        }
+
         /* ===== WORKFLOW CANVAS ===== */
         .canvas-container {
             flex: 1;
@@ -285,7 +374,107 @@
             position: relative;
             min-height: 100%;
             min-width: 100%;
+            padding: 40px;
         }
+
+        /* ===== EXECUTION LOG PANEL (like n8n) ===== */
+        .execution-panel {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 480px;
+            background: #1a1a2e;
+            border-top: 1px solid #2a2a3e;
+            border-left: 1px solid #2a2a3e;
+            border-radius: 12px 0 0 0;
+            padding: 16px;
+            z-index: 50;
+            transform: translateY(calc(100% - 50px));
+            transition: transform 0.3s ease;
+        }
+
+        .execution-panel:hover {
+            transform: translateY(0);
+        }
+
+        .execution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .execution-header h4 {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .execution-badge {
+            background: #d4af37;
+            color: #1a1a2e;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .execution-log-list {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid #2a2a3e;
+            font-family: monospace;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .log-entry:hover {
+            background: #252535;
+        }
+
+        .log-time {
+            color: #666;
+            font-size: 10px;
+        }
+
+        .log-node {
+            color: #d4af37;
+            font-weight: 600;
+        }
+
+        .log-message {
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .log-data {
+            display: none;
+            margin-top: 8px;
+            padding: 8px;
+            background: #0f0f1a;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .log-entry.expanded .log-data {
+            display: block;
+        }
+
+        .log-data pre {
+            font-size: 10px;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        .log-success { color: #10B981; }
+        .log-error { color: #EF4444; }
+        .log-info { color: #F59E0B; }
 
         /* ===== HISTORY PANEL ===== */
         .history-panel {
@@ -306,17 +495,29 @@
             padding: 16px;
             margin-bottom: 12px;
             border-left: 3px solid #d4af37;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: #252535;
+            transform: translateX(4px);
         }
 
         .history-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .history-workflow {
             font-weight: 600;
             color: #d4af37;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .history-time {
@@ -339,6 +540,34 @@
         .history-status.failed {
             background: #EF444420;
             color: #EF4444;
+        }
+
+        .history-status.running {
+            background: #F59E0B20;
+            color: #F59E0B;
+        }
+
+        .history-details {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 8px;
+            display: none;
+            padding-top: 8px;
+            border-top: 1px solid #2a2a3e;
+        }
+
+        .history-item.expanded .history-details {
+            display: block;
+        }
+
+        .history-data {
+            background: #0f0f1a;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            overflow-x: auto;
         }
 
         /* ===== GALLERY PANEL ===== */
@@ -473,6 +702,21 @@
             color: #888;
         }
 
+        .workflow-node-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .workflow-node-detail span:first-child {
+            color: #666;
+        }
+
+        .workflow-node-detail span:last-child {
+            color: #d4af37;
+            font-family: monospace;
+        }
+
         .workflow-node-port {
             position: absolute;
             width: 14px;
@@ -527,11 +771,12 @@
             to { stroke-dashoffset: -16; }
         }
 
+        /* ===== PROPERTIES PANEL ===== */
         .properties-panel {
             position: fixed;
             left: 280px;
             bottom: 0;
-            width: 320px;
+            width: 380px;
             background: #1a1a2e;
             border-top: 1px solid #2a2a3e;
             border-right: 1px solid #2a2a3e;
@@ -551,6 +796,66 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
+        }
+
+        .properties-header h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            background: #252535;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #d4af37;
+        }
+
+        .test-data-editor {
+            background: #0f0f1a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            border: 1px solid #2a2a3e;
+        }
+
+        .test-data-editor label {
+            font-size: 11px;
+            color: #d4af37;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .test-data-editor textarea {
+            width: 100%;
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 11px;
+            resize: vertical;
         }
 
         .execution-status-icon {
@@ -573,6 +878,30 @@
             background: #d4af37;
             border-radius: 3px;
         }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .toast {
+            animation: slideIn 0.3s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { width: 240px; }
+            .properties-panel { width: 300px; left: 240px; }
+            .execution-panel { width: 100%; right: 0; left: 0; border-radius: 12px 12px 0 0; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .action-buttons { justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -583,7 +912,20 @@
                 <h2><i class="fas fa-bolt"></i> Workflow Studio</h2>
                 <p>Drag & Drop Automation</p>
             </div>
-            
+
+            <!-- Connected Apps Section (from AI Powerhouse) - NEW -->
+            <div class="connected-apps-section">
+                <div class="connected-apps-title">
+                    <i class="fas fa-plug"></i> CONNECTED APPS
+                    <span class="execution-badge" id="connectedAppsCount">0</span>
+                </div>
+                <div id="connectedAppsList">
+                    <div style="text-align: center; padding: 12px; color: #666;">
+                        <div class="loading-spinner"></div> Loading connected apps...
+                    </div>
+                </div>
+            </div>
+
             <div class="sidebar-nav">
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-play-circle"></i> TRIGGERS</div>
@@ -720,6 +1062,10 @@
                 <div class="workflow-title">
                     <i class="fas fa-project-diagram" style="color: #d4af37;"></i>
                     <input type="text" id="workflowName" placeholder="Workflow Name" value="Untitled Workflow">
+                    <div class="webhook-url" id="webhookUrlDisplay" style="display: none;">
+                        <i class="fas fa-link"></i> <span id="webhookUrlText"></span>
+                        <button class="btn-outline" style="padding: 2px 8px; font-size: 10px;" onclick="copyWebhookUrl()">Copy</button>
+                    </div>
                 </div>
                 <div class="view-tabs">
                     <div class="view-tab active" onclick="switchView('canvas')">Workflow</div>
@@ -736,7 +1082,7 @@
                     <button class="btn btn-success" onclick="deployWorkflow()">
                         <i class="fas fa-rocket"></i> Deploy
                     </button>
-                    <button class="btn btn-outline" onclick="executeWorkflowAndWatch()" style="background: #F59E0B20; border-color: #F59E0B;">
+                    <button class="btn btn-warning" onclick="executeWorkflowAndWatch()">
                         <i class="fas fa-eye"></i> Execute
                     </button>
                 </div>
@@ -759,6 +1105,20 @@
         </div>
     </div>
 
+    <!-- Execution Log Panel (like n8n) -->
+    <div class="execution-panel" id="executionPanel">
+        <div class="execution-header" onclick="toggleExecutionPanel()">
+            <h4><i class="fas fa-terminal"></i> Execution Log</h4>
+            <span><i class="fas fa-chevron-up"></i></span>
+        </div>
+        <div class="execution-log-list" id="executionLogList">
+            <div class="log-entry">
+                <div class="log-time">Ready</div>
+                <div class="log-message">Click Execute to run workflow</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Properties Panel -->
     <div class="properties-panel" id="propertiesPanel">
         <div class="properties-header">
@@ -768,12 +1128,21 @@
             </button>
         </div>
         <div id="nodeProperties"></div>
+        <div class="test-data-editor" id="testDataEditor" style="display: none;">
+            <label><i class="fas fa-flask"></i> Test Data (JSON)</label>
+            <textarea id="testDataInput" rows="4" placeholder='{"test": true, "timestamp": "2024-01-01"}'></textarea>
+            <button class="btn-outline" style="margin-top: 8px; width: 100%;" onclick="runWithTestData()">
+                <i class="fas fa-play"></i> Run with Test Data
+            </button>
+        </div>
     </div>
 
     <script>
         // ================================================
-        // WORKFLOW STUDIO - Enterprise Automation Platform
-        // With Persistence, History, Gallery & Real-time Execution
+        // WORKFLOW STUDIO - ENTERPRISE AUTOMATION PLATFORM
+        // With Persistence, History, Gallery, Real-time Execution
+        // Connected Apps from AI Powerhouse
+        // n8n-level features: Execution logs, Node data view, Test data editor
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -791,6 +1160,68 @@
         let userData = {};
         let executionHistory = [];
         let mediaGallery = [];
+        let executionLogs = [];
+        let deployedWebhookPath = null;
+        let connectedApps = [];
+
+        // Load connected apps from AI Powerhouse
+        async function loadConnectedApps() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/accounts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const accounts = await response.json();
+                    connectedApps = accounts || [];
+                    const appsList = document.getElementById('connectedAppsList');
+                    const appsCount = document.getElementById('connectedAppsCount');
+                    
+                    if (connectedApps.length === 0) {
+                        appsList.innerHTML = '<div style="text-align: center; padding: 12px; color: #666;"><i class="fas fa-plug"></i> No apps connected<br><small>Connect apps in AI Powerhouse</small></div>';
+                        if(appsCount) appsCount.textContent = '0';
+                    } else {
+                        if(appsCount) appsCount.textContent = connectedApps.length;
+                        appsList.innerHTML = connectedApps.map(app => `
+                            <div class="connected-app-item" onclick="viewConnectedApp('${app.platform}')">
+                                <div class="connected-app-icon" style="background: ${getPlatformColor(app.platform)};">
+                                    <i class="fab fa-${app.platform}"></i>
+                                </div>
+                                <div class="connected-app-name">${app.platform.charAt(0).toUpperCase() + app.platform.slice(1)}</div>
+                                <div class="connected-app-status status-${app.status === 'active' ? 'online' : app.status === 'syncing' ? 'syncing' : 'offline'}"></div>
+                                <div style="font-size: 10px; color: #666;">${app.account_name || 'Connected'}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch(e) { 
+                console.error('Error loading connected apps:', e);
+                document.getElementById('connectedAppsList').innerHTML = '<div style="text-align: center; padding: 12px; color: #666;"><i class="fas fa-exclamation-triangle"></i> Failed to load apps</div>';
+            }
+        }
+
+        function getPlatformColor(platform) {
+            const colors = {
+                twitter: '#1DA1F2',
+                instagram: '#d62976',
+                shopify: '#7AB55C',
+                youtube: '#ff0000',
+                facebook: '#4267B2',
+                linkedin: '#0077b5',
+                tiktok: '#010101',
+                salesforce: '#00A1E0',
+                hubspot: '#FF7A59',
+                slack: '#4A154B',
+                discord: '#5865F2'
+            };
+            return colors[platform] || '#d4af37';
+        }
+
+        function viewConnectedApp(platform) {
+            showToast(`Viewing ${platform} integration`, 'info');
+            // Add to canvas automatically
+            addNodeToCanvas('trigger', 200, 200);
+        }
 
         // Load saved data from localStorage
         function loadSavedData() {
@@ -821,6 +1252,14 @@
                     renderGallery();
                 } catch(e) {}
             }
+
+            const savedLogs = localStorage.getItem('execution_logs');
+            if (savedLogs) {
+                try {
+                    executionLogs = JSON.parse(savedLogs);
+                    renderExecutionLogs();
+                } catch(e) {}
+            }
         }
 
         // Save current workflow to localStorage
@@ -836,18 +1275,74 @@
         }
 
         // Add to execution history
-        function addToHistory(workflowName, status, details) {
+        function addToHistory(workflowName, status, details, executionData = null) {
             const historyItem = {
                 id: Date.now(),
                 workflowName: workflowName,
                 status: status,
                 details: details,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                executionData: executionData
             };
             executionHistory.unshift(historyItem);
             if (executionHistory.length > 50) executionHistory.pop();
             localStorage.setItem('execution_history', JSON.stringify(executionHistory));
             renderHistory();
+            addExecutionLog(workflowName, status, details, executionData);
+        }
+
+        function addExecutionLog(workflowName, status, message, data = null) {
+            const logEntry = {
+                id: Date.now(),
+                workflowName: workflowName,
+                status: status,
+                message: message,
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+            executionLogs.unshift(logEntry);
+            if (executionLogs.length > 100) executionLogs.pop();
+            localStorage.setItem('execution_logs', JSON.stringify(executionLogs));
+            renderExecutionLogs();
+        }
+
+        function renderExecutionLogs() {
+            const container = document.getElementById('executionLogList');
+            if (!container) return;
+            
+            if (executionLogs.length === 0) {
+                container.innerHTML = '<div class="log-entry"><div class="log-time">Ready</div><div class="log-message">Click Execute to run workflow</div></div>';
+                return;
+            }
+            
+            container.innerHTML = executionLogs.slice(0, 20).map(log => `
+                <div class="log-entry" onclick="toggleLogEntry(this, ${JSON.stringify(log.data || {}).replace(/"/g, '&quot;')})">
+                    <div>
+                        <span class="log-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
+                        <span class="log-node">[${log.workflowName}]</span>
+                    </div>
+                    <div class="log-message log-${log.status === 'success' ? 'success' : log.status === 'failed' ? 'error' : 'info'}">
+                        ${log.message}
+                    </div>
+                    <div class="log-data"></div>
+                </div>
+            `).join('');
+        }
+
+        function toggleLogEntry(element, data) {
+            element.classList.toggle('expanded');
+            if (data && Object.keys(data).length > 0 && !element.querySelector('.log-data pre')) {
+                const dataDiv = element.querySelector('.log-data');
+                if (dataDiv) {
+                    dataDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            }
+        }
+
+        function toggleExecutionPanel() {
+            const panel = document.getElementById('executionPanel');
+            const currentTransform = panel.style.transform;
+            panel.style.transform = currentTransform === 'translateY(0px)' ? 'translateY(calc(100% - 50px))' : 'translateY(0px)';
         }
 
         // Add to media gallery
@@ -872,12 +1367,12 @@
             if (!container) return;
             
             if (executionHistory.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No execution history yet. Run a workflow to see results.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><i class="fas fa-history fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No execution history yet.<br>Run a workflow to see results.</div>';
                 return;
             }
             
             container.innerHTML = executionHistory.map(item => `
-                <div class="history-item">
+                <div class="history-item" onclick="toggleHistoryDetails(this, ${JSON.stringify(item.executionData || {}).replace(/"/g, '&quot;')})">
                     <div class="history-header">
                         <span class="history-workflow"><i class="fas fa-project-diagram"></i> ${item.workflowName}</span>
                         <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
@@ -885,9 +1380,22 @@
                     <div style="margin: 8px 0;">
                         <span class="history-status ${item.status}">${item.status.toUpperCase()}</span>
                     </div>
-                    <div style="font-size: 0.8rem; color: #888;">${item.details}</div>
+                    <div class="history-details">
+                        <div style="margin-bottom: 8px;">${item.details}</div>
+                        <div class="history-data"></div>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function toggleHistoryDetails(element, data) {
+            element.classList.toggle('expanded');
+            if (data && Object.keys(data).length > 0 && !element.querySelector('.history-data pre')) {
+                const dataDiv = element.querySelector('.history-data');
+                if (dataDiv) {
+                    dataDiv.innerHTML = `<pre style="background: #0f0f1a; padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 10px;">${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            }
         }
 
         // Render gallery
@@ -896,7 +1404,7 @@
             if (!container) return;
             
             if (mediaGallery.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;">No media yet. Generate images or scripts to see them here.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;"><i class="fas fa-images fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No media yet.<br>Generate images or content to see them here.</div>';
                 return;
             }
             
@@ -916,7 +1424,6 @@
             `).join('');
         }
 
-        // View media item
         function viewMediaItem(id) {
             const item = mediaGallery.find(i => i.id === id);
             if (!item) return;
@@ -924,14 +1431,32 @@
             if (item.type === 'image') {
                 window.open(item.data, '_blank');
             } else {
-                alert(`Script Content:\n\n${item.data.substring(0, 500)}...`);
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+                modal.innerHTML = `
+                    <div style="background:#1a1a2e;border-radius:12px;max-width:600px;width:100%;max-height:80vh;overflow:auto;padding:20px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+                            <h3>${item.title}</h3>
+                            <button class="btn-outline" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+                        </div>
+                        <pre style="background:#0f0f1a;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;white-space:pre-wrap;">${item.data}</pre>
+                    </div>
+                `;
+                document.body.appendChild(modal);
             }
+        }
+
+        function copyWebhookUrl() {
+            const url = document.getElementById('webhookUrlText').textContent;
+            navigator.clipboard.writeText(`${BACKEND_URL}${url}`);
+            showToast('Webhook URL copied to clipboard!', 'success');
         }
 
         // Switch between views
         function switchView(view) {
-            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            const tabs = document.querySelectorAll('.view-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
             
             document.getElementById('canvasContainer').classList.remove('active');
             document.getElementById('historyPanel').classList.remove('active');
@@ -950,25 +1475,25 @@
 
         // Node type configurations
         const NODE_CONFIGS = {
-            trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'] },
-            schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'] },
-            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'] },
-            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'] },
-            ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: ['min_score', 'max_score'] },
-            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'] },
-            schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F97316', fields: ['platforms', 'scheduled_time'] },
-            inventory_check: { name: 'Check Inventory', icon: 'fa-boxes', color: '#7AB55C', fields: ['platform'] },
-            cart_recovery: { name: 'Cart Recovery', icon: 'fa-shopping-cart', color: '#FF6B6B', fields: ['platform', 'discount_percent'] },
-            create_lead: { name: 'Create Lead', icon: 'fa-user-plus', color: '#3498DB', fields: ['source', 'status'] },
-            update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#00A1E0', fields: ['platform', 'record_type'] },
-            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'] },
-            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'] },
-            condition: { name: 'Condition', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition'] },
-            wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'] },
-            loop: { name: 'Loop', icon: 'fa-redo-alt', color: '#10B981', fields: ['items_path', 'max_iterations'] },
-            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'headers', 'body'] },
-            webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['url', 'payload'] },
-            database_query: { name: 'Database Query', icon: 'fa-database', color: '#059669', fields: ['table', 'operation'] }
+            trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'], defaults: { webhook_path: '/webhook/my-endpoint', method: 'POST' } },
+            schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'], defaults: { cron: '0 * * * *', timezone: 'UTC' } },
+            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'Generate content about {{topic}}' } },
+            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'realistic', prompt: 'Create an image of {{subject}}' } },
+            ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: ['min_score', 'max_score'], defaults: { min_score: '0', max_score: '100' } },
+            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'], defaults: { platform: 'instagram', content: '{{content}}' } },
+            schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F97316', fields: ['platforms', 'scheduled_time'], defaults: { platforms: 'instagram', scheduled_time: '' } },
+            inventory_check: { name: 'Check Inventory', icon: 'fa-boxes', color: '#7AB55C', fields: ['platform'], defaults: { platform: 'shopify' } },
+            cart_recovery: { name: 'Cart Recovery', icon: 'fa-shopping-cart', color: '#FF6B6B', fields: ['platform', 'discount_percent'], defaults: { platform: 'shopify', discount_percent: '10' } },
+            create_lead: { name: 'Create Lead', icon: 'fa-user-plus', color: '#3498DB', fields: ['source', 'status'], defaults: { source: 'workflow', status: 'new' } },
+            update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#00A1E0', fields: ['platform', 'record_type'], defaults: { platform: 'hubspot', record_type: 'lead' } },
+            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: '{{lead.email}}', subject: 'New Update!', body: 'Hello {{name}}!' } },
+            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'New lead: {{name}}' } },
+            condition: { name: 'Condition', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition'], defaults: { condition: 'return data.score > 80;' } },
+            wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'], defaults: { duration: '5', unit: 'seconds' } },
+            loop: { name: 'Loop', icon: 'fa-redo-alt', color: '#10B981', fields: ['items_path', 'max_iterations'], defaults: { items_path: 'data.items', max_iterations: '100' } },
+            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com', headers: '{}', body: '{}' } },
+            webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['url', 'payload'], defaults: { url: 'https://hooks.slack.com/services/xxx', payload: '{}' } },
+            database_query: { name: 'Database Query', icon: 'fa-database', color: '#059669', fields: ['table', 'operation'], defaults: { table: 'leads', operation: 'select' } }
         };
 
         // Load user data
@@ -990,6 +1515,7 @@
                 }
             } catch (error) {
                 console.error('Error loading user:', error);
+                document.getElementById('userName').textContent = 'User';
             }
         }
 
@@ -1012,13 +1538,10 @@
                 color: config.color,
                 x: x,
                 y: y,
-                config: {},
-                outputs: ['next']
+                config: { ...config.defaults },
+                outputs: ['next'],
+                status: 'waiting'
             };
-            
-            config.fields.forEach(field => {
-                newNode.config[field] = '';
-            });
             
             workflowNodes.push(newNode);
             renderWorkflowCanvas();
@@ -1069,6 +1592,9 @@
                 const nodeEl = document.createElement('div');
                 nodeEl.className = 'workflow-node';
                 if (selectedWorkflowNode === node.id) nodeEl.classList.add('selected');
+                if (node.status === 'running') nodeEl.classList.add('executing');
+                else if (node.status === 'completed') nodeEl.classList.add('completed');
+                else if (node.status === 'failed') nodeEl.classList.add('failed');
                 nodeEl.style.left = node.x + 'px';
                 nodeEl.style.top = node.y + 'px';
                 nodeEl.style.position = 'absolute';
@@ -1087,8 +1613,12 @@
                     </div>
                     <div class="workflow-node-content">
                         ${Object.entries(node.config).slice(0, 2).map(([key, value]) => `
-                            <div><strong>${key}:</strong> ${value || 'Not set'}</div>
+                            <div class="workflow-node-detail">
+                                <span>${key.replace('_', ' ')}:</span>
+                                <span>${value || 'Not set'}</span>
+                            </div>
                         `).join('') || '<i>Click to configure</i>'}
+                        ${node.result ? `<div class="workflow-node-detail"><span>Result:</span><span style="color:#10B981;">${node.result}</span></div>` : ''}
                     </div>
                     <div class="workflow-node-port input" data-node-id="${node.id}" data-port-type="input" onclick="startConnection('${node.id}', 'input', event)"></div>
                     <div class="workflow-node-port output" data-node-id="${node.id}" data-port-type="output" onclick="startConnection('${node.id}', 'output', event)"></div>
@@ -1129,8 +1659,8 @@
             });
             
             // Add drop handler
-            canvas.addEventListener('dragover', (e) => e.preventDefault());
-            canvas.addEventListener('drop', (e) => {
+            canvas.ondragover = (e) => e.preventDefault();
+            canvas.ondrop = (e) => {
                 e.preventDefault();
                 const nodeType = e.dataTransfer.getData('text/plain');
                 if (nodeType && NODE_CONFIGS[nodeType]) {
@@ -1139,7 +1669,7 @@
                     const y = e.clientY - rect.top - 40;
                     addNodeToCanvas(nodeType, x, y);
                 }
-            });
+            };
         }
 
         // Start connection between nodes
@@ -1252,10 +1782,9 @@
             config.fields.forEach(field => {
                 const value = node.config[field] || '';
                 html += `
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-size: 11px; color: #aaa; margin-bottom: 4px;">${field.replace('_', ' ').toUpperCase()}</label>
-                        <input type="text" data-field="${field}" value="${value}" 
-                               style="width: 100%; padding: 8px; background: #252535; border: 1px solid #2a2a3e; border-radius: 6px; color: white; font-size: 12px;">
+                    <div class="form-group">
+                        <label>${field.replace('_', ' ').toUpperCase()}</label>
+                        <input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}">
                     </div>
                 `;
             });
@@ -1271,11 +1800,86 @@
                 });
             });
             
+            // Show test data editor for trigger nodes
+            const testDataEditor = document.getElementById('testDataEditor');
+            if (node.type === 'trigger') {
+                testDataEditor.style.display = 'block';
+                // Set default test data
+                const testDataInput = document.getElementById('testDataInput');
+                if (testDataInput && !testDataInput.value) {
+                    testDataInput.value = JSON.stringify({
+                        test: true,
+                        timestamp: new Date().toISOString(),
+                        data: {
+                            name: "Test User",
+                            email: "test@example.com"
+                        }
+                    }, null, 2);
+                }
+            } else {
+                testDataEditor.style.display = 'none';
+            }
+            
             panel.classList.add('open');
         }
 
         function closePropertiesPanel() {
             document.getElementById('propertiesPanel').classList.remove('open');
+        }
+
+        function runWithTestData() {
+            const testData = document.getElementById('testDataInput').value;
+            if (testData) {
+                try {
+                    JSON.parse(testData);
+                    testWorkflowWithData(testData);
+                } catch(e) {
+                    showToast('Invalid JSON in test data', 'error');
+                }
+            } else {
+                testWorkflow();
+            }
+        }
+
+        async function testWorkflowWithData(testDataJson) {
+            if (workflowNodes.length === 0) {
+                showToast('No nodes in workflow', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('workflowName').value;
+            const testData = JSON.parse(testDataJson);
+            showToast('🧪 Testing workflow with custom data...', 'info');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/workflows/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        nodes: workflowNodes,
+                        edges: workflowEdges,
+                        input: testData
+                    })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    currentExecutionId = result.executionId;
+                    startExecutionPolling(currentExecutionId);
+                    addToHistory(name, 'success', 'Test execution completed with custom data', result);
+                    showToast('🎬 Workflow test started with custom data!', 'success');
+                } else {
+                    throw new Error(result.error || 'Test failed');
+                }
+            } catch (error) {
+                console.error('Test error:', error);
+                showToast('Workflow test failed: ' + error.message, 'error');
+                addToHistory(name, 'failed', 'Test failed: ' + error.message);
+            }
         }
 
         // Save workflow to backend
@@ -1358,6 +1962,33 @@
                     const workflow = await response.json();
                     currentWorkflowId = workflow.id;
                     saveCurrentWorkflow();
+                    
+                    // Register webhook if trigger node exists
+                    const hasTrigger = workflowNodes.some(n => n.type === 'trigger');
+                    if (hasTrigger) {
+                        const webhookPath = `workflow_${workflow.id}`;
+                        deployedWebhookPath = webhookPath;
+                        const webhookUrlDisplay = document.getElementById('webhookUrlDisplay');
+                        const webhookUrlText = document.getElementById('webhookUrlText');
+                        webhookUrlText.textContent = `/webhook/${webhookPath}`;
+                        webhookUrlDisplay.style.display = 'flex';
+                        
+                        await fetch(`${API_BASE}/webhooks/register`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                path: webhookPath,
+                                workflow_id: workflow.id,
+                                method: 'POST'
+                            })
+                        });
+                        showToast(`🔔 Webhook created: /webhook/${webhookPath}`, 'success');
+                        addExecutionLog(name, 'success', `Webhook created: /webhook/${webhookPath}`);
+                    }
+                    
                     showToast(`✅ Workflow "${name}" deployed successfully!`, 'success');
                     addToHistory(name, 'success', 'Workflow deployed successfully');
                 } else {
@@ -1399,7 +2030,8 @@
                 if (response.ok) {
                     currentExecutionId = result.executionId;
                     startExecutionPolling(currentExecutionId);
-                    addToHistory(name, 'success', 'Test execution completed');
+                    addToHistory(name, 'success', 'Test execution started', result);
+                    addExecutionLog(name, 'success', 'Test execution started', result);
                     showToast('🎬 Workflow test started!', 'success');
                 } else {
                     throw new Error(result.error || 'Test failed');
@@ -1408,6 +2040,7 @@
                 console.error('Test error:', error);
                 showToast('Workflow test failed: ' + error.message, 'error');
                 addToHistory(name, 'failed', 'Test failed: ' + error.message);
+                addExecutionLog(name, 'failed', 'Test failed: ' + error.message);
             }
         }
 
@@ -1435,19 +2068,28 @@
                 const result = await response.json();
                 currentExecutionId = result.executionId;
                 startExecutionPolling(currentExecutionId);
-                addToHistory(name, 'success', 'Execution started');
+                addToHistory(name, 'success', 'Execution started', result);
+                addExecutionLog(name, 'success', 'Execution started', result);
                 showToast(`✅ Workflow execution started!`, 'success');
                 
             } catch (error) {
                 console.error('Execution error:', error);
                 showToast('Failed to execute workflow', 'error');
                 addToHistory(name, 'failed', 'Execution failed: ' + error.message);
+                addExecutionLog(name, 'failed', 'Execution failed: ' + error.message);
             }
         }
 
         // Start polling for execution status
         function startExecutionPolling(executionId) {
             if (executionInterval) clearInterval(executionInterval);
+            
+            // Reset node statuses
+            workflowNodes.forEach(node => {
+                node.status = 'waiting';
+                node.result = null;
+            });
+            renderWorkflowCanvas();
             
             executionInterval = setInterval(async () => {
                 try {
@@ -1466,10 +2108,12 @@
                             
                             if (execution.status === 'completed') {
                                 showToast('✅ Workflow completed successfully!', 'success');
-                                addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed');
+                                addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', execution);
+                                addExecutionLog(document.getElementById('workflowName').value, 'success', 'Execution completed', execution);
                             } else {
                                 showToast('❌ Workflow failed: ' + execution.error_message, 'error');
-                                addToHistory(document.getElementById('workflowName').value, 'failed', 'Execution failed: ' + execution.error_message);
+                                addToHistory(document.getElementById('workflowName').value, 'failed', 'Execution failed: ' + execution.error_message, execution);
+                                addExecutionLog(document.getElementById('workflowName').value, 'failed', 'Execution failed: ' + execution.error_message, execution);
                             }
                         }
                     }
@@ -1495,28 +2139,34 @@
             if (execution.node_results) {
                 for (const [nodeId, result] of Object.entries(execution.node_results)) {
                     const nodeElement = document.querySelector(`.workflow-node[data-node-id="${nodeId}"]`);
+                    const workflowNode = workflowNodes.find(n => n.id === nodeId);
                     if (nodeElement) {
                         if (result.status === 'running') {
                             nodeElement.classList.add('executing');
+                            workflowNode.status = 'running';
                             addSpinnerToNode(nodeElement);
                         } else if (result.status === 'completed') {
                             nodeElement.classList.add('completed');
+                            workflowNode.status = 'completed';
+                            workflowNode.result = result.output ? JSON.stringify(result.output).substring(0, 50) : 'Completed';
                             addCheckmarkToNode(nodeElement);
                             
-                            // If this is an AI image node, save to gallery
-                            const node = workflowNodes.find(n => n.id === nodeId);
-                            if (node && node.type === 'ai_image' && result.output && result.output.image_url) {
-                                addToGallery('image', `Generated Image ${new Date().toLocaleTimeString()}`, result.output.image_url, result.output.image_url);
+                            // Save to gallery if AI generated content
+                            if (workflowNode && workflowNode.type === 'ai_image' && result.output && result.output.image_url) {
+                                addToGallery('image', `AI Generated Image ${new Date().toLocaleTimeString()}`, result.output.image_url, result.output.image_url);
                             }
-                            if (node && node.type === 'ai_content' && result.output && result.output.content) {
-                                addToGallery('script', `Generated Content`, result.output.content, null);
+                            if (workflowNode && workflowNode.type === 'ai_content' && result.output && result.output.content) {
+                                addToGallery('script', `AI Generated Content ${new Date().toLocaleTimeString()}`, result.output.content, null);
                             }
                         } else if (result.status === 'failed') {
                             nodeElement.classList.add('failed');
+                            workflowNode.status = 'failed';
+                            workflowNode.result = result.error || 'Failed';
                             addErrorToNode(nodeElement);
                         }
                     }
                 }
+                renderWorkflowCanvas();
             }
             
             if (execution.status === 'running') {
@@ -1571,17 +2221,21 @@
         // Toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
+            toast.className = 'toast';
             toast.style.cssText = `
                 position: fixed;
                 bottom: 24px;
                 right: 24px;
-                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#F59E0B'};
+                background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : type === 'warning' ? '#F59E0B' : '#3B82F6'};
                 color: white;
                 padding: 12px 24px;
                 border-radius: 8px;
                 z-index: 10000;
-                animation: slideIn 0.3s ease;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.85rem;
             `;
             toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
             document.body.appendChild(toast);
@@ -1597,27 +2251,14 @@
             window.location.href = 'login.html';
         }
 
-        // Add CSS animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             await loadUserData();
+            await loadConnectedApps();
             loadSavedData();
             renderWorkflowCanvas();
             
-            // If no nodes, add sample nodes
+            // If no nodes, add sample nodes for demo
             if (workflowNodes.length === 0) {
                 addNodeToCanvas('trigger', 100, 200);
                 addNodeToCanvas('send_email', 400, 200);
@@ -1634,7 +2275,7 @@
             }
         }, 30000);
 
-        // Make functions global
+        // Make functions globally available
         window.handleNodeDragStart = handleNodeDragStart;
         window.deleteWorkflowNode = deleteWorkflowNode;
         window.startConnection = startConnection;
@@ -1647,6 +2288,12 @@
         window.addNodeToCanvas = addNodeToCanvas;
         window.switchView = switchView;
         window.viewMediaItem = viewMediaItem;
+        window.toggleExecutionPanel = toggleExecutionPanel;
+        window.toggleLogEntry = toggleLogEntry;
+        window.toggleHistoryDetails = toggleHistoryDetails;
+        window.runWithTestData = runWithTestData;
+        window.copyWebhookUrl = copyWebhookUrl;
+        window.viewConnectedApp = viewConnectedApp;
     </script>
 </body>
 </html>
