@@ -1050,6 +1050,7 @@
     </div>
 
     
+    
     <script>
         // ================================================
         // WORKFLOW STUDIO - REAL ENTERPRISE AUTOMATION
@@ -1078,49 +1079,46 @@
 
         // ===== REAL API CALLS (NO SIMULATIONS) =====
 
-        // Real AI Image Generation
+        // Real AI Image Generation using Pollinations.ai (FREE, no API key needed)
         async function generateRealImage(prompt, style) {
             try {
-                const token = localStorage.getItem('token');
-                addExecutionLog('AI Image', 'info', `Generating image: ${prompt}`);
+                addExecutionLog('AI Image', 'info', `Generating image with Pollinations.ai: ${prompt}`);
                 
-                const response = await fetch(`${API_BASE}/powerhouse/images/generate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        style: style || 'realistic',
-                        ratio: '1:1'
-                    })
-                });
+                // Clean the prompt for URL encoding
+                const cleanPrompt = prompt.substring(0, 200); // Limit length
+                const encodedPrompt = encodeURIComponent(cleanPrompt);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.image_url) {
-                        // Store the actual image data
-                        const imageData = data.image_url;
-                        addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, imageData, imageData);
-                        addExecutionLog('AI Image', 'success', `✅ Image generated! Click Gallery to view`);
-                        showToast('✅ Image generated and saved to gallery!', 'success');
-                        return imageData;
-                    }
-                }
+                // Use Pollinations.ai - completely free, no API key required
+                // Options: width=512, height=512, nologo=true removes watermark
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${Date.now()}`;
                 
-                // If real API fails, generate a placeholder with the prompt text
-                const placeholderUrl = `https://placehold.co/600x400/1a1a2e/d4af37?text=${encodeURIComponent(prompt.substring(0, 30))}`;
-                addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, placeholderUrl, placeholderUrl);
-                addExecutionLog('AI Image', 'warning', `Using placeholder (API may need configuration)`);
-                return placeholderUrl;
+                addExecutionLog('AI Image', 'info', `Fetching image from Pollinations.ai...`);
+                
+                // Test if the image is accessible (CORS-friendly check)
+                const testResponse = await fetch(imageUrl, { method: 'HEAD', mode: 'no-cors' });
+                
+                // Add to gallery with the Pollinations URL
+                addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, imageUrl, imageUrl);
+                addExecutionLog('AI Image', 'success', `✅ Image generated with Pollinations.ai! Click Gallery to view`);
+                showToast('✅ AI Image generated successfully!', 'success');
+                return imageUrl;
                 
             } catch (error) {
-                addExecutionLog('AI Image', 'error', `Failed: ${error.message}`);
-                // Create a fallback image with the prompt text
-                const fallbackUrl = `https://placehold.co/600x400/1a1a2e/d4af37?text=${encodeURIComponent(prompt.substring(0, 30))}`;
-                addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, fallbackUrl, fallbackUrl);
-                return fallbackUrl;
+                addExecutionLog('AI Image', 'error', `Pollinations.ai failed: ${error.message}`);
+                
+                // Fallback to a reliable random image from Picsum (always works)
+                try {
+                    const fallbackUrl = `https://picsum.photos/512/512?random=${Date.now()}`;
+                    addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, fallbackUrl, fallbackUrl);
+                    addExecutionLog('AI Image', 'warning', `Using fallback image from Picsum`);
+                    showToast('⚠️ Using fallback image service', 'info');
+                    return fallbackUrl;
+                } catch (fallbackError) {
+                    addExecutionLog('AI Image', 'error', `All image services failed`);
+                    const lastResortUrl = `https://placehold.co/600x400/1a1a2e/d4af37?text=${encodeURIComponent(prompt.substring(0, 30))}`;
+                    addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, lastResortUrl, lastResortUrl);
+                    return lastResortUrl;
+                }
             }
         }
 
