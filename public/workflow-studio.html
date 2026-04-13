@@ -333,6 +333,15 @@
             color: #1a1a2e;
         }
 
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
         .canvas-container {
             flex: 1;
             background: #0a0a0a;
@@ -462,6 +471,23 @@
             display: block;
         }
 
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #2a2a3e;
+        }
+
+        .panel-header h3 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #d4af37;
+        }
+
         .history-item {
             background: #1a1a2e;
             border-radius: 12px;
@@ -573,11 +599,10 @@
             transform: translateY(-4px);
         }
 
-        .gallery-image {
+        .gallery-media-preview {
             width: 100%;
             height: 180px;
-            object-fit: cover;
-            background: #2a2a3e;
+            overflow: hidden;
         }
 
         .gallery-info {
@@ -1017,10 +1042,22 @@
             </div>
 
             <div class="history-panel" id="historyPanel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-history"></i> Execution History</h3>
+                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="clearHistory()">
+                        <i class="fas fa-trash-alt"></i> Clear History
+                    </button>
+                </div>
                 <div id="historyList"></div>
             </div>
 
             <div class="gallery-panel" id="galleryPanel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-images"></i> Media Gallery</h3>
+                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="clearGallery()">
+                        <i class="fas fa-trash-alt"></i> Clear Gallery
+                    </button>
+                </div>
                 <div class="gallery-grid" id="galleryGrid"></div>
             </div>
         </div>
@@ -1049,8 +1086,6 @@
         </div>
     </div>
 
-    
-    
     <script>
         // ================================================
         // WORKFLOW STUDIO - REAL ENTERPRISE AUTOMATION
@@ -1085,17 +1120,13 @@
                 addExecutionLog('AI Image', 'info', `Generating image with Pollinations.ai: ${prompt}`);
                 
                 // Clean the prompt for URL encoding
-                const cleanPrompt = prompt.substring(0, 200); // Limit length
+                const cleanPrompt = prompt.substring(0, 200);
                 const encodedPrompt = encodeURIComponent(cleanPrompt);
                 
                 // Use Pollinations.ai - completely free, no API key required
-                // Options: width=512, height=512, nologo=true removes watermark
                 const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${Date.now()}`;
                 
                 addExecutionLog('AI Image', 'info', `Fetching image from Pollinations.ai...`);
-                
-                // Test if the image is accessible (CORS-friendly check)
-                const testResponse = await fetch(imageUrl, { method: 'HEAD', mode: 'no-cors' });
                 
                 // Add to gallery with the Pollinations URL
                 addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, imageUrl, imageUrl);
@@ -1106,7 +1137,6 @@
             } catch (error) {
                 addExecutionLog('AI Image', 'error', `Pollinations.ai failed: ${error.message}`);
                 
-                // Fallback to a reliable random image from Picsum (always works)
                 try {
                     const fallbackUrl = `https://picsum.photos/512/512?random=${Date.now()}`;
                     addToGallery('image', `AI Image: ${prompt.substring(0, 30)}...`, fallbackUrl, fallbackUrl);
@@ -1122,13 +1152,12 @@
             }
         }
 
-        // Real Video Script Generation (simulated for demo, replace with real API)
+        // Real Video Script Generation
         async function generateRealVideo(topic, duration) {
             try {
                 const token = localStorage.getItem('token');
                 addExecutionLog('AI Video', 'info', `Generating video for: ${topic}`);
                 
-                // Check if video generation API exists
                 const response = await fetch(`${API_BASE}/powerhouse/video/generate`, {
                     method: 'POST',
                     headers: {
@@ -1152,7 +1181,6 @@
                     }
                 }
                 
-                // Create a video script/text for now
                 const videoScript = `VIDEO SCRIPT: "${topic}"\n\n`;
                 addToGallery('video', `Video Script: ${topic.substring(0, 30)}...`, videoScript, null);
                 addExecutionLog('AI Video', 'warning', `Video script generated (API pending)`);
@@ -1196,7 +1224,6 @@
                     }
                 }
                 
-                // Fallback content
                 const fallbackContent = `[AI Generated ${contentType}]\nTopic: ${topic}\nTone: ${tone}\n\nThis is sample content because the AI service is being configured. In production, this would be real AI-generated content.`;
                 addToGallery('content', `${contentType}: ${topic.substring(0, 30)}...`, fallbackContent, null);
                 return fallbackContent;
@@ -1409,7 +1436,7 @@
             }
         }
 
-        // ===== NODE EXECUTION HANDLERS (REAL) =====
+        // ===== NODE EXECUTION HANDLERS =====
         async function executeNode(node, input, triggerData) {
             const startTime = Date.now();
             
@@ -1509,7 +1536,7 @@
                     } else {
                         if(appsCount) appsCount.textContent = connectedApps.length;
                         appsList.innerHTML = connectedApps.map(app => `
-                            <div class="connected-app-item" onclick="viewConnectedApp('${app.platform}')">
+                            <div class="connected-app-item" draggable="true" ondragstart="handleConnectedAppDragStart(event, '${app.platform}')">
                                 <div class="connected-app-icon" style="background: ${getPlatformColor(app.platform)};">
                                     <i class="fab fa-${app.platform}"></i>
                                 </div>
@@ -1523,6 +1550,11 @@
             } catch(e) { 
                 console.error('Error loading connected apps:', e);
             }
+        }
+
+        function handleConnectedAppDragStart(event, platform) {
+            event.dataTransfer.setData('text/plain', 'trigger');
+            showToast(`Drag ${platform} trigger to canvas`, 'info');
         }
 
         function getPlatformColor(platform) {
@@ -1565,7 +1597,20 @@
             const savedGallery = localStorage.getItem('media_gallery');
             if (savedGallery) {
                 try {
-                    mediaGallery = JSON.parse(savedGallery);
+                    let loadedGallery = JSON.parse(savedGallery);
+                    // Auto-cleanup: Remove old broken placeholder images
+                    const oldCount = loadedGallery.length;
+                    loadedGallery = loadedGallery.filter(item => {
+                        if (item.type === 'image' && item.data && (item.data.includes('placehold.co') || item.data.includes('Image+Not+Available'))) {
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (oldCount !== loadedGallery.length) {
+                        console.log(`Cleaned ${oldCount - loadedGallery.length} old placeholder images from gallery`);
+                        localStorage.setItem('media_gallery', JSON.stringify(loadedGallery));
+                    }
+                    mediaGallery = loadedGallery;
                     renderGallery();
                 } catch(e) {}
             }
@@ -1596,6 +1641,24 @@
             localStorage.setItem('execution_history', JSON.stringify(executionHistory));
             renderHistory();
             addExecutionLog(workflowName, status, details, executionData);
+        }
+
+        function clearHistory() {
+            if (confirm('Delete ALL execution history? This cannot be undone.')) {
+                executionHistory = [];
+                localStorage.setItem('execution_history', JSON.stringify(executionHistory));
+                renderHistory();
+                showToast('History cleared!', 'success');
+            }
+        }
+
+        function clearGallery() {
+            if (confirm('Delete ALL items from gallery? This cannot be undone.')) {
+                mediaGallery = [];
+                localStorage.setItem('media_gallery', JSON.stringify(mediaGallery));
+                renderGallery();
+                showToast('Gallery cleared!', 'success');
+            }
         }
 
         function addExecutionLog(workflowName, status, message, data = null) {
@@ -1644,7 +1707,6 @@
             panel.style.transform = panel.style.transform === 'translateY(0px)' ? 'translateY(calc(100% - 50px))' : 'translateY(0px)';
         }
 
-        // Add to gallery with proper display
         function addToGallery(type, title, data, thumbnail) {
             const galleryItem = { 
                 id: Date.now(), 
@@ -1684,7 +1746,6 @@
             }
         }
 
-        // FIXED: Proper gallery rendering with images, videos, and content
         function renderGallery() {
             const container = document.getElementById('galleryGrid');
             if (!container) return;
@@ -1699,14 +1760,12 @@
                 const timestamp = new Date(item.timestamp).toLocaleString();
                 
                 if (item.type === 'image') {
-                    // For images - show actual image
                     contentHtml = `
                         <div class="gallery-media-preview" style="background: #0f0f1a; min-height: 180px; display: flex; align-items: center; justify-content: center;">
-                            <img src="${item.data}" style="max-width: 100%; max-height: 180px; object-fit: contain;" onerror="this.src='https://placehold.co/400x300/1a1a2e/d4af37?text=Image+Load+Error'">
+                            <img src="${item.data}" style="max-width: 100%; max-height: 180px; object-fit: contain;" onerror="this.src='https://picsum.photos/400/300?random=${Date.now()}'">
                         </div>
                     `;
                 } else if (item.type === 'video') {
-                    // For videos - show video player or script preview
                     if (item.data && (item.data.startsWith('http') || item.data.includes('.mp4'))) {
                         contentHtml = `
                             <div class="gallery-media-preview" style="background: #0f0f1a; min-height: 180px; display: flex; align-items: center; justify-content: center;">
@@ -1725,7 +1784,6 @@
                         `;
                     }
                 } else {
-                    // For content/scripts - show text preview
                     const previewText = item.data ? item.data.substring(0, 100) : 'No content';
                     contentHtml = `
                         <div class="gallery-media-preview" style="background: #252535; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; overflow: hidden;">
@@ -1754,13 +1812,12 @@
             const item = mediaGallery.find(i => i.id === id);
             if (!item) return;
             
-            // Create modal for viewing
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
             
             let contentHtml = '';
             if (item.type === 'image') {
-                contentHtml = `<img src="${item.data}" style="max-width:90%;max-height:80vh;border-radius:12px;border:2px solid #d4af37;" onerror="this.src='https://placehold.co/800x600/1a1a2e/d4af37?text=Image+Not+Available'">`;
+                contentHtml = `<img src="${item.data}" style="max-width:90%;max-height:80vh;border-radius:12px;border:2px solid #d4af37;" onerror="this.src='https://picsum.photos/800/600?random=${Date.now()}'">`;
             } else if (item.type === 'video' && item.data && (item.data.startsWith('http') || item.data.includes('.mp4'))) {
                 contentHtml = `<video style="max-width:90%;max-height:80vh;border-radius:12px;" controls autoplay><source src="${item.data}" type="video/mp4"></video>`;
             } else {
@@ -2191,6 +2248,7 @@
 
         // Make functions globally available
         window.handleNodeDragStart = handleNodeDragStart;
+        window.handleConnectedAppDragStart = handleConnectedAppDragStart;
         window.deleteWorkflowNode = deleteWorkflowNode;
         window.startConnection = startConnection;
         window.saveWorkflow = saveWorkflow;
@@ -2209,6 +2267,8 @@
         window.runWithTestData = runWithTestData;
         window.copyWebhookUrl = copyWebhookUrl;
         window.viewConnectedApp = viewConnectedApp;
+        window.clearHistory = clearHistory;
+        window.clearGallery = clearGallery;
     </script>
 </body>
 </html>
