@@ -1137,16 +1137,20 @@
         </div>
     </div>
 
+    
     <script>
         // ================================================
         // WORKFLOW STUDIO - ENTERPRISE AUTOMATION PLATFORM
-        // With Persistence, History, Gallery, Real-time Execution
-        // Connected Apps from AI Powerhouse
-        // n8n-level features: Execution logs, Node data view, Test data editor
+        // REAL-TIME AUTOMATION ENGINE (n8n Level)
+        // With WebSocket Sync, Real Governance, Connected Apps
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
         const API_BASE = `${BACKEND_URL}/api`;
+        
+        // ===== WEBSOCKET FOR REAL-TIME SYNC =====
+        let realtimeSocket = null;
+        let workflowSyncInterval = null;
         
         // State
         let workflowNodes = [];
@@ -1163,8 +1167,354 @@
         let executionLogs = [];
         let deployedWebhookPath = null;
         let connectedApps = [];
+        
+        // ===== REAL-TIME GOVERNANCE DATA =====
+        let governanceData = {
+            modelPolicies: {},
+            budgets: {},
+            compliance: {},
+            tools: {}
+        };
 
-        // Load connected apps from AI Powerhouse
+        // ===== INITIALIZE REAL-TIME WEBSOCKET =====
+        function initRealtimeWebSocket() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                
+                realtimeSocket = io(BACKEND_URL, {
+                    transports: ['websocket', 'polling'],
+                    query: { token: token },
+                    reconnection: true,
+                    reconnectionAttempts: 10
+                });
+                
+                realtimeSocket.on('connect', () => {
+                    console.log('🔌 Real-time WebSocket connected');
+                    addExecutionLog('System', 'success', 'Real-time connection established');
+                });
+                
+                // Listen for app connections from AI Powerhouse
+                realtimeSocket.on('app_connected', (data) => {
+                    console.log('🔄 New app connected:', data);
+                    loadConnectedApps();
+                    showToast(`✅ ${data.platform} connected! Ready for automation`, 'success');
+                    addExecutionLog('System', 'success', `${data.platform} connected - automations active`);
+                    
+                    // Auto-trigger any workflows that use this platform
+                    triggerPlatformWorkflows(data.platform, 'connected');
+                });
+                
+                realtimeSocket.on('app_disconnected', (data) => {
+                    console.log('🔌 App disconnected:', data);
+                    loadConnectedApps();
+                    showToast(`⚠️ ${data.platform} disconnected`, 'warning');
+                    addExecutionLog('System', 'warning', `${data.platform} disconnected`);
+                });
+                
+                // Listen for workflow events from AI Powerhouse
+                realtimeSocket.on('workflow_created', (data) => {
+                    console.log('📝 New workflow created in AI Powerhouse:', data);
+                    addExecutionLog('System', 'info', `New workflow "${data.name}" created in AI Powerhouse`);
+                    refreshWorkflowsFromBackend();
+                });
+                
+                realtimeSocket.on('workflow_updated', (data) => {
+                    console.log('✏️ Workflow updated:', data);
+                    addExecutionLog('System', 'info', `Workflow "${data.name}" updated`);
+                    if (currentWorkflowId === data.id) {
+                        loadWorkflowFromBackend(data.id);
+                    }
+                });
+                
+                realtimeSocket.on('workflow_deleted', (data) => {
+                    console.log('🗑️ Workflow deleted:', data);
+                    addExecutionLog('System', 'info', `Workflow "${data.name}" deleted`);
+                    if (currentWorkflowId === data.id) {
+                        // Clear current workflow
+                        workflowNodes = [];
+                        workflowEdges = [];
+                        currentWorkflowId = null;
+                        renderWorkflowCanvas();
+                        saveCurrentWorkflow();
+                    }
+                });
+                
+                // Listen for workflow triggers
+                realtimeSocket.on('workflow_triggered', (data) => {
+                    console.log('⚡ Workflow triggered:', data);
+                    addExecutionLog(data.workflow_name, 'info', `Triggered by ${data.trigger_type}`);
+                    if (currentWorkflowId === data.workflow_id) {
+                        executeWorkflowAndWatch();
+                    }
+                });
+                
+                // Listen for lead capture events
+                realtimeSocket.on('lead_captured', (data) => {
+                    console.log('🆕 New lead captured:', data);
+                    addExecutionLog('Lead System', 'success', `New lead: ${data.name} (${data.email})`);
+                    showToast(`🎉 New lead: ${data.name}`, 'success');
+                    triggerLeadWorkflows(data);
+                });
+                
+                // Listen for automation runs
+                realtimeSocket.on('automation_run', (data) => {
+                    console.log('🤖 Automation run:', data);
+                    addExecutionLog(data.automation_name, data.status === 'success' ? 'success' : 'error', data.message);
+                });
+                
+                // Listen for governance updates
+                realtimeSocket.on('governance_update', (data) => {
+                    console.log('⚙️ Governance updated:', data);
+                    loadGovernanceData();
+                    addExecutionLog('Governance', 'info', `${data.type} policy updated`);
+                });
+                
+                // Listen for execution updates
+                realtimeSocket.on('execution_update', (data) => {
+                    console.log('📊 Execution update:', data);
+                    if (data.execution_id === currentExecutionId) {
+                        updateWorkflowVisualization(data);
+                    }
+                });
+                
+                realtimeSocket.on('disconnect', () => {
+                    console.log('🔌 WebSocket disconnected');
+                    addExecutionLog('System', 'warning', 'Real-time connection lost - reconnecting...');
+                });
+                
+                realtimeSocket.on('reconnect', () => {
+                    console.log('🔄 WebSocket reconnected');
+                    addExecutionLog('System', 'success', 'Real-time connection restored');
+                    loadConnectedApps();
+                    loadGovernanceData();
+                });
+                
+            } catch (error) {
+                console.warn('WebSocket not available, using polling mode');
+                addExecutionLog('System', 'warning', 'WebSocket unavailable - using polling mode');
+            }
+        }
+        
+        // ===== TRIGGER PLATFORM WORKFLOWS =====
+        async function triggerPlatformWorkflows(platform, eventType) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/workflows?trigger_type=app_${eventType}&platform=${platform}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const workflows = await response.json();
+                    for (const workflow of workflows) {
+                        if (workflow.status === 'active') {
+                            addExecutionLog(workflow.name, 'info', `Auto-triggered by ${platform} ${eventType}`);
+                            await fetch(`${API_BASE}/workflows/${workflow.id}/execute`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ trigger_data: { platform: platform, event: eventType, timestamp: new Date().toISOString() } })
+                            });
+                        }
+                    }
+                }
+            } catch(e) { console.error('Error triggering platform workflows:', e); }
+        }
+        
+        // ===== TRIGGER LEAD WORKFLOWS =====
+        async function triggerLeadWorkflows(leadData) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/workflows?trigger_type=new_lead`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const workflows = await response.json();
+                    const leadWorkflows = workflows.filter(w => w.trigger_type === 'new_lead' && w.status === 'active');
+                    
+                    for (const workflow of leadWorkflows) {
+                        addExecutionLog(workflow.name, 'info', `Auto-triggered by new lead: ${leadData.name}`);
+                        await fetch(`${API_BASE}/workflows/${workflow.id}/execute`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ trigger_data: leadData })
+                        });
+                    }
+                }
+            } catch(e) { console.error('Error triggering lead workflows:', e); }
+        }
+        
+        // ===== REFRESH WORKFLOWS FROM BACKEND =====
+        async function refreshWorkflowsFromBackend() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/workflows`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const workflows = await response.json();
+                    addExecutionLog('System', 'info', `Synced ${workflows.length} workflows from AI Powerhouse`);
+                }
+            } catch(e) { console.error('Error refreshing workflows:', e); }
+        }
+        
+        async function loadWorkflowFromBackend(workflowId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/workflows/${workflowId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const workflow = await response.json();
+                    workflowNodes = workflow.nodes || [];
+                    workflowEdges = workflow.edges || [];
+                    document.getElementById('workflowName').value = workflow.name || 'Untitled Workflow';
+                    renderWorkflowCanvas();
+                    saveCurrentWorkflow();
+                    showToast(`Loaded workflow: ${workflow.name}`, 'success');
+                }
+            } catch(e) { console.error('Error loading workflow:', e); }
+        }
+        
+        // ===== LOAD REAL GOVERNANCE DATA =====
+        async function loadGovernanceData() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/governance`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    governanceData = await response.json();
+                    renderGovernancePanel();
+                    addExecutionLog('Governance', 'success', 'Governance data loaded');
+                }
+            } catch(e) { 
+                console.error('Error loading governance:', e);
+                // Fallback to API-based data
+                await fetchGovernanceFromAPI();
+            }
+        }
+        
+        async function fetchGovernanceFromAPI() {
+            try {
+                const token = localStorage.getItem('token');
+                // Get model policies from backend
+                const modelsRes = await fetch(`${API_BASE}/powerhouse/governance/models`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (modelsRes.ok) {
+                    const models = await modelsRes.json();
+                    governanceData.modelPolicies = models;
+                }
+                
+                // Get budget data
+                const budgetRes = await fetch(`${API_BASE}/powerhouse/governance/budgets`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (budgetRes.ok) {
+                    governanceData.budgets = await budgetRes.json();
+                }
+                
+                // Get compliance settings
+                const complianceRes = await fetch(`${API_BASE}/powerhouse/governance/compliance`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (complianceRes.ok) {
+                    governanceData.compliance = await complianceRes.json();
+                }
+                
+                renderGovernancePanel();
+            } catch(e) { console.error('Error fetching governance from API:', e); }
+        }
+        
+        function renderGovernancePanel() {
+            // Update model policy dropdowns
+            const gpt4Select = document.querySelector('#gpt4-policy select');
+            if (gpt4Select && governanceData.modelPolicies?.gpt4) {
+                gpt4Select.innerHTML = governanceData.modelPolicies.gpt4.options.map(opt => 
+                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
+                ).join('');
+            }
+            
+            const claudeSelect = document.querySelector('#claude-policy select');
+            if (claudeSelect && governanceData.modelPolicies?.claude) {
+                claudeSelect.innerHTML = governanceData.modelPolicies.claude.options.map(opt => 
+                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
+                ).join('');
+            }
+            
+            const geminiSelect = document.querySelector('#gemini-policy select');
+            if (geminiSelect && governanceData.modelPolicies?.gemini) {
+                geminiSelect.innerHTML = governanceData.modelPolicies.gemini.options.map(opt => 
+                    `<option ${opt.selected ? 'selected' : ''}>${opt.name}</option>`
+                ).join('');
+            }
+            
+            // Update budget display
+            const monthlyBudget = document.querySelector('#monthly-budget');
+            if (monthlyBudget && governanceData.budgets) {
+                monthlyBudget.innerHTML = `
+                    <div class="policy-row">
+                        <span>Monthly Spend Cap</span>
+                        <span>$${governanceData.budgets.monthlyCap || 5000}</span>
+                    </div>
+                    <div class="cost-bar" style="margin: 8px 0;">
+                        <div class="cost-fill" style="width: ${((governanceData.budgets.used || 0) / (governanceData.budgets.monthlyCap || 5000) * 100)}%;"></div>
+                    </div>
+                    <div class="policy-row">
+                        <span>Used: $${governanceData.budgets.used || 0}</span>
+                        <span>Remaining: $${(governanceData.budgets.monthlyCap || 5000) - (governanceData.budgets.used || 0)}</span>
+                    </div>
+                `;
+            }
+            
+            // Update compliance checkboxes
+            const piiRedaction = document.getElementById('piiRedaction');
+            const hipaaMode = document.getElementById('hipaaMode');
+            const gdpr = document.getElementById('gdpr');
+            if (piiRedaction && governanceData.compliance) {
+                piiRedaction.checked = governanceData.compliance.piiRedaction || false;
+                hipaaMode.checked = governanceData.compliance.hipaaMode || false;
+                gdpr.checked = governanceData.compliance.gdpr || false;
+            }
+            
+            // Update tool statuses
+            const salesforceStatus = document.getElementById('salesforce-status');
+            const hubspotStatus = document.getElementById('hubspot-status');
+            const shopifyStatus = document.getElementById('shopify-status');
+            if (salesforceStatus && governanceData.tools) {
+                salesforceStatus.textContent = governanceData.tools.salesforce || 'Not Connected';
+                hubspotStatus.textContent = governanceData.tools.hubspot || 'Not Connected';
+                shopifyStatus.textContent = governanceData.tools.shopify || 'Not Connected';
+            }
+        }
+        
+        async function updateModelPolicy(model, policy) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/powerhouse/governance/models/${model}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ policy: policy })
+                });
+                if (response.ok) {
+                    showToast(`✅ ${model.toUpperCase()} policy updated`, 'success');
+                    addExecutionLog('Governance', 'success', `${model.toUpperCase()} policy set to ${policy}`);
+                    loadGovernanceData();
+                }
+            } catch(e) { showToast('Failed to update policy', 'error'); }
+        }
+        
+        // ===== LOAD CONNECTED APPS FROM AI POWERHOUSE =====
         async function loadConnectedApps() {
             try {
                 const token = localStorage.getItem('token');
@@ -1219,7 +1569,6 @@
 
         function viewConnectedApp(platform) {
             showToast(`Viewing ${platform} integration`, 'info');
-            // Add to canvas automatically
             addNodeToCanvas('trigger', 200, 200);
         }
 
@@ -1804,7 +2153,6 @@
             const testDataEditor = document.getElementById('testDataEditor');
             if (node.type === 'trigger') {
                 testDataEditor.style.display = 'block';
-                // Set default test data
                 const testDataInput = document.getElementById('testDataInput');
                 if (testDataInput && !testDataInput.value) {
                     testDataInput.value = JSON.stringify({
@@ -1921,6 +2269,11 @@
                     if (!currentWorkflowId) currentWorkflowId = data.id;
                     saveCurrentWorkflow();
                     showToast(`Workflow "${name}" saved successfully!`, 'success');
+                    
+                    // Notify via WebSocket
+                    if (realtimeSocket && realtimeSocket.connected) {
+                        realtimeSocket.emit('workflow_saved', { id: currentWorkflowId, name: name });
+                    }
                 } else {
                     throw new Error('Failed to save');
                 }
@@ -1987,6 +2340,11 @@
                         });
                         showToast(`🔔 Webhook created: /webhook/${webhookPath}`, 'success');
                         addExecutionLog(name, 'success', `Webhook created: /webhook/${webhookPath}`);
+                        
+                        // Notify via WebSocket
+                        if (realtimeSocket && realtimeSocket.connected) {
+                            realtimeSocket.emit('webhook_created', { path: webhookPath, workflow_id: workflow.id });
+                        }
                     }
                     
                     showToast(`✅ Workflow "${name}" deployed successfully!`, 'success');
@@ -2255,8 +2613,15 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await loadUserData();
             await loadConnectedApps();
+            await loadGovernanceData();
             loadSavedData();
             renderWorkflowCanvas();
+            initRealtimeWebSocket();
+            
+            // Start workflow sync interval (polling fallback)
+            workflowSyncInterval = setInterval(() => {
+                refreshWorkflowsFromBackend();
+            }, 30000);
             
             // If no nodes, add sample nodes for demo
             if (workflowNodes.length === 0) {
@@ -2266,6 +2631,12 @@
                 renderWorkflowCanvas();
                 saveCurrentWorkflow();
             }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (workflowSyncInterval) clearInterval(workflowSyncInterval);
+            if (realtimeSocket) realtimeSocket.disconnect();
         });
 
         // Auto-save every 30 seconds
@@ -2294,6 +2665,7 @@
         window.runWithTestData = runWithTestData;
         window.copyWebhookUrl = copyWebhookUrl;
         window.viewConnectedApp = viewConnectedApp;
+        window.updateModelPolicy = updateModelPolicy;
     </script>
 </body>
 </html>
