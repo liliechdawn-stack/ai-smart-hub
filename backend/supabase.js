@@ -1,7 +1,84 @@
 // ================================================
-// CREATE MOCK CLIENT (for development without DB)
+// SUPABASE.JS - Enterprise Database Configuration
 // ================================================
 
+const { createClient } = require('@supabase/supabase-js');
+
+// ================================================
+// CONFIGURATION
+// ================================================
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                   process.env.SUPABASE_ANON_KEY || 
+                   process.env.SUPABASE_KEY ||
+                   process.env.VITE_SUPABASE_ANON_KEY;
+
+// ================================================
+// INITIALIZE CLIENT (SIMPLE VERSION - NO COMPLEX EXPORTS)
+// ================================================
+
+let supabaseClient = null;
+let isConnected = false;
+
+function log(message, level = 'info') {
+  const timestamp = new Date().toISOString();
+  const prefix = `[SUPABASE] ${timestamp}`;
+  if (level === 'error') console.error(`${prefix} ❌ ${message}`);
+  else if (level === 'warn') console.warn(`${prefix} ⚠️ ${message}`);
+  else console.log(`${prefix} 📦 ${message}`);
+}
+
+// Initialize the client
+async function initSupabase() {
+  if (!supabaseUrl || !supabaseKey) {
+    log('Missing Supabase credentials', 'error');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Supabase credentials are required in production');
+    }
+    return null;
+  }
+
+  try {
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'x-application-name': 'workflow-studio',
+          'x-client-info': 'workflow-studio-backend'
+        }
+      }
+    });
+    
+    // Test connection
+    const { error } = await supabaseClient
+      .from('users')
+      .select('count', { count: 'exact', head: true })
+      .limit(1);
+    
+    if (error) throw error;
+    
+    isConnected = true;
+    log('Supabase client initialized successfully', 'success');
+    return supabaseClient;
+    
+  } catch (error) {
+    log(`Connection failed: ${error.message}`, 'error');
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
+    return null;
+  }
+}
+
+// Create a mock client for development
 function createMockClient() {
   log('Creating mock Supabase client for development', 'warn');
   
@@ -15,18 +92,20 @@ function createMockClient() {
     connected_apps: [],
     social_posts: [],
     email_logs: [],
-    webhook_registrations: [],
-    weekly_reports: [],
-    health_scans: []
+    webhook_registrations: []
   };
   
   const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
   
-  return {
+  const mockClient = {
     from: (table) => ({
-      select: (columns) => ({
+      select: () => ({
         eq: (field, value) => ({
           single: async () => {
+            const items = inMemoryStore[table]?.filter(item => item[field] === value) || [];
+            return { data: items[0] || null, error: null };
+          },
+          maybeSingle: async () => {
             const items = inMemoryStore[table]?.filter(item => item[field] === value) || [];
             return { data: items[0] || null, error: null };
           },
@@ -40,11 +119,7 @@ function createMockClient() {
               })
             })
           }),
-          maybeSingle: async () => {
-            const items = inMemoryStore[table]?.filter(item => item[field] === value) || [];
-            return { data: items[0] || null, error: null };
-          },
-          then: (callback) => callback({ data: items, error: null })
+          then: (callback) => callback({ data: inMemoryStore[table] || [], error: null })
         }),
         in: (field, values) => ({
           then: (callback) => callback({ 
@@ -62,10 +137,6 @@ function createMockClient() {
           then: (callback) => callback({ data: (inMemoryStore[table] || []).slice(0, limit), error: null })
         }),
         single: async () => {
-          const items = inMemoryStore[table] || [];
-          return { data: items[0] || null, error: null };
-        },
-        maybeSingle: async () => {
           const items = inMemoryStore[table] || [];
           return { data: items[0] || null, error: null };
         },
@@ -174,81 +245,59 @@ function createMockClient() {
       })
     }
   };
+  
+  return mockClient;
 }
 
-// ================================================
-// INITIALIZE CLIENT
-// ================================================
+// Initialize the client
+let supabase = null;
 
-async function initialize() {
-  log('Initializing Supabase module...');
-  
+// Start initialization
+(async () => {
   try {
-    const client = await createSupabaseClientWithRetry();
-    
+    const client = await initSupabase();
     if (client) {
       supabase = client;
-      isConnected = true;
-      startHealthCheck();
     } else if (process.env.NODE_ENV !== 'production') {
-      log('Creating mock client for development', 'warn');
       supabase = createMockClient();
-      isConnected = true;
-    } else {
-      throw new Error('Failed to initialize Supabase client in production');
     }
-    
-    return supabase;
-    
   } catch (error) {
-    log(`Initialization failed: ${error.message}`, 'error');
-    throw error;
-  }
-}
-
-// ================================================
-// GRACEFUL SHUTDOWN
-// ================================================
-
-async function shutdown() {
-  log('Shutting down Supabase module...');
-  stopHealthCheck();
-  
-  if (supabase && supabase.auth) {
-    try {
-      log('Cleanup completed', 'success');
-    } catch (error) {
-      log(`Cleanup error: ${error.message}`, 'error');
+    console.error('Failed to initialize Supabase:', error.message);
+    if (process.env.NODE_ENV !== 'production') {
+      supabase = createMockClient();
     }
   }
-  
-  supabase = null;
-  isConnected = false;
-  log('Shutdown complete', 'info');
-}
+})();
 
 // ================================================
-// INITIALIZE IMMEDIATELY
+// SIMPLE EXPORTS - FIXED
 // ================================================
 
-// Initialize immediately but don't block
-initialize().catch(error => {
-  log(`Failed to initialize Supabase: ${error.message}`, 'error');
-});
-
-// ================================================
-// EXPORTS - FIXED VERSION
-// ================================================
-
-// Export the client as the main export
+// Export the client directly (may be null initially, but that's OK)
 module.exports = supabase;
 
-// Add utility functions as properties on the exported object
-// But since supabase might be null initially, we need to handle that
-if (module.exports) {
-  module.exports.getConnectionStatus = getConnectionStatus;
-  module.exports.checkHealth = checkHealth;
-  module.exports.executeWithRetry = executeWithRetry;
-  module.exports.shutdown = shutdown;
-  module.exports.initialize = initialize;
-}
+// Also export a promise that resolves when client is ready
+module.exports.ready = new Promise((resolve) => {
+  const checkInterval = setInterval(() => {
+    if (supabase !== null) {
+      clearInterval(checkInterval);
+      resolve(supabase);
+    }
+  }, 100);
+  
+  // Timeout after 10 seconds
+  setTimeout(() => {
+    clearInterval(checkInterval);
+    if (supabase === null && process.env.NODE_ENV !== 'production') {
+      supabase = createMockClient();
+      resolve(supabase);
+    }
+  }, 10000);
+});
+
+// Export utility functions
+module.exports.getConnectionStatus = () => ({
+  isConnected: supabase !== null,
+  hasClient: supabase !== null,
+  environment: process.env.NODE_ENV || 'development'
+});
