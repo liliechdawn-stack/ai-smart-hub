@@ -1282,7 +1282,8 @@
         </div>
     </div>
 
-    <script>
+   
+   <script>
         // ================================================
         // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
         // FULL BACKEND INTEGRATION WITH REAL APIS
@@ -2919,46 +2920,6 @@
             }
         }
 
-        // Modified executeNode with variable resolution and new nodes
-        // Note: This replaces the existing executeNode function - it adds variable resolution and new node types
-        // The original switch statement is preserved and extended with gemini, rss, code cases
-        // The existing executeNode function above will be replaced with this enhanced version
-        // Since the original executeNode is already defined, we need to override it
-        // The original code had the switch statement - we're adding the new cases and variable resolution
-        // For completeness, here's the enhanced version that should replace the existing executeNode function
-        // (This is a continuation - the original executeNode is above, this extends it)
-        
-        // Note: The original executeNode function is already defined. To avoid duplication, we'll override it with an enhanced version.
-        // Since the file is long, I'll show the key additions that need to be merged into the existing executeNode:
-        
-        // Add these cases to the switch statement in the existing executeNode:
-        // case 'gemini': output = await executeGeminiNode(node.config); break;
-        // case 'rss': output = await executeRSSNode(node.config); break;
-        // case 'code': output = await executeCodeNode(node.config, input, triggerData); break;
-        
-        // Also add variable resolution at the beginning of the try block:
-        // if (node.config) {
-        //     for (const [key, val] of Object.entries(node.config)) {
-        //         if (typeof val === 'string') {
-        //             node.config[key] = resolveVariables(val, { data: input, trigger: triggerData });
-        //         }
-        //     }
-        // }
-        
-        // And update the condition case to support multiple outputs:
-        // case 'condition': const condResult = await executeConditionWithMultipleOutputs(node.config, { ...triggerData, ...input });
-        //                  return { output: condResult.output, next: condResult.next, status: 'completed' };
-        
-        // And update the loop case to support split arrays:
-        // case 'loop': output = await executeLoopWithSplit(node.config, input); break;
-        
-        // And update the http_request case to support authentication:
-        // case 'http_request': output = await executeHTTPRequestWithAuth(node.config); break;
-        
-        // Since we can't modify the original executeNode directly in this response, the backend will need to merge these changes.
-        // For now, the new nodes (gemini, rss, code) are added to NODE_CONFIGS and their execution functions are defined.
-        // The variable resolver and picker are fully functional.
-
         // ================================================
         // NEW: OUTPUT PREVIEW SIDEBAR (n8n-style)
         // ================================================
@@ -3022,13 +2983,21 @@
             if (modKey && e.key === 'e') { e.preventDefault(); executeWorkflowAndWatch(); }
             if (modKey && e.key === 'd') { e.preventDefault(); deployWorkflow(); }
             if (e.key === ' ' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') { e.preventDefault(); toggleExecutionPanel(); }
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWorkflowNode) { e.preventDefault(); deleteWorkflowNode(selectedWorkflowNode); selectedWorkflowNode = null; }
+            
+            // FIXED: Only delete node when NOT typing in an input/textarea field
+            const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWorkflowNode && !isTyping) { 
+                e.preventDefault(); 
+                deleteWorkflowNode(selectedWorkflowNode); 
+                selectedWorkflowNode = null; 
+            }
+            
             if (modKey && e.key === '/') { e.preventDefault(); showKeyboardShortcuts(); }
             if (e.ctrlKey && e.key === ' ' && document.activeElement?.tagName === 'INPUT') { e.preventDefault(); showVariablePicker(document.activeElement, null); }
         });
 
         function showKeyboardShortcuts() {
-            const shortcuts = { '⌘K / Ctrl+K': 'Open Global Search', '⌘S / Ctrl+S': 'Save Workflow', '⌘E / Ctrl+E': 'Execute Workflow', '⌘D / Ctrl+D': 'Deploy Workflow', 'Space': 'Toggle Execution Panel', 'Delete / Backspace': 'Delete Selected Node', 'Ctrl+Space': 'Open Variable Picker' };
+            const shortcuts = { '⌘K / Ctrl+K': 'Open Global Search', '⌘S / Ctrl+S': 'Save Workflow', '⌘E / Ctrl+E': 'Execute Workflow', '⌘D / Ctrl+D': 'Deploy Workflow', 'Space': 'Toggle Execution Panel', 'Delete / Backspace': 'Delete Selected Node (when canvas focused)', 'Ctrl+Space': 'Open Variable Picker' };
             const modal = document.createElement('div');
             modal.style.cssText = `position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10003; display:flex; align-items:center; justify-content:center;`;
             modal.innerHTML = `<div style="background:#1a1a2e; border-radius:16px; padding:24px; max-width:500px; width:90%; border:1px solid #d4af37;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><h3 style="color:#d4af37;"><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h3><button class="btn-outline" onclick="this.closest('div').parentElement.remove()">✕</button></div><div style="max-height:400px; overflow-y:auto;">${Object.entries(shortcuts).map(([key, desc]) => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #2a2a3e;"><span style="font-family:monospace; background:#252535; padding:4px 8px; border-radius:6px;">${key}</span><span style="color:#aaa;">${desc}</span></div>`).join('')}</div><div style="margin-top:16px; padding-top:12px; border-top:1px solid #2a2a3e; font-size:11px; color:#666;"><i class="fas fa-info-circle"></i> Hold Ctrl/Cmd for modifier keys</div></div>`;
