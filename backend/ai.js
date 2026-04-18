@@ -1,17 +1,17 @@
 /**
- * ai.js - Cloudflare Workers AI ONLY (Unified AI Integration)
- * Powers: Text Generation, Image Generation (Nano Banana quality via Cloudflare), 
- *         Video Generation (Sora-level via Cloudflare multimodal), Lead Scoring, Content Creation
+ * ai.js - Unified AI Service (Standardized)
+ * Powers: Text Generation, Image Generation, Video Generation, Lead Scoring, Content Creation
+ * Features: Metrics logging, retries, rate limiting, model fallback, token management
  * 
  * Cloudflare AI Models Used:
  * - Text: @cf/meta/llama-3-8b-instruct, @cf/meta/llama-3-70b-instruct
  * - Image: @cf/stabilityai/stable-diffusion-xl-base-1.0, @cf/lykon/dreamshaper-8-lcm
- * - Image-to-Image: @cf/runwayml/stable-diffusion-v1-5-img2img
- * - Multi-modal: @cf/unum/uform-gen2-qwen-500m (for video understanding)
+ * - Multi-modal: @cf/unum/uform-gen2-qwen-500m
  * - Embeddings: @cf/baai/bge-base-en-v1.5
  */
 
 const { v4: uuidv4 } = require('uuid');
+const { supabase } = require('./database-supabase');
 
 // ================================================
 // CLOUDFLARE AI CONFIGURATION
@@ -21,38 +21,42 @@ const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
 const CLOUDFLARE_API_BASE = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run`;
 
+// Rate limiting configuration
+const RATE_LIMITS = {
+    [MODELS?.TEXT_FAST || '@cf/meta/llama-3-8b-instruct']: { requestsPerMinute: 30, requestsPerDay: 1000 },
+    [MODELS?.TEXT_POWERFUL || '@cf/meta/llama-3-70b-instruct']: { requestsPerMinute: 10, requestsPerDay: 500 },
+    [MODELS?.IMAGE_SDXL || '@cf/stabilityai/stable-diffusion-xl-base-1.0']: { requestsPerMinute: 5, requestsPerDay: 200 }
+};
+
+// Token usage tracking (in-memory cache, will reset on restart)
+let tokenUsage = {
+    total: 0,
+    byModel: {},
+    byUser: {},
+    byDate: {}
+};
+
 // Available Cloudflare AI Models
 const MODELS = {
     // Text Generation
     TEXT_FAST: '@cf/meta/llama-3-8b-instruct',
     TEXT_POWERFUL: '@cf/meta/llama-3-70b-instruct',
     TEXT_CODE: '@cf/deepseek-ai/deepseek-math-7b-instruct',
+    TEXT_FALLBACK: '@cf/meta/llama-3-8b-instruct',
     
-    // Image Generation (Nano Banana quality via Cloudflare)
+    // Image Generation
     IMAGE_SDXL: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
     IMAGE_DREAMSHAPER: '@cf/lykon/dreamshaper-8-lcm',
-    IMAGE_SSD: '@cf/stabilityai/stable-diffusion-2-1',
+    IMAGE_FALLBACK: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
     
-    // Image-to-Image & Editing
-    IMG2IMG: '@cf/runwayml/stable-diffusion-v1-5-img2img',
-    INPAINT: '@cf/runwayml/stable-diffusion-v1-5-inpainting',
-    
-    // Multi-modal (Image Understanding)
+    // Multi-modal
     VISION: '@cf/unum/uform-gen2-qwen-500m',
-    OCR: '@cf/microsoft/ocr',
     
     // Embeddings
-    EMBEDDINGS: '@cf/baai/bge-base-en-v1.5',
-    
-    // Audio
-    TEXT_TO_SPEECH: '@cf/microsoft/tts',
-    WHISPER: '@cf/openai/whisper',
-    
-    // Translation
-    TRANSLATION: '@cf/meta/m2m100-1.2b'
+    EMBEDDINGS: '@cf/baai/bge-base-en-v1.5'
 };
 
-// Style modifiers for image generation (Nano Banana quality)
+// Style modifiers for image generation
 const IMAGE_STYLES = {
     'realistic': 'photorealistic, ultra detailed, 8K, sharp focus, natural lighting, professional photography',
     'cinematic': 'cinematic, movie poster, dramatic lighting, film grain, epic composition, 4K',
@@ -76,7 +80,7 @@ const IMAGE_STYLES = {
     'vaporwave': 'vaporwave, pastel, neon, glitchy, 80s, aesthetic, palm trees'
 };
 
-// Video style prompts (for script generation and understanding)
+// Video style prompts
 const VIDEO_STYLES = {
     'cinematic': 'cinematic video style, movie quality, dramatic lighting, professional camera work',
     'animation': '2D animation style, smooth movement, vibrant colors, fluid motion',
@@ -84,117 +88,294 @@ const VIDEO_STYLES = {
     'artistic': 'artistic video style, creative visuals, beautiful composition, abstract elements',
     'sci-fi': 'science fiction style, futuristic, holographic effects, neon lights, advanced tech',
     'fantasy': 'fantasy video style, magical effects, mythical creatures, enchanted landscapes',
-    'action': 'action video style, dynamic camera, fast-paced, exciting, high energy',
-    'slow-motion': 'slow motion style, dramatic, detailed, smooth, high frame rate'
+    'action': 'action video style, dynamic camera, fast-paced, exciting, high energy'
 };
 
 // ================================================
-// TEXT GENERATION (Chat, Content, Lead Scoring)
+// METRICS LOGGING
 // ================================================
 
-/**
- * Generate AI text response using Cloudflare Llama
- * @param {string} message - User message
- * @param {string} systemPrompt - Optional system prompt
- * @param {object} options - Generation options
- */
-async function generateAIResponse(message, systemPrompt = "", options = {}) {
-    const {
-        temperature = 0.6,
-        max_tokens = 2048,
-        model = MODELS.TEXT_FAST
-    } = options;
-
-    console.log(`🤖 [AI-TEXT] Generating response with ${model}...`);
-
+async function logMetrics(model, operation, tokensUsed, latency, userId, success, error = null) {
+    const logId = uuidv4();
+    const now = new Date().toISOString();
+    
+    // Update in-memory token usage
+    tokenUsage.total += tokensUsed || 0;
+    tokenUsage.byModel[model] = (tokenUsage.byModel[model] || 0) + (tokensUsed || 0);
+    
+    if (userId) {
+        tokenUsage.byUser[userId] = (tokenUsage.byUser[userId] || 0) + (tokensUsed || 0);
+    }
+    
+    const dateKey = now.split('T')[0];
+    tokenUsage.byDate[dateKey] = (tokenUsage.byDate[dateKey] || 0) + (tokensUsed || 0);
+    
     try {
-        const defaultSystemPrompt = `You are Workflow Studio Pro, an enterprise AI automation assistant. 
-You help users build workflows, automate tasks, generate content, create images and videos.
-Be professional, helpful, concise, and results-oriented.
-Current business context: ${systemPrompt || "AI automation platform for businesses"}`;
-
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${model}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                messages: [
-                    { role: "system", content: defaultSystemPrompt },
-                    { role: "user", content: message }
-                ],
-                temperature: temperature,
-                max_tokens: max_tokens,
-                stream: false
-            })
+        await supabase.from('ai_metrics_logs').insert({
+            id: logId,
+            model: model,
+            operation: operation,
+            tokens_used: tokensUsed || 0,
+            latency_ms: latency,
+            user_id: userId,
+            success: success,
+            error_message: error,
+            created_at: now
         });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Cloudflare AI error: ${response.status} - ${error}`);
-        }
-
-        const data = await response.json();
-        return data.result?.response?.trim() || "I couldn't generate a response. Please try again.";
-
-    } catch (error) {
-        console.error("❌ Cloudflare AI text error:", error.message);
-        return generateFallbackResponse(message);
+        
+        console.log(`📊 [AI-METRICS] ${operation}: ${tokensUsed || 0} tokens, ${latency}ms, ${success ? 'success' : 'failed'}`);
+    } catch (err) {
+        console.error('Failed to log AI metrics:', err.message);
     }
 }
 
-/**
- * Generate structured content (blog, social, email)
- * @param {string} contentType - social, blog, email, ad
- * @param {string} topic - Content topic
- * @param {string} tone - professional, casual, funny, inspirational
- */
-async function generateStructuredContent(contentType, topic, tone = "professional") {
-    console.log(`✍️ [AI-CONTENT] Generating ${contentType} about "${topic}" (${tone} tone)`);
+// ================================================
+// RATE LIMITING CHECK
+// ================================================
 
+async function checkRateLimit(model, userId = null) {
+    const limits = RATE_LIMITS[model];
+    if (!limits) return { allowed: true };
+    
+    const now = new Date();
+    const minuteAgo = new Date(now.getTime() - 60000);
+    const dayAgo = new Date(now.getTime() - 86400000);
+    
+    try {
+        // Count requests in last minute
+        const { count: minuteCount } = await supabase
+            .from('ai_metrics_logs')
+            .select('id', { count: 'exact', head: true })
+            .eq('model', model)
+            .gte('created_at', minuteAgo.toISOString());
+        
+        // Count requests today
+        const { count: dayCount } = await supabase
+            .from('ai_metrics_logs')
+            .select('id', { count: 'exact', head: true })
+            .eq('model', model)
+            .gte('created_at', dayAgo.toISOString());
+        
+        if (minuteCount >= limits.requestsPerMinute) {
+            return { allowed: false, reason: 'Rate limit exceeded: too many requests per minute', retryAfter: 60 };
+        }
+        
+        if (dayCount >= limits.requestsPerDay) {
+            return { allowed: false, reason: 'Rate limit exceeded: daily limit reached', retryAfter: 86400 };
+        }
+        
+        return { allowed: true };
+    } catch (error) {
+        console.error('Rate limit check error:', error.message);
+        return { allowed: true }; // Allow on error
+    }
+}
+
+// ================================================
+// GENERIC AI REQUEST WITH RETRIES AND FALLBACK
+// ================================================
+
+async function makeAIRequest(model, payload, options = {}) {
+    const {
+        userId = null,
+        operation = 'unknown',
+        maxRetries = 3,
+        fallbackModel = null,
+        timeout = 30000
+    } = options;
+    
+    const startTime = Date.now();
+    let lastError = null;
+    
+    // Check rate limit
+    const rateLimit = await checkRateLimit(model, userId);
+    if (!rateLimit.allowed) {
+        const error = new Error(rateLimit.reason);
+        await logMetrics(model, operation, 0, Date.now() - startTime, userId, false, error.message);
+        throw error;
+    }
+    
+    const modelsToTry = [model];
+    if (fallbackModel) modelsToTry.push(fallbackModel);
+    if (model !== MODELS.TEXT_FALLBACK) modelsToTry.push(MODELS.TEXT_FALLBACK);
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        for (const currentModel of modelsToTry) {
+            try {
+                console.log(`🤖 [AI-REQUEST] Attempt ${attempt}/${maxRetries} with model: ${currentModel}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                const response = await fetch(`${CLOUDFLARE_API_BASE}/${currentModel}`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                const latency = Date.now() - startTime;
+                
+                // Estimate tokens (rough estimate: ~4 chars per token)
+                const responseText = JSON.stringify(data);
+                const estimatedTokens = Math.ceil(responseText.length / 4);
+                
+                await logMetrics(currentModel, operation, estimatedTokens, latency, userId, true);
+                
+                return {
+                    success: true,
+                    data: data,
+                    model: currentModel,
+                    tokensUsed: estimatedTokens,
+                    latency: latency,
+                    attempt: attempt
+                };
+                
+            } catch (error) {
+                lastError = error;
+                console.warn(`⚠️ Model ${currentModel} failed: ${error.message}`);
+                
+                // Log failed attempt
+                await logMetrics(currentModel, operation, 0, Date.now() - startTime, userId, false, error.message);
+                
+                // Wait before retry
+                if (attempt < maxRetries) {
+                    const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+    }
+    
+    // All attempts failed
+    return {
+        success: false,
+        error: lastError?.message || 'All AI requests failed',
+        model: model,
+        attempts: maxRetries
+    };
+}
+
+// ================================================
+// TEXT GENERATION (Unified Interface)
+// ================================================
+
+async function generateText(prompt, options = {}) {
+    const {
+        systemPrompt = null,
+        temperature = 0.7,
+        maxTokens = 2048,
+        model = MODELS.TEXT_FAST,
+        fallbackModel = MODELS.TEXT_FALLBACK,
+        userId = null,
+        operation = 'text_generation'
+    } = options;
+    
+    const messages = [];
+    if (systemPrompt) {
+        messages.push({ role: "system", content: systemPrompt });
+    }
+    messages.push({ role: "user", content: prompt });
+    
+    const payload = {
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+        stream: false
+    };
+    
+    const result = await makeAIRequest(model, payload, {
+        userId,
+        operation,
+        fallbackModel,
+        maxRetries: 3
+    });
+    
+    if (result.success) {
+        return {
+            text: result.data.result?.response?.trim() || "",
+            model: result.model,
+            tokensUsed: result.tokensUsed,
+            latency: result.latency,
+            success: true
+        };
+    }
+    
+    return {
+        text: generateFallbackResponse(prompt),
+        model: model,
+        success: false,
+        error: result.error
+    };
+}
+
+async function generateStructuredContent(contentType, topic, tone = "professional", userId = null) {
     const systemPrompt = `You are a professional content writer. Generate ${contentType} content about "${topic}" in a ${tone} tone.
 The content should be engaging, well-structured, and ready to use.
 For social media: include relevant hashtags and emojis.
 For blog: include headings, bullet points, and conclusion.
 For email: include subject line, greeting, body, and signature.
 For ad: include attention-grabbing headline, benefits, and call-to-action.`;
-
-    try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.TEXT_FAST}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: `Generate ${contentType} content about "${topic}" in ${tone} tone.` }
-                ],
-                temperature: 0.7,
-                max_tokens: 1500
-            })
-        });
-
-        if (!response.ok) throw new Error(`Content generation failed: ${response.status}`);
-
-        const data = await response.json();
-        return data.result?.response?.trim() || generateFallbackContent(contentType, topic, tone);
-
-    } catch (error) {
-        console.error("❌ Content generation error:", error.message);
-        return generateFallbackContent(contentType, topic, tone);
+    
+    const userPrompt = `Generate ${contentType} content about "${topic}" in ${tone} tone.`;
+    
+    const result = await generateText(userPrompt, {
+        systemPrompt,
+        temperature: 0.7,
+        maxTokens: 1500,
+        userId,
+        operation: 'content_generation'
+    });
+    
+    if (result.success) {
+        return result.text;
     }
+    
+    return generateFallbackContent(contentType, topic, tone);
 }
 
-/**
- * AI Lead Scoring using Cloudflare AI
- * @param {object} leadData - Lead information
- */
-async function scoreLeadWithAI(leadData) {
-    console.log(`🎯 [AI-LEAD] Scoring lead: ${leadData.name || leadData.email || 'Unknown'}`);
+async function generateHashtags(topic, count = 15, userId = null) {
+    const prompt = `Generate ${count} trending, relevant hashtags for topic: "${topic}".
+Include a mix of broad and niche hashtags.
+Return ONLY hashtags separated by spaces, no explanations or other text.
+Example: #AI #Automation #Workflow`;
+    
+    const result = await generateText(prompt, {
+        temperature: 0.7,
+        maxTokens: 200,
+        userId,
+        operation: 'hashtag_generation'
+    });
+    
+    if (result.success) {
+        const hashtags = result.text.split(' ').filter(t => t.startsWith('#'));
+        if (hashtags.length > 0) {
+            return hashtags.slice(0, count);
+        }
+    }
+    
+    // Fallback hashtags
+    const baseTag = `#${topic.replace(/ /g, '')}`;
+    const commonTags = ['#AI', '#Automation', '#Workflow', '#Tech', '#Innovation', '#Future', '#Digital', '#Smart', '#NextGen', '#Pro'];
+    return [baseTag, ...commonTags.slice(0, count - 1)];
+}
 
+// ================================================
+// AI LEAD SCORING
+// ================================================
+
+async function scoreLeadWithAI(leadData, userId = null) {
     const prompt = `Rate this lead from 0-100 based on quality, likelihood to convert, and potential value.
 Return ONLY a number between 0-100.
 
@@ -208,39 +389,25 @@ Lead Information:
 - Message/Notes: ${leadData.notes || leadData.message || 'None'}
 
 Lead Score (0-100):`;
-
-    try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.TEXT_FAST}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                messages: [{ role: "user", content: prompt }],
-                temperature: 0.3,
-                max_tokens: 10
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const score = parseInt(data.result?.response?.trim());
-            if (!isNaN(score) && score >= 0 && score <= 100) {
-                return score;
-            }
+    
+    const result = await generateText(prompt, {
+        temperature: 0.3,
+        maxTokens: 10,
+        userId,
+        operation: 'lead_scoring'
+    });
+    
+    if (result.success) {
+        const score = parseInt(result.text);
+        if (!isNaN(score) && score >= 0 && score <= 100) {
+            return score;
         }
-        
-        // Fallback scoring logic
-        return calculateLeadScore(leadData);
-        
-    } catch (error) {
-        console.error("❌ AI lead scoring error:", error.message);
-        return calculateLeadScore(leadData);
     }
+    
+    // Fallback scoring logic
+    return calculateLeadScore(leadData);
 }
 
-// Rule-based fallback lead scoring
 function calculateLeadScore(leadData) {
     let score = 50;
     if (leadData.email) {
@@ -269,149 +436,74 @@ function calculateLeadScore(leadData) {
     return Math.min(Math.max(score, 0), 100);
 }
 
-/**
- * Generate hashtags using Cloudflare AI
- * @param {string} topic - Topic for hashtags
- * @param {number} count - Number of hashtags to generate
- */
-async function generateHashtags(topic, count = 15) {
-    console.log(`🏷️ [AI-HASHTAGS] Generating ${count} hashtags for: ${topic}`);
-
-    const prompt = `Generate ${count} trending, relevant hashtags for topic: "${topic}".
-Include a mix of broad and niche hashtags.
-Return ONLY hashtags separated by spaces, no explanations or other text.
-Example: #AI #Automation #Workflow`;
-
-    try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.TEXT_FAST}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                messages: [{ role: "user", content: prompt }],
-                temperature: 0.7,
-                max_tokens: 200
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const hashtags = data.result?.response?.trim().split(' ').filter(t => t.startsWith('#'));
-            if (hashtags && hashtags.length > 0) {
-                return hashtags.slice(0, count);
-            }
-        }
-        
-        // Fallback hashtags
-        const baseTag = `#${topic.replace(/ /g, '')}`;
-        const commonTags = ['#AI', '#Automation', '#Workflow', '#Tech', '#Innovation', '#Future', '#Digital', '#Smart', '#NextGen', '#Pro'];
-        return [baseTag, ...commonTags.slice(0, count - 1)];
-        
-    } catch (error) {
-        console.error("❌ Hashtag generation error:", error.message);
-        return [`#${topic.replace(/ /g, '')}`, '#AI', '#Automation', '#Tech'];
-    }
-}
-
 // ================================================
-// IMAGE GENERATION - NANO BANANA QUALITY
-// Using Cloudflare Stable Diffusion XL
+// IMAGE GENERATION (Unified Interface)
 // ================================================
 
-/**
- * Generate image using Cloudflare AI (Nano Banana quality)
- * @param {string} prompt - Image description
- * @param {object} options - Generation options
- */
 async function generateImage(prompt, options = {}) {
     const {
         style = 'realistic',
         width = 1024,
         height = 1024,
         model = MODELS.IMAGE_SDXL,
-        negative_prompt = 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text, signature',
-        num_steps = 30,
+        fallbackModel = MODELS.IMAGE_FALLBACK,
+        negativePrompt = 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text, signature',
+        numSteps = 30,
         guidance = 7.5,
-        seed = Math.floor(Math.random() * 1000000)
+        seed = Math.floor(Math.random() * 1000000),
+        userId = null
     } = options;
-
-    console.log(`🎨 [AI-IMAGE] Generating with Cloudflare, style: ${style}, prompt: ${prompt.substring(0, 100)}...`);
-
-    // Enhance prompt with style modifiers
+    
     const styleModifier = IMAGE_STYLES[style] || IMAGE_STYLES['realistic'];
     const enhancedPrompt = `${styleModifier}. ${prompt}. High quality, detailed, professional.`;
-
-    try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${model}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                prompt: enhancedPrompt,
-                negative_prompt: negative_prompt,
-                width: width,
-                height: height,
-                num_steps: num_steps,
-                guidance: guidance,
-                seed: seed
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Cloudflare image generation failed: ${response.status} - ${error}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.result && data.result.image) {
-            // Cloudflare returns base64 encoded image
-            const base64Image = `data:image/png;base64,${data.result.image}`;
-            
-            return {
-                success: true,
-                images: [base64Image],
-                prompt: enhancedPrompt,
-                style: style,
-                model: model,
-                width: width,
-                height: height,
-                seed: seed,
-                generated_at: new Date().toISOString()
-            };
-        }
-        
-        throw new Error('No image generated');
-
-    } catch (error) {
-        console.error("❌ Image generation error:", error.message);
-        
-        // Return a placeholder with the prompt text
-        const placeholderUrl = `https://placehold.co/${width}x${height}/1a1a2e/d4af37?text=${encodeURIComponent(prompt.substring(0, 50))}`;
-        
+    
+    const payload = {
+        prompt: enhancedPrompt,
+        negative_prompt: negativePrompt,
+        width: width,
+        height: height,
+        num_steps: numSteps,
+        guidance: guidance,
+        seed: seed
+    };
+    
+    const result = await makeAIRequest(model, payload, {
+        userId,
+        operation: 'image_generation',
+        fallbackModel,
+        maxRetries: 2,
+        timeout: 60000
+    });
+    
+    if (result.success && result.data.result?.image) {
+        const base64Image = `data:image/png;base64,${result.data.result.image}`;
         return {
-            success: false,
-            images: [placeholderUrl],
+            success: true,
+            images: [base64Image],
             prompt: enhancedPrompt,
-            error: error.message,
+            style: style,
+            model: result.model,
+            width: width,
+            height: height,
+            seed: seed,
+            tokensUsed: result.tokensUsed,
+            latency: result.latency,
             generated_at: new Date().toISOString()
         };
     }
+    
+    // Fallback placeholder
+    const placeholderUrl = `https://placehold.co/${width}x${height}/1a1a2e/d4af37?text=${encodeURIComponent(prompt.substring(0, 50))}`;
+    return {
+        success: false,
+        images: [placeholderUrl],
+        prompt: enhancedPrompt,
+        error: result.error || 'Image generation failed',
+        generated_at: new Date().toISOString()
+    };
 }
 
-/**
- * Generate multiple variations of an image
- * @param {string} prompt - Base prompt
- * @param {number} count - Number of variations
- * @param {object} options - Generation options
- */
 async function generateImageVariations(prompt, count = 4, options = {}) {
-    console.log(`🎨 [AI-IMAGE] Generating ${count} variations of: ${prompt.substring(0, 50)}...`);
-    
     const promises = [];
     for (let i = 0; i < count; i++) {
         promises.push(generateImage(prompt, { ...options, seed: Math.floor(Math.random() * 1000000) }));
@@ -428,271 +520,130 @@ async function generateImageVariations(prompt, count = 4, options = {}) {
     };
 }
 
-/**
- * Image-to-Image generation (edit existing image)
- * @param {string} prompt - Edit instructions
- * @param {string} imageBase64 - Source image as base64
- * @param {object} options - Edit options
- */
-async function editImage(prompt, imageBase64, options = {}) {
-    const {
-        strength = 0.7,
-        guidance = 7.5,
-        model = MODELS.IMG2IMG
-    } = options;
-
-    console.log(`🎨 [AI-IMAGE-EDIT] Editing image: ${prompt.substring(0, 50)}...`);
-
-    try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${model}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                prompt: prompt,
-                image: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
-                strength: strength,
-                guidance: guidance
-            })
-        });
-
-        if (!response.ok) throw new Error(`Image edit failed: ${response.status}`);
-
-        const data = await response.json();
-        
-        if (data.result && data.result.image) {
-            return {
-                success: true,
-                image: `data:image/png;base64,${data.result.image}`,
-                prompt: prompt,
-                generated_at: new Date().toISOString()
-            };
-        }
-        
-        throw new Error('No edited image generated');
-
-    } catch (error) {
-        console.error("❌ Image edit error:", error.message);
-        return {
-            success: false,
-            error: error.message,
-            original_image: imageBase64
-        };
-    }
-}
-
 // ================================================
-// VIDEO GENERATION - SORA LEVEL
-// Using Cloudflare multimodal for video understanding and script generation
+// VIDEO SCRIPT GENERATION
 // ================================================
 
-/**
- * Generate video script and metadata (Cloudflare doesn't have native video generation yet,
- * but we can generate scripts, storyboards, and use external APIs)
- * @param {string} topic - Video topic
- * @param {number} duration - Video duration in seconds
- * @param {string} style - Video style
- */
-async function generateVideoScriptAndStoryboard(topic, duration = 30, style = 'cinematic') {
-    console.log(`🎬 [AI-VIDEO] Generating script for: ${topic}, ${duration}s, ${style} style`);
-
+async function generateVideoScriptAndStoryboard(topic, duration = 30, style = 'cinematic', userId = null) {
     const stylePrompt = VIDEO_STYLES[style] || VIDEO_STYLES['cinematic'];
     const scenes = Math.ceil(duration / 5);
     const sceneDuration = Math.floor(duration / scenes);
-
+    
     const systemPrompt = `You are a professional video scriptwriter and storyboard artist.
 Create a detailed video script for a ${duration}-second ${style} style video about "${topic}".
 The script should have ${scenes} scenes, each ${sceneDuration} seconds long.
 For each scene, include: visual description, camera movement, audio/narration, and transition.
 Also suggest relevant music style and voiceover tone.`;
+    
+    const result = await generateText(systemPrompt, {
+        temperature: 0.7,
+        maxTokens: 2000,
+        userId,
+        operation: 'video_script_generation'
+    });
+    
+    let script = "";
+    if (result.success) {
+        script = result.text;
+    } else {
+        script = generateVideoScript(topic, duration, style, scenes, sceneDuration);
+    }
+    
+    return {
+        success: result.success,
+        script: script,
+        duration: duration,
+        style: style,
+        scenes: scenes,
+        scene_duration: sceneDuration,
+        tokensUsed: result.tokensUsed || 0,
+        latency: result.latency || 0,
+        generated_at: new Date().toISOString()
+    };
+}
 
-    try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.TEXT_POWERFUL}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                messages: [{ role: "user", content: systemPrompt }],
-                temperature: 0.7,
-                max_tokens: 2000
-            })
-        });
+// ================================================
+// EMBEDDINGS
+// ================================================
 
-        let script = "";
-        
-        if (response.ok) {
-            const data = await response.json();
-            script = data.result?.response?.trim();
-        }
-        
-        // Fallback script generation
-        if (!script) {
-            script = generateVideoScript(topic, duration, style, scenes, sceneDuration);
-        }
-        
-        // Generate storyboard prompts for each scene using Cloudflare AI
-        const storyboardPrompts = await generateStoryboardPrompts(script, scenes);
-        
+async function generateEmbedding(text, userId = null) {
+    const payload = { text: text };
+    
+    const result = await makeAIRequest(MODELS.EMBEDDINGS, payload, {
+        userId,
+        operation: 'embedding_generation',
+        maxRetries: 2
+    });
+    
+    if (result.success && result.data.result?.data?.[0]?.embedding) {
         return {
             success: true,
-            script: script,
-            storyboard_prompts: storyboardPrompts,
-            duration: duration,
-            style: style,
-            scenes: scenes,
-            scene_duration: sceneDuration,
-            generated_at: new Date().toISOString()
+            embedding: result.data.result.data[0].embedding,
+            dimensions: 768,
+            tokensUsed: result.tokensUsed,
+            latency: result.latency
         };
-        
-    } catch (error) {
-        console.error("❌ Video script generation error:", error.message);
-        const fallbackScript = generateVideoScript(topic, duration, style, 6, 5);
-        return {
-            success: false,
-            script: fallbackScript,
-            storyboard_prompts: [],
-            duration: duration,
-            style: style,
-            error: error.message,
-            generated_at: new Date().toISOString()
-        };
-    }
-}
-
-/**
- * Generate storyboard prompts from script
- * @param {string} script - Video script
- * @param {number} scenes - Number of scenes
- */
-async function generateStoryboardPrompts(script, scenes) {
-    const prompts = [];
-    
-    for (let i = 1; i <= scenes; i++) {
-        const prompt = `Based on this video script, create a detailed image generation prompt for scene ${i}.
-The prompt should describe the visual composition, lighting, mood, and key elements.
-Script: ${script.substring(0, 500)}`;
-
-        try {
-            const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.TEXT_FAST}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    messages: [{ role: "user", content: prompt }],
-                    temperature: 0.8,
-                    max_tokens: 200
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                prompts.push(data.result?.response?.trim() || `Scene ${i}: ${script.substring(0, 100)}`);
-            } else {
-                prompts.push(`Scene ${i} from video about ${script.substring(0, 100)}`);
-            }
-        } catch (error) {
-            prompts.push(`Scene ${i} from video`);
-        }
     }
     
-    return prompts;
-}
-
-/**
- * Analyze video content using Cloudflare multimodal AI
- * @param {string} videoUrl - URL of video to analyze
- * @param {string} question - Question about the video
- */
-async function analyzeVideo(videoUrl, question) {
-    console.log(`🔍 [AI-VIDEO-ANALYZE] Analyzing video: ${videoUrl.substring(0, 50)}...`);
-
-    try {
-        // Fetch video and convert to base64 for analysis
-        const videoResponse = await fetch(videoUrl);
-        const videoBuffer = await videoResponse.arrayBuffer();
-        const videoBase64 = Buffer.from(videoBuffer).toString('base64');
-        
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.VISION}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                image: videoBase64,
-                prompt: question,
-                max_tokens: 500
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return {
-                success: true,
-                analysis: data.result?.description || "Video analysis completed",
-                question: question
-            };
-        }
-        
-        throw new Error('Video analysis failed');
-
-    } catch (error) {
-        console.error("❌ Video analysis error:", error.message);
-        return {
-            success: false,
-            analysis: "Unable to analyze video at this time.",
-            error: error.message
-        };
-    }
+    return {
+        success: false,
+        embedding: [],
+        error: result.error || 'Embedding generation failed'
+    };
 }
 
 // ================================================
-// EMBEDDINGS & SEMANTIC SEARCH
+// TOKEN USAGE STATISTICS
 // ================================================
 
-/**
- * Generate embeddings for text using Cloudflare AI
- * @param {string} text - Text to embed
- */
-async function generateEmbedding(text) {
-    console.log(`📊 [AI-EMBEDDING] Generating embedding for text (${text.length} chars)`);
+function getTokenUsage() {
+    return {
+        ...tokenUsage,
+        timestamp: new Date().toISOString()
+    };
+}
 
+async function getTokenUsageByUser(userId, days = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
     try {
-        const response = await fetch(`${CLOUDFLARE_API_BASE}/${MODELS.EMBEDDINGS}`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                text: text
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return {
-                success: true,
-                embedding: data.result?.data?.[0]?.embedding || [],
-                dimensions: 768
-            };
-        }
+        const { data, error } = await supabase
+            .from('ai_metrics_logs')
+            .select('tokens_used, model, operation, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', startDate.toISOString())
+            .order('created_at', { ascending: false });
         
-        throw new Error('Embedding generation failed');
-
-    } catch (error) {
-        console.error("❌ Embedding error:", error.message);
+        if (error) throw error;
+        
+        const total = data.reduce((sum, log) => sum + (log.tokens_used || 0), 0);
+        const byModel = {};
+        const byOperation = {};
+        const byDate = {};
+        
+        data.forEach(log => {
+            const model = log.model;
+            const operation = log.operation;
+            const date = log.created_at.split('T')[0];
+            
+            byModel[model] = (byModel[model] || 0) + (log.tokens_used || 0);
+            byOperation[operation] = (byOperation[operation] || 0) + (log.tokens_used || 0);
+            byDate[date] = (byDate[date] || 0) + (log.tokens_used || 0);
+        });
+        
         return {
-            success: false,
-            embedding: [],
-            error: error.message
+            userId,
+            total,
+            byModel,
+            byOperation,
+            byDate,
+            logs: data,
+            days
         };
+    } catch (error) {
+        console.error('Failed to get token usage by user:', error.message);
+        return { userId, total: 0, error: error.message };
     }
 }
 
@@ -761,9 +712,6 @@ function generateVideoScript(topic, duration, style, scenes = 6, sceneDuration =
         }
     }
     
-    script += `\n[Video would be generated using Cloudflare AI or integrated video generation service]\n`;
-    script += `Storyboard images can be generated using generateImage() for each scene.`;
-    
     return script;
 }
 
@@ -772,27 +720,33 @@ function generateVideoScript(topic, duration, style, scenes = 6, sceneDuration =
 // ================================================
 
 module.exports = {
-    // Main functions
-    generateAIResponse,
+    // Main unified functions
+    generateText,
     generateStructuredContent,
     generateImage,
     generateImageVariations,
-    editImage,
     generateVideoScriptAndStoryboard,
-    analyzeVideo,
     scoreLeadWithAI,
     generateHashtags,
     generateEmbedding,
+    
+    // Metrics and utilities
+    logMetrics,
+    checkRateLimit,
+    getTokenUsage,
+    getTokenUsageByUser,
     
     // Fallback functions
     generateFallbackResponse,
     generateFallbackContent,
     generateVideoScript,
+    calculateLeadScore,
     
     // Configuration
     MODELS,
     IMAGE_STYLES,
     VIDEO_STYLES,
+    RATE_LIMITS,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_TOKEN
 };
