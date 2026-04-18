@@ -105,7 +105,7 @@ const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
 // ===== ENTERPRISE FEATURE IMPORTS =====
-const { addToQueue, getQueueStats } = require('./queue-service');
+const { addToQueue, getQueueStats, getQueueStatus } = require('./queue-service');
 const { rateLimitMiddleware } = require('./rate-limiter');
 const workflowVersioning = require('./workflow-versioning');
 const debugExecutor = require('./debug-executor');
@@ -241,7 +241,199 @@ try {
   workflowTemplatesRoutes = null;
 }
 
+// ================= CREATE APP =================
 const app = express();
+
+// ================================================
+// GLOBAL LOGGING SYSTEM
+// ================================================
+const systemLogs = [];
+const MAX_LOGS = 10000;
+
+async function logSystemEvent(eventType, message, details = {}, userId = null) {
+  const logEntry = {
+    id: uuidv4(),
+    timestamp: new Date().toISOString(),
+    event_type: eventType,
+    message: message,
+    details: details,
+    user_id: userId
+  };
+  
+  systemLogs.unshift(logEntry);
+  if (systemLogs.length > MAX_LOGS) systemLogs.pop();
+  
+  try {
+    await supabase.from('system_logs').insert({
+      id: logEntry.id,
+      event_type: eventType,
+      message: message,
+      details: details,
+      user_id: userId,
+      created_at: logEntry.timestamp
+    });
+  } catch (err) {
+    console.error('Failed to persist system log:', err.message);
+  }
+  
+  console.log(`📋 [SYS-LOG] ${eventType}: ${message}`);
+  return logEntry;
+}
+
+// ================================================
+// PLATFORM HEALTH MONITOR
+// ================================================
+let platformHealth = {
+  status: 'healthy',
+  lastCheck: new Date().toISOString(),
+  components: {
+    database: { status: 'healthy', latency: 0, lastCheck: null },
+    queue: { status: 'healthy', depth: 0, activeJobs: 0, maxConcurrent: 5 },
+    ai: { status: 'healthy', lastRequest: null, avgLatency: 0 },
+    webhook: { status: 'healthy', lastEvent: null, eventsProcessed: 0 }
+  },
+  metrics: {
+    activeExecutions: 0,
+    totalExecutionsToday: 0,
+    avgExecutionTime: 0,
+    errorRate: 0
+  }
+};
+
+async function updatePlatformHealth() {
+  const startTime = Date.now();
+  
+  try {
+    // Check database health
+    const dbStart = Date.now();
+    const { data: dbCheck, error: dbError } = await supabase.from('workflows').select('count', { count: 'exact', head: true });
+    platformHealth.components.database = {
+      status: dbError ? 'unhealthy' : 'healthy',
+      latency: Date.now() - dbStart,
+      lastCheck: new Date().toISOString(),
+      error: dbError?.message
+    };
+    
+    // Check queue health
+    const queueStats = await getQueueStats();
+    const queueStatus = await getQueueStatus();
+    platformHealth.components.queue = {
+      status: (queueStats.pending || 0) > 100 ? 'degraded' : 'healthy',
+      depth: queueStats.pending || 0,
+      activeJobs: queueStats.activeJobs || 0,
+      maxConcurrent: queueStats.maxConcurrent || 5,
+      pausedJobs: queueStats.pausedJobs || 0,
+      lastCheck: new Date().toISOString()
+    };
+    
+    // Get execution metrics from last 24 hours
+    const yesterday = new Date(Date.now() - 86400000).toISOString();
+    const { data: executions } = await supabase
+      .from('workflow_executions')
+      .select('status, execution_time_ms')
+      .gte('started_at', yesterday);
+    
+    const totalExecutions = executions?.length || 0;
+    const failedExecutions = executions?.filter(e => e.status === 'failed').length || 0;
+    const avgExecutionTime = executions?.reduce((sum, e) => sum + (e.execution_time_ms || 0), 0) / (totalExecutions || 1);
+    
+    platformHealth.metrics = {
+      activeExecutions: 0,
+      totalExecutionsToday: totalExecutions,
+      avgExecutionTime: Math.round(avgExecutionTime),
+      errorRate: totalExecutions > 0 ? (failedExecutions / totalExecutions) * 100 : 0
+    };
+    
+    // Overall health status
+    const isHealthy = 
+      platformHealth.components.database.status === 'healthy' &&
+      platformHealth.components.queue.status !== 'unhealthy';
+    
+    platformHealth.status = isHealthy ? 'healthy' : 'degraded';
+    platformHealth.lastCheck = new Date().toISOString();
+    
+    if (platformHealth.status !== 'healthy') {
+      await logSystemEvent('HEALTH_DEGRADED', `Platform health degraded`, platformHealth);
+    }
+    
+  } catch (error) {
+    console.error('Health check failed:', error);
+    platformHealth.status = 'unhealthy';
+    platformHealth.components.database.status = 'unhealthy';
+    await logSystemEvent('HEALTH_CHECK_FAILED', error.message, { error: error.message });
+  }
+}
+
+// Run health check every 30 seconds
+setInterval(updatePlatformHealth, 30000);
+updatePlatformHealth();
+
+// ================================================
+// WORKSPACE SCOPING MIDDLEWARE
+// ================================================
+async function ensureWorkspaceAccess(req, res, next) {
+  const userId = req.user?.id;
+  const requestedWorkspaceId = req.params.workspaceId || req.body.workspaceId || req.query.workspaceId;
+  
+  if (!userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  // If no specific workspace requested, use user's default
+  if (!requestedWorkspaceId) {
+    req.workspaceId = userId;
+    return next();
+  }
+  
+  // Verify user has access to this workspace
+  try {
+    const { data: workspaceMember, error } = await supabase
+      .from('workspace_members')
+      .select('*')
+      .eq('workspace_id', requestedWorkspaceId)
+      .eq('user_id', userId)
+      .single();
+    
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', requestedWorkspaceId)
+      .single();
+    
+    if ((workspaceMember || workspace?.owner_id === userId) || userId === process.env.ADMIN_USER_ID) {
+      req.workspaceId = requestedWorkspaceId;
+      return next();
+    }
+    
+    return res.status(403).json({ error: 'Access denied to this workspace' });
+  } catch (error) {
+    return res.status(403).json({ error: 'Workspace access denied' });
+  }
+}
+
+// ================================================
+// REQUEST LOGGING MIDDLEWARE
+// ================================================
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    const userId = req.user?.id || 'anonymous';
+    
+    logSystemEvent('API_REQUEST', `${req.method} ${req.path}`, {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      duration: duration,
+      userId: userId,
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    }, userId);
+  });
+  
+  next();
+});
 
 // ================= MIDDLEWARE =================
 // CORS first - with proper configuration
@@ -249,7 +441,7 @@ const corsOptions = {
   origin: true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Workspace-Id']
 };
 
 app.use(cors(corsOptions));
@@ -422,6 +614,95 @@ app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 // ================= SERVE STATIC HTML FILES =================
 app.use(express.static(path.join(__dirname, '../public')));
 
+// ================================================
+// PLATFORM HEALTH ENDPOINT
+// ================================================
+app.get('/api/platform/health', async (req, res) => {
+  await updatePlatformHealth();
+  res.json({
+    ...platformHealth,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.version,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ================================================
+// QUEUE STATUS ENDPOINT (Enhanced)
+// ================================================
+app.get('/api/platform/queue', authenticateToken, async (req, res) => {
+  try {
+    const queueStats = await getQueueStats();
+    const queueStatus = await getQueueStatus();
+    res.json({
+      ...queueStats,
+      ...queueStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting queue status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================================================
+// SYSTEM LOGS ENDPOINT (Admin only)
+// ================================================
+app.get('/api/platform/logs', authenticateToken, isAdminMiddleware, async (req, res) => {
+  const { limit = 100, eventType, startDate, endDate } = req.query;
+  
+  try {
+    let query = supabase
+      .from('system_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+    
+    if (eventType) {
+      query = query.eq('event_type', eventType);
+    }
+    
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    res.json(data || []);
+  } catch (error) {
+    console.error('Error fetching system logs:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================================================
+// SYSTEM METRICS ENDPOINT
+// ================================================
+app.get('/api/platform/metrics', authenticateToken, async (req, res) => {
+  try {
+    const { data: usageStats } = await getUsageStats(req.user.id);
+    const queueStats = await getQueueStats();
+    const health = platformHealth;
+    
+    res.json({
+      usage: usageStats,
+      queue: queueStats,
+      health: health,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting metrics:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ================= ROUTES =================
 app.use('/api/smart-hub', require('./smart-hub'));
 
@@ -521,7 +802,7 @@ app.get('/api/queue/stats', authenticateToken, async (req, res) => {
 });
 
 // Workflow Versioning endpoints
-app.get('/api/workflows/:id/versions', authenticateToken, async (req, res) => {
+app.get('/api/workflows/:id/versions', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const versions = await workflowVersioning.getVersions(req.params.id);
     res.json(versions);
@@ -531,7 +812,7 @@ app.get('/api/workflows/:id/versions', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/workflows/:id/versions/save', authenticateToken, async (req, res) => {
+app.post('/api/workflows/:id/versions/save', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const { name, nodes, edges, change_note } = req.body;
     const version = await workflowVersioning.saveVersion(
@@ -549,7 +830,7 @@ app.post('/api/workflows/:id/versions/save', authenticateToken, async (req, res)
   }
 });
 
-app.post('/api/workflows/:id/rollback/:version', authenticateToken, async (req, res) => {
+app.post('/api/workflows/:id/rollback/:version', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const workflow = await workflowVersioning.rollbackToVersion(req.params.id, parseInt(req.params.version));
     res.json(workflow);
@@ -559,7 +840,7 @@ app.post('/api/workflows/:id/rollback/:version', authenticateToken, async (req, 
   }
 });
 
-app.get('/api/workflows/:id/compare/:version1/:version2', authenticateToken, async (req, res) => {
+app.get('/api/workflows/:id/compare/:version1/:version2', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const comparison = await workflowVersioning.compareVersions(
       req.params.id,
@@ -574,7 +855,7 @@ app.get('/api/workflows/:id/compare/:version1/:version2', authenticateToken, asy
 });
 
 // Debug Mode endpoints
-app.post('/api/workflows/:id/debug', authenticateToken, async (req, res) => {
+app.post('/api/workflows/:id/debug', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const { trigger_data } = req.body;
     const sessionId = await debugExecutor.startDebugSession(
@@ -629,7 +910,7 @@ app.get('/api/debug/:sessionId', authenticateToken, async (req, res) => {
 });
 
 // Error Handler endpoints
-app.post('/api/workflows/:id/error-handler', authenticateToken, async (req, res) => {
+app.post('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const { error_workflow_id, error_types } = req.body;
     await errorHandler.registerErrorHandler(req.params.id, error_workflow_id, error_types);
@@ -640,7 +921,7 @@ app.post('/api/workflows/:id/error-handler', authenticateToken, async (req, res)
   }
 });
 
-app.get('/api/workflows/:id/error-handler', authenticateToken, async (req, res) => {
+app.get('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const { data: handler } = await supabase
       .from('error_handlers')
@@ -2910,6 +3191,11 @@ server.listen(PORT, () => {
   console.log(`   - POST /api/workflows/:id/rollback/:version - Rollback`);
   console.log(`   - POST /api/workflows/:id/debug - Start debug session`);
   console.log(`   - POST /api/workflows/:id/error-handler - Set error handler`);
+  console.log(`📋 Platform Health:`);
+  console.log(`   - GET /api/platform/health - Platform health status`);
+  console.log(`   - GET /api/platform/queue - Queue status`);
+  console.log(`   - GET /api/platform/logs - System logs (admin only)`);
+  console.log(`   - GET /api/platform/metrics - System metrics`);
   console.log(`⏰ Workflow Scheduler: Initialized with cron jobs`);
   console.log(`🔄 Error handlers loaded and ready`);
 });
