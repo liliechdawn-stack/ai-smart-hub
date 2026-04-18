@@ -1,7 +1,7 @@
 // ================================================
-// ENTERPRISE QUEUE SERVICE - No Redis Required
-// Features: Priority queues, retry logic, dead letter queue
-// Batch processing, job timeouts, queue monitoring, worker pool
+// ENTERPRISE QUEUE SERVICE - JOB MANAGER
+// Features: Wait node support, pause/resume, max concurrent jobs
+// Long-running job handling, state persistence, retry logic
 // ================================================
 
 const { v4: uuidv4 } = require('uuid');
@@ -20,19 +20,23 @@ const QUEUE_CONFIG = {
   pollInterval: 1000, // 1 second
   maxConcurrentJobs: 5,
   deadLetterQueueEnabled: true,
-  cleanupAge: 604800000 // 7 days
+  cleanupAge: 604800000, // 7 days
+  pausedJobsCheckInterval: 5000, // Check paused jobs every 5 seconds
+  waitNodePollInterval: 1000 // Check waiting nodes every second
 };
 
 // ================================================
-// QUEUE SERVICE CLASS
+// QUEUE SERVICE CLASS - JOB MANAGER
 // ================================================
 
 class QueueService {
   constructor() {
     this.isProcessing = false;
-    this.activeJobs = new Map(); // jobId -> { timeout, startTime }
+    this.activeJobs = new Map(); // jobId -> { timeout, startTime, workflowId, userId, executionId }
+    this.pausedJobs = new Map(); // jobId -> { resumeAt, executionId, currentNodeId, state }
     this.workerInterval = null;
     this.statsInterval = null;
+    this.pausedJobsInterval = null;
     this.jobHandlers = new Map(); // Custom job handlers
   }
 
@@ -51,12 +55,22 @@ class QueueService {
       });
     }, QUEUE_CONFIG.pollInterval);
     
+    // Start paused jobs monitor
+    this.pausedJobsInterval = setInterval(() => {
+      this.processPausedJobs().catch(error => {
+        console.error('❌ [QUEUE] Paused jobs error:', error.message);
+      });
+    }, QUEUE_CONFIG.pausedJobsCheckInterval);
+    
     // Start stats logger
     this.statsInterval = setInterval(() => {
       this.logStats().catch(error => {
         console.error('❌ [QUEUE] Stats error:', error.message);
       });
     }, 60000); // Every minute
+    
+    // Resume any paused jobs from database on startup
+    await this.resumePausedJobsFromDatabase();
     
     // Clean up old jobs
     this.cleanupOldJobs().catch(error => {
@@ -76,7 +90,9 @@ class QueueService {
       timeout = QUEUE_CONFIG.jobTimeout,
       scheduledFor = null,
       jobName = null,
-      metadata = {}
+      metadata = {},
+      parentJobId = null,
+      resumeState = null
     } = options;
     
     const jobId = uuidv4();
@@ -85,10 +101,8 @@ class QueueService {
     console.log(`📋 [QUEUE] Adding job ${jobId} for workflow ${workflowId} (priority: ${priority})`);
     
     try {
-      // Validate priority
       const validPriority = [0, 1, 2].includes(priority) ? priority : 1;
       
-      // Store job in database
       const { data: job, error } = await supabase
         .from('queue_jobs')
         .insert({
@@ -104,6 +118,8 @@ class QueueService {
           scheduled_for: scheduledFor || null,
           job_name: jobName || `Workflow: ${workflowId}`,
           metadata: metadata,
+          parent_job_id: parentJobId,
+          resume_state: resumeState,
           created_at: now,
           updated_at: now
         })
@@ -112,7 +128,6 @@ class QueueService {
       
       if (error) throw error;
       
-      // If scheduled for future, don't execute immediately
       if (scheduledFor && new Date(scheduledFor) > new Date()) {
         console.log(`⏰ [QUEUE] Job ${jobId} scheduled for ${scheduledFor}`);
         return { jobId, scheduled: true, scheduledFor };
@@ -170,7 +185,7 @@ class QueueService {
         .select('*')
         .eq('status', 'pending')
         .is('scheduled_for', null)
-        .order('priority', { ascending: true }) // 0=highest first
+        .order('priority', { ascending: true })
         .order('created_at', { ascending: true })
         .limit(QUEUE_CONFIG.batchSize - this.activeJobs.size);
       
@@ -180,19 +195,16 @@ class QueueService {
         console.log(`🔄 [QUEUE] Processing ${jobs.length} jobs (active: ${this.activeJobs.size})`);
         
         for (const job of jobs) {
-          // Check if we can process more
           if (this.activeJobs.size >= QUEUE_CONFIG.maxConcurrentJobs) {
             break;
           }
           
-          // Process job asynchronously
           this.processJob(job).catch(error => {
             console.error(`❌ [QUEUE] Job ${job.job_id} processing error:`, error.message);
           });
         }
       }
       
-      // Also check for scheduled jobs that are due
       await this.processScheduledJobs();
       
     } catch (error) {
@@ -238,11 +250,152 @@ class QueueService {
   }
 
   // ================================================
+  // PROCESS PAUSED JOBS (Wait Node Support)
+  // ================================================
+  async processPausedJobs() {
+    try {
+      const now = new Date().toISOString();
+      
+      const { data: jobs, error } = await supabase
+        .from('queue_jobs')
+        .select('*')
+        .eq('status', 'paused')
+        .lte('resume_at', now)
+        .limit(QUEUE_CONFIG.batchSize);
+      
+      if (error) throw error;
+      
+      if (jobs && jobs.length > 0) {
+        console.log(`⏸️ [QUEUE] Resuming ${jobs.length} paused jobs`);
+        
+        for (const job of jobs) {
+          await this.resumeJob(job);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ [QUEUE] Paused jobs processing error:', error.message);
+    }
+  }
+
+  // ================================================
+  // PAUSE JOB (for Wait nodes)
+  // ================================================
+  async pauseJob(jobId, resumeAfterMs, executionId, currentNodeId, state) {
+    const resumeAt = new Date(Date.now() + resumeAfterMs).toISOString();
+    
+    console.log(`⏸️ [QUEUE] Pausing job ${jobId} until ${resumeAt}`);
+    
+    try {
+      await supabase
+        .from('queue_jobs')
+        .update({
+          status: 'paused',
+          resume_at: resumeAt,
+          execution_id: executionId,
+          current_node_id: currentNodeId,
+          paused_state: state,
+          updated_at: new Date().toISOString()
+        })
+        .eq('job_id', jobId);
+      
+      // Remove from active jobs
+      if (this.activeJobs.has(jobId)) {
+        const jobInfo = this.activeJobs.get(jobId);
+        if (jobInfo.timeout) clearTimeout(jobInfo.timeout);
+        this.activeJobs.delete(jobId);
+      }
+      
+      // Store in paused jobs map
+      this.pausedJobs.set(jobId, {
+        resumeAt,
+        executionId,
+        currentNodeId,
+        state
+      });
+      
+      return { success: true, paused: true, resumeAt };
+      
+    } catch (error) {
+      console.error(`❌ [QUEUE] Failed to pause job:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ================================================
+  // RESUME PAUSED JOB
+  // ================================================
+  async resumeJob(job) {
+    const jobId = job.job_id;
+    
+    console.log(`▶️ [QUEUE] Resuming job ${jobId}`);
+    
+    try {
+      // Update status back to pending
+      await supabase
+        .from('queue_jobs')
+        .update({
+          status: 'pending',
+          resume_at: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('job_id', jobId);
+      
+      // Remove from paused jobs map
+      this.pausedJobs.delete(jobId);
+      
+      return { success: true, resumed: true };
+      
+    } catch (error) {
+      console.error(`❌ [QUEUE] Failed to resume job:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ================================================
+  // RESUME PAUSED JOBS FROM DATABASE ON STARTUP
+  // ================================================
+  async resumePausedJobsFromDatabase() {
+    try {
+      const { data: jobs, error } = await supabase
+        .from('queue_jobs')
+        .select('*')
+        .eq('status', 'paused')
+        .is('resume_at', null);
+      
+      if (error) throw error;
+      
+      if (jobs && jobs.length > 0) {
+        console.log(`🔄 [QUEUE] Resuming ${jobs.length} paused jobs from database`);
+        
+        for (const job of jobs) {
+          await supabase
+            .from('queue_jobs')
+            .update({
+              status: 'pending',
+              updated_at: new Date().toISOString()
+            })
+            .eq('job_id', job.job_id);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ [QUEUE] Failed to resume paused jobs:', error.message);
+    }
+  }
+
+  // ================================================
   // PROCESS INDIVIDUAL JOB
   // ================================================
   async processJob(job) {
     const jobId = job.job_id;
     const startTime = Date.now();
+    
+    // Check if we're at max concurrent jobs
+    if (this.activeJobs.size >= QUEUE_CONFIG.maxConcurrentJobs) {
+      console.log(`⏳ [QUEUE] Max concurrent jobs reached (${this.activeJobs.size}/${QUEUE_CONFIG.maxConcurrentJobs}), delaying job ${jobId}`);
+      return;
+    }
     
     // Set timeout
     const timeout = setTimeout(() => {
@@ -253,7 +406,8 @@ class QueueService {
       timeout,
       startTime,
       workflowId: job.workflow_id,
-      userId: job.user_id
+      userId: job.user_id,
+      executionId: job.execution_id
     });
     
     // Update job status to running
@@ -266,16 +420,15 @@ class QueueService {
       })
       .eq('job_id', jobId);
     
-    console.log(`▶️ [QUEUE] Starting job ${jobId} (workflow: ${job.workflow_id})`);
+    console.log(`▶️ [QUEUE] Starting job ${jobId} (workflow: ${job.workflow_id}) (active: ${this.activeJobs.size}/${QUEUE_CONFIG.maxConcurrentJobs})`);
     
     try {
-      // Check for custom handler
       let result;
+      
       if (this.jobHandlers.has(job.workflow_id)) {
         const handler = this.jobHandlers.get(job.workflow_id);
         result = await handler(job.trigger_data, job.user_id);
       } else {
-        // Execute workflow
         result = await workflowExecutor.executeWorkflow(
           job.workflow_id,
           job.trigger_data || {},
@@ -285,7 +438,20 @@ class QueueService {
       
       const executionTime = Date.now() - startTime;
       
-      // Update job as completed
+      // Check if execution was paused (Wait node)
+      if (result && result.paused) {
+        await this.pauseJob(
+          jobId,
+          result.waitDuration || 5000,
+          result.executionId,
+          result.currentNodeId,
+          result.state
+        );
+        
+        console.log(`⏸️ [QUEUE] Job ${jobId} paused for ${result.waitDuration}ms`);
+        return;
+      }
+      
       await supabase
         .from('queue_jobs')
         .update({
@@ -303,7 +469,6 @@ class QueueService {
       await this.handleJobFailure(job, error);
       
     } finally {
-      // Clear timeout and remove from active jobs
       clearTimeout(timeout);
       this.activeJobs.delete(jobId);
     }
@@ -320,12 +485,10 @@ class QueueService {
     console.error(`❌ [QUEUE] Job ${jobId} failed (attempt ${newRetryCount}/${maxRetries}):`, error.message);
     
     if (newRetryCount <= maxRetries) {
-      // Calculate delay for retry
       const retryIndex = newRetryCount - 1;
       const retryDelay = QUEUE_CONFIG.retryDelays[retryIndex] || QUEUE_CONFIG.retryDelays[QUEUE_CONFIG.retryDelays.length - 1];
       const retryAt = new Date(Date.now() + retryDelay);
       
-      // Update job for retry
       await supabase
         .from('queue_jobs')
         .update({
@@ -340,12 +503,10 @@ class QueueService {
       console.log(`🔄 [QUEUE] Job ${jobId} will retry at ${retryAt.toISOString()} (delay: ${retryDelay}ms)`);
       
     } else {
-      // Max retries exceeded, move to dead letter queue if enabled
       if (QUEUE_CONFIG.deadLetterQueueEnabled) {
         await this.moveToDeadLetterQueue(job, error);
       }
       
-      // Mark as failed
       await supabase
         .from('queue_jobs')
         .update({
@@ -442,6 +603,7 @@ class QueueService {
       if (error) throw error;
       
       const isActive = this.activeJobs.has(jobId);
+      const isPaused = this.pausedJobs.has(jobId);
       
       return {
         jobId: job.job_id,
@@ -456,6 +618,8 @@ class QueueService {
         executionTimeMs: job.execution_time_ms,
         lastError: job.last_error,
         isActive,
+        isPaused,
+        resumeAt: job.resume_at,
         result: job.result
       };
       
@@ -466,15 +630,33 @@ class QueueService {
   }
 
   // ================================================
+  // GET QUEUE STATUS (including paused jobs)
+  // ================================================
+  async getQueueStatus() {
+    const stats = await this.getQueueStats();
+    return {
+      ...stats,
+      pausedJobs: this.pausedJobs.size,
+      activeJobsDetails: Array.from(this.activeJobs.keys()),
+      pausedJobsDetails: Array.from(this.pausedJobs.keys()),
+      maxConcurrent: QUEUE_CONFIG.maxConcurrentJobs,
+      availableSlots: QUEUE_CONFIG.maxConcurrentJobs - this.activeJobs.size
+    };
+  }
+
+  // ================================================
   // CANCEL JOB
   // ================================================
   async cancelJob(jobId) {
     try {
-      // Check if job is currently running
       if (this.activeJobs.has(jobId)) {
         const jobInfo = this.activeJobs.get(jobId);
         clearTimeout(jobInfo.timeout);
         this.activeJobs.delete(jobId);
+      }
+      
+      if (this.pausedJobs.has(jobId)) {
+        this.pausedJobs.delete(jobId);
       }
       
       const { data, error } = await supabase
@@ -485,7 +667,7 @@ class QueueService {
           updated_at: new Date().toISOString()
         })
         .eq('job_id', jobId)
-        .in('status', ['pending', 'scheduled', 'running'])
+        .in('status', ['pending', 'scheduled', 'running', 'paused'])
         .select();
       
       if (error) throw error;
@@ -548,22 +730,22 @@ class QueueService {
         completedResult,
         failedResult,
         cancelledResult,
-        scheduledResult
+        scheduledResult,
+        pausedResult
       ] = await Promise.all([
         supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'running'),
         supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
         supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
         supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'cancelled'),
-        supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'scheduled')
+        supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'scheduled'),
+        supabase.from('queue_jobs').select('id', { count: 'exact', head: true }).eq('status', 'paused')
       ]);
       
-      // Get dead letter queue count
       const { count: dlqCount } = await supabase
         .from('dead_letter_queue')
         .select('id', { count: 'exact', head: true });
       
-      // Get average execution time
       const { data: avgData } = await supabase
         .from('queue_jobs')
         .select('execution_time_ms')
@@ -584,8 +766,10 @@ class QueueService {
         failed: failedResult.count || 0,
         cancelled: cancelledResult.count || 0,
         scheduled: scheduledResult.count || 0,
+        paused: pausedResult.count || 0,
         deadLetterQueue: dlqCount || 0,
         activeJobs: this.activeJobs.size,
+        pausedJobs: this.pausedJobs.size,
         maxConcurrent: QUEUE_CONFIG.maxConcurrentJobs,
         avgExecutionTimeMs: avgExecutionTime,
         timestamp: new Date().toISOString()
@@ -602,8 +786,10 @@ class QueueService {
         failed: 0,
         cancelled: 0,
         scheduled: 0,
+        paused: 0,
         deadLetterQueue: 0,
         activeJobs: this.activeJobs.size,
+        pausedJobs: this.pausedJobs.size,
         error: error.message
       };
     }
@@ -614,7 +800,7 @@ class QueueService {
   // ================================================
   async logStats() {
     const stats = await this.getQueueStats();
-    console.log(`📊 [QUEUE] Stats: P:${stats.pending} R:${stats.running} C:${stats.completed} F:${stats.failed} DLQ:${stats.deadLetterQueue} Avg:${stats.avgExecutionTimeMs}ms`);
+    console.log(`📊 [QUEUE] Stats: P:${stats.pending} R:${stats.running} C:${stats.completed} F:${stats.failed} S:${stats.scheduled} PA:${stats.paused} DLQ:${stats.deadLetterQueue} Avg:${stats.avgExecutionTimeMs}ms | Active:${stats.activeJobs}/${stats.maxConcurrent}`);
   }
 
   // ================================================
@@ -624,35 +810,37 @@ class QueueService {
     const cutoffDate = new Date(Date.now() - QUEUE_CONFIG.cleanupAge).toISOString();
     
     try {
-      // Delete old completed jobs
       const { count: completedDeleted } = await supabase
         .from('queue_jobs')
         .delete()
         .eq('status', 'completed')
         .lt('completed_at', cutoffDate);
       
-      // Delete old failed jobs
       const { count: failedDeleted } = await supabase
         .from('queue_jobs')
         .delete()
         .eq('status', 'failed')
         .lt('completed_at', cutoffDate);
       
-      // Delete old cancelled jobs
       const { count: cancelledDeleted } = await supabase
         .from('queue_jobs')
         .delete()
         .eq('status', 'cancelled')
         .lt('completed_at', cutoffDate);
       
-      const totalDeleted = (completedDeleted || 0) + (failedDeleted || 0) + (cancelledDeleted || 0);
+      const { count: pausedDeleted } = await supabase
+        .from('queue_jobs')
+        .delete()
+        .eq('status', 'paused')
+        .lt('updated_at', cutoffDate);
+      
+      const totalDeleted = (completedDeleted || 0) + (failedDeleted || 0) + (cancelledDeleted || 0) + (pausedDeleted || 0);
       
       if (totalDeleted > 0) {
-        console.log(`🧹 [QUEUE] Cleaned up ${totalDeleted} old jobs (completed: ${completedDeleted || 0}, failed: ${failedDeleted || 0}, cancelled: ${cancelledDeleted || 0})`);
+        console.log(`🧹 [QUEUE] Cleaned up ${totalDeleted} old jobs`);
       }
       
-      // Clean up dead letter queue (older than 30 days)
-      const dlqCutoff = new Date(Date.now() - 2592000000).toISOString(); // 30 days
+      const dlqCutoff = new Date(Date.now() - 2592000000).toISOString();
       const { count: dlqDeleted } = await supabase
         .from('dead_letter_queue')
         .delete()
@@ -698,7 +886,6 @@ class QueueService {
   // ================================================
   async retryDeadLetterJob(dlqId) {
     try {
-      // Get the dead letter entry
       const { data: dlqJob, error: fetchError } = await supabase
         .from('dead_letter_queue')
         .select('*')
@@ -707,7 +894,6 @@ class QueueService {
       
       if (fetchError) throw fetchError;
       
-      // Re-add to queue
       const result = await this.addToQueue(
         dlqJob.workflow_id,
         dlqJob.trigger_data,
@@ -715,7 +901,6 @@ class QueueService {
         { maxRetries: 3 }
       );
       
-      // Delete from dead letter queue
       await supabase
         .from('dead_letter_queue')
         .delete()
@@ -755,12 +940,30 @@ class QueueService {
   }
 
   // ================================================
+  // UPDATE JOB PROGRESS
+  // ================================================
+  async updateJobProgress(jobId, progress, message) {
+    try {
+      await supabase
+        .from('queue_jobs')
+        .update({
+          progress: progress,
+          progress_message: message,
+          updated_at: new Date().toISOString()
+        })
+        .eq('job_id', jobId);
+      
+    } catch (error) {
+      console.error(`❌ [QUEUE] Failed to update job progress:`, error.message);
+    }
+  }
+
+  // ================================================
   // SHUTDOWN QUEUE SERVICE
   // ================================================
   async shutdown() {
     console.log('🛑 [QUEUE] Shutting down queue service...');
     
-    // Stop workers
     if (this.workerInterval) {
       clearInterval(this.workerInterval);
       this.workerInterval = null;
@@ -771,7 +974,11 @@ class QueueService {
       this.statsInterval = null;
     }
     
-    // Wait for active jobs to complete (max 30 seconds)
+    if (this.pausedJobsInterval) {
+      clearInterval(this.pausedJobsInterval);
+      this.pausedJobsInterval = null;
+    }
+    
     const maxWaitTime = 30000;
     const startWait = Date.now();
     
@@ -780,13 +987,13 @@ class QueueService {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    // Force cancel remaining active jobs
     for (const [jobId, jobInfo] of this.activeJobs) {
       clearTimeout(jobInfo.timeout);
       console.log(`   Cancelling job ${jobId}`);
     }
     
     this.activeJobs.clear();
+    this.pausedJobs.clear();
     this.jobHandlers.clear();
     
     console.log('✅ [QUEUE] Queue service shut down');
@@ -816,23 +1023,25 @@ process.on('SIGINT', async () => {
 
 // Export both the instance and individual functions for backward compatibility
 module.exports = {
-  // Main queue service instance
   queueService,
   
-  // Backward compatible functions
   addToQueue: (workflowId, triggerData, userId, priority) => 
     queueService.addToQueue(workflowId, triggerData, userId, { priority }),
   
   getQueueStats: () => queueService.getQueueStats(),
   
-  // New functions
   addBatch: (jobs) => queueService.addBatch(jobs),
   getJobStatus: (jobId) => queueService.getJobStatus(jobId),
+  getQueueStatus: () => queueService.getQueueStatus(),
   cancelJob: (jobId) => queueService.cancelJob(jobId),
   retryJob: (jobId) => queueService.retryJob(jobId),
+  pauseJob: (jobId, resumeAfterMs, executionId, currentNodeId, state) => 
+    queueService.pauseJob(jobId, resumeAfterMs, executionId, currentNodeId, state),
+  resumeJob: (job) => queueService.resumeJob(job),
   registerHandler: (workflowId, handler) => queueService.registerHandler(workflowId, handler),
   getDeadLetterQueue: (limit, offset) => queueService.getDeadLetterQueue(limit, offset),
   retryDeadLetterJob: (dlqId) => queueService.retryDeadLetterJob(dlqId),
   clearQueue: (status) => queueService.clearQueue(status),
+  updateJobProgress: (jobId, progress, message) => queueService.updateJobProgress(jobId, progress, message),
   shutdown: () => queueService.shutdown()
 };
