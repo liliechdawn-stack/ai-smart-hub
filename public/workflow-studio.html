@@ -969,6 +969,50 @@
         .variable-item:hover { background: rgba(212, 175, 55, 0.1); }
         .output-preview-panel { transition: transform 0.3s ease; }
         .code-node-warning { background: rgba(239, 68, 68, 0.1); border-left: 3px solid #EF4444; padding: 8px; font-size: 10px; margin-top: 8px; border-radius: 4px; }
+        
+        /* Multi-port styles */
+        .workflow-node-ports {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 4px;
+        }
+        .port-badge {
+            background: rgba(0,0,0,0.4);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 500;
+            cursor: crosshair;
+            transition: all 0.2s;
+        }
+        .port-badge:hover {
+            background: #d4af37;
+            color: #1a1a2e;
+        }
+        .port-success { border-left: 2px solid #10B981; }
+        .port-error { border-left: 2px solid #EF4444; }
+        .port-true { border-left: 2px solid #10B981; }
+        .port-false { border-left: 2px solid #EF4444; }
+        
+        /* Credential Manager */
+        .credential-item {
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid #d4af37;
+        }
+        .credential-name {
+            font-weight: 600;
+            color: #d4af37;
+        }
+        .credential-service {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -995,6 +1039,7 @@
             </div>
 
             <div class="sidebar-nav">
+                <!-- TRIGGERS -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-play-circle"></i> TRIGGERS</div>
                     <div class="nav-item" draggable="true" data-node-type="trigger" ondragstart="handleNodeDragStart(event, 'trigger')">
@@ -1012,8 +1057,19 @@
                         <div class="nav-item-label">GitHub Trigger</div>
                         <div class="nav-item-badge">Events</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="email_trigger" ondragstart="handleNodeDragStart(event, 'email_trigger')">
+                        <div class="nav-item-icon"><i class="fas fa-envelope"></i></div>
+                        <div class="nav-item-label">Email Trigger</div>
+                        <div class="nav-item-badge">IMAP</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="webhook_custom" ondragstart="handleNodeDragStart(event, 'webhook_custom')">
+                        <div class="nav-item-icon"><i class="fas fa-code-branch"></i></div>
+                        <div class="nav-item-label">Custom Webhook</div>
+                        <div class="nav-item-badge">REST</div>
+                    </div>
                 </div>
 
+                <!-- AI ACTIONS (10+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-brain"></i> AI ACTIONS</div>
                     <div class="nav-item" draggable="true" data-node-type="ai_content" ondragstart="handleNodeDragStart(event, 'ai_content')">
@@ -1033,31 +1089,111 @@
                         <div class="nav-item-icon"><i class="fas fa-chart-line"></i></div>
                         <div class="nav-item-label">AI Lead Scoring</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="gemini" ondragstart="handleNodeDragStart(event, 'gemini')">
+                        <div class="nav-item-icon"><i class="fas fa-gem"></i></div>
+                        <div class="nav-item-label">Google Gemini AI</div>
+                        <div class="nav-item-badge">1.5 Pro</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="ai_summarize" ondragstart="handleNodeDragStart(event, 'ai_summarize')">
+                        <div class="nav-item-icon"><i class="fas fa-compress"></i></div>
+                        <div class="nav-item-label">AI Summarizer</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="ai_translate" ondragstart="handleNodeDragStart(event, 'ai_translate')">
+                        <div class="nav-item-icon"><i class="fas fa-language"></i></div>
+                        <div class="nav-item-label">AI Translator</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="ai_sentiment" ondragstart="handleNodeDragStart(event, 'ai_sentiment')">
+                        <div class="nav-item-icon"><i class="fas fa-smile"></i></div>
+                        <div class="nav-item-label">Sentiment Analysis</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="ai_embedding" ondragstart="handleNodeDragStart(event, 'ai_embedding')">
+                        <div class="nav-item-icon"><i class="fas fa-vector-square"></i></div>
+                        <div class="nav-item-label">AI Embeddings</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="ai_chat" ondragstart="handleNodeDragStart(event, 'ai_chat')">
+                        <div class="nav-item-icon"><i class="fas fa-comments"></i></div>
+                        <div class="nav-item-label">AI Chat Agent</div>
+                        <div class="nav-item-badge">Memory</div>
+                    </div>
                 </div>
 
+                <!-- SOCIAL MEDIA (15+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fab fa-tiktok"></i> SOCIAL MEDIA</div>
-                    <div class="nav-item" draggable="true" data-node-type="post_social" ondragstart="handleNodeDragStart(event, 'post_social')">
+                    <div class="nav-item" draggable="true" data-node-type="post_instagram" ondragstart="handleNodeDragStart(event, 'post_instagram')">
                         <div class="nav-item-icon"><i class="fab fa-instagram"></i></div>
-                        <div class="nav-item-label">Post to Social</div>
+                        <div class="nav-item-label">Post to Instagram</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_facebook" ondragstart="handleNodeDragStart(event, 'post_facebook')">
+                        <div class="nav-item-icon"><i class="fab fa-facebook"></i></div>
+                        <div class="nav-item-label">Post to Facebook</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_twitter" ondragstart="handleNodeDragStart(event, 'post_twitter')">
+                        <div class="nav-item-icon"><i class="fab fa-twitter"></i></div>
+                        <div class="nav-item-label">Post to Twitter/X</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_linkedin" ondragstart="handleNodeDragStart(event, 'post_linkedin')">
+                        <div class="nav-item-icon"><i class="fab fa-linkedin"></i></div>
+                        <div class="nav-item-label">Post to LinkedIn</div>
                     </div>
                     <div class="nav-item" draggable="true" data-node-type="post_tiktok" ondragstart="handleNodeDragStart(event, 'post_tiktok')">
                         <div class="nav-item-icon"><i class="fab fa-tiktok"></i></div>
                         <div class="nav-item-label">Post to TikTok</div>
                         <div class="nav-item-badge">Video</div>
                     </div>
-                    <div class="nav-item" draggable="true" data-node-type="schedule_post" ondragstart="handleNodeDragStart(event, 'schedule_post')">
-                        <div class="nav-item-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <div class="nav-item-label">Schedule Post</div>
+                    <div class="nav-item" draggable="true" data-node-type="post_youtube" ondragstart="handleNodeDragStart(event, 'post_youtube')">
+                        <div class="nav-item-icon"><i class="fab fa-youtube"></i></div>
+                        <div class="nav-item-label">Post to YouTube</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_pinterest" ondragstart="handleNodeDragStart(event, 'post_pinterest')">
+                        <div class="nav-item-icon"><i class="fab fa-pinterest"></i></div>
+                        <div class="nav-item-label">Post to Pinterest</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_reddit" ondragstart="handleNodeDragStart(event, 'post_reddit')">
+                        <div class="nav-item-icon"><i class="fab fa-reddit"></i></div>
+                        <div class="nav-item-label">Post to Reddit</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_telegram" ondragstart="handleNodeDragStart(event, 'post_telegram')">
+                        <div class="nav-item-icon"><i class="fab fa-telegram"></i></div>
+                        <div class="nav-item-label">Post to Telegram</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="post_discord" ondragstart="handleNodeDragStart(event, 'post_discord')">
+                        <div class="nav-item-icon"><i class="fab fa-discord"></i></div>
+                        <div class="nav-item-label">Post to Discord</div>
                     </div>
                     <div class="nav-item" draggable="true" data-node-type="generate_hashtags" ondragstart="handleNodeDragStart(event, 'generate_hashtags')">
                         <div class="nav-item-icon"><i class="fas fa-hashtag"></i></div>
                         <div class="nav-item-label">Generate Hashtags</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="schedule_post" ondragstart="handleNodeDragStart(event, 'schedule_post')">
+                        <div class="nav-item-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="nav-item-label">Schedule Post</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="social_analytics" ondragstart="handleNodeDragStart(event, 'social_analytics')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-bar"></i></div>
+                        <div class="nav-item-label">Social Analytics</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="social_monitor" ondragstart="handleNodeDragStart(event, 'social_monitor')">
+                        <div class="nav-item-icon"><i class="fas fa-eye"></i></div>
+                        <div class="nav-item-label">Social Monitor</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="social_mention" ondragstart="handleNodeDragStart(event, 'social_mention')">
+                        <div class="nav-item-icon"><i class="fas fa-at"></i></div>
+                        <div class="nav-item-label">Mentions Tracker</div>
+                    </div>
                 </div>
 
+                <!-- E-COMMERCE (12+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-shopping-cart"></i> E-COMMERCE</div>
+                    <div class="nav-item" draggable="true" data-node-type="shopify_order" ondragstart="handleNodeDragStart(event, 'shopify_order')">
+                        <div class="nav-item-icon"><i class="fab fa-shopify"></i></div>
+                        <div class="nav-item-label">Shopify - New Order</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="shopify_product" ondragstart="handleNodeDragStart(event, 'shopify_product')">
+                        <div class="nav-item-icon"><i class="fas fa-box"></i></div>
+                        <div class="nav-item-label">Shopify - Product</div>
+                    </div>
                     <div class="nav-item" draggable="true" data-node-type="inventory_check" ondragstart="handleNodeDragStart(event, 'inventory_check')">
                         <div class="nav-item-icon"><i class="fas fa-boxes"></i></div>
                         <div class="nav-item-label">Check Inventory</div>
@@ -1066,8 +1202,41 @@
                         <div class="nav-item-icon"><i class="fas fa-shopping-cart"></i></div>
                         <div class="nav-item-label">Cart Recovery</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="woo_order" ondragstart="handleNodeDragStart(event, 'woo_order')">
+                        <div class="nav-item-icon"><i class="fab fa-wordpress"></i></div>
+                        <div class="nav-item-label">WooCommerce Order</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="stripe_payment" ondragstart="handleNodeDragStart(event, 'stripe_payment')">
+                        <div class="nav-item-icon"><i class="fab fa-stripe"></i></div>
+                        <div class="nav-item-label">Stripe Payment</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="paypal_payment" ondragstart="handleNodeDragStart(event, 'paypal_payment')">
+                        <div class="nav-item-icon"><i class="fab fa-paypal"></i></div>
+                        <div class="nav-item-label">PayPal Payment</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="create_invoice" ondragstart="handleNodeDragStart(event, 'create_invoice')">
+                        <div class="nav-item-icon"><i class="fas fa-file-invoice"></i></div>
+                        <div class="nav-item-label">Create Invoice</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_invoice" ondragstart="handleNodeDragStart(event, 'send_invoice')">
+                        <div class="nav-item-icon"><i class="fas fa-paper-plane"></i></div>
+                        <div class="nav-item-label">Send Invoice</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="update_stock" ondragstart="handleNodeDragStart(event, 'update_stock')">
+                        <div class="nav-item-icon"><i class="fas fa-edit"></i></div>
+                        <div class="nav-item-label">Update Stock</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="price_monitor" ondragstart="handleNodeDragStart(event, 'price_monitor')">
+                        <div class="nav-item-icon"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="nav-item-label">Price Monitor</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="competitor_tracker" ondragstart="handleNodeDragStart(event, 'competitor_tracker')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="nav-item-label">Competitor Tracker</div>
+                    </div>
                 </div>
 
+                <!-- CRM & SALES (10+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-users"></i> CRM & SALES</div>
                     <div class="nav-item" draggable="true" data-node-type="create_lead" ondragstart="handleNodeDragStart(event, 'create_lead')">
@@ -1078,8 +1247,41 @@
                         <div class="nav-item-icon"><i class="fas fa-database"></i></div>
                         <div class="nav-item-label">Update CRM</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="salesforce_contact" ondragstart="handleNodeDragStart(event, 'salesforce_contact')">
+                        <div class="nav-item-icon"><i class="fab fa-salesforce"></i></div>
+                        <div class="nav-item-label">Salesforce Contact</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="hubspot_contact" ondragstart="handleNodeDragStart(event, 'hubspot_contact')">
+                        <div class="nav-item-icon"><i class="fab fa-hubspot"></i></div>
+                        <div class="nav-item-label">HubSpot Contact</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="pipedrive_deal" ondragstart="handleNodeDragStart(event, 'pipedrive_deal')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="nav-item-label">Pipedrive Deal</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_campaign" ondragstart="handleNodeDragStart(event, 'send_campaign')">
+                        <div class="nav-item-icon"><i class="fas fa-mail-bulk"></i></div>
+                        <div class="nav-item-label">Email Campaign</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="sms_marketing" ondragstart="handleNodeDragStart(event, 'sms_marketing')">
+                        <div class="nav-item-icon"><i class="fas fa-sms"></i></div>
+                        <div class="nav-item-label">SMS Marketing</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="whatsapp_message" ondragstart="handleNodeDragStart(event, 'whatsapp_message')">
+                        <div class="nav-item-icon"><i class="fab fa-whatsapp"></i></div>
+                        <div class="nav-item-label">WhatsApp Message</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="appointment_scheduler" ondragstart="handleNodeDragStart(event, 'appointment_scheduler')">
+                        <div class="nav-item-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="nav-item-label">Appointment Scheduler</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="feedback_collector" ondragstart="handleNodeDragStart(event, 'feedback_collector')">
+                        <div class="nav-item-icon"><i class="fas fa-star"></i></div>
+                        <div class="nav-item-label">Feedback Collector</div>
+                    </div>
                 </div>
 
+                <!-- COMMUNICATION (8+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-envelope"></i> COMMUNICATION</div>
                     <div class="nav-item" draggable="true" data-node-type="send_email" ondragstart="handleNodeDragStart(event, 'send_email')">
@@ -1090,13 +1292,43 @@
                         <div class="nav-item-icon"><i class="fab fa-slack"></i></div>
                         <div class="nav-item-label">Send Slack</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_teams" ondragstart="handleNodeDragStart(event, 'send_teams')">
+                        <div class="nav-item-icon"><i class="fab fa-microsoft"></i></div>
+                        <div class="nav-item-label">Send Teams</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_discord" ondragstart="handleNodeDragStart(event, 'send_discord')">
+                        <div class="nav-item-icon"><i class="fab fa-discord"></i></div>
+                        <div class="nav-item-label">Send Discord</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_telegram" ondragstart="handleNodeDragStart(event, 'send_telegram')">
+                        <div class="nav-item-icon"><i class="fab fa-telegram"></i></div>
+                        <div class="nav-item-label">Send Telegram</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_sms" ondragstart="handleNodeDragStart(event, 'send_sms')">
+                        <div class="nav-item-icon"><i class="fas fa-sms"></i></div>
+                        <div class="nav-item-label">Send SMS</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_push" ondragstart="handleNodeDragStart(event, 'send_push')">
+                        <div class="nav-item-icon"><i class="fas fa-bell"></i></div>
+                        <div class="nav-item-label">Push Notification</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="send_webhook" ondragstart="handleNodeDragStart(event, 'send_webhook')">
+                        <div class="nav-item-icon"><i class="fas fa-globe"></i></div>
+                        <div class="nav-item-label">Send Webhook</div>
+                    </div>
                 </div>
 
+                <!-- LOGIC (8+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-code-branch"></i> LOGIC</div>
                     <div class="nav-item" draggable="true" data-node-type="condition" ondragstart="handleNodeDragStart(event, 'condition')">
                         <div class="nav-item-icon"><i class="fas fa-code-branch"></i></div>
                         <div class="nav-item-label">Condition (IF)</div>
+                        <div class="nav-item-badge">True/False</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="switch" ondragstart="handleNodeDragStart(event, 'switch')">
+                        <div class="nav-item-icon"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="nav-item-label">Switch / Router</div>
                     </div>
                     <div class="nav-item" draggable="true" data-node-type="wait" ondragstart="handleNodeDragStart(event, 'wait')">
                         <div class="nav-item-icon"><i class="fas fa-hourglass-half"></i></div>
@@ -1106,45 +1338,191 @@
                         <div class="nav-item-icon"><i class="fas fa-redo-alt"></i></div>
                         <div class="nav-item-label">Loop</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="split" ondragstart="handleNodeDragStart(event, 'split')">
+                        <div class="nav-item-icon"><i class="fas fa-code-branch"></i></div>
+                        <div class="nav-item-label">Split / Batch</div>
+                        <div class="nav-item-badge">Array</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="aggregate" ondragstart="handleNodeDragStart(event, 'aggregate')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-simple"></i></div>
+                        <div class="nav-item-label">Aggregate / Merge</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="code" ondragstart="handleNodeDragStart(event, 'code')">
+                        <div class="nav-item-icon"><i class="fas fa-code"></i></div>
+                        <div class="nav-item-label">Code Node (Sandbox)</div>
+                        <div class="nav-item-badge">JS</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="transform" ondragstart="handleNodeDragStart(event, 'transform')">
+                        <div class="nav-item-icon"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="nav-item-label">Data Transform</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="filter" ondragstart="handleNodeDragStart(event, 'filter')">
+                        <div class="nav-item-icon"><i class="fas fa-filter"></i></div>
+                        <div class="nav-item-label">Filter Data</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="sort" ondragstart="handleNodeDragStart(event, 'sort')">
+                        <div class="nav-item-icon"><i class="fas fa-sort"></i></div>
+                        <div class="nav-item-label">Sort Data</div>
+                    </div>
                 </div>
 
+                <!-- INTEGRATIONS (15+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-plug"></i> INTEGRATIONS</div>
                     <div class="nav-item" draggable="true" data-node-type="http_request" ondragstart="handleNodeDragStart(event, 'http_request')">
                         <div class="nav-item-icon"><i class="fas fa-code"></i></div>
                         <div class="nav-item-label">HTTP Request</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="graphql" ondragstart="handleNodeDragStart(event, 'graphql')">
+                        <div class="nav-item-icon"><i class="fas fa-graphql"></i></div>
+                        <div class="nav-item-label">GraphQL</div>
+                    </div>
                     <div class="nav-item" draggable="true" data-node-type="webhook" ondragstart="handleNodeDragStart(event, 'webhook')">
                         <div class="nav-item-icon"><i class="fas fa-globe"></i></div>
                         <div class="nav-item-label">Webhook</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="rss" ondragstart="handleNodeDragStart(event, 'rss')">
+                        <div class="nav-item-icon"><i class="fas fa-rss"></i></div>
+                        <div class="nav-item-label">RSS Feed Reader</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="google_sheets" ondragstart="handleNodeDragStart(event, 'google_sheets')">
+                        <div class="nav-item-icon"><i class="fab fa-google"></i></div>
+                        <div class="nav-item-label">Google Sheets</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="google_drive" ondragstart="handleNodeDragStart(event, 'google_drive')">
+                        <div class="nav-item-icon"><i class="fab fa-google-drive"></i></div>
+                        <div class="nav-item-label">Google Drive</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="google_calendar" ondragstart="handleNodeDragStart(event, 'google_calendar')">
+                        <div class="nav-item-icon"><i class="fas fa-calendar"></i></div>
+                        <div class="nav-item-label">Google Calendar</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="gmail" ondragstart="handleNodeDragStart(event, 'gmail')">
+                        <div class="nav-item-icon"><i class="fab fa-google"></i></div>
+                        <div class="nav-item-label">Gmail</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="dropbox" ondragstart="handleNodeDragStart(event, 'dropbox')">
+                        <div class="nav-item-icon"><i class="fab fa-dropbox"></i></div>
+                        <div class="nav-item-label">Dropbox</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="onedrive" ondragstart="handleNodeDragStart(event, 'onedrive')">
+                        <div class="nav-item-icon"><i class="fab fa-microsoft"></i></div>
+                        <div class="nav-item-label">OneDrive</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="aws_s3" ondragstart="handleNodeDragStart(event, 'aws_s3')">
+                        <div class="nav-item-icon"><i class="fab fa-aws"></i></div>
+                        <div class="nav-item-label">AWS S3</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="azure_blob" ondragstart="handleNodeDragStart(event, 'azure_blob')">
+                        <div class="nav-item-icon"><i class="fab fa-microsoft"></i></div>
+                        <div class="nav-item-label">Azure Blob</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="zapier_webhook" ondragstart="handleNodeDragStart(event, 'zapier_webhook')">
+                        <div class="nav-item-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="nav-item-label">Zapier Webhook</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="make_webhook" ondragstart="handleNodeDragStart(event, 'make_webhook')">
+                        <div class="nav-item-icon"><i class="fas fa-cogs"></i></div>
+                        <div class="nav-item-label">Make/Integromat</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="pabbly" ondragstart="handleNodeDragStart(event, 'pabbly')">
+                        <div class="nav-item-icon"><i class="fas fa-link"></i></div>
+                        <div class="nav-item-label">Pabbly Connect</div>
+                    </div>
                 </div>
 
+                <!-- DATABASE (6+ nodes) -->
                 <div class="nav-category">
                     <div class="nav-category-title"><i class="fas fa-database"></i> DATABASE</div>
                     <div class="nav-item" draggable="true" data-node-type="database_query" ondragstart="handleNodeDragStart(event, 'database_query')">
                         <div class="nav-item-icon"><i class="fas fa-database"></i></div>
                         <div class="nav-item-label">Database Query</div>
                     </div>
+                    <div class="nav-item" draggable="true" data-node-type="postgresql" ondragstart="handleNodeDragStart(event, 'postgresql')">
+                        <div class="nav-item-icon"><i class="fas fa-database"></i></div>
+                        <div class="nav-item-label">PostgreSQL</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="mysql" ondragstart="handleNodeDragStart(event, 'mysql')">
+                        <div class="nav-item-icon"><i class="fas fa-database"></i></div>
+                        <div class="nav-item-label">MySQL</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="mongodb" ondragstart="handleNodeDragStart(event, 'mongodb')">
+                        <div class="nav-item-icon"><i class="fas fa-leaf"></i></div>
+                        <div class="nav-item-label">MongoDB</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="firebase" ondragstart="handleNodeDragStart(event, 'firebase')">
+                        <div class="nav-item-icon"><i class="fas fa-fire"></i></div>
+                        <div class="nav-item-label">Firebase</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="supabase" ondragstart="handleNodeDragStart(event, 'supabase')">
+                        <div class="nav-item-icon"><i class="fas fa-database"></i></div>
+                        <div class="nav-item-label">Supabase</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="airtable" ondragstart="handleNodeDragStart(event, 'airtable')">
+                        <div class="nav-item-icon"><i class="fas fa-table"></i></div>
+                        <div class="nav-item-label">Airtable</div>
+                    </div>
                 </div>
 
-                <!-- NEW: AI STUDIO NODES (Gemini, RSS, Code Sandbox) -->
+                <!-- DEVOPS (6+ nodes) -->
                 <div class="nav-category">
-                    <div class="nav-category-title"><i class="fas fa-gem"></i> AI STUDIO</div>
-                    <div class="nav-item" draggable="true" data-node-type="gemini" ondragstart="handleNodeDragStart(event, 'gemini')">
-                        <div class="nav-item-icon"><i class="fas fa-gem"></i></div>
-                        <div class="nav-item-label">Google Gemini AI</div>
-                        <div class="nav-item-badge">Gemini 1.5 Pro</div>
+                    <div class="nav-category-title"><i class="fas fa-cogs"></i> DEVOPS</div>
+                    <div class="nav-item" draggable="true" data-node-type="docker" ondragstart="handleNodeDragStart(event, 'docker')">
+                        <div class="nav-item-icon"><i class="fab fa-docker"></i></div>
+                        <div class="nav-item-label">Docker Container</div>
                     </div>
-                    <div class="nav-item" draggable="true" data-node-type="rss" ondragstart="handleNodeDragStart(event, 'rss')">
-                        <div class="nav-item-icon"><i class="fas fa-rss"></i></div>
-                        <div class="nav-item-label">RSS Feed Reader</div>
-                        <div class="nav-item-badge">Real-time</div>
+                    <div class="nav-item" draggable="true" data-node-type="kubernetes" ondragstart="handleNodeDragStart(event, 'kubernetes')">
+                        <div class="nav-item-icon"><i class="fas fa-cubes"></i></div>
+                        <div class="nav-item-label">Kubernetes</div>
                     </div>
-                    <div class="nav-item" draggable="true" data-node-type="code" ondragstart="handleNodeDragStart(event, 'code')">
-                        <div class="nav-item-icon"><i class="fas fa-code"></i></div>
-                        <div class="nav-item-label">Code Node (Sandbox)</div>
-                        <div class="nav-item-badge">JavaScript</div>
+                    <div class="nav-item" draggable="true" data-node-type="jenkins" ondragstart="handleNodeDragStart(event, 'jenkins')">
+                        <div class="nav-item-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="nav-item-label">Jenkins Job</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="github_actions" ondragstart="handleNodeDragStart(event, 'github_actions')">
+                        <div class="nav-item-icon"><i class="fab fa-github"></i></div>
+                        <div class="nav-item-label">GitHub Actions</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="gitlab_ci" ondragstart="handleNodeDragStart(event, 'gitlab_ci')">
+                        <div class="nav-item-icon"><i class="fab fa-gitlab"></i></div>
+                        <div class="nav-item-label">GitLab CI</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="terraform" ondragstart="handleNodeDragStart(event, 'terraform')">
+                        <div class="nav-item-icon"><i class="fas fa-cloud"></i></div>
+                        <div class="nav-item-label">Terraform</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="webhook_deploy" ondragstart="handleNodeDragStart(event, 'webhook_deploy')">
+                        <div class="nav-item-icon"><i class="fas fa-rocket"></i></div>
+                        <div class="nav-item-label">Webhook Deploy</div>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS (6+ nodes) -->
+                <div class="nav-category">
+                    <div class="nav-category-title"><i class="fas fa-chart-line"></i> ANALYTICS</div>
+                    <div class="nav-item" draggable="true" data-node-type="google_analytics" ondragstart="handleNodeDragStart(event, 'google_analytics')">
+                        <div class="nav-item-icon"><i class="fab fa-google"></i></div>
+                        <div class="nav-item-label">Google Analytics</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="mixpanel" ondragstart="handleNodeDragStart(event, 'mixpanel')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="nav-item-label">Mixpanel</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="amplitude" ondragstart="handleNodeDragStart(event, 'amplitude')">
+                        <div class="nav-item-icon"><i class="fas fa-waveform"></i></div>
+                        <div class="nav-item-label">Amplitude</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="segment" ondragstart="handleNodeDragStart(event, 'segment')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-simple"></i></div>
+                        <div class="nav-item-label">Segment</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="hotjar" ondragstart="handleNodeDragStart(event, 'hotjar')">
+                        <div class="nav-item-icon"><i class="fas fa-fire"></i></div>
+                        <div class="nav-item-label">Hotjar</div>
+                    </div>
+                    <div class="nav-item" draggable="true" data-node-type="metabase" ondragstart="handleNodeDragStart(event, 'metabase')">
+                        <div class="nav-item-icon"><i class="fas fa-chart-simple"></i></div>
+                        <div class="nav-item-label">Metabase</div>
                     </div>
                 </div>
             </div>
@@ -1177,6 +1555,7 @@
                     <div class="view-tab active" onclick="switchView('canvas')">Workflow</div>
                     <div class="view-tab" onclick="switchView('history')">History</div>
                     <div class="view-tab" onclick="switchView('gallery')">Gallery</div>
+                    <div class="view-tab" onclick="switchView('credentials')">Credentials</div>
                 </div>
                 <div class="action-buttons">
                     <button class="btn btn-outline" onclick="showGlobalSearch()"><i class="fas fa-search"></i> Search (⌘K)</button>
@@ -1209,6 +1588,16 @@
                     </button>
                 </div>
                 <div class="gallery-grid" id="galleryGrid"></div>
+            </div>
+
+            <div class="history-panel" id="credentialsPanel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-key"></i> Credential Manager</h3>
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="showAddCredentialModal()">
+                        <i class="fas fa-plus"></i> Add Credential
+                    </button>
+                </div>
+                <div id="credentialsList"></div>
             </div>
         </div>
     </div>
@@ -1267,11 +1656,54 @@
         </div>
     </div>
 
-    <!-- NEW: Global Search Modal -->
+    <!-- Credential Modal -->
+    <div id="credentialModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#1a1a2e; border-radius:20px; padding:28px; width:450px; max-width:90%;">
+            <h3 style="margin-bottom:20px; color:#d4af37;"><i class="fas fa-key"></i> Add Credential</h3>
+            <div class="form-group">
+                <label>Credential Name</label>
+                <input type="text" id="credentialName" placeholder="e.g., My Twitter API">
+            </div>
+            <div class="form-group">
+                <label>Service / Platform</label>
+                <select id="credentialService">
+                    <option value="twitter">Twitter/X</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="shopify">Shopify</option>
+                    <option value="slack">Slack</option>
+                    <option value="github">GitHub</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="google">Google</option>
+                    <option value="stripe">Stripe</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="hubspot">HubSpot</option>
+                    <option value="salesforce">Salesforce</option>
+                    <option value="aws">AWS</option>
+                    <option value="azure">Azure</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>API Key / Token</label>
+                <input type="password" id="credentialToken" placeholder="Enter your API key or token">
+            </div>
+            <div class="form-group">
+                <label>Additional Data (JSON)</label>
+                <textarea id="credentialData" rows="3" placeholder='{"api_secret": "xxx", "webhook_url": "https://..."}'></textarea>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:24px;">
+                <button class="btn-primary" style="flex:1;" onclick="addCredential()">Save Credential</button>
+                <button class="btn-outline" style="flex:1;" onclick="closeCredentialModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Search Modal -->
     <div id="globalSearchModal" style="display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%); width:650px; background:#1a1a2e; border-radius:16px; border:1px solid rgba(212,175,55,0.3); z-index:10001; box-shadow:0 20px 40px rgba(0,0,0,0.5); backdrop-filter:blur(20px);">
         <div style="padding:16px; border-bottom:1px solid #2a2a3e; display:flex; align-items:center;">
             <i class="fas fa-search" style="color:#d4af37;"></i>
-            <input type="text" id="globalSearchInput" placeholder="Search nodes, APIs, or paste URL for Deep Discovery..." style="background:transparent; border:none; color:white; width:100%; margin-left:12px; outline:none; font-size:14px;">
+            <input type="text" id="globalSearchInput" placeholder="Search 100+ nodes, APIs, or paste URL for Deep Discovery..." style="background:transparent; border:none; color:white; width:100%; margin-left:12px; outline:none; font-size:14px;">
             <span style="font-size:11px; color:#666; background:#252535; padding:4px 8px; border-radius:6px;">ESC</span>
         </div>
         <div id="globalSearchResults" style="max-height:450px; overflow-y:auto; padding:8px;"></div>
@@ -1282,11 +1714,11 @@
         </div>
     </div>
 
-   
-   <script>
+    <script>
         // ================================================
         // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
-        // FULL BACKEND INTEGRATION WITH REAL APIS
+        // 100+ NODES - MULTI-PORT ROUTING - CREDENTIAL MANAGER
+        // PRODUCTION GRADE - PAYMENT READY
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -1346,8 +1778,7 @@
             'Pastel': 'soft pastel, chalk art, soft colors, blended, artistic, delicate'
         };
 
-        
-                // State
+        // State
         let workflowNodes = [];
         let workflowEdges = [];
         let selectedWorkflowNode = null;
@@ -1363,46 +1794,148 @@
         let deployedWebhookPath = null;
         let connectedApps = [];
         let customApps = [];
+        let credentials = [];
 
-        // NEW: Global Search State
+        // Global Search State
         let globalSearchVisible = false;
         let globalSearchQuery = '';
         let globalSearchResults = [];
         let searchIndex = { nodes: [], apis: {}, docs: {} };
 
-        // NEW: Variable Picker State
+        // Variable Picker State
         let variablePickerVisible = false;
         let activeInputField = null;
 
-        // NEW: Extended Node Configurations with multiple outputs
+        // ================================================
+        // 100+ NODE CONFIGURATIONS
+        // ================================================
         const NODE_CONFIGS = {
+            // Triggers (5)
             trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'], defaults: { webhook_path: '/webhook/my-endpoint', method: 'POST' }, category: 'triggers', keywords: ['webhook', 'http', 'trigger'], outputs: ['next'] },
             schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'], defaults: { cron: '0 * * * *', timezone: 'UTC' }, category: 'triggers', keywords: ['schedule', 'cron', 'timer'], outputs: ['next'] },
             github: { name: 'GitHub Trigger', icon: 'fab fa-github', color: '#333333', fields: ['event_type', 'repository'], defaults: { event_type: 'push', repository: 'username/repo' }, category: 'triggers', keywords: ['github', 'git', 'code'], outputs: ['next'] },
+            email_trigger: { name: 'Email Trigger', icon: 'fa-envelope', color: '#EA4B71', fields: ['imap_server', 'email', 'password'], defaults: { imap_server: 'imap.gmail.com', email: 'user@gmail.com', password: '' }, category: 'triggers', keywords: ['email', 'imap', 'trigger'], outputs: ['next'] },
+            webhook_custom: { name: 'Custom Webhook', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['endpoint', 'method'], defaults: { endpoint: '/custom/webhook', method: 'POST' }, category: 'triggers', keywords: ['custom', 'webhook', 'endpoint'], outputs: ['next'] },
+            
+            // AI Actions (10)
             ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'artificial intelligence automation' }, category: 'ai', keywords: ['content', 'ai', 'generate'], outputs: ['next'] },
             ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'Realistic', prompt: 'a beautiful sunset over mountains' }, category: 'ai', keywords: ['image', 'ai', 'generate', 'art'], outputs: ['next'] },
             ai_video: { name: 'AI Video', icon: 'fa-video', color: '#EC4899', fields: ['style', 'prompt', 'duration'], defaults: { style: 'Cinematic', prompt: 'a beautiful nature scene', duration: '30' }, category: 'ai', keywords: ['video', 'ai', 'generate', 'sora'], outputs: ['next'] },
             ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: [], defaults: {}, category: 'ai', keywords: ['lead', 'score', 'crm'], outputs: ['next'] },
-            post_social: { name: 'Post to Social', icon: 'fa-share-alt', color: '#1DA1F2', fields: ['platform', 'content'], defaults: { platform: 'instagram', content: 'Check out our latest update!' }, category: 'social', keywords: ['social', 'post', 'instagram', 'facebook'], outputs: ['next'] },
-            post_tiktok: { name: 'Post to TikTok', icon: 'fab fa-tiktok', color: '#010101', fields: ['video_url', 'caption', 'hashtags', 'thumbnail_url'], defaults: { video_url: 'https://example.com/video.mp4', caption: 'Check this out!', hashtags: '#AI #Automation', thumbnail_url: 'https://example.com/thumb.jpg' }, category: 'social', keywords: ['tiktok', 'video', 'post'], outputs: ['next'] },
+            gemini: { name: 'Google Gemini AI', icon: 'fa-gem', color: '#4285F4', fields: ['prompt', 'model', 'temperature', 'api_key'], defaults: { prompt: 'Write a professional email about AI automation', model: 'gemini-1.5-pro', temperature: '0.7', api_key: '' }, category: 'ai', keywords: ['gemini', 'google', 'ai', 'llm'], outputs: ['next'] },
+            ai_summarize: { name: 'AI Summarizer', icon: 'fa-compress', color: '#8B5CF6', fields: ['text', 'max_length'], defaults: { text: '', max_length: '200' }, category: 'ai', keywords: ['summarize', 'ai', 'summary'], outputs: ['next'] },
+            ai_translate: { name: 'AI Translator', icon: 'fa-language', color: '#8B5CF6', fields: ['text', 'target_language'], defaults: { text: '', target_language: 'es' }, category: 'ai', keywords: ['translate', 'language', 'ai'], outputs: ['next'] },
+            ai_sentiment: { name: 'Sentiment Analysis', icon: 'fa-smile', color: '#8B5CF6', fields: ['text'], defaults: { text: '' }, category: 'ai', keywords: ['sentiment', 'analysis', 'emotion'], outputs: ['next'] },
+            ai_embedding: { name: 'AI Embeddings', icon: 'fa-vector-square', color: '#8B5CF6', fields: ['text'], defaults: { text: '' }, category: 'ai', keywords: ['embedding', 'vector', 'ai'], outputs: ['next'] },
+            ai_chat: { name: 'AI Chat Agent', icon: 'fa-comments', color: '#8B5CF6', fields: ['message', 'session_id', 'memory'], defaults: { message: '', session_id: '', memory: 'true' }, category: 'ai', keywords: ['chat', 'agent', 'conversation'], outputs: ['next'] },
+            
+            // Social Media (15)
+            post_instagram: { name: 'Post to Instagram', icon: 'fab fa-instagram', color: '#d62976', fields: ['image_url', 'caption'], defaults: { image_url: '', caption: '' }, category: 'social', keywords: ['instagram', 'post', 'social'], outputs: ['next', 'error'] },
+            post_facebook: { name: 'Post to Facebook', icon: 'fab fa-facebook', color: '#4267B2', fields: ['message', 'link'], defaults: { message: '', link: '' }, category: 'social', keywords: ['facebook', 'post', 'social'], outputs: ['next', 'error'] },
+            post_twitter: { name: 'Post to Twitter', icon: 'fab fa-twitter', color: '#1DA1F2', fields: ['message'], defaults: { message: '' }, category: 'social', keywords: ['twitter', 'x', 'post'], outputs: ['next', 'error'] },
+            post_linkedin: { name: 'Post to LinkedIn', icon: 'fab fa-linkedin', color: '#0077b5', fields: ['content', 'title'], defaults: { content: '', title: '' }, category: 'social', keywords: ['linkedin', 'post', 'professional'], outputs: ['next', 'error'] },
+            post_tiktok: { name: 'Post to TikTok', icon: 'fab fa-tiktok', color: '#010101', fields: ['video_url', 'caption', 'hashtags'], defaults: { video_url: '', caption: '', hashtags: '#AI' }, category: 'social', keywords: ['tiktok', 'video', 'post'], outputs: ['next', 'error'] },
+            post_youtube: { name: 'Post to YouTube', icon: 'fab fa-youtube', color: '#ff0000', fields: ['video_url', 'title', 'description'], defaults: { video_url: '', title: '', description: '' }, category: 'social', keywords: ['youtube', 'video', 'upload'], outputs: ['next', 'error'] },
+            post_pinterest: { name: 'Post to Pinterest', icon: 'fab fa-pinterest', color: '#BD081C', fields: ['image_url', 'description', 'board'], defaults: { image_url: '', description: '', board: '' }, category: 'social', keywords: ['pinterest', 'pin', 'image'], outputs: ['next', 'error'] },
+            post_reddit: { name: 'Post to Reddit', icon: 'fab fa-reddit', color: '#FF4500', fields: ['title', 'content', 'subreddit'], defaults: { title: '', content: '', subreddit: '' }, category: 'social', keywords: ['reddit', 'post', 'subreddit'], outputs: ['next', 'error'] },
+            post_telegram: { name: 'Post to Telegram', icon: 'fab fa-telegram', color: '#26A5E4', fields: ['message', 'chat_id'], defaults: { message: '', chat_id: '' }, category: 'social', keywords: ['telegram', 'message', 'bot'], outputs: ['next', 'error'] },
+            post_discord: { name: 'Post to Discord', icon: 'fab fa-discord', color: '#5865F2', fields: ['message', 'webhook_url'], defaults: { message: '', webhook_url: '' }, category: 'social', keywords: ['discord', 'webhook', 'message'], outputs: ['next', 'error'] },
             generate_hashtags: { name: 'Generate Hashtags', icon: 'fa-hashtag', color: '#F59E0B', fields: ['topic', 'count'], defaults: { topic: 'AI automation', count: '15' }, category: 'social', keywords: ['hashtag', 'trending', 'social'], outputs: ['next'] },
             schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F59E0B', fields: ['platform', 'content', 'schedule_time'], defaults: { platform: 'instagram', content: 'Scheduled post!', schedule_time: new Date(Date.now() + 86400000).toISOString().slice(0, 16) }, category: 'social', keywords: ['schedule', 'post', 'calendar'], outputs: ['next'] },
-            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: 'admin@example.com', subject: 'Notification', body: 'Hello from Workflow Studio!' }, category: 'communication', keywords: ['email', 'send', 'mail'], outputs: ['next'] },
-            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'Hello from Workflow Studio!' }, category: 'communication', keywords: ['slack', 'message', 'chat'], outputs: ['next'] },
+            social_analytics: { name: 'Social Analytics', icon: 'fa-chart-bar', color: '#F59E0B', fields: ['platform', 'metric'], defaults: { platform: 'instagram', metric: 'followers' }, category: 'social', keywords: ['analytics', 'metrics', 'social'], outputs: ['next'] },
+            social_monitor: { name: 'Social Monitor', icon: 'fa-eye', color: '#F59E0B', fields: ['keyword', 'platform'], defaults: { keyword: '', platform: 'twitter' }, category: 'social', keywords: ['monitor', 'track', 'mention'], outputs: ['next'] },
+            social_mention: { name: 'Mentions Tracker', icon: 'fa-at', color: '#F59E0B', fields: ['username', 'platform'], defaults: { username: '', platform: 'twitter' }, category: 'social', keywords: ['mention', 'track', 'social'], outputs: ['next'] },
+            
+            // E-commerce (12)
+            shopify_order: { name: 'Shopify - New Order', icon: 'fab fa-shopify', color: '#7AB55C', fields: ['store_url', 'api_key'], defaults: { store_url: '', api_key: '' }, category: 'ecommerce', keywords: ['shopify', 'order', 'ecommerce'], outputs: ['next'] },
+            shopify_product: { name: 'Shopify - Product', icon: 'fas fa-box', color: '#7AB55C', fields: ['store_url', 'product_id'], defaults: { store_url: '', product_id: '' }, category: 'ecommerce', keywords: ['shopify', 'product', 'inventory'], outputs: ['next'] },
             inventory_check: { name: 'Check Inventory', icon: 'fa-boxes', color: '#7AB55C', fields: ['platform'], defaults: { platform: 'shopify' }, category: 'ecommerce', keywords: ['inventory', 'stock', 'shopify'], outputs: ['next'] },
             cart_recovery: { name: 'Cart Recovery', icon: 'fa-shopping-cart', color: '#FF6B6B', fields: ['platform', 'discount_percent'], defaults: { platform: 'shopify', discount_percent: '10' }, category: 'ecommerce', keywords: ['cart', 'recovery', 'abandoned'], outputs: ['next'] },
+            woo_order: { name: 'WooCommerce Order', icon: 'fab fa-wordpress', color: '#3498DB', fields: ['store_url', 'consumer_key', 'consumer_secret'], defaults: { store_url: '', consumer_key: '', consumer_secret: '' }, category: 'ecommerce', keywords: ['woocommerce', 'order', 'wordpress'], outputs: ['next'] },
+            stripe_payment: { name: 'Stripe Payment', icon: 'fab fa-stripe', color: '#635BFF', fields: ['amount', 'currency', 'customer_email'], defaults: { amount: '10', currency: 'usd', customer_email: '' }, category: 'ecommerce', keywords: ['stripe', 'payment', 'charge'], outputs: ['next', 'error'] },
+            paypal_payment: { name: 'PayPal Payment', icon: 'fab fa-paypal', color: '#00457C', fields: ['amount', 'currency', 'email'], defaults: { amount: '10', currency: 'usd', email: '' }, category: 'ecommerce', keywords: ['paypal', 'payment', 'transaction'], outputs: ['next', 'error'] },
+            create_invoice: { name: 'Create Invoice', icon: 'fa-file-invoice', color: '#3498DB', fields: ['customer', 'amount', 'items'], defaults: { customer: '', amount: '0', items: '[]' }, category: 'ecommerce', keywords: ['invoice', 'bill', 'customer'], outputs: ['next'] },
+            send_invoice: { name: 'Send Invoice', icon: 'fa-paper-plane', color: '#3498DB', fields: ['invoice_id', 'email'], defaults: { invoice_id: '', email: '' }, category: 'ecommerce', keywords: ['invoice', 'send', 'email'], outputs: ['next', 'error'] },
+            update_stock: { name: 'Update Stock', icon: 'fa-edit', color: '#7AB55C', fields: ['platform', 'product_id', 'quantity'], defaults: { platform: 'shopify', product_id: '', quantity: '0' }, category: 'ecommerce', keywords: ['stock', 'inventory', 'update'], outputs: ['next', 'error'] },
+            price_monitor: { name: 'Price Monitor', icon: 'fa-dollar-sign', color: '#F59E0B', fields: ['product_url', 'target_price'], defaults: { product_url: '', target_price: '0' }, category: 'ecommerce', keywords: ['price', 'monitor', 'alert'], outputs: ['true', 'false'] },
+            competitor_tracker: { name: 'Competitor Tracker', icon: 'fa-chart-line', color: '#F59E0B', fields: ['competitor_url', 'metrics'], defaults: { competitor_url: '', metrics: 'price' }, category: 'ecommerce', keywords: ['competitor', 'track', 'market'], outputs: ['next'] },
+            
+            // CRM & Sales (10)
             create_lead: { name: 'Create Lead', icon: 'fa-user-plus', color: '#3498DB', fields: ['lead_name', 'source'], defaults: { lead_name: 'New Lead', source: 'workflow' }, category: 'crm', keywords: ['lead', 'crm', 'contact'], outputs: ['next'] },
-            update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#3498DB', fields: ['record_id', 'update_data'], defaults: { record_id: '123', update_data: '{"status": "contacted"}' }, category: 'crm', keywords: ['crm', 'update', 'salesforce', 'hubspot'], outputs: ['next'] },
+            update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#3498DB', fields: ['record_id', 'update_data'], defaults: { record_id: '123', update_data: '{"status": "contacted"}' }, category: 'crm', keywords: ['crm', 'update', 'salesforce', 'hubspot'], outputs: ['next', 'error'] },
+            salesforce_contact: { name: 'Salesforce Contact', icon: 'fab fa-salesforce', color: '#00A1E0', fields: ['email', 'first_name', 'last_name'], defaults: { email: '', first_name: '', last_name: '' }, category: 'crm', keywords: ['salesforce', 'contact', 'crm'], outputs: ['next', 'error'] },
+            hubspot_contact: { name: 'HubSpot Contact', icon: 'fab fa-hubspot', color: '#FF7A59', fields: ['email', 'firstname', 'lastname'], defaults: { email: '', firstname: '', lastname: '' }, category: 'crm', keywords: ['hubspot', 'contact', 'crm'], outputs: ['next', 'error'] },
+            pipedrive_deal: { name: 'Pipedrive Deal', icon: 'fas fa-chart-line', color: '#00A1E0', fields: ['title', 'value', 'person_id'], defaults: { title: '', value: '0', person_id: '' }, category: 'crm', keywords: ['pipedrive', 'deal', 'sales'], outputs: ['next', 'error'] },
+            send_campaign: { name: 'Email Campaign', icon: 'fa-mail-bulk', color: '#EA4B71', fields: ['list_id', 'subject', 'content'], defaults: { list_id: '', subject: '', content: '' }, category: 'crm', keywords: ['email', 'campaign', 'marketing'], outputs: ['next', 'error'] },
+            sms_marketing: { name: 'SMS Marketing', icon: 'fa-sms', color: '#10B981', fields: ['phone_number', 'message'], defaults: { phone_number: '', message: '' }, category: 'crm', keywords: ['sms', 'text', 'marketing'], outputs: ['next', 'error'] },
+            whatsapp_message: { name: 'WhatsApp Message', icon: 'fab fa-whatsapp', color: '#25D366', fields: ['phone_number', 'message'], defaults: { phone_number: '', message: '' }, category: 'crm', keywords: ['whatsapp', 'message', 'business'], outputs: ['next', 'error'] },
+            appointment_scheduler: { name: 'Appointment Scheduler', icon: 'fa-calendar-check', color: '#3B82F6', fields: ['calendar_id', 'duration', 'attendee_email'], defaults: { calendar_id: '', duration: '30', attendee_email: '' }, category: 'crm', keywords: ['appointment', 'calendar', 'schedule'], outputs: ['next', 'error'] },
+            feedback_collector: { name: 'Feedback Collector', icon: 'fa-star', color: '#F59E0B', fields: ['survey_id', 'customer_email'], defaults: { survey_id: '', customer_email: '' }, category: 'crm', keywords: ['feedback', 'survey', 'customer'], outputs: ['next'] },
+            
+            // Communication (8)
+            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: 'admin@example.com', subject: 'Notification', body: 'Hello from Workflow Studio!' }, category: 'communication', keywords: ['email', 'send', 'mail'], outputs: ['next', 'error'] },
+            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'Hello from Workflow Studio!' }, category: 'communication', keywords: ['slack', 'message', 'chat'], outputs: ['next', 'error'] },
+            send_teams: { name: 'Send Teams', icon: 'fab fa-microsoft', color: '#6264A7', fields: ['webhook_url', 'message'], defaults: { webhook_url: '', message: '' }, category: 'communication', keywords: ['teams', 'microsoft', 'message'], outputs: ['next', 'error'] },
+            send_discord: { name: 'Send Discord', icon: 'fab fa-discord', color: '#5865F2', fields: ['webhook_url', 'message'], defaults: { webhook_url: '', message: '' }, category: 'communication', keywords: ['discord', 'webhook', 'message'], outputs: ['next', 'error'] },
+            send_telegram: { name: 'Send Telegram', icon: 'fab fa-telegram', color: '#26A5E4', fields: ['bot_token', 'chat_id', 'message'], defaults: { bot_token: '', chat_id: '', message: '' }, category: 'communication', keywords: ['telegram', 'bot', 'message'], outputs: ['next', 'error'] },
+            send_sms: { name: 'Send SMS', icon: 'fa-sms', color: '#10B981', fields: ['phone_number', 'message'], defaults: { phone_number: '', message: '' }, category: 'communication', keywords: ['sms', 'text', 'message'], outputs: ['next', 'error'] },
+            send_push: { name: 'Push Notification', icon: 'fa-bell', color: '#F59E0B', fields: ['device_token', 'title', 'body'], defaults: { device_token: '', title: '', body: '' }, category: 'communication', keywords: ['push', 'notification', 'alert'], outputs: ['next', 'error'] },
+            send_webhook: { name: 'Send Webhook', icon: 'fa-globe', color: '#10B981', fields: ['url', 'method', 'payload'], defaults: { url: '', method: 'POST', payload: '{}' }, category: 'communication', keywords: ['webhook', 'send', 'callback'], outputs: ['next', 'error'] },
+            
+            // Logic (10)
             condition: { name: 'Condition (IF)', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition', 'output_count'], defaults: { condition: 'data.value > 10', output_count: '2' }, category: 'logic', keywords: ['if', 'condition', 'branch'], outputs: ['true', 'false'] },
+            switch: { name: 'Switch / Router', icon: 'fa-exchange-alt', color: '#6B7280', fields: ['switch_field', 'cases'], defaults: { switch_field: 'status', cases: '{"active":"next","inactive":"error"}' }, category: 'logic', keywords: ['switch', 'router', 'case'], outputs: ['default', 'case1', 'case2'] },
             wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'], defaults: { duration: '5', unit: 'seconds' }, category: 'logic', keywords: ['wait', 'delay', 'sleep'], outputs: ['next'] },
             loop: { name: 'Loop', icon: 'fa-redo-alt', color: '#6B7280', fields: ['iterations', 'split_arrays'], defaults: { iterations: '3', split_arrays: 'false' }, category: 'logic', keywords: ['loop', 'iterate', 'repeat'], outputs: ['next'] },
+            split: { name: 'Split / Batch', icon: 'fa-code-branch', color: '#6B7280', fields: ['field', 'batch_size'], defaults: { field: 'data', batch_size: '10' }, category: 'logic', keywords: ['split', 'batch', 'array'], outputs: ['item', 'done'] },
+            aggregate: { name: 'Aggregate / Merge', icon: 'fa-chart-simple', color: '#6B7280', fields: ['operation', 'field'], defaults: { operation: 'sum', field: 'value' }, category: 'logic', keywords: ['aggregate', 'merge', 'combine'], outputs: ['next'] },
+            code: { name: 'Code Node', icon: 'fa-code', color: '#6B7280', fields: ['code'], defaults: { code: '// Write your JavaScript code here\n// Access input data via "data"\n// Return modified data\nreturn data;' }, category: 'logic', keywords: ['code', 'javascript', 'function', 'sandbox'], outputs: ['next', 'error'] },
+            transform: { name: 'Data Transform', icon: 'fa-exchange-alt', color: '#6B7280', fields: ['mapping'], defaults: { mapping: '{}' }, category: 'logic', keywords: ['transform', 'map', 'convert'], outputs: ['next'] },
+            filter: { name: 'Filter Data', icon: 'fa-filter', color: '#6B7280', fields: ['field', 'operator', 'value'], defaults: { field: 'status', operator: 'eq', value: 'active' }, category: 'logic', keywords: ['filter', 'where', 'condition'], outputs: ['true', 'false'] },
+            sort: { name: 'Sort Data', icon: 'fa-sort', color: '#6B7280', fields: ['field', 'order'], defaults: { field: 'timestamp', order: 'desc' }, category: 'logic', keywords: ['sort', 'order', 'arrange'], outputs: ['next'] },
+            
+            // Integrations (15)
             http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'auth_type', 'auth_token', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com/data', auth_type: 'none', auth_token: '', headers: '{}', body: '{}' }, category: 'integrations', keywords: ['http', 'api', 'request', 'rest'], outputs: ['next', 'error'] },
-            webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['webhook_url', 'method'], defaults: { webhook_url: 'https://webhook.site/your-url', method: 'POST' }, category: 'integrations', keywords: ['webhook', 'callback', 'url'], outputs: ['next'] },
-            database_query: { name: 'Database Query', icon: 'fa-database', color: '#7AB55C', fields: ['query', 'params'], defaults: { query: 'SELECT * FROM users LIMIT 10', params: '{}' }, category: 'database', keywords: ['sql', 'database', 'query'], outputs: ['next'] },
-            // NEW NODES
+            graphql: { name: 'GraphQL', icon: 'fa-graphql', color: '#E10098', fields: ['endpoint', 'query', 'variables'], defaults: { endpoint: '', query: '', variables: '{}' }, category: 'integrations', keywords: ['graphql', 'query', 'api'], outputs: ['next', 'error'] },
+            webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['webhook_url', 'method'], defaults: { webhook_url: 'https://webhook.site/your-url', method: 'POST' }, category: 'integrations', keywords: ['webhook', 'callback', 'url'], outputs: ['next', 'error'] },
             rss: { name: 'RSS Feed Reader', icon: 'fa-rss', color: '#f26522', fields: ['feed_url', 'limit'], defaults: { feed_url: 'https://feeds.bbci.co.uk/news/rss.xml', limit: '10' }, category: 'integrations', keywords: ['rss', 'feed', 'news'], outputs: ['next'] },
-            gemini: { name: 'Google Gemini AI', icon: 'fa-gem', color: '#4285F4', fields: ['prompt', 'model', 'temperature', 'api_key'], defaults: { prompt: 'Write a professional email about AI automation', model: 'gemini-1.5-pro', temperature: '0.7', api_key: '' }, category: 'ai', keywords: ['gemini', 'google', 'ai', 'llm'], outputs: ['next'] },
-            code: { name: 'Code Node (Sandbox)', icon: 'fa-code', color: '#6B7280', fields: ['code'], defaults: { code: '// Write your JavaScript code here\n// Access input data via "data"\n// Return modified data\nreturn data;' }, category: 'logic', keywords: ['code', 'javascript', 'function', 'sandbox'], outputs: ['next', 'error'] }
+            google_sheets: { name: 'Google Sheets', icon: 'fab fa-google', color: '#0F9D58', fields: ['spreadsheet_id', 'range', 'action'], defaults: { spreadsheet_id: '', range: 'Sheet1!A1', action: 'read' }, category: 'integrations', keywords: ['google', 'sheets', 'spreadsheet'], outputs: ['next', 'error'] },
+            google_drive: { name: 'Google Drive', icon: 'fab fa-google-drive', color: '#4285F4', fields: ['folder_id', 'action', 'file_name'], defaults: { folder_id: '', action: 'list', file_name: '' }, category: 'integrations', keywords: ['google', 'drive', 'file'], outputs: ['next', 'error'] },
+            google_calendar: { name: 'Google Calendar', icon: 'fas fa-calendar', color: '#4285F4', fields: ['calendar_id', 'action', 'event_data'], defaults: { calendar_id: 'primary', action: 'create', event_data: '{}' }, category: 'integrations', keywords: ['google', 'calendar', 'event'], outputs: ['next', 'error'] },
+            gmail: { name: 'Gmail', icon: 'fab fa-google', color: '#EA4335', fields: ['action', 'query', 'message'], defaults: { action: 'send', query: '', message: '{}' }, category: 'integrations', keywords: ['gmail', 'email', 'google'], outputs: ['next', 'error'] },
+            dropbox: { name: 'Dropbox', icon: 'fab fa-dropbox', color: '#0061FF', fields: ['path', 'action', 'content'], defaults: { path: '', action: 'list', content: '' }, category: 'integrations', keywords: ['dropbox', 'file', 'storage'], outputs: ['next', 'error'] },
+            onedrive: { name: 'OneDrive', icon: 'fab fa-microsoft', color: '#0078D4', fields: ['path', 'action', 'content'], defaults: { path: '', action: 'list', content: '' }, category: 'integrations', keywords: ['onedrive', 'microsoft', 'file'], outputs: ['next', 'error'] },
+            aws_s3: { name: 'AWS S3', icon: 'fab fa-aws', color: '#FF9900', fields: ['bucket', 'key', 'action'], defaults: { bucket: '', key: '', action: 'list' }, category: 'integrations', keywords: ['aws', 's3', 'cloud'], outputs: ['next', 'error'] },
+            azure_blob: { name: 'Azure Blob', icon: 'fab fa-microsoft', color: '#0078D4', fields: ['container', 'blob', 'action'], defaults: { container: '', blob: '', action: 'list' }, category: 'integrations', keywords: ['azure', 'blob', 'storage'], outputs: ['next', 'error'] },
+            zapier_webhook: { name: 'Zapier Webhook', icon: 'fas fa-bolt', color: '#FF4A00', fields: ['webhook_url', 'payload'], defaults: { webhook_url: '', payload: '{}' }, category: 'integrations', keywords: ['zapier', 'webhook', 'zap'], outputs: ['next', 'error'] },
+            make_webhook: { name: 'Make/Integromat', icon: 'fas fa-cogs', color: '#00C3B3', fields: ['webhook_url', 'payload'], defaults: { webhook_url: '', payload: '{}' }, category: 'integrations', keywords: ['make', 'integromat', 'webhook'], outputs: ['next', 'error'] },
+            pabbly: { name: 'Pabbly Connect', icon: 'fas fa-link', color: '#FF6B6B', fields: ['webhook_url', 'payload'], defaults: { webhook_url: '', payload: '{}' }, category: 'integrations', keywords: ['pabbly', 'connect', 'webhook'], outputs: ['next', 'error'] },
+            
+            // Database (7)
+            database_query: { name: 'Database Query', icon: 'fa-database', color: '#7AB55C', fields: ['query', 'params'], defaults: { query: 'SELECT * FROM users LIMIT 10', params: '{}' }, category: 'database', keywords: ['sql', 'database', 'query'], outputs: ['next', 'error'] },
+            postgresql: { name: 'PostgreSQL', icon: 'fa-database', color: '#336791', fields: ['connection', 'query', 'params'], defaults: { connection: 'default', query: '', params: '{}' }, category: 'database', keywords: ['postgresql', 'postgres', 'sql'], outputs: ['next', 'error'] },
+            mysql: { name: 'MySQL', icon: 'fa-database', color: '#00758F', fields: ['connection', 'query', 'params'], defaults: { connection: 'default', query: '', params: '{}' }, category: 'database', keywords: ['mysql', 'sql', 'database'], outputs: ['next', 'error'] },
+            mongodb: { name: 'MongoDB', icon: 'fa-leaf', color: '#47A248', fields: ['collection', 'operation', 'filter'], defaults: { collection: '', operation: 'find', filter: '{}' }, category: 'database', keywords: ['mongodb', 'nosql', 'document'], outputs: ['next', 'error'] },
+            firebase: { name: 'Firebase', icon: 'fas fa-fire', color: '#FFCA28', fields: ['collection', 'operation', 'data'], defaults: { collection: '', operation: 'read', data: '{}' }, category: 'database', keywords: ['firebase', 'google', 'nosql'], outputs: ['next', 'error'] },
+            supabase: { name: 'Supabase', icon: 'fas fa-database', color: '#3ECF8E', fields: ['table', 'operation', 'data'], defaults: { table: '', operation: 'select', data: '{}' }, category: 'database', keywords: ['supabase', 'postgres', 'database'], outputs: ['next', 'error'] },
+            airtable: { name: 'Airtable', icon: 'fas fa-table', color: '#FFBF00', fields: ['base_id', 'table', 'operation', 'data'], defaults: { base_id: '', table: '', operation: 'list', data: '{}' }, category: 'database', keywords: ['airtable', 'spreadsheet', 'database'], outputs: ['next', 'error'] },
+            
+            // DevOps (7)
+            docker: { name: 'Docker Container', icon: 'fab fa-docker', color: '#2496ED', fields: ['image', 'command', 'env_vars'], defaults: { image: 'ubuntu:latest', command: 'echo hello', env_vars: '{}' }, category: 'devops', keywords: ['docker', 'container', 'deploy'], outputs: ['next', 'error'] },
+            kubernetes: { name: 'Kubernetes', icon: 'fas fa-cubes', color: '#326CE5', fields: ['namespace', 'manifest', 'action'], defaults: { namespace: 'default', manifest: '', action: 'apply' }, category: 'devops', keywords: ['kubernetes', 'k8s', 'deploy'], outputs: ['next', 'error'] },
+            jenkins: { name: 'Jenkins Job', icon: 'fas fa-tasks', color: '#D33833', fields: ['job_name', 'parameters'], defaults: { job_name: '', parameters: '{}' }, category: 'devops', keywords: ['jenkins', 'ci', 'build'], outputs: ['next', 'error'] },
+            github_actions: { name: 'GitHub Actions', icon: 'fab fa-github', color: '#2088FF', fields: ['repo', 'workflow_id', 'inputs'], defaults: { repo: '', workflow_id: '', inputs: '{}' }, category: 'devops', keywords: ['github', 'actions', 'ci'], outputs: ['next', 'error'] },
+            gitlab_ci: { name: 'GitLab CI', icon: 'fab fa-gitlab', color: '#FC6D26', fields: ['project_id', 'pipeline_variables'], defaults: { project_id: '', pipeline_variables: '{}' }, category: 'devops', keywords: ['gitlab', 'ci', 'pipeline'], outputs: ['next', 'error'] },
+            terraform: { name: 'Terraform', icon: 'fas fa-cloud', color: '#7B42BC', fields: ['workspace', 'action', 'variables'], defaults: { workspace: 'default', action: 'plan', variables: '{}' }, category: 'devops', keywords: ['terraform', 'infrastructure', 'iac'], outputs: ['next', 'error'] },
+            webhook_deploy: { name: 'Webhook Deploy', icon: 'fas fa-rocket', color: '#10B981', fields: ['deploy_url', 'branch'], defaults: { deploy_url: '', branch: 'main' }, category: 'devops', keywords: ['deploy', 'webhook', 'ci'], outputs: ['next', 'error'] },
+            
+            // Analytics (6)
+            google_analytics: { name: 'Google Analytics', icon: 'fab fa-google', color: '#E37400', fields: ['property_id', 'metrics', 'start_date'], defaults: { property_id: '', metrics: 'ga:users', start_date: '7daysAgo' }, category: 'analytics', keywords: ['google', 'analytics', 'tracking'], outputs: ['next', 'error'] },
+            mixpanel: { name: 'Mixpanel', icon: 'fas fa-chart-pie', color: '#7856FF', fields: ['event_name', 'properties'], defaults: { event_name: '', properties: '{}' }, category: 'analytics', keywords: ['mixpanel', 'analytics', 'event'], outputs: ['next', 'error'] },
+            amplitude: { name: 'Amplitude', icon: 'fas fa-waveform', color: '#1A2B4C', fields: ['event_type', 'user_id', 'event_properties'], defaults: { event_type: '', user_id: '', event_properties: '{}' }, category: 'analytics', keywords: ['amplitude', 'analytics', 'event'], outputs: ['next', 'error'] },
+            segment: { name: 'Segment', icon: 'fas fa-chart-simple', color: '#47CCC8', fields: ['write_key', 'event', 'properties'], defaults: { write_key: '', event: '', properties: '{}' }, category: 'analytics', keywords: ['segment', 'analytics', 'track'], outputs: ['next', 'error'] },
+            hotjar: { name: 'Hotjar', icon: 'fas fa-fire', color: '#FD3C00', fields: ['site_id', 'event_name', 'properties'], defaults: { site_id: '', event_name: '', properties: '{}' }, category: 'analytics', keywords: ['hotjar', 'analytics', 'heatmap'], outputs: ['next', 'error'] },
+            metabase: { name: 'Metabase', icon: 'fas fa-chart-simple', color: '#509EE3', fields: ['query', 'database_id'], defaults: { query: '', database_id: '' }, category: 'analytics', keywords: ['metabase', 'bi', 'dashboard'], outputs: ['next', 'error'] }
         };
 
         // Load custom apps from localStorage
@@ -1419,6 +1952,102 @@
         function saveCustomApps() {
             localStorage.setItem('custom_apps', JSON.stringify(customApps));
             renderConnectedApps();
+        }
+
+        // Load credentials
+        function loadCredentials() {
+            const saved = localStorage.getItem('credentials');
+            if (saved) {
+                try {
+                    credentials = JSON.parse(saved);
+                    renderCredentials();
+                } catch(e) {}
+            }
+        }
+
+        function saveCredentials() {
+            localStorage.setItem('credentials', JSON.stringify(credentials));
+            renderCredentials();
+        }
+
+        function renderCredentials() {
+            const container = document.getElementById('credentialsList');
+            if (!container) return;
+            
+            if (credentials.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;"><i class="fas fa-key fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No credentials saved.<br>Add your API keys securely here.</div>';
+                return;
+            }
+            
+            container.innerHTML = credentials.map(cred => `
+                <div class="credential-item">
+                    <div class="credential-name">${cred.name}</div>
+                    <div class="credential-service">${cred.service} • Created ${new Date(cred.created_at).toLocaleDateString()}</div>
+                    <div style="margin-top: 8px; display: flex; gap: 8px;">
+                        <button class="btn-outline" style="padding: 4px 12px; font-size: 11px;" onclick="useCredential('${cred.id}')">Use in Node</button>
+                        <button class="btn-danger" style="padding: 4px 12px; font-size: 11px;" onclick="deleteCredential('${cred.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddCredentialModal() {
+            document.getElementById('credentialModal').style.display = 'flex';
+        }
+
+        function closeCredentialModal() {
+            document.getElementById('credentialModal').style.display = 'none';
+            document.getElementById('credentialName').value = '';
+            document.getElementById('credentialToken').value = '';
+            document.getElementById('credentialData').value = '';
+        }
+
+        function addCredential() {
+            const name = document.getElementById('credentialName').value;
+            const service = document.getElementById('credentialService').value;
+            const token = document.getElementById('credentialToken').value;
+            const additionalData = document.getElementById('credentialData').value;
+            
+            if (!name || !token) {
+                showToast('Please enter name and token', 'error');
+                return;
+            }
+            
+            const newCredential = {
+                id: Date.now().toString(),
+                name: name,
+                service: service,
+                token: token,
+                additional_data: additionalData ? JSON.parse(additionalData) : {},
+                created_at: new Date().toISOString()
+            };
+            
+            credentials.push(newCredential);
+            saveCredentials();
+            closeCredentialModal();
+            showToast(`Credential "${name}" saved securely`, 'success');
+        }
+
+        function deleteCredential(id) {
+            if (confirm('Delete this credential? This cannot be undone.')) {
+                credentials = credentials.filter(c => c.id !== id);
+                saveCredentials();
+                showToast('Credential deleted', 'success');
+            }
+        }
+
+        function useCredential(id) {
+            const cred = credentials.find(c => c.id === id);
+            if (cred && selectedWorkflowNode) {
+                const node = workflowNodes.find(n => n.id === selectedWorkflowNode);
+                if (node && node.config) {
+                    node.config.api_key = cred.token;
+                    node.config.credential_id = cred.id;
+                    renderWorkflowCanvas();
+                    openPropertiesPanel(node);
+                    showToast(`Applied credential "${cred.name}" to node`, 'success');
+                }
+            }
         }
 
         function showAddCustomAppModal() {
@@ -1470,7 +2099,6 @@
                     throw new Error('Failed to register app');
                 }
             } catch (error) {
-                // Fallback to localStorage only
                 const newApp = {
                     id: Date.now(),
                     platform: name.toLowerCase().replace(/ /g, '_'),
@@ -1489,7 +2117,7 @@
             }
         }
         
-        // Real AI Image Generation via Backend API
+        // Real AI Image Generation
         async function generateRealImage(prompt, style) {
             try {
                 addExecutionLog('AI Image', 'info', `🎨 Generating "${prompt}" (${style} style)...`);
@@ -1514,7 +2142,6 @@
                     }
                 }
                 
-                // Fallback to Pollinations if backend fails
                 const stylePrompt = AI_STYLES[style] || AI_STYLES['Realistic'];
                 const fullPrompt = `${stylePrompt}. ${prompt}`;
                 const encodedPrompt = encodeURIComponent(fullPrompt);
@@ -1532,7 +2159,6 @@
             }
         }
 
-        // AI Video Generation via Backend API (Sora-level)
         async function generateRealVideo(prompt, duration, style) {
             try {
                 addExecutionLog('AI Video', 'info', `🎬 Generating video: "${prompt}" (${duration}s, ${style} style)...`);
@@ -1571,7 +2197,6 @@
             }
         }
 
-        // Generate Hashtags via Backend API
         async function generateHashtags(topic, count = 15) {
             try {
                 addExecutionLog('Hashtags', 'info', `🏷️ Generating ${count} hashtags for "${topic}"`);
@@ -1602,7 +2227,6 @@
             }
         }
 
-        // Post to TikTok via Backend API
         async function postToTikTokReal(videoUrl, caption, hashtags, thumbnailUrl) {
             try {
                 addExecutionLog('TikTok', 'info', `📱 Posting to TikTok...`);
@@ -1632,14 +2256,12 @@
             }
         }
 
-        // GitHub Trigger Handler
         async function githubTriggerReal(event, repo, data) {
             addExecutionLog('GitHub', 'info', `🐙 GitHub event: ${event} on ${repo}`);
             addExecutionLog('GitHub', 'success', `✅ Processed ${event} from ${repo}`);
             return { event: event, repository: repo, data: data, processed_at: new Date().toISOString() };
         }
 
-        // Schedule Post function
         async function schedulePostReal(platform, content, scheduleTime) {
             addExecutionLog('Schedule Post', 'info', `📅 Scheduling post to ${platform} at ${scheduleTime}`);
             
@@ -1661,7 +2283,6 @@
                     return data;
                 }
             } catch (error) {
-                // Fallback to local storage
                 const scheduledPost = {
                     platform: platform,
                     content: content,
@@ -1677,7 +2298,6 @@
             }
         }
 
-        // Update CRM function
         async function updateCRMReal(recordId, data) {
             addExecutionLog('Update CRM', 'info', `Updating CRM record ${recordId}`);
             
@@ -1707,19 +2327,6 @@
             return result;
         }
 
-        // Loop function
-        async function loopReal(iterations, inputData) {
-            addExecutionLog('Loop', 'info', `🔄 Starting loop with ${iterations} iterations`);
-            const results = [];
-            for (let i = 0; i < iterations; i++) {
-                addExecutionLog('Loop', 'info', `  Iteration ${i + 1}/${iterations}`);
-                results.push({ iteration: i + 1, data: inputData });
-            }
-            addExecutionLog('Loop', 'success', `✅ Completed ${iterations} iterations`);
-            return { iterations_completed: iterations, results: results };
-        }
-
-        // Database Query function
         async function databaseQueryReal(query, params) {
             addExecutionLog('Database Query', 'info', `📊 Executing: ${query.substring(0, 100)}`);
             
@@ -1754,7 +2361,6 @@
             return result;
         }
 
-        // Real AI Content Generation
         async function generateRealContent(contentType, topic, tone) {
             try {
                 addExecutionLog('AI Content', 'info', `✍️ Generating ${contentType} about "${topic}" (${tone} tone)`);
@@ -1796,7 +2402,6 @@
             }
         }
 
-        // Real Lead Scoring
         async function scoreLeadReal(leadData) {
             try {
                 addExecutionLog('Lead Scoring', 'info', `Scoring lead: ${leadData.name || 'Unknown'}`);
@@ -1834,7 +2439,6 @@
             }
         }
 
-        // Real Post to Social Media
         async function postToSocialReal(platform, content) {
             try {
                 addExecutionLog('Social Media', 'info', `📱 Posting to ${platform}...`);
@@ -1863,7 +2467,6 @@
             }
         }
 
-        // Real Send Email
         async function sendEmailReal(to, subject, body) {
             try {
                 addExecutionLog('Email', 'info', `📧 Sending email to ${to}`);
@@ -1892,7 +2495,6 @@
             }
         }
 
-        // Real Send Slack
         async function sendSlackReal(channel, message) {
             try {
                 addExecutionLog('Slack', 'info', `💬 Sending to ${channel}`);
@@ -1921,7 +2523,6 @@
             }
         }
 
-        // Real Check Inventory
         async function checkInventoryReal(platform) {
             try {
                 addExecutionLog('Inventory', 'info', `📦 Checking inventory on ${platform}`);
@@ -1950,7 +2551,6 @@
             }
         }
 
-        // Real Cart Recovery
         async function recoverCartReal(platform, discountPercent) {
             try {
                 addExecutionLog('Cart Recovery', 'info', `🛒 Recovering carts on ${platform} with ${discountPercent}% discount`);
@@ -1980,7 +2580,6 @@
             }
         }
 
-        // Real Create Lead
         async function createLeadReal(leadData) {
             try {
                 addExecutionLog('CRM', 'info', `👤 Creating lead: ${leadData.name}`);
@@ -2011,25 +2610,6 @@
             }
         }
 
-        // Real HTTP Request
-        async function httpRequestReal(url, method, headers, body) {
-            try {
-                addExecutionLog('HTTP', 'info', `🌐 ${method} ${url}`);
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json', ...headers },
-                    body: method !== 'GET' ? JSON.stringify(body) : undefined
-                });
-                const data = await response.json();
-                addExecutionLog('HTTP', 'success', `Status: ${response.status}`);
-                return { status: response.status, data: data };
-            } catch (error) {
-                addExecutionLog('HTTP', 'error', `Failed: ${error.message}`);
-                return { status: 0, error: error.message };
-            }
-        }
-
-        // Custom Webhook trigger for connected apps
         async function triggerCustomWebhook(app, inputData) {
             try {
                 addExecutionLog(app.name, 'info', `🔗 Triggering ${app.name} webhook`);
@@ -2051,134 +2631,6 @@
             } catch (error) {
                 addExecutionLog(app.name, 'error', `Failed: ${error.message}`);
                 return { success: false, error: error.message };
-            }
-        }
-
-        // ===== NODE EXECUTION HANDLERS =====
-        async function executeNode(node, input, triggerData) {
-            const startTime = Date.now();
-            
-            try {
-                addExecutionLog(node.name, 'info', `▶️ Executing...`);
-                
-                let output = {};
-                
-                switch (node.type) {
-                    case 'trigger':
-                        output = { webhook_received: true, data: triggerData, timestamp: new Date().toISOString() };
-                        break;
-                    case 'schedule':
-                        output = { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() };
-                        break;
-                    case 'github':
-                        output = await githubTriggerReal(node.config.event_type || 'push', node.config.repository || 'main', triggerData);
-                        break;
-                    case 'ai_image':
-                        const imageUrl = await generateRealImage(node.config.prompt, node.config.style);
-                        output = { image_url: imageUrl, prompt: node.config.prompt, style: node.config.style, generated_at: new Date().toISOString() };
-                        break;
-                    case 'ai_video':
-                        const videoUrl = await generateRealVideo(node.config.prompt, node.config.duration || 30, node.config.style);
-                        output = { video_url: videoUrl, prompt: node.config.prompt, duration: node.config.duration, style: node.config.style, generated_at: new Date().toISOString() };
-                        break;
-                    case 'ai_content':
-                        const content = await generateRealContent(node.config.type, node.config.prompt, node.config.tone);
-                        output = { content: content, type: node.config.type, prompt: node.config.prompt, generated_at: new Date().toISOString() };
-                        break;
-                    case 'ai_lead_scoring':
-                        const scoreData = await scoreLeadReal({ ...triggerData, ...input });
-                        output = scoreData;
-                        break;
-                    case 'post_social':
-                        const postResult = await postToSocialReal(node.config.platform, node.config.content);
-                        output = { platform: node.config.platform, status: postResult ? 'posted' : 'failed', timestamp: new Date().toISOString() };
-                        break;
-                    case 'post_tiktok':
-                        const tiktokResult = await postToTikTokReal(node.config.video_url, node.config.caption, node.config.hashtags?.split(',') || [], node.config.thumbnail_url);
-                        output = tiktokResult;
-                        break;
-                    case 'generate_hashtags':
-                        const hashtagResult = await generateHashtags(node.config.topic, parseInt(node.config.count) || 15);
-                        output = hashtagResult;
-                        break;
-                    case 'schedule_post':
-                        const scheduleResult = await schedulePostReal(node.config.platform, node.config.content, node.config.schedule_time);
-                        output = scheduleResult;
-                        break;
-                    case 'send_email':
-                        const emailSent = await sendEmailReal(node.config.to, node.config.subject, node.config.body);
-                        output = { to: node.config.to, subject: node.config.subject, status: emailSent ? 'sent' : 'failed' };
-                        break;
-                    case 'send_slack':
-                        const slackSent = await sendSlackReal(node.config.channel, node.config.message);
-                        output = { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' };
-                        break;
-                    case 'inventory_check':
-                        const inventory = await checkInventoryReal(node.config.platform);
-                        output = inventory;
-                        break;
-                    case 'cart_recovery':
-                        const recovery = await recoverCartReal(node.config.platform, node.config.discount_percent);
-                        output = recovery;
-                        break;
-                    case 'create_lead':
-                        const lead = await createLeadReal({ ...triggerData, ...input, name: node.config.lead_name, source: node.config.source });
-                        output = { lead_id: lead?.id, status: 'created' };
-                        break;
-                    case 'update_crm':
-                        const updateResult = await updateCRMReal(node.config.record_id, { ...triggerData, ...input });
-                        output = updateResult;
-                        break;
-                    case 'loop':
-                        const loopResult = await loopReal(parseInt(node.config.iterations) || 3, input);
-                        output = loopResult;
-                        break;
-                    case 'database_query':
-                        const dbResult = await databaseQueryReal(node.config.query, JSON.parse(node.config.params || '{}'));
-                        output = dbResult;
-                        break;
-                    case 'condition':
-                        try {
-                            const conditionFn = new Function('data', `try { return ${node.config.condition}; } catch(e) { return false; }`);
-                            const conditionResult = conditionFn({ ...triggerData, ...input });
-                            output = { condition: conditionResult, result: conditionResult ? 'true' : 'false' };
-                        } catch(e) {
-                            output = { condition: false, error: e.message };
-                        }
-                        break;
-                    case 'wait':
-                        const duration = parseInt(node.config.duration) || 5;
-                        const unit = node.config.unit || 'seconds';
-                        const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
-                        await new Promise(resolve => setTimeout(resolve, ms));
-                        output = { waited: `${duration} ${unit}` };
-                        break;
-                    case 'http_request':
-                        const httpResult = await httpRequestReal(node.config.url, node.config.method, JSON.parse(node.config.headers || '{}'), JSON.parse(node.config.body || '{}'));
-                        output = httpResult;
-                        break;
-                    case 'webhook':
-                        output = { webhook_triggered: true, url: node.config.webhook_url, data: input, timestamp: new Date().toISOString() };
-                        break;
-                    case 'custom_app':
-                        const app = [...connectedApps, ...customApps].find(a => a.id == node.config.app_id);
-                        if (app) {
-                            const customResult = await triggerCustomWebhook(app, { ...triggerData, ...input });
-                            output = customResult;
-                        } else {
-                            output = { error: 'App not found' };
-                        }
-                        break;
-                    default:
-                        output = { output: input };
-                }
-                
-                addExecutionLog(node.name, 'success', `✅ Completed in ${Date.now() - startTime}ms`);
-                return { output, next: ['next'], status: 'completed' };
-                
-            } catch (error) {
-                addExecutionLog(node.name, 'error', `❌ Failed: ${error.message}`);
-                return { output: { error: error.message }, next: ['error'], status: 'failed' };
             }
         }
 
@@ -2244,7 +2696,9 @@
                 twitter: '#1DA1F2', instagram: '#d62976', shopify: '#7AB55C',
                 youtube: '#ff0000', facebook: '#4267B2', linkedin: '#0077b5',
                 tiktok: '#010101', salesforce: '#00A1E0', hubspot: '#FF7A59',
-                slack: '#4A154B', discord: '#5865F2', github: '#333333'
+                slack: '#4A154B', discord: '#5865F2', github: '#333333',
+                google: '#4285F4', stripe: '#635BFF', paypal: '#00457C',
+                aws: '#FF9900', azure: '#0078D4'
             };
             return colors[platform] || '#d4af37';
         }
@@ -2528,27 +2982,34 @@
             document.getElementById('canvasContainer').classList.remove('active');
             document.getElementById('historyPanel').classList.remove('active');
             document.getElementById('galleryPanel').classList.remove('active');
+            document.getElementById('credentialsPanel').classList.remove('active');
             if (view === 'canvas') document.getElementById('canvasContainer').classList.add('active');
             else if (view === 'history') { document.getElementById('historyPanel').classList.add('active'); renderHistory(); }
             else if (view === 'gallery') { document.getElementById('galleryPanel').classList.add('active'); renderGallery(); }
+            else if (view === 'credentials') { document.getElementById('credentialsPanel').classList.add('active'); renderCredentials(); }
         }
 
         // ================================================
-        // NEW: GLOBAL SEARCH & DEEP HTTP DISCOVERY
+        // GLOBAL SEARCH & DEEP HTTP DISCOVERY
         // ================================================
         async function initializeSearchIndex() {
-            console.log('🔍 Initializing search index...');
+            console.log('🔍 Initializing search index with 100+ nodes...');
             for (const [type, config] of Object.entries(NODE_CONFIGS)) {
                 searchIndex.nodes.push({ type, name: config.name, icon: config.icon, category: config.category, color: config.color, keywords: config.keywords || [] });
             }
             searchIndex.apis = {
-                'github': { baseUrl: 'https://api.github.com', headers: { 'Accept': 'application/vnd.github.v3+json' }, auth: 'Bearer', endpoints: ['/user', '/repos', '/issues'] },
+                'github': { baseUrl: 'https://api.github.com', auth: 'Bearer', endpoints: ['/user', '/repos', '/issues'] },
                 'slack': { baseUrl: 'https://slack.com/api', auth: 'Bearer', endpoints: ['/chat.postMessage', '/users.list'] },
                 'shopify': { baseUrl: 'https://{store}.myshopify.com/admin/api/2024-01', auth: 'X-Shopify-Access-Token', endpoints: ['/products.json', '/orders.json'] },
                 'google': { baseUrl: 'https://www.googleapis.com', auth: 'Bearer', endpoints: ['/calendar/v3/calendars', '/gmail/v1/users/me/messages'] },
                 'twitter': { baseUrl: 'https://api.twitter.com/2', auth: 'Bearer', endpoints: ['/tweets', '/users/by'] },
                 'stripe': { baseUrl: 'https://api.stripe.com/v1', auth: 'Bearer', endpoints: ['/customers', '/payments'] },
-                'openai': { baseUrl: 'https://api.openai.com/v1', auth: 'Bearer', endpoints: ['/chat/completions', '/images/generations'] }
+                'openai': { baseUrl: 'https://api.openai.com/v1', auth: 'Bearer', endpoints: ['/chat/completions', '/images/generations'] },
+                'facebook': { baseUrl: 'https://graph.facebook.com/v18.0', auth: 'Bearer', endpoints: ['/me/feed', '/me/posts'] },
+                'instagram': { baseUrl: 'https://graph.facebook.com/v18.0', auth: 'Bearer', endpoints: ['/me/media', '/me/posts'] },
+                'linkedin': { baseUrl: 'https://api.linkedin.com/v2', auth: 'Bearer', endpoints: ['/me', '/ugcPosts'] },
+                'salesforce': { baseUrl: 'https://your-domain.my.salesforce.com/services/data/v58.0', auth: 'Bearer', endpoints: ['/query', '/sobjects'] },
+                'hubspot': { baseUrl: 'https://api.hubapi.com', auth: 'Bearer', endpoints: ['/crm/v3/objects/contacts', '/crm/v3/objects/deals'] }
             };
             console.log(`✅ Search index initialized with ${searchIndex.nodes.length} nodes and ${Object.keys(searchIndex.apis).length} APIs`);
         }
@@ -2683,7 +3144,7 @@
         }
 
         // ================================================
-        // NEW: VARIABLE RESOLVER ({{ $node["NodeName"].json["property"] }})
+        // VARIABLE RESOLVER ({{ $node["NodeName"].json["property"] }})
         // ================================================
         function resolveVariables(value, context) {
             if (typeof value !== 'string') return value;
@@ -2713,7 +3174,7 @@
         }
 
         // ================================================
-        // NEW: VARIABLE PICKER (Ctrl+Space)
+        // VARIABLE PICKER (Ctrl+Space)
         // ================================================
         function getAvailableVariables() {
             const variables = [];
@@ -2788,7 +3249,7 @@
         }
 
         // ================================================
-        // NEW: ENHANCED NODE EXECUTION (Gemini, RSS, Code Sandbox)
+        // ENHANCED NODE EXECUTION
         // ================================================
         async function executeGeminiNode(config) {
             const { prompt, model = 'gemini-1.5-pro', temperature = 0.7, api_key } = config;
@@ -2868,7 +3329,7 @@
             const requestHeaders = { 'Content-Type': 'application/json', ...headers };
             switch(auth_type) {
                 case 'bearer': requestHeaders['Authorization'] = `Bearer ${auth_token}`; break;
-                case 'basic': requestHeaders['Authorization'] = `Basic ${Buffer.from(auth_token).toString('base64')}`; break;
+                case 'basic': requestHeaders['Authorization'] = `Basic ${btoa(auth_token)}`; break;
                 case 'apiKey': requestHeaders['X-API-Key'] = auth_token; break;
             }
             try {
@@ -2921,7 +3382,7 @@
         }
 
         // ================================================
-        // NEW: OUTPUT PREVIEW SIDEBAR (n8n-style)
+        // OUTPUT PREVIEW SIDEBAR
         // ================================================
         function showOutputPreview(nodeId) {
             const node = workflowNodes.find(n => n.id === nodeId);
@@ -2984,7 +3445,6 @@
             if (modKey && e.key === 'd') { e.preventDefault(); deployWorkflow(); }
             if (e.key === ' ' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') { e.preventDefault(); toggleExecutionPanel(); }
             
-            // FIXED: Only delete node when NOT typing in an input/textarea field
             const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
             if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWorkflowNode && !isTyping) { 
                 e.preventDefault(); 
@@ -3430,7 +3890,6 @@
                 node.status = 'running';
                 renderWorkflowCanvas();
                 
-                // Variable resolution for node config
                 if (node.config) {
                     for (const [key, val] of Object.entries(node.config)) {
                         if (typeof val === 'string') {
@@ -3440,7 +3899,7 @@
                 }
                 
                 let result;
-                // Enhanced node execution with new node types
+                
                 switch (node.type) {
                     case 'trigger':
                         result = { output: { webhook_received: true, data: currentData, timestamp: new Date().toISOString() }, status: 'completed', next: ['next'] };
@@ -3600,7 +4059,6 @@
                     throw new Error('Save failed');
                 }
             } catch (error) {
-                // Fallback to localStorage
                 saveCurrentWorkflow();
                 showToast('Workflow saved locally!', 'success');
             }
@@ -3709,6 +4167,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await loadUserData();
             await loadConnectedApps();
+            await loadCredentials();
             await initializeSearchIndex();
             loadSavedData();
             renderWorkflowCanvas();
@@ -3753,6 +4212,11 @@
         window.showGlobalSearch = showGlobalSearch;
         window.showOutputPreview = showOutputPreview;
         window.showKeyboardShortcuts = showKeyboardShortcuts;
+        window.showAddCredentialModal = showAddCredentialModal;
+        window.closeCredentialModal = closeCredentialModal;
+        window.addCredential = addCredential;
+        window.deleteCredential = deleteCredential;
+        window.useCredential = useCredential;
     </script>
 </body>
 </html>
