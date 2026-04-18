@@ -21,22 +21,7 @@ const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
 const CLOUDFLARE_API_BASE = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run`;
 
-// Rate limiting configuration
-const RATE_LIMITS = {
-    [MODELS?.TEXT_FAST || '@cf/meta/llama-3-8b-instruct']: { requestsPerMinute: 30, requestsPerDay: 1000 },
-    [MODELS?.TEXT_POWERFUL || '@cf/meta/llama-3-70b-instruct']: { requestsPerMinute: 10, requestsPerDay: 500 },
-    [MODELS?.IMAGE_SDXL || '@cf/stabilityai/stable-diffusion-xl-base-1.0']: { requestsPerMinute: 5, requestsPerDay: 200 }
-};
-
-// Token usage tracking (in-memory cache, will reset on restart)
-let tokenUsage = {
-    total: 0,
-    byModel: {},
-    byUser: {},
-    byDate: {}
-};
-
-// Available Cloudflare AI Models
+// Available Cloudflare AI Models (MUST be defined BEFORE RATE_LIMITS)
 const MODELS = {
     // Text Generation
     TEXT_FAST: '@cf/meta/llama-3-8b-instruct',
@@ -54,6 +39,21 @@ const MODELS = {
     
     // Embeddings
     EMBEDDINGS: '@cf/baai/bge-base-en-v1.5'
+};
+
+// Rate limiting configuration (NOW AFTER MODELS is defined)
+const RATE_LIMITS = {
+    [MODELS.TEXT_FAST]: { requestsPerMinute: 30, requestsPerDay: 1000 },
+    [MODELS.TEXT_POWERFUL]: { requestsPerMinute: 10, requestsPerDay: 500 },
+    [MODELS.IMAGE_SDXL]: { requestsPerMinute: 5, requestsPerDay: 200 }
+};
+
+// Token usage tracking (in-memory cache, will reset on restart)
+let tokenUsage = {
+    total: 0,
+    byModel: {},
+    byUser: {},
+    byDate: {}
 };
 
 // Style modifiers for image generation
