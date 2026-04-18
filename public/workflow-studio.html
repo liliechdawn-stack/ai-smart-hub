@@ -1714,10 +1714,12 @@
         </div>
     </div>
 
-    <script>
+  
+  <script>
         // ================================================
         // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
         // 100+ NODES - MULTI-PORT ROUTING - CREDENTIAL MANAGER
+        // PORT-BASED ORCHESTRATOR - OATH SYSTEM
         // PRODUCTION GRADE - PAYMENT READY
         // ================================================
 
@@ -1785,6 +1787,7 @@
         let currentWorkflowId = null;
         let isConnecting = false;
         let connectionStartNode = null;
+        let connectionStartPort = null;
         let executionInterval = null;
         let currentExecutionId = null;
         let userData = {};
@@ -1795,6 +1798,15 @@
         let connectedApps = [];
         let customApps = [];
         let credentials = [];
+        let runHistory = {};
+
+        // OAuth State
+        let oauthProviders = {
+            google: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile' },
+            github: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'user:email repo' },
+            slack: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'chat:write channels:read' },
+            shopify: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'read_products write_products' }
+        };
 
         // Global Search State
         let globalSearchVisible = false;
@@ -1807,7 +1819,7 @@
         let activeInputField = null;
 
         // ================================================
-        // 100+ NODE CONFIGURATIONS
+        // 100+ NODE CONFIGURATIONS WITH PORT OUTPUTS
         // ================================================
         const NODE_CONFIGS = {
             // Triggers (5)
@@ -1938,6 +1950,91 @@
             metabase: { name: 'Metabase', icon: 'fas fa-chart-simple', color: '#509EE3', fields: ['query', 'database_id'], defaults: { query: '', database_id: '' }, category: 'analytics', keywords: ['metabase', 'bi', 'dashboard'], outputs: ['next', 'error'] }
         };
 
+        // ================================================
+        // OAuth SYSTEM
+        // ================================================
+        function initOAuth() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const provider = urlParams.get('provider');
+            
+            if (code && provider) {
+                exchangeOAuthCode(provider, code);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        async function startOAuth(provider) {
+            const oauthConfig = oauthProviders[provider];
+            if (!oauthConfig) {
+                showToast(`OAuth not configured for ${provider}`, 'error');
+                return;
+            }
+            
+            const state = Math.random().toString(36).substring(7);
+            localStorage.setItem('oauth_state', state);
+            localStorage.setItem('oauth_provider', provider);
+            
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}`;
+            
+            if (provider === 'github') {
+                window.location.href = `https://github.com/login/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+            } else if (provider === 'slack') {
+                window.location.href = `https://slack.com/oauth/v2/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+            } else {
+                window.location.href = authUrl;
+            }
+        }
+        
+        async function exchangeOAuthCode(provider, code) {
+            try {
+                const response = await fetch(`${API_BASE}/oauth/${provider}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, redirect_uri: oauthProviders[provider].redirectUri })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const credential = {
+                        id: Date.now().toString(),
+                        name: `${provider.toUpperCase()} Connection`,
+                        service: provider,
+                        token: data.access_token,
+                        refresh_token: data.refresh_token,
+                        expires_at: data.expires_in ? Date.now() + (data.expires_in * 1000) : null,
+                        created_at: new Date().toISOString()
+                    };
+                    credentials.push(credential);
+                    saveCredentials();
+                    renderCredentials();
+                    showToast(`Successfully connected to ${provider}!`, 'success');
+                } else {
+                    throw new Error('Token exchange failed');
+                }
+            } catch (error) {
+                showToast(`OAuth failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function showOAuthModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:#1a1a2e;border-radius:20px;padding:28px;width:450px;max-width:90%;border:1px solid #d4af37;">
+                    <h3 style="margin-bottom:20px;color:#d4af37;"><i class="fas fa-plug"></i> Connect with OAuth</h3>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <button class="btn-primary" style="width:100%;" onclick="startOAuth('google')"><i class="fab fa-google"></i> Connect Google</button>
+                        <button class="btn-primary" style="width:100%;background:#333;" onclick="startOAuth('github')"><i class="fab fa-github"></i> Connect GitHub</button>
+                        <button class="btn-primary" style="width:100%;background:#4A154B;" onclick="startOAuth('slack')"><i class="fab fa-slack"></i> Connect Slack</button>
+                        <button class="btn-primary" style="width:100%;background:#7AB55C;" onclick="startOAuth('shopify')"><i class="fab fa-shopify"></i> Connect Shopify</button>
+                    </div>
+                    <button class="btn-outline" style="margin-top:20px;width:100%;" onclick="this.parentElement.parentElement.remove()">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
         // Load custom apps from localStorage
         function loadCustomApps() {
             const saved = localStorage.getItem('custom_apps');
@@ -1975,7 +2072,7 @@
             if (!container) return;
             
             if (credentials.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;"><i class="fas fa-key fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No credentials saved.<br>Add your API keys securely here.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;"><i class="fas fa-key fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><br>No credentials saved.<br>Add your API keys securely here.<br><button class="btn-primary" style="margin-top:12px;" onclick="showOAuthModal()"><i class="fab fa-google"></i> Connect via OAuth</button></div>';
                 return;
             }
             
@@ -1989,6 +2086,7 @@
                     </div>
                 </div>
             `).join('');
+            container.innerHTML += '<div style="margin-top:12px;"><button class="btn-primary" style="width:100%;" onclick="showOAuthModal()"><i class="fab fa-google"></i> Connect via OAuth</button></div>';
         }
 
         function showAddCredentialModal() {
@@ -3155,7 +3253,10 @@
                 const nodeName = match[1];
                 const property = match[2];
                 const node = workflowNodes.find(n => n.name === nodeName);
-                if (node && node.result && node.result.output) {
+                if (node && runHistory[nodeName]) {
+                    const resolvedValue = runHistory[nodeName][property];
+                    if (resolvedValue !== undefined) resolved = resolved.replace(match[0], String(resolvedValue));
+                } else if (node && node.result && node.result.output) {
                     const resolvedValue = node.result.output[property];
                     if (resolvedValue !== undefined) resolved = resolved.replace(match[0], String(resolvedValue));
                 }
@@ -3179,7 +3280,11 @@
         function getAvailableVariables() {
             const variables = [];
             for (const node of workflowNodes) {
-                if (node.result && node.result.output) {
+                if (runHistory[node.name]) {
+                    const sampleOutput = runHistory[node.name];
+                    const properties = Object.keys(sampleOutput).slice(0, 10);
+                    variables.push({ name: node.name, type: 'node', sample: sampleOutput, properties: properties, syntax: `{{ $node["${node.name}"].json["property"] }}`, preview: JSON.stringify(sampleOutput).substring(0, 100) });
+                } else if (node.result && node.result.output) {
                     const sampleOutput = node.result.output;
                     const properties = Object.keys(sampleOutput).slice(0, 10);
                     variables.push({ name: node.name, type: 'node', sample: sampleOutput, properties: properties, syntax: `{{ $node["${node.name}"].json["property"] }}`, preview: JSON.stringify(sampleOutput).substring(0, 100) });
@@ -3249,7 +3354,7 @@
         }
 
         // ================================================
-        // ENHANCED NODE EXECUTION
+        // ENHANCED NODE EXECUTION (Gemini, RSS, Code Sandbox)
         // ================================================
         async function executeGeminiNode(config) {
             const { prompt, model = 'gemini-1.5-pro', temperature = 0.7, api_key } = config;
@@ -3363,6 +3468,7 @@
             return { output: results, total_processed: results.length };
         }
 
+        // ===== PORT-AWARE CONDITION NODE (True/False branching) =====
         async function executeConditionWithMultipleOutputs(config, inputData) {
             const { condition, output_count = 2 } = config;
             addExecutionLog('Condition', 'info', `🔀 Evaluating: ${condition.substring(0, 100)}`);
@@ -3370,19 +3476,90 @@
                 const conditionFn = new Function('data', `try { return ${condition}; } catch(e) { return false; }`);
                 const data = { ...inputData };
                 const result = conditionFn(data);
-                let nextOutputs = ['false'];
-                if (result === true) nextOutputs = ['true'];
-                else if (typeof result === 'string') nextOutputs = [result];
-                addExecutionLog('Condition', 'success', `✅ Result: ${result === true ? 'TRUE' : result === false ? 'FALSE' : result}`);
-                return { output: { condition_result: result, evaluated_data: data }, next: nextOutputs };
+                let selectedPort = 'false';
+                if (result === true) {
+                    selectedPort = 'true';
+                } else if (typeof result === 'string') {
+                    selectedPort = result;
+                }
+                addExecutionLog('Condition', 'success', `✅ Result: ${selectedPort.toUpperCase()} - Routing to ${selectedPort} port`);
+                return { 
+                    output: { condition_result: result, evaluated_data: data, selected_port: selectedPort }, 
+                    selectedPort: selectedPort,
+                    next: [selectedPort],
+                    status: 'completed' 
+                };
             } catch (error) {
                 addExecutionLog('Condition', 'error', `❌ Evaluation failed: ${error.message}`);
-                return { output: { condition_result: false, error: error.message }, next: ['error'] };
+                return { 
+                    output: { condition_result: false, error: error.message, selected_port: 'error' }, 
+                    selectedPort: 'error',
+                    next: ['error'],
+                    status: 'failed' 
+                };
+            }
+        }
+
+        // ===== HTTP REQUEST WITH PORT-AWARE ERROR HANDLING =====
+        async function executeHTTPRequestWithPorts(config, inputData) {
+            const { method = 'GET', url, auth_type = 'none', auth_token = '', headers = {}, body = {} } = config;
+            addExecutionLog('HTTP', 'info', `🌐 ${method} ${url}`);
+            const requestHeaders = { 'Content-Type': 'application/json', ...headers };
+            switch(auth_type) {
+                case 'bearer': requestHeaders['Authorization'] = `Bearer ${auth_token}`; break;
+                case 'basic': requestHeaders['Authorization'] = `Basic ${btoa(auth_token)}`; break;
+                case 'apiKey': requestHeaders['X-API-Key'] = auth_token; break;
+            }
+            try {
+                const response = await fetch(url, { method: method, headers: requestHeaders, body: method !== 'GET' ? JSON.stringify(body) : undefined });
+                const responseData = await response.json().catch(() => ({}));
+                const isSuccess = response.status >= 200 && response.status < 300;
+                const selectedPort = isSuccess ? 'next' : 'error';
+                addExecutionLog('HTTP', isSuccess ? 'success' : 'error', `Status: ${response.status} - Routing to ${selectedPort} port`);
+                return { 
+                    output: { status: response.status, data: responseData, headers: Object.fromEntries(response.headers), selected_port: selectedPort }, 
+                    selectedPort: selectedPort,
+                    next: [selectedPort],
+                    status: isSuccess ? 'completed' : 'failed'
+                };
+            } catch (error) {
+                addExecutionLog('HTTP', 'error', `❌ Failed: ${error.message} - Routing to error port`);
+                return { 
+                    output: { status: 0, error: error.message, url: url, selected_port: 'error' }, 
+                    selectedPort: 'error',
+                    next: ['error'],
+                    status: 'failed' 
+                };
+            }
+        }
+
+        // ===== EMAIL SEND WITH PORT-AWARE ERROR HANDLING =====
+        async function executeSendEmailWithPorts(config, inputData, triggerData) {
+            const { to, subject, body } = config;
+            addExecutionLog('Email', 'info', `📧 Sending email to ${to}`);
+            try {
+                const emailSent = await sendEmailReal(to, subject, body);
+                const selectedPort = emailSent ? 'next' : 'error';
+                addExecutionLog('Email', emailSent ? 'success' : 'error', emailSent ? `✅ Sent to ${to} - Routing to next` : `❌ Failed to send - Routing to error`);
+                return { 
+                    output: { to: to, subject: subject, status: emailSent ? 'sent' : 'failed', selected_port: selectedPort }, 
+                    selectedPort: selectedPort,
+                    next: [selectedPort],
+                    status: emailSent ? 'completed' : 'failed'
+                };
+            } catch (error) {
+                addExecutionLog('Email', 'error', `❌ Failed: ${error.message} - Routing to error port`);
+                return { 
+                    output: { to: to, subject: subject, error: error.message, selected_port: 'error' }, 
+                    selectedPort: 'error',
+                    next: ['error'],
+                    status: 'failed'
+                };
             }
         }
 
         // ================================================
-        // OUTPUT PREVIEW SIDEBAR
+        // OUTPUT PREVIEW SIDEBAR (n8n-style)
         // ================================================
         function showOutputPreview(nodeId) {
             const node = workflowNodes.find(n => n.id === nodeId);
@@ -3403,12 +3580,13 @@
             setTimeout(() => { panel.style.transform = 'translateX(0)'; }, 10);
         }
 
-        // Modify renderWorkflowCanvas to add output preview button
+        // Modify renderWorkflowCanvas to add output preview button and port badges
         const originalRenderWorkflowCanvas = renderWorkflowCanvas;
         renderWorkflowCanvas = function() {
             originalRenderWorkflowCanvas();
             setTimeout(() => {
                 document.querySelectorAll('.workflow-node').forEach(nodeEl => {
+                    // Add output preview button
                     if (nodeEl.querySelector('.output-preview-btn')) return;
                     const actionsDiv = nodeEl.querySelector('.workflow-node-header-actions');
                     if (actionsDiv) {
@@ -3419,9 +3597,92 @@
                         previewBtn.onclick = (e) => { e.stopPropagation(); const nodeId = nodeEl.dataset.nodeId; showOutputPreview(nodeId); };
                         actionsDiv.appendChild(previewBtn);
                     }
+                    
+                    // Add port badges for multi-output nodes
+                    const nodeId = nodeEl.dataset.nodeId;
+                    const node = workflowNodes.find(n => n.id === nodeId);
+                    if (node && node.outputs && node.outputs.length > 1 && !nodeEl.querySelector('.workflow-node-ports')) {
+                        const contentDiv = nodeEl.querySelector('.workflow-node-content');
+                        if (contentDiv) {
+                            const portsDiv = document.createElement('div');
+                            portsDiv.className = 'workflow-node-ports';
+                            portsDiv.innerHTML = node.outputs.map(port => `<span class="port-badge port-${port}" data-port="${port}" onclick="startConnectionFromPort('${nodeId}', '${port}', event)"><i class="fas fa-plug"></i> ${port.toUpperCase()}</span>`).join('');
+                            contentDiv.appendChild(portsDiv);
+                        }
+                    }
                 });
             }, 50);
         };
+
+        // Start connection from a specific port
+        function startConnectionFromPort(nodeId, portName, event) {
+            event.stopPropagation();
+            isConnecting = true;
+            connectionStartNode = { id: nodeId, port: portName };
+            connectionStartPort = portName;
+            
+            const canvas = document.getElementById('workflowCanvas');
+            const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            tempLine.style.position = 'absolute';
+            tempLine.style.top = '0';
+            tempLine.style.left = '0';
+            tempLine.style.width = '100%';
+            tempLine.style.height = '100%';
+            tempLine.style.pointerEvents = 'none';
+            tempLine.style.zIndex = '100';
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('stroke', '#d4af37');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('stroke-dasharray', '5,5');
+            path.setAttribute('fill', 'none');
+            tempLine.appendChild(path);
+            canvas.appendChild(tempLine);
+            
+            const onMouseMove = (me) => {
+                if (!isConnecting) return;
+                const startNode = workflowNodes.find(n => n.id === nodeId);
+                if (startNode) {
+                    const startX = startNode.x + 260;
+                    const startY = startNode.y + 50;
+                    const endX = me.clientX - canvas.getBoundingClientRect().left;
+                    const endY = me.clientY - canvas.getBoundingClientRect().top;
+                    const midX = (startX + endX) / 2;
+                    path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
+                }
+            };
+            
+            const onMouseUp = (ue) => {
+                if (!isConnecting) return;
+                const target = document.elementsFromPoint(ue.clientX, ue.clientY);
+                let targetPort = null;
+                for (const el of target) {
+                    if (el.classList && el.classList.contains('workflow-node-port') && el.dataset.portType === 'input') {
+                        targetPort = el;
+                        break;
+                    }
+                }
+                if (targetPort) {
+                    const targetId = targetPort.dataset.nodeId;
+                    if (targetId && targetId !== nodeId) {
+                        if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId && e.sourceHandle === portName)) {
+                            workflowEdges.push({ source: nodeId, target: targetId, sourceHandle: portName });
+                            renderWorkflowCanvas();
+                            saveCurrentWorkflow();
+                            showToast(`Connection created from ${portName} port`, 'success');
+                        }
+                    }
+                }
+                isConnecting = false;
+                connectionStartNode = null;
+                connectionStartPort = null;
+                tempLine.remove();
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
 
         // Modify openPropertiesPanel to attach variable picker
         const originalOpenPropertiesPanel = openPropertiesPanel;
@@ -3563,6 +3824,18 @@
                     path.setAttribute('stroke-width', '2');
                     path.setAttribute('fill', 'none');
                     svg.appendChild(path);
+                    
+                    if (edge.sourceHandle) {
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', midX - 15);
+                        text.setAttribute('y', startY - 5);
+                        text.setAttribute('fill', '#d4af37');
+                        text.setAttribute('font-size', '8');
+                        text.setAttribute('font-family', 'monospace');
+                        text.textContent = edge.sourceHandle.toUpperCase();
+                        svg.appendChild(text);
+                    }
+                    
                     canvas.appendChild(svg);
                 }
             });
@@ -3645,7 +3918,7 @@
             event.stopPropagation();
             if (portType === 'output') {
                 isConnecting = true;
-                connectionStartNode = { id: nodeId, type: portType };
+                connectionStartNode = { id: nodeId, port: 'next' };
                 
                 const canvas = document.getElementById('workflowCanvas');
                 const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -3691,7 +3964,7 @@
                         const targetId = targetPort.dataset.nodeId;
                         if (targetId && targetId !== nodeId) {
                             if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId)) {
-                                workflowEdges.push({ source: nodeId, target: targetId });
+                                workflowEdges.push({ source: nodeId, target: targetId, sourceHandle: 'next' });
                                 renderWorkflowCanvas();
                                 saveCurrentWorkflow();
                                 showToast('Connection created', 'success');
@@ -3885,139 +4158,201 @@
             
             let currentData = inputData || { test: true, timestamp: new Date().toISOString() };
             window._lastTriggerData = currentData;
+            runHistory = {};
             
-            for (const node of workflowNodes) {
+            // Build node map for quick lookup
+            const nodeMap = {};
+            workflowNodes.forEach(node => { nodeMap[node.id] = node; });
+            
+            // Find start nodes (nodes with no incoming edges)
+            const startNodes = workflowNodes.filter(node => {
+                const hasIncoming = workflowEdges.some(edge => edge.target === node.id);
+                return !hasIncoming;
+            });
+            
+            if (startNodes.length === 0) {
+                addExecutionLog('Workflow', 'error', '❌ No start node found in workflow');
+                return;
+            }
+            
+            // Process nodes in order using BFS with port awareness
+            const processed = new Set();
+            const queue = [...startNodes];
+            const nodeResults = {};
+            
+            while (queue.length > 0) {
+                const node = queue.shift();
+                if (processed.has(node.id)) continue;
+                processed.add(node.id);
+                
+                // Build input from incoming connections
+                const incomingEdges = workflowEdges.filter(edge => edge.target === node.id);
+                let nodeInput = {};
+                
+                for (const edge of incomingEdges) {
+                    if (nodeResults[edge.source]) {
+                        nodeInput = { ...nodeInput, ...nodeResults[edge.source].output };
+                    }
+                }
+                
+                if (Object.keys(nodeInput).length === 0 && incomingEdges.length === 0) {
+                    nodeInput = currentData;
+                }
+                
                 node.status = 'running';
                 renderWorkflowCanvas();
                 
+                // Resolve variables in node config
                 if (node.config) {
                     for (const [key, val] of Object.entries(node.config)) {
                         if (typeof val === 'string') {
-                            node.config[key] = resolveVariables(val, { data: currentData, trigger: currentData });
+                            node.config[key] = resolveVariables(val, { data: nodeInput, trigger: currentData });
                         }
                     }
                 }
                 
                 let result;
                 
+                // Execute node based on type with port awareness
                 switch (node.type) {
                     case 'trigger':
-                        result = { output: { webhook_received: true, data: currentData, timestamp: new Date().toISOString() }, status: 'completed', next: ['next'] };
+                        result = { output: { webhook_received: true, data: currentData, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'schedule':
-                        result = { output: { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() }, status: 'completed', next: ['next'] };
+                        result = { output: { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'github':
-                        result = { output: await githubTriggerReal(node.config.event_type || 'push', node.config.repository || 'main', currentData), status: 'completed', next: ['next'] };
+                        result = { output: await githubTriggerReal(node.config.event_type || 'push', node.config.repository || 'main', currentData), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'ai_image':
                         const imageUrl = await generateRealImage(node.config.prompt, node.config.style);
-                        result = { output: { image_url: imageUrl, prompt: node.config.prompt, style: node.config.style, generated_at: new Date().toISOString() }, status: 'completed', next: ['next'] };
+                        result = { output: { image_url: imageUrl, prompt: node.config.prompt, style: node.config.style, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'ai_video':
                         const videoUrl = await generateRealVideo(node.config.prompt, node.config.duration || 30, node.config.style);
-                        result = { output: { video_url: videoUrl, prompt: node.config.prompt, duration: node.config.duration, style: node.config.style, generated_at: new Date().toISOString() }, status: 'completed', next: ['next'] };
+                        result = { output: { video_url: videoUrl, prompt: node.config.prompt, duration: node.config.duration, style: node.config.style, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'ai_content':
                         const content = await generateRealContent(node.config.type, node.config.prompt, node.config.tone);
-                        result = { output: { content: content, type: node.config.type, prompt: node.config.prompt, generated_at: new Date().toISOString() }, status: 'completed', next: ['next'] };
+                        result = { output: { content: content, type: node.config.type, prompt: node.config.prompt, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'ai_lead_scoring':
-                        result = { output: await scoreLeadReal({ ...currentData, ...currentData }), status: 'completed', next: ['next'] };
+                        result = { output: await scoreLeadReal({ ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'post_social':
-                        result = { output: await postToSocialReal(node.config.platform, node.config.content), status: 'completed', next: ['next'] };
+                        result = { output: await postToSocialReal(node.config.platform, node.config.content), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'post_tiktok':
-                        result = { output: await postToTikTokReal(node.config.video_url, node.config.caption, node.config.hashtags?.split(',') || [], node.config.thumbnail_url), status: 'completed', next: ['next'] };
+                        result = { output: await postToTikTokReal(node.config.video_url, node.config.caption, node.config.hashtags?.split(',') || [], node.config.thumbnail_url), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'generate_hashtags':
-                        result = { output: await generateHashtags(node.config.topic, parseInt(node.config.count) || 15), status: 'completed', next: ['next'] };
+                        result = { output: await generateHashtags(node.config.topic, parseInt(node.config.count) || 15), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'schedule_post':
-                        result = { output: await schedulePostReal(node.config.platform, node.config.content, node.config.schedule_time), status: 'completed', next: ['next'] };
+                        result = { output: await schedulePostReal(node.config.platform, node.config.content, node.config.schedule_time), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'send_email':
-                        const emailSent = await sendEmailReal(node.config.to, node.config.subject, node.config.body);
-                        result = { output: { to: node.config.to, subject: node.config.subject, status: emailSent ? 'sent' : 'failed' }, status: 'completed', next: ['next'] };
+                        const emailResult = await executeSendEmailWithPorts(node.config, nodeInput, currentData);
+                        result = emailResult;
                         break;
                     case 'send_slack':
                         const slackSent = await sendSlackReal(node.config.channel, node.config.message);
-                        result = { output: { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' }, status: 'completed', next: ['next'] };
+                        result = { output: { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' }, selectedPort: slackSent ? 'next' : 'error', status: slackSent ? 'completed' : 'failed' };
                         break;
                     case 'inventory_check':
-                        result = { output: await checkInventoryReal(node.config.platform), status: 'completed', next: ['next'] };
+                        result = { output: await checkInventoryReal(node.config.platform), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'cart_recovery':
-                        result = { output: await recoverCartReal(node.config.platform, node.config.discount_percent), status: 'completed', next: ['next'] };
+                        result = { output: await recoverCartReal(node.config.platform, node.config.discount_percent), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'create_lead':
                         const lead = await createLeadReal({ ...currentData, ...currentData, name: node.config.lead_name, source: node.config.source });
-                        result = { output: { lead_id: lead?.id, status: 'created' }, status: 'completed', next: ['next'] };
+                        result = { output: { lead_id: lead?.id, status: 'created' }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'update_crm':
-                        result = { output: await updateCRMReal(node.config.record_id, { ...currentData, ...currentData }), status: 'completed', next: ['next'] };
+                        result = { output: await updateCRMReal(node.config.record_id, { ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'loop':
-                        result = { output: await executeLoopWithSplit(node.config, currentData), status: 'completed', next: ['next'] };
+                        result = { output: await executeLoopWithSplit(node.config, nodeInput), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'database_query':
-                        result = { output: await databaseQueryReal(node.config.query, JSON.parse(node.config.params || '{}')), status: 'completed', next: ['next'] };
+                        result = { output: await databaseQueryReal(node.config.query, JSON.parse(node.config.params || '{}')), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'condition':
                         const condResult = await executeConditionWithMultipleOutputs(node.config, { ...currentData, ...currentData });
-                        result = { output: condResult.output, next: condResult.next, status: 'completed' };
+                        result = condResult;
                         break;
                     case 'wait':
                         const duration = parseInt(node.config.duration) || 5;
                         const unit = node.config.unit || 'seconds';
                         const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
                         await new Promise(r => setTimeout(r, ms));
-                        result = { output: { waited: `${duration} ${unit}` }, status: 'completed', next: ['next'] };
+                        result = { output: { waited: `${duration} ${unit}` }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'http_request':
-                        result = { output: await executeHTTPRequestWithAuth(node.config), status: 'completed', next: ['next'] };
+                        const httpResult = await executeHTTPRequestWithPorts(node.config, nodeInput);
+                        result = httpResult;
                         break;
                     case 'gemini':
-                        result = { output: await executeGeminiNode(node.config), status: 'completed', next: ['next'] };
+                        result = { output: await executeGeminiNode(node.config), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'rss':
-                        result = { output: await executeRSSNode(node.config), status: 'completed', next: ['next'] };
+                        result = { output: await executeRSSNode(node.config), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'code':
-                        result = { output: await executeCodeNode(node.config, currentData, currentData), status: 'completed', next: ['next'] };
+                        result = { output: await executeCodeNode(node.config, nodeInput, currentData), selectedPort: 'next', status: 'completed' };
                         break;
                     case 'webhook':
-                        result = { output: { webhook_triggered: true, url: node.config.webhook_url, data: currentData, timestamp: new Date().toISOString() }, status: 'completed', next: ['next'] };
+                        result = { output: { webhook_triggered: true, url: node.config.webhook_url, data: nodeInput, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
                         break;
                     case 'custom_app':
                         const app = [...connectedApps, ...customApps].find(a => a.id == node.config.app_id);
                         if (app) {
-                            result = { output: await triggerCustomWebhook(app, { ...currentData, ...currentData }), status: 'completed', next: ['next'] };
+                            const customResult = await triggerCustomWebhook(app, { ...currentData, ...currentData });
+                            result = { output: customResult, selectedPort: customResult.success ? 'next' : 'error', status: customResult.success ? 'completed' : 'failed' };
                         } else {
-                            result = { output: { error: 'App not found' }, status: 'failed', next: ['error'] };
+                            result = { output: { error: 'App not found' }, selectedPort: 'error', status: 'failed' };
                         }
                         break;
                     default:
-                        result = { output: { output: currentData }, status: 'completed', next: ['next'] };
+                        result = { output: { output: nodeInput }, selectedPort: 'next', status: 'completed' };
                 }
                 
                 node.status = result.status;
                 if (result.output) {
                     currentData = { ...currentData, ...result.output };
                     node.result = { output: result.output };
+                    runHistory[node.name] = result.output;
                 }
+                nodeResults[node.id] = result;
                 renderWorkflowCanvas();
                 
                 if (result.status === 'failed') {
-                    addExecutionLog('Workflow', 'error', '❌ Workflow execution failed');
+                    addExecutionLog('Workflow', 'error', `❌ Workflow execution failed at node ${node.name} (routed to ${result.selectedPort} port)`);
                     return;
+                }
+                
+                addExecutionLog(node.name, 'success', `✅ Completed - Routing to ${result.selectedPort} port`);
+                
+                // Find and queue child nodes based on selected port
+                const outgoingEdges = workflowEdges.filter(edge => edge.source === node.id);
+                const matchingEdges = outgoingEdges.filter(edge => edge.sourceHandle === result.selectedPort || (!edge.sourceHandle && result.selectedPort === 'next'));
+                
+                for (const edge of matchingEdges) {
+                    const childNode = nodeMap[edge.target];
+                    if (childNode && !processed.has(childNode.id)) {
+                        const allIncomingEdges = workflowEdges.filter(e => e.target === childNode.id);
+                        const allSatisfied = allIncomingEdges.every(e => processed.has(e.source) || nodeResults[e.source]);
+                        if (allSatisfied && !queue.includes(childNode)) {
+                            queue.push(childNode);
+                        }
+                    }
                 }
             }
             
-            addExecutionLog('Workflow', 'success', '✅ Workflow execution completed successfully!');
+            addExecutionLog('Workflow', 'success', '✅ Workflow execution completed successfully with port-based routing!');
             showToast('✅ Workflow completed!', 'success');
-            addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', { output: currentData });
+            addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed with branching', { output: currentData, runHistory: runHistory });
         }
 
         async function saveWorkflow() {
@@ -4171,10 +4506,11 @@
             await initializeSearchIndex();
             loadSavedData();
             renderWorkflowCanvas();
+            initOAuth();
             if (workflowNodes.length === 0) {
                 addNodeToCanvas('trigger', 100, 200);
-                addNodeToCanvas('ai_image', 400, 200);
-                workflowEdges.push({ source: workflowNodes[0]?.id, target: workflowNodes[1]?.id });
+                addNodeToCanvas('condition', 400, 200);
+                workflowEdges.push({ source: workflowNodes[0]?.id, target: workflowNodes[1]?.id, sourceHandle: 'next' });
                 renderWorkflowCanvas();
                 saveCurrentWorkflow();
             }
@@ -4188,6 +4524,7 @@
         window.handleConnectedAppDragStart = handleConnectedAppDragStart;
         window.deleteWorkflowNode = deleteWorkflowNode;
         window.startConnection = startConnection;
+        window.startConnectionFromPort = startConnectionFromPort;
         window.saveWorkflow = saveWorkflow;
         window.deployWorkflow = deployWorkflow;
         window.testWorkflow = testWorkflow;
@@ -4217,6 +4554,8 @@
         window.addCredential = addCredential;
         window.deleteCredential = deleteCredential;
         window.useCredential = useCredential;
+        window.startOAuth = startOAuth;
+        window.showOAuthModal = showOAuthModal;
     </script>
 </body>
 </html>
