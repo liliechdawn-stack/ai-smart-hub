@@ -1747,15 +1747,11 @@
         <div style="padding:12px; border-top:1px solid #2a2a3e; font-size:11px; color:#666; display:flex; justify-content:space-between;"><span><i class="fas fa-arrow-up"></i> <i class="fas fa-arrow-down"></i> Navigate</span><span><i class="fas fa-plus"></i> Click to add node</span><span><i class="fas fa-globe"></i> Deep HTTP Discovery</span></div>
     </div>
 
-   
-   <script>
+    <script>
         // ================================================
         // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
         // 150+ NODES - AI AGENT - KNOWLEDGE BASE - TEMPLATE ENGINE
         // SORA-LEVEL VIDEO GENERATION - SCRIPT GENERATOR
-        // WITH PRODUCTION-GRADE NODE ENGINE (ADDED)
-        // n8n-Style Schema | WorkflowOrchestrator | Variable Resolver | State Manager
-        // 5 Must-Have Logic Nodes | Data Mapper UI | Save/Load JSON | Fixed OAuth
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -1957,38 +1953,13 @@
         let credentials = [];
         let runHistory = {};
         let agentMemory = {};
-        
-        // ================================================
-        // PRODUCTION-GRADE ORCHESTRATOR - ADDED
-        // ================================================
-        let workflowOrchestrator = null;
 
-        // OAuth State - FIXED with proper client_id configuration
+        // OAuth State
         let oauthProviders = {
-            google: { 
-                clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-                authUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
-            },
-            github: { 
-                clientId: 'YOUR_GITHUB_CLIENT_ID', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'user:email repo',
-                authUrl: 'https://github.com/login/oauth/authorize'
-            },
-            slack: { 
-                clientId: 'YOUR_SLACK_CLIENT_ID', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'chat:write channels:read',
-                authUrl: 'https://slack.com/oauth/v2/authorize'
-            },
-            shopify: { 
-                clientId: 'YOUR_SHOPIFY_CLIENT_ID', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'read_products write_products',
-                authUrl: 'https://{shop}.myshopify.com/admin/oauth/authorize'
-            }
+            google: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile' },
+            github: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'user:email repo' },
+            slack: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'chat:write channels:read' },
+            shopify: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'read_products write_products' }
         };
 
         // Global Search State
@@ -2002,673 +1973,147 @@
         let activeInputField = null;
 
         // ================================================
-        // 1. DATA SCHEMA REFACTOR - n8n-Style Node Object (ADDED)
-        // Each node has: id, type, position, parameters, credentials, execute function
+        // 150+ NODE CONFIGURATIONS WITH PORT OUTPUTS
         // ================================================
-        
-        // Node registry with execute functions for production-grade engine
-        const NodeRegistry = {};
-
-        // Base node class structure following n8n schema
-        class WorkflowNode {
-            constructor(id, type, position, parameters = {}, credentials = {}) {
-                this.id = id;
-                this.type = type;
-                this.position = position;
-                this.parameters = parameters;
-                this.credentials = credentials;
-                this.execute = async (input, context) => {
-                    const handler = NodeRegistry[type];
-                    if (handler) {
-                        return await handler(this, input, context);
-                    }
-                    return { output: input, status: 'completed' };
-                };
-            }
-        }
-
-        // ================================================
-        // 2. WORKFLOW ORCHESTRATOR CLASS - Production-Grade Engine (ADDED)
-        // Handles: Topological Sort, Variable Resolution, State Management
-        // ================================================
-        
-        class WorkflowOrchestrator {
-            constructor(nodes, edges) {
-                this.nodes = nodes;
-                this.edges = edges;
-                this.executionLog = []; // State Manager - records input, output, timestamp for every step
-                this.context = {}; // Shared workflow context
-                this.nodeOutputs = new Map(); // Store outputs per node for variable resolution
-            }
-
-            // Topological Sort - ensures Trigger nodes fire before Action nodes
-            topologicalSort() {
-                const nodeMap = new Map();
-                this.nodes.forEach(node => nodeMap.set(node.id, node));
-                
-                const inDegree = new Map();
-                const adjList = new Map();
-                
-                this.nodes.forEach(node => {
-                    inDegree.set(node.id, 0);
-                    adjList.set(node.id, []);
-                });
-                
-                this.edges.forEach(edge => {
-                    adjList.get(edge.source).push(edge.target);
-                    inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
-                });
-                
-                const queue = [];
-                this.nodes.forEach(node => {
-                    if (inDegree.get(node.id) === 0) {
-                        queue.push(node.id);
-                    }
-                });
-                
-                const sorted = [];
-                while (queue.length > 0) {
-                    const nodeId = queue.shift();
-                    sorted.push(nodeId);
-                    
-                    adjList.get(nodeId).forEach(neighbor => {
-                        inDegree.set(neighbor, inDegree.get(neighbor) - 1);
-                        if (inDegree.get(neighbor) === 0) {
-                            queue.push(neighbor);
-                        }
-                    });
-                }
-                
-                if (sorted.length !== this.nodes.length) {
-                    throw new Error('Circular dependency detected in workflow');
-                }
-                
-                return sorted.map(id => this.nodes.find(n => n.id === id));
-            }
-
-            // Variable/Expression Resolver - scans parameters for {{ $json.key }} or {{ $node["NodeName"].output }}
-            resolveVariables(value, currentNodeId) {
-                if (typeof value !== 'string') return value;
-                
-                let resolved = value;
-                
-                // Pattern: {{ $node["NodeName"].json["property"] }}
-                const nodePattern = /\{\{\s*\$node\["([^"]+)"\]\.json\["([^"]+)"\]\s*\}\}/g;
-                let match;
-                while ((match = nodePattern.exec(value)) !== null) {
-                    const nodeName = match[1];
-                    const property = match[2];
-                    const nodeOutput = this.nodeOutputs.get(nodeName);
-                    if (nodeOutput && nodeOutput[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(nodeOutput[property]));
-                    } else if (this.context[nodeName] && this.context[nodeName][property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context[nodeName][property]));
-                    }
-                }
-                
-                // Pattern: {{ $json.property }}
-                const jsonPattern = /\{\{\s*\$json\.([^\s}]+)\s*\}\}/g;
-                while ((match = jsonPattern.exec(value)) !== null) {
-                    const property = match[1];
-                    if (this.context.json && this.context.json[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context.json[property]));
-                    }
-                }
-                
-                // Pattern: {{ data.property }}
-                const dataPattern = /\{\{\s*data\.([^\s}]+)\s*\}\}/g;
-                while ((match = dataPattern.exec(value)) !== null) {
-                    const property = match[1];
-                    if (this.context.data && this.context.data[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context.data[property]));
-                    }
-                }
-                
-                // Pattern: {{ trigger.property }}
-                const triggerPattern = /\{\{\s*trigger\.([^\s}]+)\s*\}\}/g;
-                while ((match = triggerPattern.exec(value)) !== null) {
-                    const property = match[1];
-                    if (this.context.trigger && this.context.trigger[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context.trigger[property]));
-                    }
-                }
-                
-                return resolved;
-            }
-
-            // Recursively resolve all parameters in an object
-            resolveObjectParams(obj, currentNodeId) {
-                if (obj === null || obj === undefined) return obj;
-                if (typeof obj === 'string') {
-                    return this.resolveVariables(obj, currentNodeId);
-                }
-                if (Array.isArray(obj)) {
-                    return obj.map(item => this.resolveObjectParams(item, currentNodeId));
-                }
-                if (typeof obj === 'object') {
-                    const resolved = {};
-                    for (const [key, value] of Object.entries(obj)) {
-                        resolved[key] = this.resolveObjectParams(value, currentNodeId);
-                    }
-                    return resolved;
-                }
-                return obj;
-            }
-
-            // Execute the workflow with full state management
-            async execute(initialData = {}) {
-                this.executionLog = [];
-                this.context = { json: initialData, data: initialData, trigger: initialData };
-                this.nodeOutputs.clear();
-                
-                const sortedNodes = this.topologicalSort();
-                
-                addExecutionLog('Orchestrator', 'info', `🚀 Starting workflow execution with ${sortedNodes.length} nodes (topologically sorted)`);
-                
-                for (const node of sortedNodes) {
-                    const startTime = Date.now();
-                    addExecutionLog(node.name || node.id, 'info', `▶️ Executing node: ${node.name || node.type}`);
-                    
-                    // Update node UI status
-                    const uiNode = workflowNodes.find(n => n.id === node.id);
-                    if (uiNode) {
-                        uiNode.status = 'running';
-                        if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                    }
-                    
-                    try {
-                        // Resolve parameters before execution using variable resolver
-                        const resolvedParams = this.resolveObjectParams({ ...node.parameters }, node.id);
-                        node.parameters = resolvedParams;
-                        
-                        // Prepare input from context
-                        const input = { ...this.context.data, ...this.context.json, ...this.context.trigger };
-                        
-                        // Execute the node
-                        let output;
-                        if (node.execute) {
-                            output = await node.execute(input, this.context);
-                        } else if (NodeRegistry[node.type]) {
-                            output = await NodeRegistry[node.type](node, input, this.context);
-                        } else {
-                            // Fallback: pass through
-                            output = { output: input, status: 'completed' };
-                        }
-                        
-                        const endTime = Date.now();
-                        
-                        // State Manager: Record execution step with input, output, timestamp
-                        const executionStep = {
-                            nodeId: node.id,
-                            nodeName: node.name || node.type,
-                            nodeType: node.type,
-                            input: JSON.parse(JSON.stringify(input)),
-                            output: output.output || output,
-                            timestamp: new Date().toISOString(),
-                            duration: endTime - startTime,
-                            status: output.status || 'completed'
-                        };
-                        this.executionLog.push(executionStep);
-                        
-                        // Store output for variable resolution
-                        this.nodeOutputs.set(node.name || node.type, output.output || output);
-                        
-                        // Update context with output
-                        if (output.output) {
-                            this.context.data = { ...this.context.data, ...output.output };
-                            this.context.json = { ...this.context.json, ...output.output };
-                        }
-                        
-                        if (uiNode) {
-                            uiNode.status = output.status === 'failed' ? 'failed' : 'completed';
-                            uiNode.result = { output: output.output, executionTime: endTime - startTime };
-                        }
-                        
-                        addExecutionLog(node.name || node.type, 'success', `✅ Completed in ${endTime - startTime}ms - Output keys: ${Object.keys(output.output || {}).join(', ') || 'none'}`);
-                        
-                        // Check if node failed and route to error handler
-                        if (output.status === 'failed') {
-                            const errorEdges = this.edges.filter(e => e.source === node.id && e.sourceHandle === 'error');
-                            if (errorEdges.length > 0) {
-                                addExecutionLog(node.name || node.type, 'info', `⚠️ Routing to error handler`);
-                                // Continue execution with error path
-                            } else {
-                                addExecutionLog('Orchestrator', 'error', `❌ Workflow failed at node ${node.name || node.type}`);
-                                if (uiNode) uiNode.status = 'failed';
-                                if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                                return { success: false, executionLog: this.executionLog, failedAt: node.name || node.type };
-                            }
-                        }
-                        
-                    } catch (error) {
-                        if (uiNode) uiNode.status = 'failed';
-                        addExecutionLog(node.name || node.type, 'error', `❌ Execution error: ${error.message}`);
-                        
-                        const executionStep = {
-                            nodeId: node.id,
-                            nodeName: node.name || node.type,
-                            nodeType: node.type,
-                            input: JSON.parse(JSON.stringify(this.context.data)),
-                            error: error.message,
-                            timestamp: new Date().toISOString(),
-                            status: 'failed'
-                        };
-                        this.executionLog.push(executionStep);
-                        
-                        if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                        return { success: false, executionLog: this.executionLog, failedAt: node.name || node.type, error: error.message };
-                    }
-                }
-                
-                if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                addExecutionLog('Orchestrator', 'success', `✅ Workflow completed successfully! Total steps: ${this.executionLog.length}`);
-                
-                return { success: true, executionLog: this.executionLog, finalContext: this.context.data };
-            }
-
-            // Save workflow as JSON string for perfect restoration (ADDED)
-            toJSON() {
-                return {
-                    nodes: this.nodes.map(node => ({
-                        id: node.id,
-                        type: node.type,
-                        position: node.position,
-                        parameters: node.parameters,
-                        credentials: node.credentials,
-                        name: node.name,
-                        icon: node.icon,
-                        color: node.color,
-                        outputs: node.outputs
-                    })),
-                    edges: this.edges,
-                    name: document.getElementById('workflowName')?.value || 'Untitled Workflow',
-                    version: '2.0',
-                    createdAt: new Date().toISOString()
-                };
-            }
-
-            // Load workflow from JSON (ADDED)
-            static fromJSON(jsonData) {
-                const nodes = jsonData.nodes.map(nodeData => {
-                    const node = new WorkflowNode(
-                        nodeData.id,
-                        nodeData.type,
-                        nodeData.position,
-                        nodeData.parameters || {},
-                        nodeData.credentials || {}
-                    );
-                    node.name = nodeData.name;
-                    node.icon = nodeData.icon;
-                    node.color = nodeData.color;
-                    node.outputs = nodeData.outputs || ['next'];
-                    return node;
-                });
-                return new WorkflowOrchestrator(nodes, jsonData.edges || []);
-            }
-        }
-
-        // ================================================
-        // 3. MUST-HAVE LOGIC NODES - Registry Implementations (ADDED)
-        // ================================================
-
-        // Manual Trigger Node - Entry node with Run button in properties panel
-        NodeRegistry.manual_trigger = async (node, input, context) => {
-            addExecutionLog('Manual Trigger', 'info', `🖱️ Manual trigger activated`);
-            return {
-                output: { 
-                    triggered: true, 
-                    timestamp: new Date().toISOString(),
-                    data: input,
-                    message: 'Manual execution started'
-                },
-                status: 'completed'
-            };
-        };
-
-        // Set/Variables Node - Define JSON object that merges into workflow context
-        NodeRegistry.set_variables = async (node, input, context) => {
-            let variables = {};
-            try {
-                variables = JSON.parse(node.parameters.variables || '{}');
-            } catch (e) {
-                variables = { error: 'Invalid JSON', raw: node.parameters.variables };
-            }
+        const NODE_CONFIGS = {
+            // Triggers (5)
+            trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'], defaults: { webhook_path: '/webhook/my-endpoint', method: 'POST' }, category: 'triggers', keywords: ['webhook', 'http', 'trigger'], outputs: ['next'] },
+            schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'], defaults: { cron: '0 * * * *', timezone: 'UTC' }, category: 'triggers', keywords: ['schedule', 'cron', 'timer'], outputs: ['next'] },
+            github: { name: 'GitHub Trigger', icon: 'fab fa-github', color: '#333333', fields: ['event_type', 'repository'], defaults: { event_type: 'push', repository: 'username/repo' }, category: 'triggers', keywords: ['github', 'git', 'code'], outputs: ['next'] },
+            email_trigger: { name: 'Email Trigger', icon: 'fa-envelope', color: '#EA4B71', fields: ['imap_server', 'email', 'password'], defaults: { imap_server: 'imap.gmail.com', email: 'user@gmail.com', password: '' }, category: 'triggers', keywords: ['email', 'imap', 'trigger'], outputs: ['next'] },
+            webhook_custom: { name: 'Custom Webhook', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['endpoint', 'method'], defaults: { endpoint: '/custom/webhook', method: 'POST' }, category: 'triggers', keywords: ['custom', 'webhook', 'endpoint'], outputs: ['next'] },
             
-            addExecutionLog('Set Variables', 'info', `📝 Setting ${Object.keys(variables).length} variables: ${Object.keys(variables).join(', ')}`);
+            // AI Actions (Expanded)
+            ai_agent: { name: 'AI Agent (Memory + Tools)', icon: 'fa-robot', color: '#8B5CF6', fields: ['system_prompt', 'model', 'temperature', 'memory', 'tools'], defaults: { system_prompt: 'You are a helpful AI assistant with access to tools.', model: 'llama-3-70b', temperature: '0.7', memory: 'true', tools: '[]' }, category: 'ai', keywords: ['agent', 'ai', 'memory', 'tools'], outputs: ['next', 'error'] },
+            knowledge_base: { name: 'Knowledge Base Retriever', icon: 'fa-database', color: '#10B981', fields: ['collection_id', 'query', 'top_k'], defaults: { collection_id: 'default', query: '{{data.question}}', top_k: '5' }, category: 'ai', keywords: ['knowledge', 'rag', 'retrieve', 'vector'], outputs: ['next', 'error'] },
+            ai_content: { name: 'AI Content', icon: 'fa-brain', color: '#8B5CF6', fields: ['type', 'tone', 'prompt'], defaults: { type: 'social', tone: 'professional', prompt: 'artificial intelligence automation' }, category: 'ai', keywords: ['content', 'ai', 'generate'], outputs: ['next'] },
+            ai_image: { name: 'AI Image', icon: 'fa-image', color: '#EC4899', fields: ['style', 'prompt'], defaults: { style: 'Realistic', prompt: 'a beautiful sunset over mountains' }, category: 'ai', keywords: ['image', 'ai', 'generate', 'art'], outputs: ['next'] },
+            ai_video: { name: 'AI Video (Sora-Level)', icon: 'fa-video', color: '#EC4899', fields: ['style', 'prompt', 'duration'], defaults: { style: 'Cinematic', prompt: 'a beautiful nature scene', duration: '30' }, category: 'ai', keywords: ['video', 'ai', 'generate', 'sora', 'actual video'], outputs: ['next', 'error'] },
+            video_script: { name: 'Video Script Generator', icon: 'fa-scroll', color: '#F59E0B', fields: ['topic', 'duration', 'style'], defaults: { topic: 'AI automation', duration: '60', style: 'educational' }, category: 'ai', keywords: ['script', 'video', 'storyboard'], outputs: ['next'] },
+            ai_lead_scoring: { name: 'Lead Scoring', icon: 'fa-chart-line', color: '#F59E0B', fields: [], defaults: {}, category: 'ai', keywords: ['lead', 'score', 'crm'], outputs: ['next'] },
+            gemini: { name: 'Google Gemini AI', icon: 'fa-gem', color: '#4285F4', fields: ['prompt', 'model', 'temperature', 'api_key'], defaults: { prompt: 'Write a professional email about AI automation', model: 'gemini-1.5-pro', temperature: '0.7', api_key: '' }, category: 'ai', keywords: ['gemini', 'google', 'ai', 'llm'], outputs: ['next'] },
+            ai_summarize: { name: 'AI Summarizer', icon: 'fa-compress', color: '#8B5CF6', fields: ['text', 'max_length'], defaults: { text: '', max_length: '200' }, category: 'ai', keywords: ['summarize', 'ai', 'summary'], outputs: ['next'] },
+            ai_translate: { name: 'AI Translator', icon: 'fa-language', color: '#8B5CF6', fields: ['text', 'target_language'], defaults: { text: '', target_language: 'es' }, category: 'ai', keywords: ['translate', 'language', 'ai'], outputs: ['next'] },
+            ai_sentiment: { name: 'Sentiment Analysis', icon: 'fa-smile', color: '#8B5CF6', fields: ['text'], defaults: { text: '' }, category: 'ai', keywords: ['sentiment', 'analysis', 'emotion'], outputs: ['next'] },
+            ai_embedding: { name: 'AI Embeddings', icon: 'fa-vector-square', color: '#8B5CF6', fields: ['text'], defaults: { text: '' }, category: 'ai', keywords: ['embedding', 'vector', 'ai'], outputs: ['next'] },
+            ai_chat: { name: 'AI Chat Agent', icon: 'fa-comments', color: '#8B5CF6', fields: ['message', 'session_id', 'memory'], defaults: { message: '', session_id: '', memory: 'true' }, category: 'ai', keywords: ['chat', 'agent', 'conversation'], outputs: ['next'] },
             
-            return {
-                output: {
-                    ...variables,
-                    _setAt: new Date().toISOString(),
-                    _count: Object.keys(variables).length
-                },
-                status: 'completed'
-            };
-        };
-
-        // Merge Advanced Node - Accepts two inputs, provides dropdown for Merge by Key or Merge by Index
-        NodeRegistry.merge_advanced = async (node, input, context) => {
-            const mergeType = node.parameters.mergeType || 'key';
-            let leftInput = {};
-            let rightInput = {};
+            // Content Fetchers
+            rss_feed: { name: 'RSS Feed Reader', icon: 'fa-rss', color: '#f26522', fields: ['feed_url', 'limit'], defaults: { feed_url: 'https://feeds.bbci.co.uk/news/rss.xml', limit: '10' }, category: 'content', keywords: ['rss', 'feed', 'news'], outputs: ['next', 'error'] },
+            web_scraper: { name: 'Web Scraper', icon: 'fa-globe', color: '#10B981', fields: ['url', 'selector', 'attribute'], defaults: { url: '', selector: 'body', attribute: 'text' }, category: 'content', keywords: ['scrape', 'web', 'html'], outputs: ['next', 'error'] },
+            api_fetcher: { name: 'API Data Fetcher', icon: 'fa-cloud', color: '#2563EB', fields: ['url', 'method', 'headers', 'body'], defaults: { url: '', method: 'GET', headers: '{}', body: '{}' }, category: 'content', keywords: ['api', 'fetch', 'data'], outputs: ['next', 'error'] },
             
-            try {
-                leftInput = node.parameters.leftInput ? JSON.parse(node.parameters.leftInput) : input;
-                rightInput = node.parameters.rightInput ? JSON.parse(node.parameters.rightInput) : {};
-            } catch(e) {
-                leftInput = input;
-                rightInput = {};
-            }
+            // Social Media (15)
+            post_instagram: { name: 'Post to Instagram', icon: 'fab fa-instagram', color: '#d62976', fields: ['image_url', 'caption'], defaults: { image_url: '', caption: '' }, category: 'social', keywords: ['instagram', 'post', 'social'], outputs: ['next', 'error'] },
+            post_facebook: { name: 'Post to Facebook', icon: 'fab fa-facebook', color: '#4267B2', fields: ['message', 'link'], defaults: { message: '', link: '' }, category: 'social', keywords: ['facebook', 'post', 'social'], outputs: ['next', 'error'] },
+            post_twitter: { name: 'Post to Twitter', icon: 'fab fa-twitter', color: '#1DA1F2', fields: ['message'], defaults: { message: '' }, category: 'social', keywords: ['twitter', 'x', 'post'], outputs: ['next', 'error'] },
+            post_linkedin: { name: 'Post to LinkedIn', icon: 'fab fa-linkedin', color: '#0077b5', fields: ['content', 'title'], defaults: { content: '', title: '' }, category: 'social', keywords: ['linkedin', 'post', 'professional'], outputs: ['next', 'error'] },
+            post_tiktok: { name: 'Post to TikTok', icon: 'fab fa-tiktok', color: '#010101', fields: ['video_url', 'caption', 'hashtags'], defaults: { video_url: '', caption: '', hashtags: '#AI' }, category: 'social', keywords: ['tiktok', 'video', 'post'], outputs: ['next', 'error'] },
+            post_youtube: { name: 'Post to YouTube', icon: 'fab fa-youtube', color: '#ff0000', fields: ['video_url', 'title', 'description'], defaults: { video_url: '', title: '', description: '' }, category: 'social', keywords: ['youtube', 'video', 'upload'], outputs: ['next', 'error'] },
+            post_pinterest: { name: 'Post to Pinterest', icon: 'fab fa-pinterest', color: '#BD081C', fields: ['image_url', 'description', 'board'], defaults: { image_url: '', description: '', board: '' }, category: 'social', keywords: ['pinterest', 'pin', 'image'], outputs: ['next', 'error'] },
+            post_reddit: { name: 'Post to Reddit', icon: 'fab fa-reddit', color: '#FF4500', fields: ['title', 'content', 'subreddit'], defaults: { title: '', content: '', subreddit: '' }, category: 'social', keywords: ['reddit', 'post', 'subreddit'], outputs: ['next', 'error'] },
+            post_telegram: { name: 'Post to Telegram', icon: 'fab fa-telegram', color: '#26A5E4', fields: ['message', 'chat_id'], defaults: { message: '', chat_id: '' }, category: 'social', keywords: ['telegram', 'message', 'bot'], outputs: ['next', 'error'] },
+            post_discord: { name: 'Post to Discord', icon: 'fab fa-discord', color: '#5865F2', fields: ['message', 'webhook_url'], defaults: { message: '', webhook_url: '' }, category: 'social', keywords: ['discord', 'webhook', 'message'], outputs: ['next', 'error'] },
+            generate_hashtags: { name: 'Generate Hashtags', icon: 'fa-hashtag', color: '#F59E0B', fields: ['topic', 'count'], defaults: { topic: 'AI automation', count: '15' }, category: 'social', keywords: ['hashtag', 'trending', 'social'], outputs: ['next'] },
+            schedule_post: { name: 'Schedule Post', icon: 'fa-calendar-alt', color: '#F59E0B', fields: ['platform', 'content', 'schedule_time'], defaults: { platform: 'instagram', content: 'Scheduled post!', schedule_time: new Date(Date.now() + 86400000).toISOString().slice(0, 16) }, category: 'social', keywords: ['schedule', 'post', 'calendar'], outputs: ['next'] },
+            social_analytics: { name: 'Social Analytics', icon: 'fa-chart-bar', color: '#F59E0B', fields: ['platform', 'metric'], defaults: { platform: 'instagram', metric: 'followers' }, category: 'social', keywords: ['analytics', 'metrics', 'social'], outputs: ['next'] },
+            social_monitor: { name: 'Social Monitor', icon: 'fa-eye', color: '#F59E0B', fields: ['keyword', 'platform'], defaults: { keyword: '', platform: 'twitter' }, category: 'social', keywords: ['monitor', 'track', 'mention'], outputs: ['next'] },
+            social_mention: { name: 'Mentions Tracker', icon: 'fa-at', color: '#F59E0B', fields: ['username', 'platform'], defaults: { username: '', platform: 'twitter' }, category: 'social', keywords: ['mention', 'track', 'social'], outputs: ['next'] },
             
-            let merged = {};
+            // E-commerce (12)
+            shopify_order: { name: 'Shopify - New Order', icon: 'fab fa-shopify', color: '#7AB55C', fields: ['store_url', 'api_key'], defaults: { store_url: '', api_key: '' }, category: 'ecommerce', keywords: ['shopify', 'order', 'ecommerce'], outputs: ['next'] },
+            shopify_product: { name: 'Shopify - Product', icon: 'fas fa-box', color: '#7AB55C', fields: ['store_url', 'product_id'], defaults: { store_url: '', product_id: '' }, category: 'ecommerce', keywords: ['shopify', 'product', 'inventory'], outputs: ['next'] },
+            inventory_check: { name: 'Check Inventory', icon: 'fa-boxes', color: '#7AB55C', fields: ['platform'], defaults: { platform: 'shopify' }, category: 'ecommerce', keywords: ['inventory', 'stock', 'shopify'], outputs: ['next'] },
+            cart_recovery: { name: 'Cart Recovery', icon: 'fa-shopping-cart', color: '#FF6B6B', fields: ['platform', 'discount_percent'], defaults: { platform: 'shopify', discount_percent: '10' }, category: 'ecommerce', keywords: ['cart', 'recovery', 'abandoned'], outputs: ['next'] },
+            woo_order: { name: 'WooCommerce Order', icon: 'fab fa-wordpress', color: '#3498DB', fields: ['store_url', 'consumer_key', 'consumer_secret'], defaults: { store_url: '', consumer_key: '', consumer_secret: '' }, category: 'ecommerce', keywords: ['woocommerce', 'order', 'wordpress'], outputs: ['next'] },
+            stripe_payment: { name: 'Stripe Payment', icon: 'fab fa-stripe', color: '#635BFF', fields: ['amount', 'currency', 'customer_email'], defaults: { amount: '10', currency: 'usd', customer_email: '' }, category: 'ecommerce', keywords: ['stripe', 'payment', 'charge'], outputs: ['next', 'error'] },
+            paypal_payment: { name: 'PayPal Payment', icon: 'fab fa-paypal', color: '#00457C', fields: ['amount', 'currency', 'email'], defaults: { amount: '10', currency: 'usd', email: '' }, category: 'ecommerce', keywords: ['paypal', 'payment', 'transaction'], outputs: ['next', 'error'] },
+            create_invoice: { name: 'Create Invoice', icon: 'fa-file-invoice', color: '#3498DB', fields: ['customer', 'amount', 'items'], defaults: { customer: '', amount: '0', items: '[]' }, category: 'ecommerce', keywords: ['invoice', 'bill', 'customer'], outputs: ['next'] },
+            send_invoice: { name: 'Send Invoice', icon: 'fa-paper-plane', color: '#3498DB', fields: ['invoice_id', 'email'], defaults: { invoice_id: '', email: '' }, category: 'ecommerce', keywords: ['invoice', 'send', 'email'], outputs: ['next', 'error'] },
+            update_stock: { name: 'Update Stock', icon: 'fa-edit', color: '#7AB55C', fields: ['platform', 'product_id', 'quantity'], defaults: { platform: 'shopify', product_id: '', quantity: '0' }, category: 'ecommerce', keywords: ['stock', 'inventory', 'update'], outputs: ['next', 'error'] },
+            price_monitor: { name: 'Price Monitor', icon: 'fa-dollar-sign', color: '#F59E0B', fields: ['product_url', 'target_price'], defaults: { product_url: '', target_price: '0' }, category: 'ecommerce', keywords: ['price', 'monitor', 'alert'], outputs: ['true', 'false'] },
+            competitor_tracker: { name: 'Competitor Tracker', icon: 'fa-chart-line', color: '#F59E0B', fields: ['competitor_url', 'metrics'], defaults: { competitor_url: '', metrics: 'price' }, category: 'ecommerce', keywords: ['competitor', 'track', 'market'], outputs: ['next'] },
             
-            if (mergeType === 'key') {
-                // Merge by key - object spread
-                merged = { ...leftInput, ...rightInput };
-            } else if (mergeType === 'index') {
-                // Merge by index - array merge
-                const leftArray = Array.isArray(leftInput) ? leftInput : [leftInput];
-                const rightArray = Array.isArray(rightInput) ? rightInput : [rightInput];
-                const maxLen = Math.max(leftArray.length, rightArray.length);
-                merged = [];
-                for (let i = 0; i < maxLen; i++) {
-                    merged.push({ ...(leftArray[i] || {}), ...(rightArray[i] || {}), _index: i });
-                }
-            } else if (mergeType === 'concat') {
-                const leftArray = Array.isArray(leftInput) ? leftInput : [leftInput];
-                const rightArray = Array.isArray(rightInput) ? rightInput : [rightInput];
-                merged = [...leftArray, ...rightArray];
-            }
+            // CRM & Sales (10)
+            create_lead: { name: 'Create Lead', icon: 'fa-user-plus', color: '#3498DB', fields: ['lead_name', 'source'], defaults: { lead_name: 'New Lead', source: 'workflow' }, category: 'crm', keywords: ['lead', 'crm', 'contact'], outputs: ['next'] },
+            update_crm: { name: 'Update CRM', icon: 'fa-database', color: '#3498DB', fields: ['record_id', 'update_data'], defaults: { record_id: '123', update_data: '{"status": "contacted"}' }, category: 'crm', keywords: ['crm', 'update', 'salesforce', 'hubspot'], outputs: ['next', 'error'] },
+            salesforce_contact: { name: 'Salesforce Contact', icon: 'fab fa-salesforce', color: '#00A1E0', fields: ['email', 'first_name', 'last_name'], defaults: { email: '', first_name: '', last_name: '' }, category: 'crm', keywords: ['salesforce', 'contact', 'crm'], outputs: ['next', 'error'] },
+            hubspot_contact: { name: 'HubSpot Contact', icon: 'fab fa-hubspot', color: '#FF7A59', fields: ['email', 'firstname', 'lastname'], defaults: { email: '', firstname: '', lastname: '' }, category: 'crm', keywords: ['hubspot', 'contact', 'crm'], outputs: ['next', 'error'] },
+            pipedrive_deal: { name: 'Pipedrive Deal', icon: 'fas fa-chart-line', color: '#00A1E0', fields: ['title', 'value', 'person_id'], defaults: { title: '', value: '0', person_id: '' }, category: 'crm', keywords: ['pipedrive', 'deal', 'sales'], outputs: ['next', 'error'] },
+            send_campaign: { name: 'Email Campaign', icon: 'fa-mail-bulk', color: '#EA4B71', fields: ['list_id', 'subject', 'content'], defaults: { list_id: '', subject: '', content: '' }, category: 'crm', keywords: ['email', 'campaign', 'marketing'], outputs: ['next', 'error'] },
+            sms_marketing: { name: 'SMS Marketing', icon: 'fa-sms', color: '#10B981', fields: ['phone_number', 'message'], defaults: { phone_number: '', message: '' }, category: 'crm', keywords: ['sms', 'text', 'marketing'], outputs: ['next', 'error'] },
+            whatsapp_message: { name: 'WhatsApp Message', icon: 'fab fa-whatsapp', color: '#25D366', fields: ['phone_number', 'message'], defaults: { phone_number: '', message: '' }, category: 'crm', keywords: ['whatsapp', 'message', 'business'], outputs: ['next', 'error'] },
+            appointment_scheduler: { name: 'Appointment Scheduler', icon: 'fa-calendar-check', color: '#3B82F6', fields: ['calendar_id', 'duration', 'attendee_email'], defaults: { calendar_id: '', duration: '30', attendee_email: '' }, category: 'crm', keywords: ['appointment', 'calendar', 'schedule'], outputs: ['next', 'error'] },
+            feedback_collector: { name: 'Feedback Collector', icon: 'fa-star', color: '#F59E0B', fields: ['survey_id', 'customer_email'], defaults: { survey_id: '', customer_email: '' }, category: 'crm', keywords: ['feedback', 'survey', 'customer'], outputs: ['next'] },
             
-            addExecutionLog('Merge Advanced', 'success', `✅ Merged using ${mergeType} mode`);
+            // Communication (8)
+            send_email: { name: 'Send Email', icon: 'fa-envelope', color: '#EA4B71', fields: ['to', 'subject', 'body'], defaults: { to: 'admin@example.com', subject: 'Notification', body: 'Hello from Workflow Studio!' }, category: 'communication', keywords: ['email', 'send', 'mail'], outputs: ['next', 'error'] },
+            send_slack: { name: 'Send Slack', icon: 'fa-slack', color: '#4A154B', fields: ['channel', 'message'], defaults: { channel: '#general', message: 'Hello from Workflow Studio!' }, category: 'communication', keywords: ['slack', 'message', 'chat'], outputs: ['next', 'error'] },
+            send_teams: { name: 'Send Teams', icon: 'fab fa-microsoft', color: '#6264A7', fields: ['webhook_url', 'message'], defaults: { webhook_url: '', message: '' }, category: 'communication', keywords: ['teams', 'microsoft', 'message'], outputs: ['next', 'error'] },
+            send_discord: { name: 'Send Discord', icon: 'fab fa-discord', color: '#5865F2', fields: ['webhook_url', 'message'], defaults: { webhook_url: '', message: '' }, category: 'communication', keywords: ['discord', 'webhook', 'message'], outputs: ['next', 'error'] },
+            send_telegram: { name: 'Send Telegram', icon: 'fab fa-telegram', color: '#26A5E4', fields: ['bot_token', 'chat_id', 'message'], defaults: { bot_token: '', chat_id: '', message: '' }, category: 'communication', keywords: ['telegram', 'bot', 'message'], outputs: ['next', 'error'] },
+            send_sms: { name: 'Send SMS', icon: 'fa-sms', color: '#10B981', fields: ['phone_number', 'message'], defaults: { phone_number: '', message: '' }, category: 'communication', keywords: ['sms', 'text', 'message'], outputs: ['next', 'error'] },
+            send_push: { name: 'Push Notification', icon: 'fa-bell', color: '#F59E0B', fields: ['device_token', 'title', 'body'], defaults: { device_token: '', title: '', body: '' }, category: 'communication', keywords: ['push', 'notification', 'alert'], outputs: ['next', 'error'] },
+            send_webhook: { name: 'Send Webhook', icon: 'fa-globe', color: '#10B981', fields: ['url', 'method', 'payload'], defaults: { url: '', method: 'POST', payload: '{}' }, category: 'communication', keywords: ['webhook', 'send', 'callback'], outputs: ['next', 'error'] },
             
-            return {
-                output: { merged, mergeType, originalLeft: leftInput, originalRight: rightInput },
-                status: 'completed'
-            };
-        };
-
-        // Error Handler Node - Takes error port input, triggered automatically on failure
-        NodeRegistry.error_handler = async (node, input, context) => {
-            const errorData = input.error || input;
-            const action = node.parameters.action || 'log';
+            // Logic (10)
+            condition: { name: 'Condition (IF)', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition', 'output_count'], defaults: { condition: 'data.value > 10', output_count: '2' }, category: 'logic', keywords: ['if', 'condition', 'branch'], outputs: ['true', 'false'] },
+            switch: { name: 'Switch / Router', icon: 'fa-exchange-alt', color: '#6B7280', fields: ['switch_field', 'cases'], defaults: { switch_field: 'status', cases: '{"active":"next","inactive":"error"}' }, category: 'logic', keywords: ['switch', 'router', 'case'], outputs: ['default', 'case1', 'case2'] },
+            wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'], defaults: { duration: '5', unit: 'seconds' }, category: 'logic', keywords: ['wait', 'delay', 'sleep'], outputs: ['next'] },
+            loop: { name: 'Loop', icon: 'fa-redo-alt', color: '#6B7280', fields: ['iterations', 'split_arrays'], defaults: { iterations: '3', split_arrays: 'false' }, category: 'logic', keywords: ['loop', 'iterate', 'repeat'], outputs: ['next'] },
+            split: { name: 'Split / Batch', icon: 'fa-code-branch', color: '#6B7280', fields: ['field', 'batch_size'], defaults: { field: 'data', batch_size: '10' }, category: 'logic', keywords: ['split', 'batch', 'array'], outputs: ['item', 'done'] },
+            aggregate: { name: 'Aggregate / Merge', icon: 'fa-chart-simple', color: '#6B7280', fields: ['operation', 'field'], defaults: { operation: 'sum', field: 'value' }, category: 'logic', keywords: ['aggregate', 'merge', 'combine'], outputs: ['next'] },
+            code: { name: 'Code Node', icon: 'fa-code', color: '#6B7280', fields: ['code'], defaults: { code: '// Write your JavaScript code here\n// Access input data via "data"\n// Return modified data\nreturn data;' }, category: 'logic', keywords: ['code', 'javascript', 'function', 'sandbox'], outputs: ['next', 'error'] },
+            transform: { name: 'Data Transform', icon: 'fa-exchange-alt', color: '#6B7280', fields: ['mapping'], defaults: { mapping: '{}' }, category: 'logic', keywords: ['transform', 'map', 'convert'], outputs: ['next'] },
+            filter: { name: 'Filter Data', icon: 'fa-filter', color: '#6B7280', fields: ['field', 'operator', 'value'], defaults: { field: 'status', operator: 'eq', value: 'active' }, category: 'logic', keywords: ['filter', 'where', 'condition'], outputs: ['true', 'false'] },
+            sort: { name: 'Sort Data', icon: 'fa-sort', color: '#6B7280', fields: ['field', 'order'], defaults: { field: 'timestamp', order: 'desc' }, category: 'logic', keywords: ['sort', 'order', 'arrange'], outputs: ['next'] },
             
-            addExecutionLog('Error Handler', 'warning', `⚠️ Handling error: ${JSON.stringify(errorData).substring(0, 200)}`);
+            // Integrations (15)
+            http_request: { name: 'HTTP Request', icon: 'fa-code', color: '#2563EB', fields: ['method', 'url', 'auth_type', 'auth_token', 'headers', 'body'], defaults: { method: 'GET', url: 'https://api.example.com/data', auth_type: 'none', auth_token: '', headers: '{}', body: '{}' }, category: 'integrations', keywords: ['http', 'api', 'request', 'rest'], outputs: ['next', 'error'] },
+            graphql: { name: 'GraphQL', icon: 'fa-graphql', color: '#E10098', fields: ['endpoint', 'query', 'variables'], defaults: { endpoint: '', query: '', variables: '{}' }, category: 'integrations', keywords: ['graphql', 'query', 'api'], outputs: ['next', 'error'] },
+            webhook: { name: 'Webhook', icon: 'fa-globe', color: '#10B981', fields: ['webhook_url', 'method'], defaults: { webhook_url: 'https://webhook.site/your-url', method: 'POST' }, category: 'integrations', keywords: ['webhook', 'callback', 'url'], outputs: ['next', 'error'] },
+            rss: { name: 'RSS Feed Reader', icon: 'fa-rss', color: '#f26522', fields: ['feed_url', 'limit'], defaults: { feed_url: 'https://feeds.bbci.co.uk/news/rss.xml', limit: '10' }, category: 'integrations', keywords: ['rss', 'feed', 'news'], outputs: ['next'] },
+            google_sheets: { name: 'Google Sheets', icon: 'fab fa-google', color: '#0F9D58', fields: ['spreadsheet_id', 'range', 'action'], defaults: { spreadsheet_id: '', range: 'Sheet1!A1', action: 'read' }, category: 'integrations', keywords: ['google', 'sheets', 'spreadsheet'], outputs: ['next', 'error'] },
+            google_drive: { name: 'Google Drive', icon: 'fab fa-google-drive', color: '#4285F4', fields: ['folder_id', 'action', 'file_name'], defaults: { folder_id: '', action: 'list', file_name: '' }, category: 'integrations', keywords: ['google', 'drive', 'file'], outputs: ['next', 'error'] },
+            google_calendar: { name: 'Google Calendar', icon: 'fas fa-calendar', color: '#4285F4', fields: ['calendar_id', 'action', 'event_data'], defaults: { calendar_id: 'primary', action: 'create', event_data: '{}' }, category: 'integrations', keywords: ['google', 'calendar', 'event'], outputs: ['next', 'error'] },
+            gmail: { name: 'Gmail', icon: 'fab fa-google', color: '#EA4335', fields: ['action', 'query', 'message'], defaults: { action: 'send', query: '', message: '{}' }, category: 'integrations', keywords: ['gmail', 'email', 'google'], outputs: ['next', 'error'] },
+            dropbox: { name: 'Dropbox', icon: 'fab fa-dropbox', color: '#0061FF', fields: ['path', 'action', 'content'], defaults: { path: '', action: 'list', content: '' }, category: 'integrations', keywords: ['dropbox', 'file', 'storage'], outputs: ['next', 'error'] },
+            onedrive: { name: 'OneDrive', icon: 'fab fa-microsoft', color: '#0078D4', fields: ['path', 'action', 'content'], defaults: { path: '', action: 'list', content: '' }, category: 'integrations', keywords: ['onedrive', 'microsoft', 'file'], outputs: ['next', 'error'] },
+            aws_s3: { name: 'AWS S3', icon: 'fab fa-aws', color: '#FF9900', fields: ['bucket', 'key', 'action'], defaults: { bucket: '', key: '', action: 'list' }, category: 'integrations', keywords: ['aws', 's3', 'cloud'], outputs: ['next', 'error'] },
+            azure_blob: { name: 'Azure Blob', icon: 'fab fa-microsoft', color: '#0078D4', fields: ['container', 'blob', 'action'], defaults: { container: '', blob: '', action: 'list' }, category: 'integrations', keywords: ['azure', 'blob', 'storage'], outputs: ['next', 'error'] },
+            zapier_webhook: { name: 'Zapier Webhook', icon: 'fas fa-bolt', color: '#FF4A00', fields: ['webhook_url', 'payload'], defaults: { webhook_url: '', payload: '{}' }, category: 'integrations', keywords: ['zapier', 'webhook', 'zap'], outputs: ['next', 'error'] },
+            make_webhook: { name: 'Make/Integromat', icon: 'fas fa-cogs', color: '#00C3B3', fields: ['webhook_url', 'payload'], defaults: { webhook_url: '', payload: '{}' }, category: 'integrations', keywords: ['make', 'integromat', 'webhook'], outputs: ['next', 'error'] },
+            pabbly: { name: 'Pabbly Connect', icon: 'fas fa-link', color: '#FF6B6B', fields: ['webhook_url', 'payload'], defaults: { webhook_url: '', payload: '{}' }, category: 'integrations', keywords: ['pabbly', 'connect', 'webhook'], outputs: ['next', 'error'] },
             
-            let result = { handled: true, error: errorData, action: action, timestamp: new Date().toISOString() };
+            // Database (7)
+            database_query: { name: 'Database Query', icon: 'fa-database', color: '#7AB55C', fields: ['query', 'params'], defaults: { query: 'SELECT * FROM users LIMIT 10', params: '{}' }, category: 'database', keywords: ['sql', 'database', 'query'], outputs: ['next', 'error'] },
+            postgresql: { name: 'PostgreSQL', icon: 'fa-database', color: '#336791', fields: ['connection', 'query', 'params'], defaults: { connection: 'default', query: '', params: '{}' }, category: 'database', keywords: ['postgresql', 'postgres', 'sql'], outputs: ['next', 'error'] },
+            mysql: { name: 'MySQL', icon: 'fa-database', color: '#00758F', fields: ['connection', 'query', 'params'], defaults: { connection: 'default', query: '', params: '{}' }, category: 'database', keywords: ['mysql', 'sql', 'database'], outputs: ['next', 'error'] },
+            mongodb: { name: 'MongoDB', icon: 'fa-leaf', color: '#47A248', fields: ['collection', 'operation', 'filter'], defaults: { collection: '', operation: 'find', filter: '{}' }, category: 'database', keywords: ['mongodb', 'nosql', 'document'], outputs: ['next', 'error'] },
+            firebase: { name: 'Firebase', icon: 'fas fa-fire', color: '#FFCA28', fields: ['collection', 'operation', 'data'], defaults: { collection: '', operation: 'read', data: '{}' }, category: 'database', keywords: ['firebase', 'google', 'nosql'], outputs: ['next', 'error'] },
+            supabase: { name: 'Supabase', icon: 'fas fa-database', color: '#3ECF8E', fields: ['table', 'operation', 'data'], defaults: { table: '', operation: 'select', data: '{}' }, category: 'database', keywords: ['supabase', 'postgres', 'database'], outputs: ['next', 'error'] },
+            airtable: { name: 'Airtable', icon: 'fas fa-table', color: '#FFBF00', fields: ['base_id', 'table', 'operation', 'data'], defaults: { base_id: '', table: '', operation: 'list', data: '{}' }, category: 'database', keywords: ['airtable', 'spreadsheet', 'database'], outputs: ['next', 'error'] },
             
-            if (action === 'log') {
-                result.message = 'Error logged to execution log';
-            } else if (action === 'continue') {
-                result.message = 'Error ignored, continuing execution';
-            } else if (action === 'retry') {
-                result.retryCount = (parseInt(node.parameters.retryCount) || 0) + 1;
-                result.message = `Error will be retried (attempt ${result.retryCount})`;
-            } else if (action === 'notify') {
-                result.message = `Error notification sent to ${node.parameters.notifyChannel || 'admin'}`;
-            }
+            // DevOps (7)
+            docker: { name: 'Docker Container', icon: 'fab fa-docker', color: '#2496ED', fields: ['image', 'command', 'env_vars'], defaults: { image: 'ubuntu:latest', command: 'echo hello', env_vars: '{}' }, category: 'devops', keywords: ['docker', 'container', 'deploy'], outputs: ['next', 'error'] },
+            kubernetes: { name: 'Kubernetes', icon: 'fas fa-cubes', color: '#326CE5', fields: ['namespace', 'manifest', 'action'], defaults: { namespace: 'default', manifest: '', action: 'apply' }, category: 'devops', keywords: ['kubernetes', 'k8s', 'deploy'], outputs: ['next', 'error'] },
+            jenkins: { name: 'Jenkins Job', icon: 'fas fa-tasks', color: '#D33833', fields: ['job_name', 'parameters'], defaults: { job_name: '', parameters: '{}' }, category: 'devops', keywords: ['jenkins', 'ci', 'build'], outputs: ['next', 'error'] },
+            github_actions: { name: 'GitHub Actions', icon: 'fab fa-github', color: '#2088FF', fields: ['repo', 'workflow_id', 'inputs'], defaults: { repo: '', workflow_id: '', inputs: '{}' }, category: 'devops', keywords: ['github', 'actions', 'ci'], outputs: ['next', 'error'] },
+            gitlab_ci: { name: 'GitLab CI', icon: 'fab fa-gitlab', color: '#FC6D26', fields: ['project_id', 'pipeline_variables'], defaults: { project_id: '', pipeline_variables: '{}' }, category: 'devops', keywords: ['gitlab', 'ci', 'pipeline'], outputs: ['next', 'error'] },
+            terraform: { name: 'Terraform', icon: 'fas fa-cloud', color: '#7B42BC', fields: ['workspace', 'action', 'variables'], defaults: { workspace: 'default', action: 'plan', variables: '{}' }, category: 'devops', keywords: ['terraform', 'infrastructure', 'iac'], outputs: ['next', 'error'] },
+            webhook_deploy: { name: 'Webhook Deploy', icon: 'fas fa-rocket', color: '#10B981', fields: ['deploy_url', 'branch'], defaults: { deploy_url: '', branch: 'main' }, category: 'devops', keywords: ['deploy', 'webhook', 'ci'], outputs: ['next', 'error'] },
             
-            return {
-                output: result,
-                status: 'completed'
-            };
-        };
-
-        // Retry/Delay Node - Uses setTimeout or async-delay to pause execution or retry based on failure counts
-        NodeRegistry.retry_delay = async (node, input, context) => {
-            const mode = node.parameters.mode || 'delay';
-            const duration = parseInt(node.parameters.duration) || 1;
-            const unit = node.parameters.unit || 'seconds';
-            const maxRetries = parseInt(node.parameters.maxRetries) || 3;
-            const currentRetry = parseInt(node.parameters.currentRetry) || 0;
-            
-            const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
-            
-            if (mode === 'delay') {
-                addExecutionLog('Retry/Delay', 'info', `⏳ Delaying for ${duration} ${unit}...`);
-                await new Promise(resolve => setTimeout(resolve, ms));
-                addExecutionLog('Retry/Delay', 'success', `✅ Delay completed`);
-                return {
-                    output: { delayed: true, duration: duration, unit: unit, completedAt: new Date().toISOString() },
-                    status: 'completed'
-                };
-            } else if (mode === 'retry') {
-                const shouldRetry = currentRetry < maxRetries;
-                addExecutionLog('Retry/Delay', 'info', `🔄 Retry mode - Attempt ${currentRetry + 1}/${maxRetries}`);
-                
-                if (shouldRetry) {
-                    await new Promise(resolve => setTimeout(resolve, ms * (currentRetry + 1))); // Exponential backoff
-                    return {
-                        output: { 
-                            retried: true, 
-                            attempt: currentRetry + 1, 
-                            maxRetries: maxRetries,
-                            nextAttemptDelay: ms * (currentRetry + 2),
-                            status: 'retry'
-                        },
-                        status: 'retry',
-                        shouldRetry: true
-                    };
-                } else {
-                    addExecutionLog('Retry/Delay', 'error', `❌ Max retries (${maxRetries}) exceeded`);
-                    return {
-                        output: { 
-                            retried: false, 
-                            maxRetriesReached: true,
-                            totalAttempts: currentRetry,
-                            status: 'failed'
-                        },
-                        status: 'failed'
-                    };
-                }
-            }
-            
-            return { output: { error: 'Invalid mode' }, status: 'failed' };
+            // Analytics (6)
+            google_analytics: { name: 'Google Analytics', icon: 'fab fa-google', color: '#E37400', fields: ['property_id', 'metrics', 'start_date'], defaults: { property_id: '', metrics: 'ga:users', start_date: '7daysAgo' }, category: 'analytics', keywords: ['google', 'analytics', 'tracking'], outputs: ['next', 'error'] },
+            mixpanel: { name: 'Mixpanel', icon: 'fas fa-chart-pie', color: '#7856FF', fields: ['event_name', 'properties'], defaults: { event_name: '', properties: '{}' }, category: 'analytics', keywords: ['mixpanel', 'analytics', 'event'], outputs: ['next', 'error'] },
+            amplitude: { name: 'Amplitude', icon: 'fas fa-waveform', color: '#1A2B4C', fields: ['event_type', 'user_id', 'event_properties'], defaults: { event_type: '', user_id: '', event_properties: '{}' }, category: 'analytics', keywords: ['amplitude', 'analytics', 'event'], outputs: ['next', 'error'] },
+            segment: { name: 'Segment', icon: 'fas fa-chart-simple', color: '#47CCC8', fields: ['write_key', 'event', 'properties'], defaults: { write_key: '', event: '', properties: '{}' }, category: 'analytics', keywords: ['segment', 'analytics', 'track'], outputs: ['next', 'error'] },
+            hotjar: { name: 'Hotjar', icon: 'fas fa-fire', color: '#FD3C00', fields: ['site_id', 'event_name', 'properties'], defaults: { site_id: '', event_name: '', properties: '{}' }, category: 'analytics', keywords: ['hotjar', 'analytics', 'heatmap'], outputs: ['next', 'error'] },
+            metabase: { name: 'Metabase', icon: 'fas fa-chart-simple', color: '#509EE3', fields: ['query', 'database_id'], defaults: { query: '', database_id: '' }, category: 'analytics', keywords: ['metabase', 'bi', 'dashboard'], outputs: ['next', 'error'] }
         };
 
         // ================================================
-        // 4. DATA MAPPER UI FUNCTION (ADDED)
-        // Displays visual mapping of output data from previous node to current node's inputs
-        // ================================================
-        
-        function renderDataMapper(previousNodeOutput, currentNodeInputs) {
-            const mapperSection = document.getElementById('dataMapperSection');
-            const mapperContent = document.getElementById('dataMapperContent');
-            
-            if (!previousNodeOutput || Object.keys(previousNodeOutput).length === 0) {
-                if (mapperSection) mapperSection.style.display = 'none';
-                return;
-            }
-            
-            if (mapperSection) mapperSection.style.display = 'block';
-            
-            const outputKeys = Object.keys(previousNodeOutput);
-            const inputFields = Object.keys(currentNodeInputs || {});
-            
-            if (outputKeys.length === 0) {
-                if (mapperContent) mapperContent.innerHTML = '<div style="padding: 16px; text-align: center; color: #888;">No output data from previous node to map</div>';
-                return;
-            }
-            
-            if (mapperContent) {
-                mapperContent.innerHTML = `
-                    <div style="margin-bottom: 12px; font-size: 11px; color: #d4af37;">
-                        <i class="fas fa-arrow-right"></i> From: Previous Node Output
-                    </div>
-                    ${outputKeys.map(key => `
-                        <div class="mapper-field">
-                            <div class="mapper-field-source" onclick="copyToClipboard('{{ $json.${key} }}')" title="Click to copy variable syntax">
-                                <i class="fas fa-copy"></i> {{ $json.${key} }}
-                                <span style="font-size: 9px; color: #888;">${JSON.stringify(previousNodeOutput[key]).substring(0, 50)}</span>
-                            </div>
-                            <div class="mapper-field-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
-                            <div class="mapper-field-target">
-                                <input type="text" placeholder="Map to field..." value="" 
-                                       onchange="mapFieldToCurrentNode('${key}', this.value)"
-                                       data-source-key="${key}">
-                            </div>
-                        </div>
-                    `).join('')}
-                    <div style="margin-top: 12px; font-size: 10px; color: #666; border-top: 1px solid rgba(212,175,55,0.2); padding-top: 12px;">
-                        <i class="fas fa-info-circle"></i> Click on any source value to copy variable syntax. Use {{ $json.fieldName }} in node inputs.
-                    </div>
-                `;
-            }
-        }
-        
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            showToast(`Copied: ${text}`, 'success');
-        }
-        
-        function mapFieldToCurrentNode(sourceKey, targetField) {
-            if (selectedWorkflowNode && targetField) {
-                const node = workflowNodes.find(n => n.id === selectedWorkflowNode);
-                if (node && node.config) {
-                    node.config[targetField] = `{{ $json.${sourceKey} }}`;
-                    renderWorkflowCanvas();
-                    openPropertiesPanel(node);
-                    showToast(`Mapped {{ $json.${sourceKey} }} → ${targetField}`, 'success');
-                }
-            }
-        }
-
-        // ================================================
-        // 5. SAVE/LOAD LOGIC - JSON string capture for perfect restoration (ADDED)
-        // ================================================
-        
-        function saveWorkflowToJSON() {
-            const workflowName = document.getElementById('workflowName').value;
-            const nodes = workflowNodes.map(node => ({
-                id: node.id,
-                type: node.type,
-                name: node.name,
-                icon: node.icon,
-                color: node.color,
-                position: { x: node.x, y: node.y },
-                parameters: node.config || {},
-                credentials: node.credentials || {},
-                outputs: node.outputs || ['next']
-            }));
-            
-            const workflowJSON = {
-                name: workflowName,
-                version: '2.0',
-                createdAt: new Date().toISOString(),
-                nodes: nodes,
-                edges: workflowEdges,
-                settings: {
-                    executionMode: 'sequential',
-                    timeout: 300
-                }
-            };
-            
-            const jsonString = JSON.stringify(workflowJSON, null, 2);
-            localStorage.setItem('saved_workflow_json', jsonString);
-            
-            // Also save for download
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${workflowName.replace(/[^a-z0-9]/gi, '_')}_workflow.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showToast('Workflow saved as JSON!', 'success');
-            return jsonString;
-        }
-        
-        function loadWorkflowFromJSON(jsonString) {
-            try {
-                const workflowData = JSON.parse(jsonString);
-                
-                // Clear current workflow
-                workflowNodes = [];
-                workflowEdges = [];
-                
-                // Restore nodes
-                workflowData.nodes.forEach(nodeData => {
-                    const newNode = {
-                        id: nodeData.id || `node_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                        type: nodeData.type,
-                        name: nodeData.name,
-                        icon: nodeData.icon || 'fa-cube',
-                        color: nodeData.color || '#d4af37',
-                        x: nodeData.position?.x || 100,
-                        y: nodeData.position?.y || 100,
-                        config: nodeData.parameters || {},
-                        credentials: nodeData.credentials || {},
-                        outputs: nodeData.outputs || ['next'],
-                        status: 'waiting'
-                    };
-                    workflowNodes.push(newNode);
-                });
-                
-                // Restore edges
-                workflowData.edges.forEach(edge => {
-                    workflowEdges.push({
-                        source: edge.source,
-                        target: edge.target,
-                        sourceHandle: edge.sourceHandle || 'next'
-                    });
-                });
-                
-                // Restore workflow name
-                if (workflowData.name) {
-                    document.getElementById('workflowName').value = workflowData.name;
-                }
-                
-                renderWorkflowCanvas();
-                saveCurrentWorkflow();
-                showToast('Workflow loaded from JSON!', 'success');
-                
-                return true;
-            } catch (error) {
-                showToast('Invalid workflow JSON: ' + error.message, 'error');
-                return false;
-            }
-        }
-        
-        function importWorkflowJSON() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    loadWorkflowFromJSON(event.target.result);
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-
-        // ================================================
-        // ADDITIONAL NEW NODE CONFIGURATIONS (ADDED)
-        // ================================================
-        
-        // Add the 5 must-have nodes to NODE_CONFIGS
-        const NEW_NODE_CONFIGS = {
-            manual_trigger: { name: 'Manual Trigger', icon: 'fa-hand-pointer', color: '#10B981', fields: [], defaults: {}, outputs: ['next'], category: 'core', keywords: ['manual', 'trigger', 'run'] },
-            set_variables: { name: 'Set Variables', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['variables'], defaults: { variables: '{"key": "value"}' }, outputs: ['next'], category: 'core', keywords: ['set', 'variables', 'json'] },
-            merge_advanced: { name: 'Merge Advanced', icon: 'fa-code-merge', color: '#F59E0B', fields: ['mergeType', 'leftInput', 'rightInput'], defaults: { mergeType: 'key', leftInput: '{}', rightInput: '{}' }, outputs: ['next'], category: 'core', keywords: ['merge', 'combine', 'join'] },
-            error_handler: { name: 'Error Handler', icon: 'fa-bug', color: '#EF4444', fields: ['action', 'notifyChannel', 'retryCount'], defaults: { action: 'log', notifyChannel: 'admin', retryCount: '0' }, outputs: ['next'], category: 'core', keywords: ['error', 'handler', 'catch'] },
-            retry_delay: { name: 'Retry/Delay', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['mode', 'duration', 'unit', 'maxRetries', 'currentRetry'], defaults: { mode: 'delay', duration: '1', unit: 'seconds', maxRetries: '3', currentRetry: '0' }, outputs: ['next', 'retry'], category: 'core', keywords: ['retry', 'delay', 'wait'] }
-        };
-        
-        // Merge new node configs into existing NODE_CONFIGS
-        Object.assign(NODE_CONFIGS, NEW_NODE_CONFIGS);
-
-        // ================================================
-        // 150+ NODE CONFIGURATIONS WITH PORT OUTPUTS (EXISTING - KEPT INTACT)
-        // ================================================
-        // ... (your existing NODE_CONFIGS remains exactly as is) ...
-        // Note: Your existing NODE_CONFIGS object is above and unchanged
-
-        // ================================================
-        // TEMPLATE ENGINE (EXISTING - KEPT INTACT)
+        // TEMPLATE ENGINE
         // ================================================
         function showTemplatesModal() {
             switchView('templates');
@@ -2731,7 +2176,7 @@
         }
 
         // ================================================
-        // AI AGENT NODE WITH MEMORY (EXISTING - KEPT INTACT)
+        // AI AGENT NODE WITH MEMORY
         // ================================================
         async function executeAIAgentNode(config, inputData, triggerData, sessionId) {
             const { system_prompt, model = 'llama-3-70b', temperature = 0.7, memory = 'true', tools = '[]' } = config;
@@ -2789,7 +2234,7 @@
         }
 
         // ================================================
-        // KNOWLEDGE BASE RETRIEVER (RAG) (EXISTING - KEPT INTACT)
+        // KNOWLEDGE BASE RETRIEVER (RAG)
         // ================================================
         async function executeKnowledgeBaseNode(config, inputData, triggerData) {
             const { collection_id = 'default', query, top_k = 5 } = config;
@@ -2836,7 +2281,7 @@
         }
 
         // ================================================
-        // SORA-LEVEL VIDEO GENERATION (Actual Video) (EXISTING - KEPT INTACT)
+        // SORA-LEVEL VIDEO GENERATION (Actual Video)
         // ================================================
         async function generateRealVideoWithApi(prompt, duration, style) {
             addExecutionLog('AI Video', 'info', `🎬 Generating actual video: "${prompt}" (${duration}s, ${style} style)...`);
@@ -2892,7 +2337,7 @@
         }
 
         // ================================================
-        // VIDEO SCRIPT GENERATOR (Separate from Video Generation) (EXISTING - KEPT INTACT)
+        // VIDEO SCRIPT GENERATOR (Separate from Video Generation)
         // ================================================
         async function generateVideoScriptOnly(topic, duration, style) {
             addExecutionLog('Video Script', 'info', `📝 Generating script for: "${topic}" (${duration}s, ${style})`);
@@ -2933,7 +2378,7 @@
         }
 
         // ================================================
-        // WEB SCRAPER NODE (EXISTING - KEPT INTACT)
+        // WEB SCRAPER NODE
         // ================================================
         async function executeWebScraper(config, inputData, triggerData) {
             const url = config.url || inputData.url || triggerData.url;
@@ -2975,7 +2420,7 @@
         }
 
         // ================================================
-        // OAuth SYSTEM - FIXED (UPDATED)
+        // OAuth SYSTEM (Keeping existing)
         // ================================================
         function initOAuth() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -2991,16 +2436,7 @@
         async function startOAuth(provider) {
             const oauthConfig = oauthProviders[provider];
             if (!oauthConfig) {
-                showToast(`OAuth not configured for ${provider}. Please set up client ID in settings.`, 'error');
-                return;
-            }
-            
-            // Check if client_id is configured (not placeholder)
-            if (oauthConfig.clientId === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com' || 
-                oauthConfig.clientId === 'YOUR_GITHUB_CLIENT_ID' ||
-                oauthConfig.clientId === 'YOUR_SLACK_CLIENT_ID' ||
-                oauthConfig.clientId === 'YOUR_SHOPIFY_CLIENT_ID') {
-                showToast(`Please configure your ${provider.toUpperCase()} OAuth Client ID in the code settings first.`, 'error');
+                showToast(`OAuth not configured for ${provider}`, 'error');
                 return;
             }
             
@@ -3008,21 +2444,13 @@
             localStorage.setItem('oauth_state', state);
             localStorage.setItem('oauth_provider', provider);
             
-            let authUrl = '';
             if (provider === 'github') {
-                authUrl = `${oauthConfig.authUrl}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+                window.location.href = `https://github.com/login/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
             } else if (provider === 'slack') {
-                authUrl = `${oauthConfig.authUrl}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
-            } else if (provider === 'shopify') {
-                // For Shopify, need shop parameter - prompt user for shop domain
-                const shop = prompt('Enter your Shopify store domain (e.g., mystore.myshopify.com):');
-                if (!shop) return;
-                authUrl = `${oauthConfig.authUrl.replace('{shop}', shop)}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+                window.location.href = `https://slack.com/oauth/v2/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
             } else {
-                authUrl = `${oauthConfig.authUrl}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}&access_type=offline&prompt=consent`;
+                window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}`;
             }
-            
-            window.location.href = authUrl;
         }
         
         async function exchangeOAuthCode(provider, code) {
@@ -3062,10 +2490,6 @@
             modal.innerHTML = `
                 <div style="background:#1a1a2e;border-radius:20px;padding:28px;width:450px;max-width:90%;border:1px solid #d4af37;">
                     <h3 style="margin-bottom:20px;color:#d4af37;"><i class="fas fa-plug"></i> Connect with OAuth</h3>
-                    <div style="margin-bottom:16px;padding:12px;background:rgba(212,175,55,0.1);border-radius:8px;font-size:12px;color:#aaa;">
-                        <i class="fas fa-info-circle"></i> Note: You need to configure OAuth Client IDs in the code settings first.
-                        <br>For production, set your actual Client IDs in the oauthProviders object.
-                    </div>
                     <div style="display:flex;flex-direction:column;gap:12px;">
                         <button class="btn-primary" style="width:100%;" onclick="startOAuth('google')"><i class="fab fa-google"></i> Connect Google</button>
                         <button class="btn-primary" style="width:100%;background:#333;" onclick="startOAuth('github')"><i class="fab fa-github"></i> Connect GitHub</button>
@@ -3079,7 +2503,7 @@
         }
 
         // ================================================
-        // Load Custom Apps & Credentials (EXISTING - KEPT INTACT)
+        // Load Custom Apps & Credentials (Keeping existing)
         // ================================================
         function loadCustomApps() {
             const saved = localStorage.getItem('custom_apps');
@@ -3260,7 +2684,7 @@
         }
         
         // ================================================
-        // Existing Helper Functions (EXISTING - KEPT INTACT)
+        // Existing Helper Functions (Keeping all)
         // ================================================
         async function generateRealImage(prompt, style) {
             try {
@@ -3709,7 +3133,7 @@
             }
         }
 
-        // ===== LOAD CONNECTED APPS (EXISTING - KEPT INTACT) =====
+        // ===== LOAD CONNECTED APPS =====
         async function loadConnectedApps() {
             try {
                 const token = localStorage.getItem('token');
@@ -3778,7 +3202,7 @@
             return colors[platform] || '#d4af37';
         }
 
-        // ===== WORKFLOW FUNCTIONS (EXISTING - KEPT INTACT, WITH ORCHESTRATOR INTEGRATION) =====
+        // ===== WORKFLOW FUNCTIONS =====
         function loadSavedData() {
             const savedWorkflow = localStorage.getItem('current_workflow');
             if (savedWorkflow) {
@@ -4022,7 +3446,7 @@
         }
 
         // ================================================
-        // GLOBAL SEARCH & DEEP HTTP DISCOVERY (EXISTING - KEPT INTACT)
+        // GLOBAL SEARCH & DEEP HTTP DISCOVERY
         // ================================================
         async function initializeSearchIndex() {
             console.log('🔍 Initializing search index with 150+ nodes...');
@@ -4176,7 +3600,7 @@
         }
 
         // ================================================
-        // VARIABLE RESOLVER ({{ $node["NodeName"].json["property"] }}) (EXISTING - KEPT INTACT)
+        // VARIABLE RESOLVER ({{ $node["NodeName"].json["property"] }})
         // ================================================
         function resolveVariables(value, context) {
             if (typeof value !== 'string') return value;
@@ -4209,7 +3633,7 @@
         }
 
         // ================================================
-        // VARIABLE PICKER (Ctrl+Space) (EXISTING - KEPT INTACT)
+        // VARIABLE PICKER (Ctrl+Space)
         // ================================================
         function getAvailableVariables() {
             const variables = [];
@@ -4288,7 +3712,7 @@
         }
 
         // ================================================
-        // ENHANCED NODE EXECUTION (Updated for new nodes) (EXISTING - KEPT INTACT)
+        // ENHANCED NODE EXECUTION (Updated for new nodes)
         // ================================================
         async function executeGeminiNode(config) {
             const { prompt, model = 'gemini-1.5-pro', temperature = 0.7, api_key } = config;
@@ -4490,7 +3914,7 @@
         }
 
         // ================================================
-        // OUTPUT PREVIEW SIDEBAR (EXISTING - KEPT INTACT)
+        // OUTPUT PREVIEW SIDEBAR
         // ================================================
         function showOutputPreview(nodeId) {
             const node = workflowNodes.find(n => n.id === nodeId);
@@ -4616,22 +4040,12 @@
             originalOpenPropertiesPanel(node);
             setTimeout(() => {
                 const panel = document.getElementById('propertiesPanel');
-                if (panel && panel.classList.contains('open')) {
-                    attachVariablePickerToInputs(panel);
-                    // Also render data mapper if there's a previous node
-                    const previousNode = workflowNodes.find(n => workflowEdges.some(e => e.target === node.id && e.source === n.id));
-                    if (previousNode && previousNode.result) {
-                        renderDataMapper(previousNode.result.output, node.config);
-                    } else {
-                        const mapperSection = document.getElementById('dataMapperSection');
-                        if (mapperSection) mapperSection.style.display = 'none';
-                    }
-                }
+                if (panel && panel.classList.contains('open')) attachVariablePickerToInputs(panel);
             }, 100);
         };
 
         // ================================================
-        // KEYBOARD SHORTCUTS (EXISTING - KEPT INTACT)
+        // KEYBOARD SHORTCUTS
         // ================================================
         document.addEventListener('keydown', (e) => {
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -4790,7 +4204,6 @@
                 nodeEl.setAttribute('data-node-id', node.id);
                 
                 const displayConfig = Object.entries(node.config).slice(0, 2);
-                const isManualTrigger = node.type === 'manual_trigger';
                 
                 nodeEl.innerHTML = `
                     <div class="workflow-node-header">
@@ -4799,7 +4212,6 @@
                         </div>
                         <div class="workflow-node-header-title">${node.name}</div>
                         <div class="workflow-node-header-actions">
-                            ${isManualTrigger ? `<button class="run-button" onclick="event.stopPropagation(); runManualTrigger('${node.id}')"><i class="fas fa-play"></i> Run</button>` : ''}
                             <button onclick="deleteWorkflowNode('${node.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -4985,14 +4397,6 @@
                         inputHtml = `<textarea data-field="${field}" rows="6" placeholder="${config.defaults?.[field] || ''}" style="font-family: monospace;">${value}</textarea>`;
                     } else if (field === 'system_prompt' || field === 'prompt') {
                         inputHtml = `<textarea data-field="${field}" rows="4" placeholder="${config.defaults?.[field] || ''}" style="font-family: monospace;">${value}</textarea>`;
-                    } else if (field === 'variables') {
-                        inputHtml = `<textarea data-field="${field}" rows="4" placeholder='{"key": "value"}' style="font-family: monospace;">${value}</textarea>`;
-                    } else if (field === 'mergeType') {
-                        inputHtml = `<select data-field="${field}"><option value="key" ${value === 'key' ? 'selected' : ''}>Merge by Key (Object)</option><option value="index" ${value === 'index' ? 'selected' : ''}>Merge by Index (Array)</option><option value="concat" ${value === 'concat' ? 'selected' : ''}>Concat Arrays</option></select>`;
-                    } else if (field === 'mode') {
-                        inputHtml = `<select data-field="${field}"><option value="delay" ${value === 'delay' ? 'selected' : ''}>Delay (Pause)</option><option value="retry" ${value === 'retry' ? 'selected' : ''}>Retry on Failure</option></select>`;
-                    } else if (field === 'action') {
-                        inputHtml = `<select data-field="${field}"><option value="log" ${value === 'log' ? 'selected' : ''}>Log Error</option><option value="continue" ${value === 'continue' ? 'selected' : ''}>Continue Execution</option><option value="retry" ${value === 'retry' ? 'selected' : ''}>Retry</option><option value="notify" ${value === 'notify' ? 'selected' : ''}>Notify Admin</option></select>`;
                     } else {
                         inputHtml = `<input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}">`;
                     }
@@ -5014,17 +4418,7 @@
             });
             
             const testDataEditor = document.getElementById('testDataEditor');
-            testDataEditor.style.display = node.type === 'trigger' || node.type === 'manual_trigger' ? 'block' : 'none';
-            
-            // Show Data Mapper with previous node output if available
-            const previousNode = workflowNodes.find(n => workflowEdges.some(e => e.target === node.id && e.source === n.id));
-            if (previousNode && previousNode.result) {
-                renderDataMapper(previousNode.result.output, node.config);
-            } else {
-                const mapperSection = document.getElementById('dataMapperSection');
-                if (mapperSection) mapperSection.style.display = 'none';
-            }
-            
+            testDataEditor.style.display = node.type === 'trigger' ? 'block' : 'none';
             panel.classList.add('open');
             attachVariablePickerToInputs(panel);
         }
@@ -5076,40 +4470,237 @@
             }
         }
 
-        // UPDATED executeWorkflowLocally to use Orchestrator for production-grade execution
         async function executeWorkflowLocally(inputData) {
-            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution with Production-Grade Orchestrator...');
+            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution...');
             
-            // Convert to n8n-style nodes for orchestrator
-            const orchestratorNodes = workflowNodes.map(node => {
-                const workflowNode = new WorkflowNode(node.id, node.type, { x: node.x, y: node.y }, node.config || {}, {});
-                workflowNode.name = node.name;
-                workflowNode.icon = node.icon;
-                workflowNode.color = node.color;
-                workflowNode.outputs = node.outputs;
-                return workflowNode;
+            let currentData = inputData || { test: true, timestamp: new Date().toISOString() };
+            window._lastTriggerData = currentData;
+            runHistory = {};
+            
+            const nodeMap = {};
+            workflowNodes.forEach(node => { nodeMap[node.id] = node; });
+            
+            const startNodes = workflowNodes.filter(node => {
+                const hasIncoming = workflowEdges.some(edge => edge.target === node.id);
+                return !hasIncoming;
             });
             
-            workflowOrchestrator = new WorkflowOrchestrator(orchestratorNodes, workflowEdges);
-            const result = await workflowOrchestrator.execute(inputData);
-            
-            // Update node statuses from orchestrator
-            workflowNodes.forEach(node => {
-                const execNode = orchestratorNodes.find(n => n.id === node.id);
-                if (execNode) {
-                    node.status = execNode.status;
-                    node.result = execNode.result;
-                }
-            });
-            renderWorkflowCanvas();
-            
-            if (result.success) {
-                addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', { steps: result.executionLog.length });
-                showToast('✅ Workflow completed successfully!', 'success');
-            } else {
-                addToHistory(document.getElementById('workflowName').value, 'failed', `Failed at ${result.failedAt}`, { error: result.error });
-                showToast(`❌ Workflow failed at ${result.failedAt}`, 'error');
+            if (startNodes.length === 0) {
+                addExecutionLog('Workflow', 'error', '❌ No start node found in workflow');
+                return;
             }
+            
+            const processed = new Set();
+            const queue = [...startNodes];
+            const nodeResults = {};
+            
+            while (queue.length > 0) {
+                const node = queue.shift();
+                if (processed.has(node.id)) continue;
+                processed.add(node.id);
+                
+                const incomingEdges = workflowEdges.filter(edge => edge.target === node.id);
+                let nodeInput = {};
+                
+                for (const edge of incomingEdges) {
+                    if (nodeResults[edge.source]) {
+                        nodeInput = { ...nodeInput, ...nodeResults[edge.source].output };
+                    }
+                }
+                
+                if (Object.keys(nodeInput).length === 0 && incomingEdges.length === 0) {
+                    nodeInput = currentData;
+                }
+                
+                node.status = 'running';
+                renderWorkflowCanvas();
+                
+                if (node.config) {
+                    for (const [key, val] of Object.entries(node.config)) {
+                        if (typeof val === 'string') {
+                            node.config[key] = resolveVariables(val, { data: nodeInput, trigger: currentData });
+                        }
+                    }
+                }
+                
+                let result;
+                let sessionId = `session_${Date.now()}_${node.id}`;
+                
+                switch (node.type) {
+                    case 'trigger':
+                        result = { output: { webhook_received: true, data: currentData, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'schedule':
+                        result = { output: { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'github':
+                        result = { output: await githubTriggerReal(node.config.event_type || 'push', node.config.repository || 'main', currentData), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_image':
+                        const imageUrl = await generateRealImage(node.config.prompt, node.config.style);
+                        result = { output: { image_url: imageUrl, prompt: node.config.prompt, style: node.config.style, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_video':
+                        const videoResult = await generateRealVideoWithApi(node.config.prompt, node.config.duration || 30, node.config.style);
+                        result = { output: videoResult, selectedPort: videoResult.error ? 'error' : 'next', status: videoResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'video_script':
+                        const scriptResult = await generateVideoScriptOnly(node.config.topic, node.config.duration, node.config.style);
+                        result = { output: scriptResult, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_agent':
+                        const agentResult = await executeAIAgentNode(node.config, nodeInput, currentData, sessionId);
+                        result = { output: agentResult, selectedPort: agentResult.error ? 'error' : 'next', status: agentResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'knowledge_base':
+                        const kbResult = await executeKnowledgeBaseNode(node.config, nodeInput, currentData);
+                        result = { output: kbResult, selectedPort: kbResult.error ? 'error' : 'next', status: kbResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'rss_feed':
+                    case 'rss':
+                        const rssResult = await executeRSSNode(node.config);
+                        result = { output: rssResult, selectedPort: rssResult.error ? 'error' : 'next', status: rssResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'web_scraper':
+                        const scrapeResult = await executeWebScraper(node.config, nodeInput, currentData);
+                        result = { output: scrapeResult, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'api_fetcher':
+                    case 'http_request':
+                        const httpResult = await executeHTTPRequestWithPorts(node.config, nodeInput);
+                        result = httpResult;
+                        break;
+                    case 'ai_content':
+                        const content = await generateRealContent(node.config.type, node.config.prompt, node.config.tone);
+                        result = { output: { content: content, type: node.config.type, prompt: node.config.prompt, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_lead_scoring':
+                        result = { output: await scoreLeadReal({ ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'post_social':
+                        result = { output: await postToSocialReal(node.config.platform, node.config.content), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'post_tiktok':
+                        result = { output: await postToTikTokReal(node.config.video_url, node.config.caption, node.config.hashtags?.split(',') || [], node.config.thumbnail_url), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'generate_hashtags':
+                        result = { output: await generateHashtags(node.config.topic, parseInt(node.config.count) || 15), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'schedule_post':
+                        result = { output: await schedulePostReal(node.config.platform, node.config.content, node.config.schedule_time), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'send_email':
+                        const emailResult = await executeSendEmailWithPorts(node.config, nodeInput, currentData);
+                        result = emailResult;
+                        break;
+                    case 'send_slack':
+                        const slackSent = await sendSlackReal(node.config.channel, node.config.message);
+                        result = { output: { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' }, selectedPort: slackSent ? 'next' : 'error', status: slackSent ? 'completed' : 'failed' };
+                        break;
+                    case 'inventory_check':
+                        result = { output: await checkInventoryReal(node.config.platform), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'cart_recovery':
+                        result = { output: await recoverCartReal(node.config.platform, node.config.discount_percent), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'create_lead':
+                        const lead = await createLeadReal({ ...currentData, ...currentData, name: node.config.lead_name, source: node.config.source });
+                        result = { output: { lead_id: lead?.id, status: 'created' }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'update_crm':
+                        result = { output: await updateCRMReal(node.config.record_id, { ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'loop':
+                        result = { output: await executeLoopWithSplit(node.config, nodeInput), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'split':
+                        const splitResult = await executeLoopWithSplit({ ...node.config, split_arrays: 'true' }, nodeInput);
+                        result = { output: splitResult.output, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'aggregate':
+                        result = { output: await executeLoopWithSplit({ ...node.config, split_arrays: 'false' }, nodeInput), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'database_query':
+                        result = { output: await databaseQueryReal(node.config.query, JSON.parse(node.config.params || '{}')), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'condition':
+                        const condResult = await executeConditionWithMultipleOutputs(node.config, { ...currentData, ...currentData });
+                        result = condResult;
+                        break;
+                    case 'wait':
+                        const duration = parseInt(node.config.duration) || 5;
+                        const unit = node.config.unit || 'seconds';
+                        const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
+                        await new Promise(r => setTimeout(r, ms));
+                        result = { output: { waited: `${duration} ${unit}` }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'gemini':
+                        result = { output: await executeGeminiNode(node.config), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'code':
+                        result = { output: await executeCodeNode(node.config, nodeInput, currentData), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'webhook':
+                        result = { output: { webhook_triggered: true, url: node.config.webhook_url, data: nodeInput, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'transform':
+                        const transformResult = await (async () => {
+                            const mapping = JSON.parse(node.config.mapping || '{}');
+                            const transformed = {};
+                            for (const [key, value] of Object.entries(mapping)) {
+                                transformed[key] = resolveVariables(value, { data: nodeInput, trigger: currentData });
+                            }
+                            return transformed;
+                        })();
+                        result = { output: transformResult, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'custom_app':
+                        const app = [...connectedApps, ...customApps].find(a => a.id == node.config.app_id);
+                        if (app) {
+                            const customResult = await triggerCustomWebhook(app, { ...currentData, ...currentData });
+                            result = { output: customResult, selectedPort: customResult.success ? 'next' : 'error', status: customResult.success ? 'completed' : 'failed' };
+                        } else {
+                            result = { output: { error: 'App not found' }, selectedPort: 'error', status: 'failed' };
+                        }
+                        break;
+                    default:
+                        result = { output: { output: nodeInput }, selectedPort: 'next', status: 'completed' };
+                }
+                
+                node.status = result.status;
+                if (result.output) {
+                    currentData = { ...currentData, ...result.output };
+                    node.result = { output: result.output };
+                    runHistory[node.name] = result.output;
+                }
+                nodeResults[node.id] = result;
+                renderWorkflowCanvas();
+                
+                if (result.status === 'failed') {
+                    addExecutionLog('Workflow', 'error', `❌ Workflow execution failed at node ${node.name} (routed to ${result.selectedPort} port)`);
+                    return;
+                }
+                
+                addExecutionLog(node.name, 'success', `✅ Completed - Routing to ${result.selectedPort} port`);
+                
+                const outgoingEdges = workflowEdges.filter(edge => edge.source === node.id);
+                const matchingEdges = outgoingEdges.filter(edge => edge.sourceHandle === result.selectedPort || (!edge.sourceHandle && result.selectedPort === 'next'));
+                
+                for (const edge of matchingEdges) {
+                    const childNode = nodeMap[edge.target];
+                    if (childNode && !processed.has(childNode.id)) {
+                        const allIncomingEdges = workflowEdges.filter(e => e.target === childNode.id);
+                        const allSatisfied = allIncomingEdges.every(e => processed.has(e.source) || nodeResults[e.source]);
+                        if (allSatisfied && !queue.includes(childNode)) {
+                            queue.push(childNode);
+                        }
+                    }
+                }
+            }
+            
+            addExecutionLog('Workflow', 'success', '✅ Workflow execution completed successfully with port-based routing!');
+            showToast('✅ Workflow completed!', 'success');
+            addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed with branching', { output: currentData, runHistory: runHistory });
         }
 
         async function saveWorkflow() {
@@ -5206,13 +4797,6 @@
         async function executeWorkflowAndWatch() {
             await executeWorkflowLocally({ test: true, timestamp: new Date().toISOString() });
         }
-        
-        async function runManualTrigger(nodeId) {
-            const node = workflowNodes.find(n => n.id === nodeId);
-            if (!node) return;
-            showToast(`Manual Trigger: Running workflow from ${node.name}`, 'info');
-            await executeWorkflowLocally({ manual: true, triggeredBy: node.name, timestamp: new Date().toISOString() });
-        }
 
         function startExecutionPolling(executionId) {}
 
@@ -5255,8 +4839,8 @@
             renderWorkflowCanvas();
             initOAuth();
             if (workflowNodes.length === 0) {
-                addNodeToCanvas('manual_trigger', 100, 200);
-                addNodeToCanvas('set_variables', 400, 200);
+                addNodeToCanvas('trigger', 100, 200);
+                addNodeToCanvas('condition', 400, 200);
                 workflowEdges.push({ source: workflowNodes[0]?.id, target: workflowNodes[1]?.id, sourceHandle: 'next' });
                 renderWorkflowCanvas();
                 saveCurrentWorkflow();
@@ -5305,11 +4889,6 @@
         window.showOAuthModal = showOAuthModal;
         window.showTemplatesModal = showTemplatesModal;
         window.applyTemplate = applyTemplate;
-        window.saveWorkflowToJSON = saveWorkflowToJSON;
-        window.importWorkflowJSON = importWorkflowJSON;
-        window.copyToClipboard = copyToClipboard;
-        window.mapFieldToCurrentNode = mapFieldToCurrentNode;
-        window.runManualTrigger = runManualTrigger;
     </script>
 </body>
 </html>
