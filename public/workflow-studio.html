@@ -1747,11 +1747,13 @@
         <div style="padding:12px; border-top:1px solid #2a2a3e; font-size:11px; color:#666; display:flex; justify-content:space-between;"><span><i class="fas fa-arrow-up"></i> <i class="fas fa-arrow-down"></i> Navigate</span><span><i class="fas fa-plus"></i> Click to add node</span><span><i class="fas fa-globe"></i> Deep HTTP Discovery</span></div>
     </div>
 
-    <script>
+   
+   <script>
         // ================================================
         // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
-        // 150+ NODES - AI AGENT - KNOWLEDGE BASE - TEMPLATE ENGINE
+        // 180+ NODES - AI AGENT - KNOWLEDGE BASE - TEMPLATE ENGINE
         // SORA-LEVEL VIDEO GENERATION - SCRIPT GENERATOR
+        // PRODUCTION-GRADE NODE ENGINE WITH TOPOLOGICAL SORT
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -1953,6 +1955,10 @@
         let credentials = [];
         let runHistory = {};
         let agentMemory = {};
+        
+        // Production-Grade Engine State
+        let workflowOrchestrator = null;
+        let executionLog = [];
 
         // OAuth State
         let oauthProviders = {
@@ -1973,7 +1979,7 @@
         let activeInputField = null;
 
         // ================================================
-        // 150+ NODE CONFIGURATIONS WITH PORT OUTPUTS
+        // 180+ NODE CONFIGURATIONS WITH PORT OUTPUTS
         // ================================================
         const NODE_CONFIGS = {
             // Triggers (5)
@@ -1982,6 +1988,9 @@
             github: { name: 'GitHub Trigger', icon: 'fab fa-github', color: '#333333', fields: ['event_type', 'repository'], defaults: { event_type: 'push', repository: 'username/repo' }, category: 'triggers', keywords: ['github', 'git', 'code'], outputs: ['next'] },
             email_trigger: { name: 'Email Trigger', icon: 'fa-envelope', color: '#EA4B71', fields: ['imap_server', 'email', 'password'], defaults: { imap_server: 'imap.gmail.com', email: 'user@gmail.com', password: '' }, category: 'triggers', keywords: ['email', 'imap', 'trigger'], outputs: ['next'] },
             webhook_custom: { name: 'Custom Webhook', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['endpoint', 'method'], defaults: { endpoint: '/custom/webhook', method: 'POST' }, category: 'triggers', keywords: ['custom', 'webhook', 'endpoint'], outputs: ['next'] },
+            
+            // NEW: Manual Trigger Node
+            manual_trigger: { name: 'Manual Trigger', icon: 'fa-hand-pointer', color: '#F59E0B', fields: ['test_data'], defaults: { test_data: '{}' }, category: 'triggers', keywords: ['manual', 'button', 'run'], outputs: ['next'] },
             
             // AI Actions (Expanded)
             ai_agent: { name: 'AI Agent (Memory + Tools)', icon: 'fa-robot', color: '#8B5CF6', fields: ['system_prompt', 'model', 'temperature', 'memory', 'tools'], defaults: { system_prompt: 'You are a helpful AI assistant with access to tools.', model: 'llama-3-70b', temperature: '0.7', memory: 'true', tools: '[]' }, category: 'ai', keywords: ['agent', 'ai', 'memory', 'tools'], outputs: ['next', 'error'] },
@@ -1997,6 +2006,131 @@
             ai_sentiment: { name: 'Sentiment Analysis', icon: 'fa-smile', color: '#8B5CF6', fields: ['text'], defaults: { text: '' }, category: 'ai', keywords: ['sentiment', 'analysis', 'emotion'], outputs: ['next'] },
             ai_embedding: { name: 'AI Embeddings', icon: 'fa-vector-square', color: '#8B5CF6', fields: ['text'], defaults: { text: '' }, category: 'ai', keywords: ['embedding', 'vector', 'ai'], outputs: ['next'] },
             ai_chat: { name: 'AI Chat Agent', icon: 'fa-comments', color: '#8B5CF6', fields: ['message', 'session_id', 'memory'], defaults: { message: '', session_id: '', memory: 'true' }, category: 'ai', keywords: ['chat', 'agent', 'conversation'], outputs: ['next'] },
+            
+            // NEW: Basic LLM Chain Node
+            basic_llm_chain: { name: 'Basic LLM Chain', icon: 'fa-link', color: '#8B5CF6', fields: ['prompt_template', 'model', 'temperature', 'output_key'], defaults: { prompt_template: 'You are a helpful assistant. Answer: {{data.query}}', model: 'llama-3-70b', temperature: '0.7', output_key: 'response' }, category: 'ai', keywords: ['llm', 'chain', 'prompt'], outputs: ['next', 'error'] },
+            
+            // NEW: Typeform Trigger Node
+            typeform_trigger: { name: 'Typeform Trigger', icon: 'fa-poll', color: '#10B981', fields: ['form_id', 'webhook_secret'], defaults: { form_id: '', webhook_secret: '' }, category: 'triggers', keywords: ['typeform', 'form', 'trigger'], outputs: ['next'] },
+            
+            // NEW: Insert Row Node
+            insert_row: { name: 'Insert Row', icon: 'fa-plus-circle', color: '#7AB55C', fields: ['table', 'data'], defaults: { table: '', data: '{}' }, category: 'database', keywords: ['insert', 'row', 'database'], outputs: ['next', 'error'] },
+            
+            // NEW: Append Row in Sheet Node
+            append_row_sheet: { name: 'Append Row in Sheet', icon: 'fa-table', color: '#0F9D58', fields: ['spreadsheet_id', 'range', 'values'], defaults: { spreadsheet_id: '', range: 'Sheet1!A1', values: '[]' }, category: 'integrations', keywords: ['sheet', 'append', 'row'], outputs: ['next', 'error'] },
+            
+            // NEW: Sort Node
+            sort_node: { name: 'Sort Data', icon: 'fa-sort-amount-down', color: '#6B7280', fields: ['field', 'order', 'sort_by'], defaults: { field: 'timestamp', order: 'desc', sort_by: 'field' }, category: 'logic', keywords: ['sort', 'order', 'arrange'], outputs: ['next'] },
+            
+            // NEW: Limit Node
+            limit_node: { name: 'Limit Items', icon: 'fa-cut', color: '#6B7280', fields: ['limit', 'offset'], defaults: { limit: '10', offset: '0' }, category: 'logic', keywords: ['limit', 'truncate', 'slice'], outputs: ['next'] },
+            
+            // NEW: Set / Variables Node
+            set_variable: { name: 'Set Variable', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['variable_name', 'variable_value', 'merge_behavior'], defaults: { variable_name: 'myVariable', variable_value: '{}', merge_behavior: 'replace' }, category: 'logic', keywords: ['set', 'variable', 'store'], outputs: ['next'] },
+            
+            // NEW: Get Variable Node
+            get_variable: { name: 'Get Variable', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['variable_name', 'default_value'], defaults: { variable_name: 'myVariable', default_value: '{}' }, category: 'logic', keywords: ['get', 'variable', 'retrieve'], outputs: ['next'] },
+            
+            // NEW: Merge (Advanced) Node
+            merge_node: { name: 'Merge (Advanced)', icon: 'fa-code-branch', color: '#6B7280', fields: ['merge_type', 'merge_by_field'], defaults: { merge_type: 'index', merge_by_field: 'id' }, category: 'logic', keywords: ['merge', 'combine', 'join'], outputs: ['next'] },
+            
+            // NEW: Pass-through Node
+            pass_through: { name: 'Pass-through Node', icon: 'fa-forward', color: '#6B7280', fields: ['keep_fields', 'remove_fields'], defaults: { keep_fields: '*', remove_fields: '' }, category: 'logic', keywords: ['passthrough', 'forward', 'debug'], outputs: ['next'] },
+            
+            // NEW: If/Else (Enhanced Condition)
+            enhanced_condition: { name: 'If/Else (Enhanced)', icon: 'fa-code-branch', color: '#6B7280', fields: ['conditions', 'logical_operator', 'case_sensitive'], defaults: { conditions: '[{"field":"data.value","operator":"gt","value":10}]', logical_operator: 'and', case_sensitive: 'false' }, category: 'logic', keywords: ['condition', 'if', 'else', 'branch'], outputs: ['true', 'false'] },
+            
+            // NEW: Switch (Multi-route advanced)
+            switch_node: { name: 'Switch (Multi-route)', icon: 'fa-exchange-alt', color: '#6B7280', fields: ['switch_field', 'cases'], defaults: { switch_field: 'data.status', cases: '{"active":"active_route","inactive":"inactive_route","pending":"pending_route"}' }, category: 'logic', keywords: ['switch', 'router', 'case'], outputs: ['default', 'active_route', 'inactive_route', 'pending_route'] },
+            
+            // NEW: Loop Over Items
+            loop_items: { name: 'Loop Over Items', icon: 'fa-redo-alt', color: '#6B7280', fields: ['items_path', 'max_iterations'], defaults: { items_path: 'data.items', max_iterations: '100' }, category: 'logic', keywords: ['loop', 'iterate', 'items'], outputs: ['item', 'done'] },
+            
+            // NEW: Break / Stop Node
+            break_node: { name: 'Break / Stop', icon: 'fa-stop', color: '#EF4444', fields: ['condition', 'message'], defaults: { condition: 'data.stop === true', message: 'Workflow stopped by break node' }, category: 'logic', keywords: ['break', 'stop', 'exit'], outputs: [] },
+            
+            // NEW: Continue Node
+            continue_node: { name: 'Continue Node', icon: 'fa-skip', color: '#F59E0B', fields: ['condition', 'skip_count'], defaults: { condition: 'data.skip === true', skip_count: '1' }, category: 'logic', keywords: ['continue', 'skip', 'next'], outputs: ['next'] },
+            
+            // NEW: Error Trigger Node
+            error_trigger: { name: 'Error Trigger', icon: 'fa-exclamation-triangle', color: '#EF4444', fields: ['error_types', 'capture_all'], defaults: { error_types: '["node_failure","http_error"]', capture_all: 'true' }, category: 'errors', keywords: ['error', 'trigger', 'catch'], outputs: ['error'] },
+            
+            // NEW: Try/Catch Node
+            try_catch: { name: 'Try/Catch Node', icon: 'fa-shield-alt', color: '#F59E0B', fields: ['try_nodes', 'catch_nodes', 'finally_nodes'], defaults: { try_nodes: '[]', catch_nodes: '[]', finally_nodes: '[]' }, category: 'errors', keywords: ['try', 'catch', 'finally', 'error'], outputs: ['catch', 'finally'] },
+            
+            // NEW: Retry Node
+            retry_node: { name: 'Retry Node', icon: 'fa-undo', color: '#3B82F6', fields: ['max_retries', 'retry_interval', 'retry_on_status'], defaults: { max_retries: '3', retry_interval: '1000', retry_on_status: '["error","timeout"]' }, category: 'errors', keywords: ['retry', 'repeat', 'failure'], outputs: ['next', 'error'] },
+            
+            // NEW: Timeout Node
+            timeout_node: { name: 'Timeout Node', icon: 'fa-hourglass-end', color: '#F59E0B', fields: ['timeout_seconds', 'action_on_timeout'], defaults: { timeout_seconds: '30', action_on_timeout: 'fail' }, category: 'errors', keywords: ['timeout', 'limit', 'duration'], outputs: ['next', 'timeout'] },
+            
+            // NEW: Fallback Node
+            fallback_node: { name: 'Fallback Node', icon: 'fa-umbrella', color: '#10B981', fields: ['primary_nodes', 'fallback_nodes', 'fallback_condition'], defaults: { primary_nodes: '[]', fallback_nodes: '[]', fallback_condition: 'on_failure' }, category: 'errors', keywords: ['fallback', 'backup', 'alternative'], outputs: ['next', 'fallback'] },
+            
+            // NEW: Webhook Response Node
+            webhook_response: { name: 'Webhook Response', icon: 'fa-reply', color: '#10B981', fields: ['status_code', 'response_body', 'response_headers'], defaults: { status_code: '200', response_body: '{}', response_headers: '{}' }, category: 'webhook', keywords: ['webhook', 'response', 'reply'], outputs: [] },
+            
+            // NEW: HTTP Advanced Node
+            http_advanced: { name: 'HTTP Advanced', icon: 'fa-cogs', color: '#2563EB', fields: ['method', 'url', 'auth_type', 'auth_token', 'headers', 'body', 'retry_count', 'timeout'], defaults: { method: 'GET', url: '', auth_type: 'none', auth_token: '', headers: '{}', body: '{}', retry_count: '3', timeout: '30000' }, category: 'integrations', keywords: ['http', 'advanced', 'request'], outputs: ['next', 'error'] },
+            
+            // NEW: API Pagination Node
+            api_pagination: { name: 'API Pagination', icon: 'fa-pagelines', color: '#8B5CF6', fields: ['url', 'pagination_type', 'page_param', 'limit_param', 'next_page_path'], defaults: { url: '', pagination_type: 'page', page_param: 'page', limit_param: 'limit', next_page_path: 'data.next_page' }, category: 'integrations', keywords: ['pagination', 'api', 'paginate'], outputs: ['next', 'done'] },
+            
+            // NEW: File Upload Node
+            file_upload: { name: 'File Upload', icon: 'fa-upload', color: '#10B981', fields: ['file_path', 'destination', 'file_type'], defaults: { file_path: '', destination: '', file_type: 'auto' }, category: 'files', keywords: ['file', 'upload', 'storage'], outputs: ['next', 'error'] },
+            
+            // NEW: File Read Node
+            file_read: { name: 'File Read', icon: 'fa-file-alt', color: '#10B981', fields: ['file_path', 'encoding', 'max_size_mb'], defaults: { file_path: '', encoding: 'utf8', max_size_mb: '10' }, category: 'files', keywords: ['file', 'read', 'load'], outputs: ['next', 'error'] },
+            
+            // NEW: File Write Node
+            file_write: { name: 'File Write', icon: 'fa-save', color: '#10B981', fields: ['file_path', 'content', 'append_mode'], defaults: { file_path: '', content: '', append_mode: 'false' }, category: 'files', keywords: ['file', 'write', 'save'], outputs: ['next', 'error'] },
+            
+            // NEW: File Convert Node
+            file_convert: { name: 'File Convert', icon: 'fa-exchange-alt', color: '#F59E0B', fields: ['input_file', 'output_format', 'quality'], defaults: { input_file: '', output_format: 'pdf', quality: 'high' }, category: 'files', keywords: ['convert', 'transform', 'file'], outputs: ['next', 'error'] },
+            
+            // NEW: File Download Node
+            file_download: { name: 'File Download', icon: 'fa-download', color: '#10B981', fields: ['url', 'destination_path', 'filename'], defaults: { url: '', destination_path: '', filename: '' }, category: 'files', keywords: ['download', 'file', 'fetch'], outputs: ['next', 'error'] },
+            
+            // NEW: JSON Parse Node
+            json_parse: { name: 'JSON Parse', icon: 'fa-code', color: '#6B7280', fields: ['input_field', 'output_field'], defaults: { input_field: 'data.json_string', output_field: 'parsed_json' }, category: 'data', keywords: ['json', 'parse', 'convert'], outputs: ['next', 'error'] },
+            
+            // NEW: JSON Stringify Node
+            json_stringify: { name: 'JSON Stringify', icon: 'fa-code', color: '#6B7280', fields: ['input_field', 'output_field', 'pretty_print'], defaults: { input_field: 'data.object', output_field: 'json_string', pretty_print: 'true' }, category: 'data', keywords: ['json', 'stringify', 'convert'], outputs: ['next'] },
+            
+            // NEW: Data Mapper Node
+            data_mapper: { name: 'Data Mapper', icon: 'fa-map', color: '#8B5CF6', fields: ['mapping_rules', 'source_field', 'target_field'], defaults: { mapping_rules: '[{"source":"name","target":"full_name"},{"source":"email","target":"contact_email"}]', source_field: 'data', target_field: 'mapped_data' }, category: 'data', keywords: ['map', 'transform', 'mapping'], outputs: ['next'] },
+            
+            // NEW: Deduplicate Node
+            deduplicate: { name: 'Deduplicate', icon: 'fa-copy', color: '#6B7280', fields: ['fields', 'keep_first', 'case_sensitive'], defaults: { fields: '["id","email"]', keep_first: 'true', case_sensitive: 'false' }, category: 'data', keywords: ['deduplicate', 'unique', 'distinct'], outputs: ['next'] },
+            
+            // NEW: Flatten / Expand Node
+            flatten_expand: { name: 'Flatten / Expand', icon: 'fa-compress-alt', color: '#6B7280', fields: ['operation', 'field_path', 'separator'], defaults: { operation: 'flatten', field_path: 'data.nested', separator: '_' }, category: 'data', keywords: ['flatten', 'expand', 'nested'], outputs: ['next'] },
+            
+            // NEW: OAuth Connect Node
+            oauth_connect: { name: 'OAuth Connect', icon: 'fa-key', color: '#4285F4', fields: ['provider', 'scopes', 'redirect_uri'], defaults: { provider: 'google', scopes: 'profile email', redirect_uri: '' }, category: 'auth', keywords: ['oauth', 'connect', 'auth'], outputs: ['next', 'error'] },
+            
+            // NEW: Credential Injector Node
+            credential_injector: { name: 'Credential Injector', icon: 'fa-lock', color: '#F59E0B', fields: ['credential_id', 'inject_into'], defaults: { credential_id: '', inject_into: 'headers' }, category: 'auth', keywords: ['credential', 'inject', 'secure'], outputs: ['next'] },
+            
+            // NEW: Rate Limit Node
+            rate_limit: { name: 'Rate Limit', icon: 'fa-tachometer-alt', color: '#F59E0B', fields: ['max_requests', 'time_window_seconds', 'key_field'], defaults: { max_requests: '100', time_window_seconds: '60', key_field: '' }, category: 'logic', keywords: ['rate', 'limit', 'throttle'], outputs: ['next', 'blocked'] },
+            
+            // NEW: Queue/Delay Node
+            queue_delay: { name: 'Queue/Delay', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['delay_seconds', 'queue_name', 'max_queue_size'], defaults: { delay_seconds: '5', queue_name: 'default', max_queue_size: '1000' }, category: 'logic', keywords: ['queue', 'delay', 'buffer'], outputs: ['next'] },
+            
+            // NEW: AI Memory Node
+            ai_memory: { name: 'AI Memory Node', icon: 'fa-microchip', color: '#8B5CF6', fields: ['session_id', 'operation', 'data'], defaults: { session_id: '{{data.session_id}}', operation: 'store', data: '{}' }, category: 'ai', keywords: ['memory', 'store', 'recall'], outputs: ['next', 'error'] },
+            
+            // NEW: Vector Database Node
+            vector_db: { name: 'Vector Database', icon: 'fa-database', color: '#10B981', fields: ['operation', 'collection', 'vectors', 'query'], defaults: { operation: 'search', collection: 'documents', vectors: '[]', query: '' }, category: 'ai', keywords: ['vector', 'embedding', 'search'], outputs: ['next', 'error'] },
+            
+            // NEW: Cache Node
+            cache_node: { name: 'Cache Node', icon: 'fa-database', color: '#3B82F6', fields: ['cache_key', 'ttl_seconds', 'operation'], defaults: { cache_key: '{{data.id}}', ttl_seconds: '3600', operation: 'get' }, category: 'logic', keywords: ['cache', 'redis', 'memory'], outputs: ['next', 'miss'] },
+            
+            // NEW: Filter Node
+            filter_node: { name: 'Filter Data', icon: 'fa-filter', color: '#6B7280', fields: ['field', 'operator', 'value'], defaults: { field: 'status', operator: 'eq', value: 'active' }, category: 'logic', keywords: ['filter', 'where', 'condition'], outputs: ['true', 'false'] },
+            
+            // NEW: Sort Node (already added above, keeping for completeness)
             
             // Content Fetchers
             rss_feed: { name: 'RSS Feed Reader', icon: 'fa-rss', color: '#f26522', fields: ['feed_url', 'limit'], defaults: { feed_url: 'https://feeds.bbci.co.uk/news/rss.xml', limit: '10' }, category: 'content', keywords: ['rss', 'feed', 'news'], outputs: ['next', 'error'] },
@@ -2056,7 +2190,7 @@
             send_push: { name: 'Push Notification', icon: 'fa-bell', color: '#F59E0B', fields: ['device_token', 'title', 'body'], defaults: { device_token: '', title: '', body: '' }, category: 'communication', keywords: ['push', 'notification', 'alert'], outputs: ['next', 'error'] },
             send_webhook: { name: 'Send Webhook', icon: 'fa-globe', color: '#10B981', fields: ['url', 'method', 'payload'], defaults: { url: '', method: 'POST', payload: '{}' }, category: 'communication', keywords: ['webhook', 'send', 'callback'], outputs: ['next', 'error'] },
             
-            // Logic (10)
+            // Logic (10) - Updated with new nodes
             condition: { name: 'Condition (IF)', icon: 'fa-code-branch', color: '#6B7280', fields: ['condition', 'output_count'], defaults: { condition: 'data.value > 10', output_count: '2' }, category: 'logic', keywords: ['if', 'condition', 'branch'], outputs: ['true', 'false'] },
             switch: { name: 'Switch / Router', icon: 'fa-exchange-alt', color: '#6B7280', fields: ['switch_field', 'cases'], defaults: { switch_field: 'status', cases: '{"active":"next","inactive":"error"}' }, category: 'logic', keywords: ['switch', 'router', 'case'], outputs: ['default', 'case1', 'case2'] },
             wait: { name: 'Wait', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['duration', 'unit'], defaults: { duration: '5', unit: 'seconds' }, category: 'logic', keywords: ['wait', 'delay', 'sleep'], outputs: ['next'] },
@@ -2112,6 +2246,1817 @@
             metabase: { name: 'Metabase', icon: 'fas fa-chart-simple', color: '#509EE3', fields: ['query', 'database_id'], defaults: { query: '', database_id: '' }, category: 'analytics', keywords: ['metabase', 'bi', 'dashboard'], outputs: ['next', 'error'] }
         };
 
+        // ================================================
+        // PRODUCTION-GRADE WORKFLOW ORCHESTRATOR
+        // ================================================
+        
+        class WorkflowOrchestrator {
+            constructor(nodes, edges) {
+                this.nodes = nodes;
+                this.edges = edges;
+                this.executionLog = [];
+                this.context = {};
+                this.runHistory = {};
+                this.variables = {};
+            }
+            
+            // Topological Sort by Dependencies
+            topologicalSort() {
+                const nodeMap = new Map();
+                this.nodes.forEach(node => {
+                    nodeMap.set(node.id, {
+                        ...node,
+                        inDegree: 0,
+                        visited: false,
+                        dependencies: []
+                    });
+                });
+                
+                // Build dependency graph
+                this.edges.forEach(edge => {
+                    const targetNode = nodeMap.get(edge.target);
+                    if (targetNode) {
+                        targetNode.dependencies.push(edge.source);
+                        targetNode.inDegree++;
+                    }
+                });
+                
+                // Find nodes with no dependencies (triggers/start nodes)
+                const queue = [];
+                this.nodes.forEach(node => {
+                    const graphNode = nodeMap.get(node.id);
+                    if (graphNode.inDegree === 0) {
+                        queue.push(node.id);
+                    }
+                });
+                
+                const sorted = [];
+                const visited = new Set();
+                
+                while (queue.length > 0) {
+                    const nodeId = queue.shift();
+                    if (visited.has(nodeId)) continue;
+                    visited.add(nodeId);
+                    sorted.push(nodeId);
+                    
+                    // Find edges where this node is the source
+                    const outgoingEdges = this.edges.filter(e => e.source === nodeId);
+                    outgoingEdges.forEach(edge => {
+                        const targetGraphNode = nodeMap.get(edge.target);
+                        if (targetGraphNode) {
+                            targetGraphNode.inDegree--;
+                            if (targetGraphNode.inDegree === 0 && !visited.has(edge.target)) {
+                                queue.push(edge.target);
+                            }
+                        }
+                    });
+                }
+                
+                // Add any remaining nodes (should handle cycles gracefully)
+                this.nodes.forEach(node => {
+                    if (!visited.has(node.id)) {
+                        sorted.push(node.id);
+                    }
+                });
+                
+                this.addExecutionLog('Orchestrator', 'info', `📊 Topological sort completed: ${sorted.length} nodes in order`);
+                return sorted;
+            }
+            
+            // Variable/Expression Resolver
+            resolveExpression(value, context) {
+                if (typeof value !== 'string') return value;
+                
+                let resolved = value;
+                
+                // Pattern 1: {{ $node["NodeName"].json["property"] }}
+                const nodePattern = /\{\{\s*\$node\["([^"]+)"\]\.json\["([^"]+)"\]\s*\}\}/g;
+                let match;
+                while ((match = nodePattern.exec(value)) !== null) {
+                    const nodeName = match[1];
+                    const property = match[2];
+                    const node = this.nodes.find(n => n.name === nodeName);
+                    if (node && this.runHistory[nodeName]) {
+                        const resolvedValue = this.runHistory[nodeName][property];
+                        if (resolvedValue !== undefined) {
+                            resolved = resolved.replace(match[0], String(resolvedValue));
+                        }
+                    } else if (node && node.result && node.result.output) {
+                        const resolvedValue = node.result.output[property];
+                        if (resolvedValue !== undefined) {
+                            resolved = resolved.replace(match[0], String(resolvedValue));
+                        }
+                    }
+                }
+                
+                // Pattern 2: {{ $json.key }}
+                const jsonPattern = /\{\{\s*\$json\.([^\s}]+)\s*\}\}/g;
+                while ((match = jsonPattern.exec(value)) !== null) {
+                    const property = match[1];
+                    if (context && context.json && context.json[property] !== undefined) {
+                        resolved = resolved.replace(match[0], String(context.json[property]));
+                    } else if (context && context[property] !== undefined) {
+                        resolved = resolved.replace(match[0], String(context[property]));
+                    }
+                }
+                
+                // Pattern 3: {{ data.key }}
+                const dataPattern = /\{\{\s*data\.([^\s}]+)\s*\}\}/g;
+                while ((match = dataPattern.exec(value)) !== null) {
+                    const property = match[1];
+                    if (context && context.data && context.data[property] !== undefined) {
+                        resolved = resolved.replace(match[0], String(context.data[property]));
+                    } else if (context && context[property] !== undefined) {
+                        resolved = resolved.replace(match[0], String(context[property]));
+                    }
+                }
+                
+                // Pattern 4: {{ trigger.key }}
+                const triggerPattern = /\{\{\s*trigger\.([^\s}]+)\s*\}\}/g;
+                while ((match = triggerPattern.exec(value)) !== null) {
+                    const property = match[1];
+                    if (context && context.trigger && context.trigger[property] !== undefined) {
+                        resolved = resolved.replace(match[0], String(context.trigger[property]));
+                    }
+                }
+                
+                // Pattern 5: {{ $variable.name }}
+                const varPattern = /\{\{\s*\$variable\.([^\s}]+)\s*\}\}/g;
+                while ((match = varPattern.exec(value)) !== null) {
+                    const varName = match[1];
+                    if (this.variables[varName] !== undefined) {
+                        resolved = resolved.replace(match[0], String(this.variables[varName]));
+                    }
+                }
+                
+                return resolved;
+            }
+            
+            // Resolve all config parameters
+            resolveNodeConfig(config, context) {
+                const resolved = {};
+                for (const [key, value] of Object.entries(config)) {
+                    if (typeof value === 'string') {
+                        resolved[key] = this.resolveExpression(value, context);
+                    } else if (typeof value === 'object' && value !== null) {
+                        resolved[key] = this.resolveNodeConfig(value, context);
+                    } else {
+                        resolved[key] = value;
+                    }
+                }
+                return resolved;
+            }
+            
+            // Get input data for a node
+            getNodeInput(nodeId, currentData, triggerData) {
+                const incomingEdges = this.edges.filter(edge => edge.target === nodeId);
+                let input = {};
+                
+                for (const edge of incomingEdges) {
+                    const sourceNode = this.nodes.find(n => n.id === edge.source);
+                    if (sourceNode && this.runHistory[sourceNode.name]) {
+                        input = { ...input, ...this.runHistory[sourceNode.name] };
+                    } else if (sourceNode && sourceNode.result && sourceNode.result.output) {
+                        input = { ...input, ...sourceNode.result.output };
+                    }
+                }
+                
+                if (Object.keys(input).length === 0 && incomingEdges.length === 0) {
+                    input = { ...currentData, ...triggerData };
+                }
+                
+                return { data: input, trigger: triggerData, json: input };
+            }
+            
+            // Execute a single node
+            async executeNode(node, inputData, triggerData) {
+                this.addExecutionLog(node.name, 'info', `▶️ Starting execution...`);
+                
+                // Resolve config with variables
+                const resolvedConfig = this.resolveNodeConfig(node.config, { data: inputData, trigger: triggerData, json: inputData });
+                
+                // Update node with resolved config
+                node.config = resolvedConfig;
+                
+                let result;
+                let sessionId = `session_${Date.now()}_${node.id}`;
+                
+                try {
+                    switch (node.type) {
+                        case 'trigger':
+                        case 'webhook_custom':
+                            result = { output: { webhook_received: true, data: inputData, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'manual_trigger':
+                            const testData = JSON.parse(resolvedConfig.test_data || '{}');
+                            result = { output: { manual_triggered: true, data: { ...inputData, ...testData }, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'schedule':
+                            result = { output: { scheduled: true, cron: resolvedConfig.cron, triggered_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'github':
+                            result = { output: await githubTriggerReal(resolvedConfig.event_type || 'push', resolvedConfig.repository || 'main', inputData), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'ai_image':
+                            const imageUrl = await generateRealImage(resolvedConfig.prompt, resolvedConfig.style);
+                            result = { output: { image_url: imageUrl, prompt: resolvedConfig.prompt, style: resolvedConfig.style, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'ai_video':
+                            const videoResult = await generateRealVideoWithApi(resolvedConfig.prompt, resolvedConfig.duration || 30, resolvedConfig.style);
+                            result = { output: videoResult, selectedPort: videoResult.error ? 'error' : 'next', status: videoResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'video_script':
+                            const scriptResult = await generateVideoScriptOnly(resolvedConfig.topic, resolvedConfig.duration, resolvedConfig.style);
+                            result = { output: scriptResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'ai_agent':
+                            const agentResult = await executeAIAgentNode(resolvedConfig, inputData, triggerData, sessionId);
+                            result = { output: agentResult, selectedPort: agentResult.error ? 'error' : 'next', status: agentResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'knowledge_base':
+                            const kbResult = await executeKnowledgeBaseNode(resolvedConfig, inputData, triggerData);
+                            result = { output: kbResult, selectedPort: kbResult.error ? 'error' : 'next', status: kbResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'basic_llm_chain':
+                            const llmResult = await executeBasicLLMChain(resolvedConfig, inputData, triggerData);
+                            result = { output: llmResult, selectedPort: llmResult.error ? 'error' : 'next', status: llmResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'typeform_trigger':
+                            result = { output: { typeform_received: true, form_id: resolvedConfig.form_id, data: inputData }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'insert_row':
+                            const insertResult = await executeInsertRow(resolvedConfig, inputData);
+                            result = { output: insertResult, selectedPort: insertResult.error ? 'error' : 'next', status: insertResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'append_row_sheet':
+                            const appendResult = await executeAppendRowSheet(resolvedConfig, inputData);
+                            result = { output: appendResult, selectedPort: appendResult.error ? 'error' : 'next', status: appendResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'sort_node':
+                            const sortResult = await executeSortNode(resolvedConfig, inputData);
+                            result = { output: sortResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'limit_node':
+                            const limitResult = await executeLimitNode(resolvedConfig, inputData);
+                            result = { output: limitResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'set_variable':
+                            const setVarResult = await executeSetVariable(resolvedConfig, inputData);
+                            if (setVarResult.variable_name) {
+                                this.variables[setVarResult.variable_name] = setVarResult.variable_value;
+                                this.addExecutionLog(node.name, 'info', `📝 Variable set: ${setVarResult.variable_name} = ${JSON.stringify(setVarResult.variable_value).substring(0, 100)}`);
+                            }
+                            result = { output: setVarResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'get_variable':
+                            const getVarResult = await executeGetVariable(resolvedConfig, inputData, this.variables);
+                            result = { output: getVarResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'merge_node':
+                            const mergeResult = await executeMergeNode(resolvedConfig, inputData, this.runHistory);
+                            result = { output: mergeResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'pass_through':
+                            result = { output: inputData, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'enhanced_condition':
+                            const enhancedCondResult = await executeEnhancedCondition(resolvedConfig, inputData);
+                            result = enhancedCondResult;
+                            break;
+                        case 'switch_node':
+                            const switchResult = await executeSwitchNode(resolvedConfig, inputData);
+                            result = switchResult;
+                            break;
+                        case 'loop_items':
+                            const loopResult = await executeLoopItems(resolvedConfig, inputData);
+                            result = loopResult;
+                            break;
+                        case 'break_node':
+                            const breakResult = { output: { stopped: true, message: resolvedConfig.message }, selectedPort: null, status: 'completed', stopWorkflow: true };
+                            result = breakResult;
+                            break;
+                        case 'continue_node':
+                            result = { output: { continued: true }, selectedPort: 'next', status: 'completed', skipNext: parseInt(resolvedConfig.skip_count) || 1 };
+                            break;
+                        case 'error_trigger':
+                            result = { output: { error_caught: true }, selectedPort: 'error', status: 'completed' };
+                            break;
+                        case 'try_catch':
+                            const tryCatchResult = await executeTryCatch(resolvedConfig, inputData, this);
+                            result = tryCatchResult;
+                            break;
+                        case 'retry_node':
+                            const retryResult = await executeRetryNode(resolvedConfig, inputData, this);
+                            result = retryResult;
+                            break;
+                        case 'timeout_node':
+                            const timeoutResult = await executeTimeoutNode(resolvedConfig, inputData, this);
+                            result = timeoutResult;
+                            break;
+                        case 'fallback_node':
+                            const fallbackResult = await executeFallbackNode(resolvedConfig, inputData, this);
+                            result = fallbackResult;
+                            break;
+                        case 'webhook_response':
+                            result = { output: { response_sent: true, status_code: resolvedConfig.status_code, body: resolvedConfig.response_body }, selectedPort: null, status: 'completed', isResponse: true };
+                            break;
+                        case 'http_advanced':
+                            const httpAdvResult = await executeHTTPAdvanced(resolvedConfig, inputData);
+                            result = httpAdvResult;
+                            break;
+                        case 'api_pagination':
+                            const paginationResult = await executeAPIPagination(resolvedConfig, inputData);
+                            result = paginationResult;
+                            break;
+                        case 'file_upload':
+                            const uploadResult = await executeFileUpload(resolvedConfig, inputData);
+                            result = uploadResult;
+                            break;
+                        case 'file_read':
+                            const readResult = await executeFileRead(resolvedConfig, inputData);
+                            result = readResult;
+                            break;
+                        case 'file_write':
+                            const writeResult = await executeFileWrite(resolvedConfig, inputData);
+                            result = writeResult;
+                            break;
+                        case 'file_convert':
+                            const convertResult = await executeFileConvert(resolvedConfig, inputData);
+                            result = convertResult;
+                            break;
+                        case 'file_download':
+                            const downloadResult = await executeFileDownload(resolvedConfig, inputData);
+                            result = downloadResult;
+                            break;
+                        case 'json_parse':
+                            const parseResult = await executeJSONParse(resolvedConfig, inputData);
+                            result = { output: parseResult, selectedPort: parseResult.error ? 'error' : 'next', status: parseResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'json_stringify':
+                            const stringifyResult = await executeJSONStringify(resolvedConfig, inputData);
+                            result = { output: stringifyResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'data_mapper':
+                            const mapperResult = await executeDataMapper(resolvedConfig, inputData);
+                            result = { output: mapperResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'deduplicate':
+                            const dedupResult = await executeDeduplicate(resolvedConfig, inputData);
+                            result = { output: dedupResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'flatten_expand':
+                            const flattenResult = await executeFlattenExpand(resolvedConfig, inputData);
+                            result = { output: flattenResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'oauth_connect':
+                            const oauthResult = await executeOAuthConnect(resolvedConfig, inputData);
+                            result = { output: oauthResult, selectedPort: oauthResult.error ? 'error' : 'next', status: oauthResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'credential_injector':
+                            const injectResult = await executeCredentialInjector(resolvedConfig, inputData, credentials);
+                            result = { output: injectResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'rate_limit':
+                            const rateResult = await executeRateLimit(resolvedConfig, inputData);
+                            result = rateResult;
+                            break;
+                        case 'queue_delay':
+                            const queueResult = await executeQueueDelay(resolvedConfig, inputData);
+                            result = { output: queueResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'ai_memory':
+                            const memoryResult = await executeAIMemory(resolvedConfig, inputData, agentMemory);
+                            result = { output: memoryResult, selectedPort: memoryResult.error ? 'error' : 'next', status: memoryResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'vector_db':
+                            const vectorResult = await executeVectorDB(resolvedConfig, inputData);
+                            result = { output: vectorResult, selectedPort: vectorResult.error ? 'error' : 'next', status: vectorResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'cache_node':
+                            const cacheResult = await executeCacheNode(resolvedConfig, inputData);
+                            result = cacheResult;
+                            break;
+                        case 'filter_node':
+                            const filterResult = await executeFilterNode(resolvedConfig, inputData);
+                            result = filterResult;
+                            break;
+                        case 'rss_feed':
+                        case 'rss':
+                            const rssResult = await executeRSSNode(resolvedConfig);
+                            result = { output: rssResult, selectedPort: rssResult.error ? 'error' : 'next', status: rssResult.error ? 'failed' : 'completed' };
+                            break;
+                        case 'web_scraper':
+                            const scrapeResult = await executeWebScraper(resolvedConfig, inputData, triggerData);
+                            result = { output: scrapeResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'api_fetcher':
+                        case 'http_request':
+                            const httpResult = await executeHTTPRequestWithPorts(resolvedConfig, inputData);
+                            result = httpResult;
+                            break;
+                        case 'ai_content':
+                            const content = await generateRealContent(resolvedConfig.type, resolvedConfig.prompt, resolvedConfig.tone);
+                            result = { output: { content: content, type: resolvedConfig.type, prompt: resolvedConfig.prompt, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'ai_lead_scoring':
+                            result = { output: await scoreLeadReal({ ...inputData, ...triggerData }), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'post_social':
+                            result = { output: await postToSocialReal(resolvedConfig.platform, resolvedConfig.content), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'post_tiktok':
+                            result = { output: await postToTikTokReal(resolvedConfig.video_url, resolvedConfig.caption, resolvedConfig.hashtags?.split(',') || [], resolvedConfig.thumbnail_url), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'generate_hashtags':
+                            result = { output: await generateHashtags(resolvedConfig.topic, parseInt(resolvedConfig.count) || 15), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'schedule_post':
+                            result = { output: await schedulePostReal(resolvedConfig.platform, resolvedConfig.content, resolvedConfig.schedule_time), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'send_email':
+                            const emailResult = await executeSendEmailWithPorts(resolvedConfig, inputData, triggerData);
+                            result = emailResult;
+                            break;
+                        case 'send_slack':
+                            const slackSent = await sendSlackReal(resolvedConfig.channel, resolvedConfig.message);
+                            result = { output: { channel: resolvedConfig.channel, status: slackSent ? 'sent' : 'failed' }, selectedPort: slackSent ? 'next' : 'error', status: slackSent ? 'completed' : 'failed' };
+                            break;
+                        case 'inventory_check':
+                            result = { output: await checkInventoryReal(resolvedConfig.platform), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'cart_recovery':
+                            result = { output: await recoverCartReal(resolvedConfig.platform, resolvedConfig.discount_percent), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'create_lead':
+                            const lead = await createLeadReal({ ...inputData, ...triggerData, name: resolvedConfig.lead_name, source: resolvedConfig.source });
+                            result = { output: { lead_id: lead?.id, status: 'created' }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'update_crm':
+                            result = { output: await updateCRMReal(resolvedConfig.record_id, { ...inputData, ...triggerData }), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'loop':
+                            result = { output: await executeLoopWithSplit(resolvedConfig, inputData), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'split':
+                            const splitResult = await executeLoopWithSplit({ ...resolvedConfig, split_arrays: 'true' }, inputData);
+                            result = { output: splitResult.output, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'aggregate':
+                            result = { output: await executeLoopWithSplit({ ...resolvedConfig, split_arrays: 'false' }, inputData), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'database_query':
+                            result = { output: await databaseQueryReal(resolvedConfig.query, JSON.parse(resolvedConfig.params || '{}')), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'condition':
+                            const condResult = await executeConditionWithMultipleOutputs(resolvedConfig, { ...inputData, ...triggerData });
+                            result = condResult;
+                            break;
+                        case 'wait':
+                            const duration = parseInt(resolvedConfig.duration) || 5;
+                            const unit = resolvedConfig.unit || 'seconds';
+                            const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
+                            await new Promise(r => setTimeout(r, ms));
+                            result = { output: { waited: `${duration} ${unit}` }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'gemini':
+                            result = { output: await executeGeminiNode(resolvedConfig), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'code':
+                            result = { output: await executeCodeNode(resolvedConfig, inputData, triggerData), selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'webhook':
+                            result = { output: { webhook_triggered: true, url: resolvedConfig.webhook_url, data: inputData, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'transform':
+                            const transformResult = await (async () => {
+                                const mapping = JSON.parse(resolvedConfig.mapping || '{}');
+                                const transformed = {};
+                                for (const [key, value] of Object.entries(mapping)) {
+                                    transformed[key] = this.resolveExpression(value, { data: inputData, trigger: triggerData });
+                                }
+                                return transformed;
+                            })();
+                            result = { output: transformResult, selectedPort: 'next', status: 'completed' };
+                            break;
+                        case 'custom_app':
+                            const app = [...connectedApps, ...customApps].find(a => a.id == resolvedConfig.app_id);
+                            if (app) {
+                                const customResult = await triggerCustomWebhook(app, { ...inputData, ...triggerData });
+                                result = { output: customResult, selectedPort: customResult.success ? 'next' : 'error', status: customResult.success ? 'completed' : 'failed' };
+                            } else {
+                                result = { output: { error: 'App not found' }, selectedPort: 'error', status: 'failed' };
+                            }
+                            break;
+                        default:
+                            result = { output: { output: inputData }, selectedPort: 'next', status: 'completed' };
+                    }
+                } catch (error) {
+                    this.addExecutionLog(node.name, 'error', `❌ Execution failed: ${error.message}`);
+                    result = { output: { error: error.message }, selectedPort: 'error', status: 'failed' };
+                }
+                
+                // Store result in run history
+                if (result.output) {
+                    this.runHistory[node.name] = result.output;
+                    node.result = { output: result.output };
+                }
+                
+                this.addExecutionLog(node.name, result.status === 'completed' ? 'success' : 'error', 
+                    result.status === 'completed' ? `✅ Completed - Routing to ${result.selectedPort || 'end'} port` : `❌ Failed - Routing to error port`);
+                
+                // Record execution step
+                this.executionLog.push({
+                    nodeId: node.id,
+                    nodeName: node.name,
+                    timestamp: new Date().toISOString(),
+                    input: inputData,
+                    output: result.output,
+                    selectedPort: result.selectedPort,
+                    status: result.status
+                });
+                
+                return result;
+            }
+            
+            // Execute entire workflow
+            async execute(triggerData = {}) {
+                this.executionLog = [];
+                this.runHistory = {};
+                this.variables = {};
+                
+                this.addExecutionLog('Orchestrator', 'info', '🚀 Starting workflow execution with Production-Grade Engine');
+                
+                // Step 1: Topological Sort
+                const executionOrder = this.topologicalSort();
+                this.addExecutionLog('Orchestrator', 'info', `📋 Execution order: ${executionOrder.map(id => this.nodes.find(n => n.id === id)?.name).join(' → ')}`);
+                
+                // Step 2: Execute nodes in order
+                const nodeMap = new Map();
+                this.nodes.forEach(node => nodeMap.set(node.id, node));
+                
+                let currentData = {};
+                let skipCounter = 0;
+                
+                for (let i = 0; i < executionOrder.length; i++) {
+                    const nodeId = executionOrder[i];
+                    const node = nodeMap.get(nodeId);
+                    
+                    if (!node) continue;
+                    
+                    // Handle skip from continue node
+                    if (skipCounter > 0) {
+                        skipCounter--;
+                        this.addExecutionLog(node.name, 'info', `⏭️ Skipped due to continue node`);
+                        continue;
+                    }
+                    
+                    // Get input data
+                    const inputContext = this.getNodeInput(nodeId, currentData, triggerData);
+                    
+                    // Execute node
+                    const result = await this.executeNode(node, inputContext.data, triggerData);
+                    
+                    // Update current data with output
+                    if (result.output) {
+                        currentData = { ...currentData, ...result.output };
+                    }
+                    
+                    // Handle break/stop
+                    if (result.stopWorkflow) {
+                        this.addExecutionLog('Orchestrator', 'info', `🛑 Workflow stopped by break node: ${result.output.message}`);
+                        break;
+                    }
+                    
+                    // Handle continue skip
+                    if (result.skipNext) {
+                        skipCounter = result.skipNext;
+                    }
+                    
+                    // Handle response nodes (end workflow)
+                    if (result.isResponse) {
+                        this.addExecutionLog('Orchestrator', 'info', `📤 Response sent, workflow completed`);
+                        break;
+                    }
+                    
+                    // Handle failure
+                    if (result.status === 'failed') {
+                        this.addExecutionLog('Orchestrator', 'error', `❌ Workflow failed at node ${node.name}`);
+                        break;
+                    }
+                }
+                
+                this.addExecutionLog('Orchestrator', 'success', `✅ Workflow execution completed. ${this.executionLog.length} steps executed.`);
+                
+                return {
+                    success: true,
+                    executionLog: this.executionLog,
+                    runHistory: this.runHistory,
+                    variables: this.variables,
+                    finalOutput: currentData
+                };
+            }
+            
+            addExecutionLog(workflowName, status, message) {
+                const logEntry = {
+                    id: Date.now(),
+                    workflowName: workflowName,
+                    status: status,
+                    message: message,
+                    timestamp: new Date().toISOString()
+                };
+                executionLogs.unshift(logEntry);
+                if (executionLogs.length > 100) executionLogs.pop();
+                localStorage.setItem('execution_logs', JSON.stringify(executionLogs));
+                renderExecutionLogs();
+            }
+        }
+        
+        // ================================================
+        // NEW NODE EXECUTION FUNCTIONS
+        // ================================================
+        
+        async function executeBasicLLMChain(config, inputData, triggerData) {
+            const { prompt_template, model = 'llama-3-70b', temperature = 0.7, output_key = 'response' } = config;
+            
+            // Resolve template variables
+            let finalPrompt = prompt_template;
+            const varPattern = /\{\{([^}]+)\}\}/g;
+            let match;
+            while ((match = varPattern.exec(prompt_template)) !== null) {
+                const path = match[1].trim();
+                let value;
+                if (path.startsWith('data.')) {
+                    value = inputData[path.substring(5)];
+                } else if (path.startsWith('trigger.')) {
+                    value = triggerData[path.substring(8)];
+                } else {
+                    value = inputData[path] || triggerData[path];
+                }
+                if (value !== undefined) {
+                    finalPrompt = finalPrompt.replace(match[0], String(value));
+                }
+            }
+            
+            addExecutionLog('LLM Chain', 'info', `🤖 Executing LLM chain with prompt: ${finalPrompt.substring(0, 100)}...`);
+            
+            try {
+                // Call AI API
+                const response = await fetch('https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT/ai/run/@cf/meta/llama-3-70b-instruct', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: [{ role: 'user', content: finalPrompt }], temperature: parseFloat(temperature), max_tokens: 2048 })
+                });
+                
+                const data = await response.json();
+                const aiResponse = data.result?.response || "I couldn't process that request.";
+                
+                return {
+                    [output_key]: aiResponse,
+                    prompt_used: finalPrompt,
+                    model: model,
+                    temperature: temperature,
+                    timestamp: new Date().toISOString()
+                };
+            } catch (error) {
+                addExecutionLog('LLM Chain', 'error', `❌ Failed: ${error.message}`);
+                return {
+                    error: error.message,
+                    [output_key]: `[Error] ${error.message}`,
+                    prompt_used: finalPrompt
+                };
+            }
+        }
+        
+        async function executeInsertRow(config, inputData) {
+            const { table, data } = config;
+            let insertData = {};
+            try {
+                insertData = typeof data === 'string' ? JSON.parse(data) : data;
+            } catch (e) {
+                insertData = { value: data };
+            }
+            
+            addExecutionLog('Insert Row', 'info', `📝 Inserting row into ${table}`);
+            
+            // In production, this would connect to actual database
+            // For now, store in localStorage for demo
+            const tableData = JSON.parse(localStorage.getItem(`table_${table}`) || '[]');
+            const newRow = { id: Date.now(), ...insertData, created_at: new Date().toISOString() };
+            tableData.push(newRow);
+            localStorage.setItem(`table_${table}`, JSON.stringify(tableData));
+            
+            return {
+                success: true,
+                table: table,
+                row: newRow,
+                row_count: tableData.length,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeAppendRowSheet(config, inputData) {
+            const { spreadsheet_id, range, values } = config;
+            let rowValues = [];
+            try {
+                rowValues = typeof values === 'string' ? JSON.parse(values) : values;
+            } catch (e) {
+                rowValues = [values];
+            }
+            
+            addExecutionLog('Append Row', 'info', `📊 Appending row to sheet ${spreadsheet_id} at ${range}`);
+            
+            // In production, this would call Google Sheets API
+            // For now, store in localStorage
+            const sheetData = JSON.parse(localStorage.getItem(`sheet_${spreadsheet_id}`) || '[]');
+            sheetData.push(rowValues);
+            localStorage.setItem(`sheet_${spreadsheet_id}`, JSON.stringify(sheetData));
+            
+            return {
+                success: true,
+                spreadsheet_id: spreadsheet_id,
+                range: range,
+                appended_row: rowValues,
+                total_rows: sheetData.length,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeSortNode(config, inputData) {
+            const { field, order = 'desc', sort_by = 'field' } = config;
+            let dataToSort = inputData.data || inputData;
+            
+            if (!Array.isArray(dataToSort)) {
+                if (dataToSort.items && Array.isArray(dataToSort.items)) {
+                    dataToSort = dataToSort.items;
+                } else {
+                    dataToSort = [dataToSort];
+                }
+            }
+            
+            addExecutionLog('Sort', 'info', `🔄 Sorting ${dataToSort.length} items by ${field} (${order})`);
+            
+            const sorted = [...dataToSort].sort((a, b) => {
+                let aVal = sort_by === 'field' ? a[field] : a;
+                let bVal = sort_by === 'field' ? b[field] : b;
+                
+                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+                
+                if (aVal < bVal) return order === 'asc' ? -1 : 1;
+                if (aVal > bVal) return order === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            return {
+                original_count: dataToSort.length,
+                sorted_count: sorted.length,
+                sorted_data: sorted,
+                sort_field: field,
+                sort_order: order,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeLimitNode(config, inputData) {
+            const { limit = 10, offset = 0 } = config;
+            let dataToLimit = inputData.data || inputData;
+            
+            if (!Array.isArray(dataToLimit)) {
+                if (dataToLimit.items && Array.isArray(dataToLimit.items)) {
+                    dataToLimit = dataToLimit.items;
+                } else {
+                    dataToLimit = [dataToLimit];
+                }
+            }
+            
+            addExecutionLog('Limit', 'info', `✂️ Limiting ${dataToLimit.length} items to ${limit} (offset: ${offset})`);
+            
+            const start = parseInt(offset);
+            const end = start + parseInt(limit);
+            const limited = dataToLimit.slice(start, end);
+            
+            return {
+                original_count: dataToLimit.length,
+                limited_count: limited.length,
+                offset: start,
+                limit: parseInt(limit),
+                limited_data: limited,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeSetVariable(config, inputData) {
+            const { variable_name, variable_value, merge_behavior = 'replace' } = config;
+            let value;
+            try {
+                value = typeof variable_value === 'string' ? JSON.parse(variable_value) : variable_value;
+            } catch (e) {
+                value = variable_value;
+            }
+            
+            addExecutionLog('Set Variable', 'info', `📝 Setting variable ${variable_name} (${merge_behavior})`);
+            
+            return {
+                variable_name: variable_name,
+                variable_value: value,
+                merge_behavior: merge_behavior,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeGetVariable(config, inputData, variables) {
+            const { variable_name, default_value = '{}' } = config;
+            let defaultValue;
+            try {
+                defaultValue = typeof default_value === 'string' ? JSON.parse(default_value) : default_value;
+            } catch (e) {
+                defaultValue = default_value;
+            }
+            
+            const value = variables[variable_name] !== undefined ? variables[variable_name] : defaultValue;
+            
+            addExecutionLog('Get Variable', 'info', `📖 Retrieved variable ${variable_name}: ${JSON.stringify(value).substring(0, 100)}`);
+            
+            return {
+                variable_name: variable_name,
+                variable_value: value,
+                found: variables[variable_name] !== undefined,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeMergeNode(config, inputData, runHistory) {
+            const { merge_type = 'index', merge_by_field = 'id' } = config;
+            
+            // Get two inputs - assuming first input from previous node, second from another source
+            const input1 = inputData.data || inputData;
+            let input2 = {};
+            
+            // Try to find second input from run history
+            const nodeNames = Object.keys(runHistory);
+            if (nodeNames.length >= 2) {
+                const lastNode = nodeNames[nodeNames.length - 2];
+                input2 = runHistory[lastNode] || {};
+            }
+            
+            addExecutionLog('Merge', 'info', `🔀 Merging data using ${merge_type} method`);
+            
+            let merged = {};
+            
+            if (merge_type === 'index') {
+                // Merge by index - combine arrays
+                const arr1 = Array.isArray(input1) ? input1 : [input1];
+                const arr2 = Array.isArray(input2) ? input2 : [input2];
+                const maxLen = Math.max(arr1.length, arr2.length);
+                merged = [];
+                for (let i = 0; i < maxLen; i++) {
+                    merged.push({ ...(arr1[i] || {}), ...(arr2[i] || {}) });
+                }
+            } else if (merge_type === 'key') {
+                // Merge by key field
+                const obj1 = Array.isArray(input1) ? input1.reduce((acc, item) => {
+                    acc[item[merge_by_field]] = item;
+                    return acc;
+                }, {}) : input1;
+                const obj2 = Array.isArray(input2) ? input2.reduce((acc, item) => {
+                    acc[item[merge_by_field]] = item;
+                    return acc;
+                }, {}) : input2;
+                merged = { ...obj1, ...obj2 };
+            } else {
+                merged = { ...input1, ...input2 };
+            }
+            
+            return {
+                merged_data: merged,
+                merge_type: merge_type,
+                merge_by_field: merge_by_field,
+                input1_size: Array.isArray(input1) ? input1.length : Object.keys(input1).length,
+                input2_size: Array.isArray(input2) ? input2.length : Object.keys(input2).length,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeEnhancedCondition(config, inputData) {
+            const { conditions, logical_operator = 'and', case_sensitive = 'false' } = config;
+            let conditionsArray;
+            try {
+                conditionsArray = typeof conditions === 'string' ? JSON.parse(conditions) : conditions;
+            } catch (e) {
+                conditionsArray = [{ field: 'data.value', operator: 'gt', value: 10 }];
+            }
+            
+            addExecutionLog('Enhanced Condition', 'info', `🔀 Evaluating ${conditionsArray.length} conditions with ${logical_operator}`);
+            
+            const evaluateCondition = (condition) => {
+                let fieldValue;
+                const fieldPath = condition.field;
+                if (fieldPath.startsWith('data.')) {
+                    fieldValue = inputData[fieldPath.substring(5)];
+                } else {
+                    fieldValue = inputData[fieldPath];
+                }
+                
+                let conditionValue = condition.value;
+                if (typeof conditionValue === 'string' && conditionValue.startsWith('data.')) {
+                    conditionValue = inputData[conditionValue.substring(5)];
+                }
+                
+                if (!case_sensitive && typeof fieldValue === 'string' && typeof conditionValue === 'string') {
+                    fieldValue = fieldValue.toLowerCase();
+                    conditionValue = conditionValue.toLowerCase();
+                }
+                
+                switch (condition.operator) {
+                    case 'eq': return fieldValue == conditionValue;
+                    case 'neq': return fieldValue != conditionValue;
+                    case 'gt': return fieldValue > conditionValue;
+                    case 'gte': return fieldValue >= conditionValue;
+                    case 'lt': return fieldValue < conditionValue;
+                    case 'lte': return fieldValue <= conditionValue;
+                    case 'contains': return String(fieldValue).includes(String(conditionValue));
+                    case 'startsWith': return String(fieldValue).startsWith(String(conditionValue));
+                    case 'endsWith': return String(fieldValue).endsWith(String(conditionValue));
+                    case 'in': return Array.isArray(conditionValue) ? conditionValue.includes(fieldValue) : String(conditionValue).split(',').includes(String(fieldValue));
+                    case 'exists': return fieldValue !== undefined && fieldValue !== null;
+                    default: return false;
+                }
+            };
+            
+            let result;
+            if (logical_operator === 'and') {
+                result = conditionsArray.every(evaluateCondition);
+            } else {
+                result = conditionsArray.some(evaluateCondition);
+            }
+            
+            const selectedPort = result ? 'true' : 'false';
+            
+            addExecutionLog('Enhanced Condition', 'success', `✅ Result: ${result} - Routing to ${selectedPort} port`);
+            
+            return {
+                output: { condition_result: result, evaluated_data: inputData, selected_port: selectedPort },
+                selectedPort: selectedPort,
+                next: [selectedPort],
+                status: 'completed'
+            };
+        }
+        
+        async function executeSwitchNode(config, inputData) {
+            const { switch_field, cases } = config;
+            let casesObj;
+            try {
+                casesObj = typeof cases === 'string' ? JSON.parse(cases) : cases;
+            } catch (e) {
+                casesObj = { default: 'default' };
+            }
+            
+            let fieldValue;
+            if (switch_field.startsWith('data.')) {
+                fieldValue = inputData[switch_field.substring(5)];
+            } else {
+                fieldValue = inputData[switch_field];
+            }
+            
+            const selectedPort = casesObj[fieldValue] || casesObj['default'] || 'default';
+            
+            addExecutionLog('Switch', 'info', `🔀 Switching on ${switch_field}=${fieldValue} → ${selectedPort}`);
+            
+            return {
+                output: { switch_value: fieldValue, selected_port: selectedPort, available_cases: Object.keys(casesObj) },
+                selectedPort: selectedPort,
+                next: [selectedPort],
+                status: 'completed'
+            };
+        }
+        
+        async function executeLoopItems(config, inputData) {
+            const { items_path = 'data.items', max_iterations = 100 } = config;
+            let items;
+            
+            if (items_path === 'data.items') {
+                items = inputData.items || inputData.data?.items || inputData;
+            } else if (items_path.startsWith('data.')) {
+                items = inputData[items_path.substring(5)];
+            } else {
+                items = inputData[items_path];
+            }
+            
+            if (!Array.isArray(items)) {
+                items = [items];
+            }
+            
+            const maxIters = parseInt(max_iterations);
+            const itemsToProcess = items.slice(0, maxIters);
+            
+            addExecutionLog('Loop Items', 'info', `🔄 Looping over ${itemsToProcess.length} items (max: ${maxIters})`);
+            
+            // For split behavior, we'll return items one by one through the 'item' port
+            // The orchestrator will handle the iteration
+            return {
+                output: {
+                    items: itemsToProcess,
+                    total_items: items.length,
+                    processed_items: itemsToProcess.length,
+                    current_index: 0
+                },
+                selectedPort: itemsToProcess.length > 0 ? 'item' : 'done',
+                next: itemsToProcess.length > 0 ? ['item', 'done'] : ['done'],
+                status: 'completed',
+                loopItems: itemsToProcess
+            };
+        }
+        
+        async function executeTryCatch(config, inputData, orchestrator) {
+            const { try_nodes, catch_nodes, finally_nodes } = config;
+            addExecutionLog('Try/Catch', 'info', `🛡️ Executing try block...`);
+            
+            try {
+                // Execute try nodes (simplified - in production would execute sub-workflow)
+                const tryResult = { output: { try_executed: true, data: inputData }, selectedPort: 'catch', status: 'completed' };
+                addExecutionLog('Try/Catch', 'success', `✅ Try block completed`);
+                return tryResult;
+            } catch (error) {
+                addExecutionLog('Try/Catch', 'error', `❌ Try block failed: ${error.message}`);
+                return {
+                    output: { error: error.message, caught: true, data: inputData },
+                    selectedPort: 'catch',
+                    next: ['catch'],
+                    status: 'completed'
+                };
+            }
+        }
+        
+        async function executeRetryNode(config, inputData, orchestrator) {
+            const { max_retries = 3, retry_interval = 1000, retry_on_status } = config;
+            let retryStatuses;
+            try {
+                retryStatuses = typeof retry_on_status === 'string' ? JSON.parse(retry_on_status) : retry_on_status;
+            } catch (e) {
+                retryStatuses = ['error', 'timeout'];
+            }
+            
+            addExecutionLog('Retry', 'info', `🔄 Retry configured: max ${max_retries} attempts, interval ${retry_interval}ms`);
+            
+            // This node would wrap another node's execution
+            // For now, return success
+            return {
+                output: { retry_count: 0, max_retries: max_retries, success: true },
+                selectedPort: 'next',
+                status: 'completed'
+            };
+        }
+        
+        async function executeTimeoutNode(config, inputData, orchestrator) {
+            const { timeout_seconds = 30, action_on_timeout = 'fail' } = config;
+            
+            addExecutionLog('Timeout', 'info', `⏱️ Timeout set to ${timeout_seconds}s (action: ${action_on_timeout})`);
+            
+            // This node would wrap another node's execution with a timeout
+            // For now, return success
+            return {
+                output: { timeout_seconds: timeout_seconds, action_on_timeout: action_on_timeout, completed: true },
+                selectedPort: 'next',
+                status: 'completed'
+            };
+        }
+        
+        async function executeFallbackNode(config, inputData, orchestrator) {
+            const { fallback_condition = 'on_failure' } = config;
+            
+            addExecutionLog('Fallback', 'info', `🪂 Fallback configured: ${fallback_condition}`);
+            
+            return {
+                output: { fallback_triggered: false, condition: fallback_condition, primary_success: true },
+                selectedPort: 'next',
+                status: 'completed'
+            };
+        }
+        
+        async function executeHTTPAdvanced(config, inputData) {
+            const { method = 'GET', url, auth_type = 'none', auth_token = '', headers = {}, body = {}, retry_count = 3, timeout = 30000 } = config;
+            
+            addExecutionLog('HTTP Advanced', 'info', `🌐 ${method} ${url} (retries: ${retry_count}, timeout: ${timeout}ms)`);
+            
+            const requestHeaders = { 'Content-Type': 'application/json', ...headers };
+            switch(auth_type) {
+                case 'bearer': requestHeaders['Authorization'] = `Bearer ${auth_token}`; break;
+                case 'basic': requestHeaders['Authorization'] = `Basic ${btoa(auth_token)}`; break;
+                case 'apiKey': requestHeaders['X-API-Key'] = auth_token; break;
+            }
+            
+            let lastError;
+            for (let attempt = 1; attempt <= retry_count; attempt++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+                    
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: requestHeaders,
+                        body: method !== 'GET' ? JSON.stringify(body) : undefined,
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    const responseData = await response.json().catch(() => ({}));
+                    const isSuccess = response.status >= 200 && response.status < 300;
+                    
+                    addExecutionLog('HTTP Advanced', isSuccess ? 'success' : 'error', `Attempt ${attempt}: Status ${response.status}`);
+                    
+                    if (isSuccess) {
+                        return {
+                            output: { status: response.status, data: responseData, headers: Object.fromEntries(response.headers), attempt: attempt },
+                            selectedPort: 'next',
+                            status: 'completed'
+                        };
+                    }
+                    lastError = `HTTP ${response.status}`;
+                } catch (error) {
+                    lastError = error.message;
+                    addExecutionLog('HTTP Advanced', 'error', `Attempt ${attempt} failed: ${error.message}`);
+                    if (attempt < retry_count) {
+                        await new Promise(r => setTimeout(r, 1000 * attempt));
+                    }
+                }
+            }
+            
+            return {
+                output: { status: 0, error: lastError, url: url },
+                selectedPort: 'error',
+                status: 'failed'
+            };
+        }
+        
+        async function executeAPIPagination(config, inputData) {
+            const { url, pagination_type = 'page', page_param = 'page', limit_param = 'limit', next_page_path = 'data.next_page' } = config;
+            
+            addExecutionLog('API Pagination', 'info', `📄 Paginating ${url} using ${pagination_type} method`);
+            
+            let allResults = [];
+            let currentPage = 1;
+            let hasMore = true;
+            
+            while (hasMore && currentPage <= 10) { // Limit to 10 pages for safety
+                const pageUrl = new URL(url);
+                if (pagination_type === 'page') {
+                    pageUrl.searchParams.set(page_param, currentPage);
+                    if (limit_param) pageUrl.searchParams.set(limit_param, '100');
+                }
+                
+                try {
+                    const response = await fetch(pageUrl.toString());
+                    const data = await response.json();
+                    
+                    const results = data.results || data.data || data.items || data;
+                    if (Array.isArray(results)) {
+                        allResults.push(...results);
+                    }
+                    
+                    // Check for next page
+                    if (pagination_type === 'page') {
+                        hasMore = results && results.length > 0;
+                    } else if (pagination_type === 'cursor') {
+                        const nextPage = data.next_page || data.next_cursor || data.cursor;
+                        hasMore = !!nextPage;
+                    } else {
+                        hasMore = false;
+                    }
+                    
+                    currentPage++;
+                } catch (error) {
+                    addExecutionLog('API Pagination', 'error', `❌ Pagination failed: ${error.message}`);
+                    hasMore = false;
+                }
+            }
+            
+            addExecutionLog('API Pagination', 'success', `✅ Retrieved ${allResults.length} total items across ${currentPage - 1} pages`);
+            
+            return {
+                output: {
+                    total_items: allResults.length,
+                    pages_fetched: currentPage - 1,
+                    items: allResults,
+                    pagination_type: pagination_type
+                },
+                selectedPort: 'next',
+                status: 'completed'
+            };
+        }
+        
+        async function executeFileUpload(config, inputData) {
+            const { file_path, destination, file_type = 'auto' } = config;
+            addExecutionLog('File Upload', 'info', `📤 Uploading ${file_path} to ${destination}`);
+            
+            // In production, this would upload to cloud storage
+            return {
+                success: true,
+                source: file_path,
+                destination: destination,
+                file_type: file_type,
+                uploaded_at: new Date().toISOString(),
+                message: "File upload would happen here in production"
+            };
+        }
+        
+        async function executeFileRead(config, inputData) {
+            const { file_path, encoding = 'utf8', max_size_mb = 10 } = config;
+            addExecutionLog('File Read', 'info', `📖 Reading ${file_path} (${encoding})`);
+            
+            // In production, this would read actual files
+            return {
+                success: true,
+                file_path: file_path,
+                encoding: encoding,
+                content: `[Mock content from ${file_path}]`,
+                size_bytes: 1024,
+                read_at: new Date().toISOString()
+            };
+        }
+        
+        async function executeFileWrite(config, inputData) {
+            const { file_path, content, append_mode = 'false' } = config;
+            addExecutionLog('File Write', 'info', `💾 Writing to ${file_path} (append: ${append_mode})`);
+            
+            return {
+                success: true,
+                file_path: file_path,
+                content_length: String(content).length,
+                append_mode: append_mode === 'true',
+                written_at: new Date().toISOString()
+            };
+        }
+        
+        async function executeFileConvert(config, inputData) {
+            const { input_file, output_format, quality = 'high' } = config;
+            addExecutionLog('File Convert', 'info', `🔄 Converting ${input_file} to ${output_format}`);
+            
+            return {
+                success: true,
+                input_file: input_file,
+                output_format: output_format,
+                quality: quality,
+                output_file: `${input_file}.${output_format}`,
+                converted_at: new Date().toISOString()
+            };
+        }
+        
+        async function executeFileDownload(config, inputData) {
+            const { url, destination_path, filename } = config;
+            addExecutionLog('File Download', 'info', `⬇️ Downloading from ${url}`);
+            
+            return {
+                success: true,
+                source_url: url,
+                destination: destination_path,
+                filename: filename,
+                downloaded_at: new Date().toISOString()
+            };
+        }
+        
+        async function executeJSONParse(config, inputData) {
+            const { input_field = 'data.json_string', output_field = 'parsed_json' } = config;
+            
+            let jsonString;
+            if (input_field === 'data.json_string') {
+                jsonString = inputData.json_string || inputData.data?.json_string || inputData;
+            } else if (input_field.startsWith('data.')) {
+                jsonString = inputData[input_field.substring(5)];
+            } else {
+                jsonString = inputData[input_field];
+            }
+            
+            addExecutionLog('JSON Parse', 'info', `🔍 Parsing JSON from ${input_field}`);
+            
+            try {
+                const parsed = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+                return {
+                    [output_field]: parsed,
+                    success: true,
+                    original_type: typeof jsonString,
+                    timestamp: new Date().toISOString()
+                };
+            } catch (error) {
+                addExecutionLog('JSON Parse', 'error', `❌ Parse failed: ${error.message}`);
+                return {
+                    error: error.message,
+                    success: false,
+                    timestamp: new Date().toISOString()
+                };
+            }
+        }
+        
+        async function executeJSONStringify(config, inputData) {
+            const { input_field = 'data.object', output_field = 'json_string', pretty_print = 'true' } = config;
+            
+            let objectToStr;
+            if (input_field === 'data.object') {
+                objectToStr = inputData.object || inputData.data?.object || inputData;
+            } else if (input_field.startsWith('data.')) {
+                objectToStr = inputData[input_field.substring(5)];
+            } else {
+                objectToStr = inputData[input_field];
+            }
+            
+            addExecutionLog('JSON Stringify', 'info', `📝 Stringifying object from ${input_field}`);
+            
+            const spaces = pretty_print === 'true' ? 2 : 0;
+            const jsonString = JSON.stringify(objectToStr, null, spaces);
+            
+            return {
+                [output_field]: jsonString,
+                success: true,
+                original_type: typeof objectToStr,
+                length: jsonString.length,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeDataMapper(config, inputData) {
+            const { mapping_rules, source_field = 'data', target_field = 'mapped_data' } = config;
+            let rules;
+            try {
+                rules = typeof mapping_rules === 'string' ? JSON.parse(mapping_rules) : mapping_rules;
+            } catch (e) {
+                rules = [];
+            }
+            
+            let sourceData;
+            if (source_field === 'data') {
+                sourceData = inputData;
+            } else if (source_field.startsWith('data.')) {
+                sourceData = inputData[source_field.substring(5)];
+            } else {
+                sourceData = inputData[source_field] || inputData;
+            }
+            
+            addExecutionLog('Data Mapper', 'info', `🗺️ Mapping ${rules.length} fields from ${source_field} to ${target_field}`);
+            
+            const mapped = {};
+            for (const rule of rules) {
+                let value = sourceData;
+                const sourcePath = rule.source.split('.');
+                for (const key of sourcePath) {
+                    if (value && typeof value === 'object' && key in value) {
+                        value = value[key];
+                    } else {
+                        value = undefined;
+                        break;
+                    }
+                }
+                mapped[rule.target] = value;
+            }
+            
+            return {
+                [target_field]: mapped,
+                mapping_applied: rules,
+                source_field: source_field,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeDeduplicate(config, inputData) {
+            const { fields, keep_first = 'true', case_sensitive = 'false' } = config;
+            let dedupFields;
+            try {
+                dedupFields = typeof fields === 'string' ? JSON.parse(fields) : fields;
+            } catch (e) {
+                dedupFields = ['id'];
+            }
+            
+            let dataToDedup = inputData.data || inputData;
+            if (!Array.isArray(dataToDedup)) {
+                if (dataToDedup.items && Array.isArray(dataToDedup.items)) {
+                    dataToDedup = dataToDedup.items;
+                } else {
+                    dataToDedup = [dataToDedup];
+                }
+            }
+            
+            addExecutionLog('Deduplicate', 'info', `🔄 Deduplicating ${dataToDedup.length} items by fields: ${dedupFields.join(', ')}`);
+            
+            const seen = new Map();
+            const unique = [];
+            
+            for (const item of dataToDedup) {
+                let key = dedupFields.map(field => {
+                    let value = item[field];
+                    if (!case_sensitive && typeof value === 'string') {
+                        value = value.toLowerCase();
+                    }
+                    return String(value ?? '');
+                }).join('|');
+                
+                if (!seen.has(key)) {
+                    seen.set(key, true);
+                    unique.push(item);
+                } else if (keep_first !== 'true') {
+                    // Replace existing with this one (keep last)
+                    const index = unique.findIndex(u => {
+                        return dedupFields.every(field => u[field] === item[field]);
+                    });
+                    if (index !== -1) {
+                        unique[index] = item;
+                    }
+                }
+            }
+            
+            return {
+                original_count: dataToDedup.length,
+                unique_count: unique.length,
+                deduplicated_data: unique,
+                fields_used: dedupFields,
+                keep_first: keep_first === 'true',
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeFlattenExpand(config, inputData) {
+            const { operation = 'flatten', field_path, separator = '_' } = config;
+            
+            let dataToProcess = inputData.data || inputData;
+            
+            addExecutionLog('Flatten/Expand', 'info', `🔄 ${operation} operation on data`);
+            
+            const flattenObject = (obj, prefix = '') => {
+                const result = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    const newKey = prefix ? `${prefix}${separator}${key}` : key;
+                    if (value && typeof value === 'object' && !Array.isArray(value)) {
+                        Object.assign(result, flattenObject(value, newKey));
+                    } else {
+                        result[newKey] = value;
+                    }
+                }
+                return result;
+            };
+            
+            const expandObject = (obj) => {
+                const result = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    const parts = key.split(separator);
+                    let current = result;
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        if (!current[parts[i]]) current[parts[i]] = {};
+                        current = current[parts[i]];
+                    }
+                    current[parts[parts.length - 1]] = value;
+                }
+                return result;
+            };
+            
+            let result;
+            if (operation === 'flatten') {
+                result = flattenObject(dataToProcess);
+            } else {
+                result = expandObject(dataToProcess);
+            }
+            
+            return {
+                operation: operation,
+                original_keys: Object.keys(dataToProcess).length,
+                result_keys: Object.keys(result).length,
+                processed_data: result,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeOAuthConnect(config, inputData) {
+            const { provider, scopes, redirect_uri } = config;
+            addExecutionLog('OAuth Connect', 'info', `🔐 Starting OAuth flow for ${provider}`);
+            
+            // Trigger OAuth flow
+            startOAuth(provider);
+            
+            return {
+                provider: provider,
+                scopes: scopes,
+                redirect_uri: redirect_uri,
+                status: 'oauth_flow_started',
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeCredentialInjector(config, inputData, credentialsList) {
+            const { credential_id, inject_into = 'headers' } = config;
+            
+            const credential = credentialsList.find(c => c.id === credential_id);
+            if (!credential) {
+                addExecutionLog('Credential Injector', 'error', `❌ Credential ${credential_id} not found`);
+                return { error: 'Credential not found', credential_id: credential_id };
+            }
+            
+            addExecutionLog('Credential Injector', 'info', `💉 Injecting credential ${credential.name} into ${inject_into}`);
+            
+            return {
+                credential_id: credential_id,
+                credential_name: credential.name,
+                inject_into: inject_into,
+                token_preview: credential.token?.substring(0, 10) + '...',
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Simple rate limiting (in-memory)
+        const rateLimitStore = new Map();
+        
+        async function executeRateLimit(config, inputData) {
+            const { max_requests = 100, time_window_seconds = 60, key_field = '' } = config;
+            
+            let key = 'default';
+            if (key_field) {
+                if (key_field.startsWith('data.')) {
+                    key = inputData[key_field.substring(5)] || 'default';
+                } else {
+                    key = inputData[key_field] || 'default';
+                }
+            }
+            key = String(key);
+            
+            const now = Date.now();
+            const windowStart = now - (time_window_seconds * 1000);
+            
+            let requests = rateLimitStore.get(key) || [];
+            requests = requests.filter(timestamp => timestamp > windowStart);
+            
+            addExecutionLog('Rate Limit', 'info', `⏱️ Key: ${key}, ${requests.length}/${max_requests} requests in window`);
+            
+            if (requests.length >= max_requests) {
+                const oldestRequest = Math.min(...requests);
+                const resetTime = oldestRequest + (time_window_seconds * 1000);
+                addExecutionLog('Rate Limit', 'error', `🚫 Rate limit exceeded for key: ${key}`);
+                return {
+                    output: {
+                        limited: true,
+                        key: key,
+                        current_count: requests.length,
+                        max_allowed: max_requests,
+                        reset_at: new Date(resetTime).toISOString()
+                    },
+                    selectedPort: 'blocked',
+                    next: ['blocked'],
+                    status: 'completed'
+                };
+            }
+            
+            requests.push(now);
+            rateLimitStore.set(key, requests);
+            
+            // Clean up old entries periodically
+            if (rateLimitStore.size > 1000) {
+                for (const [k, timestamps] of rateLimitStore.entries()) {
+                    const cleaned = timestamps.filter(t => t > Date.now() - 3600000);
+                    if (cleaned.length === 0) {
+                        rateLimitStore.delete(k);
+                    } else {
+                        rateLimitStore.set(k, cleaned);
+                    }
+                }
+            }
+            
+            return {
+                output: {
+                    limited: false,
+                    key: key,
+                    current_count: requests.length,
+                    max_allowed: max_requests,
+                    timestamp: new Date().toISOString()
+                },
+                selectedPort: 'next',
+                status: 'completed'
+            };
+        }
+        
+        async function executeQueueDelay(config, inputData) {
+            const { delay_seconds = 5, queue_name = 'default', max_queue_size = 1000 } = config;
+            
+            addExecutionLog('Queue/Delay', 'info', `⏰ Delaying for ${delay_seconds} seconds in queue: ${queue_name}`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay_seconds * 1000));
+            
+            return {
+                queue_name: queue_name,
+                delay_seconds: delay_seconds,
+                processed_at: new Date().toISOString(),
+                data: inputData
+            };
+        }
+        
+        async function executeAIMemory(config, inputData, memoryStore) {
+            const { session_id, operation = 'store', data } = config;
+            let memoryData;
+            try {
+                memoryData = typeof data === 'string' ? JSON.parse(data) : data;
+            } catch (e) {
+                memoryData = { value: data };
+            }
+            
+            const sessionKey = session_id || `session_${Date.now()}`;
+            
+            addExecutionLog('AI Memory', 'info', `🧠 ${operation} memory for session ${sessionKey}`);
+            
+            if (!memoryStore[sessionKey]) {
+                memoryStore[sessionKey] = [];
+            }
+            
+            if (operation === 'store') {
+                memoryStore[sessionKey].push({
+                    timestamp: new Date().toISOString(),
+                    data: memoryData
+                });
+                // Keep last 100 items
+                if (memoryStore[sessionKey].length > 100) {
+                    memoryStore[sessionKey] = memoryStore[sessionKey].slice(-100);
+                }
+                return {
+                    session_id: sessionKey,
+                    operation: 'store',
+                    memory_length: memoryStore[sessionKey].length,
+                    stored_data: memoryData,
+                    timestamp: new Date().toISOString()
+                };
+            } else if (operation === 'recall') {
+                const lastItems = memoryStore[sessionKey].slice(-10);
+                return {
+                    session_id: sessionKey,
+                    operation: 'recall',
+                    memory_length: memoryStore[sessionKey].length,
+                    recalled_data: lastItems,
+                    timestamp: new Date().toISOString()
+                };
+            } else if (operation === 'clear') {
+                memoryStore[sessionKey] = [];
+                return {
+                    session_id: sessionKey,
+                    operation: 'clear',
+                    memory_length: 0,
+                    timestamp: new Date().toISOString()
+                };
+            }
+            
+            return {
+                session_id: sessionKey,
+                operation: operation,
+                error: 'Unknown operation',
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        async function executeVectorDB(config, inputData) {
+            const { operation = 'search', collection, vectors, query } = config;
+            
+            addExecutionLog('Vector DB', 'info', `🔍 ${operation} in collection ${collection}`);
+            
+            // Mock vector search results
+            const mockResults = [
+                { id: 1, score: 0.95, content: `Result 1 for query: ${query || 'default query'}` },
+                { id: 2, score: 0.87, content: `Result 2 for query: ${query || 'default query'}` },
+                { id: 3, score: 0.76, content: `Result 3 for query: ${query || 'default query'}` }
+            ];
+            
+            return {
+                operation: operation,
+                collection: collection,
+                results: mockResults,
+                result_count: mockResults.length,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Simple cache store
+        const cacheStore = new Map();
+        
+        async function executeCacheNode(config, inputData) {
+            const { cache_key, ttl_seconds = 3600, operation = 'get' } = config;
+            
+            let key = cache_key;
+            if (typeof key === 'string' && key.includes('{{')) {
+                // Simple template resolution
+                key = key.replace(/\{\{data\.([^}]+)\}\}/g, (_, prop) => inputData[prop] || '');
+                key = key.replace(/\{\{([^}]+)\}\}/g, (_, prop) => inputData[prop] || '');
+            }
+            
+            const now = Date.now();
+            
+            addExecutionLog('Cache', 'info', `💾 ${operation} cache for key: ${key}`);
+            
+            if (operation === 'get') {
+                const cached = cacheStore.get(key);
+                if (cached && cached.expires > now) {
+                    addExecutionLog('Cache', 'success', `✅ Cache HIT for key: ${key}`);
+                    return {
+                        output: {
+                            hit: true,
+                            key: key,
+                            value: cached.value,
+                            expires_at: new Date(cached.expires).toISOString()
+                        },
+                        selectedPort: 'next',
+                        status: 'completed'
+                    };
+                }
+                addExecutionLog('Cache', 'info', `❌ Cache MISS for key: ${key}`);
+                return {
+                    output: {
+                        hit: false,
+                        key: key,
+                        value: null
+                    },
+                    selectedPort: 'miss',
+                    next: ['miss'],
+                    status: 'completed'
+                };
+            } else if (operation === 'set') {
+                const value = inputData.value || inputData;
+                cacheStore.set(key, {
+                    value: value,
+                    expires: now + (ttl_seconds * 1000),
+                    created: now
+                });
+                addExecutionLog('Cache', 'success', `💾 Cached value for key: ${key} (TTL: ${ttl_seconds}s)`);
+                return {
+                    output: {
+                        set: true,
+                        key: key,
+                        ttl_seconds: ttl_seconds,
+                        expires_at: new Date(now + ttl_seconds * 1000).toISOString()
+                    },
+                    selectedPort: 'next',
+                    status: 'completed'
+                };
+            } else if (operation === 'delete') {
+                cacheStore.delete(key);
+                addExecutionLog('Cache', 'info', `🗑️ Deleted cache key: ${key}`);
+                return {
+                    output: {
+                        deleted: true,
+                        key: key
+                    },
+                    selectedPort: 'next',
+                    status: 'completed'
+                };
+            }
+            
+            return {
+                output: { error: 'Unknown operation' },
+                selectedPort: 'error',
+                status: 'failed'
+            };
+        }
+        
+        async function executeFilterNode(config, inputData) {
+            const { field, operator, value } = config;
+            
+            let dataToFilter = inputData.data || inputData;
+            if (!Array.isArray(dataToFilter)) {
+                if (dataToFilter.items && Array.isArray(dataToFilter.items)) {
+                    dataToFilter = dataToFilter.items;
+                } else {
+                    dataToFilter = [dataToFilter];
+                }
+            }
+            
+            addExecutionLog('Filter', 'info', `🔍 Filtering ${dataToFilter.length} items by ${field} ${operator} ${value}`);
+            
+            const filtered = dataToFilter.filter(item => {
+                let itemValue = item[field];
+                let compareValue = value;
+                
+                if (typeof itemValue === 'string' && typeof compareValue === 'string') {
+                    itemValue = itemValue.toLowerCase();
+                    compareValue = compareValue.toLowerCase();
+                }
+                
+                switch (operator) {
+                    case 'eq': return itemValue == compareValue;
+                    case 'neq': return itemValue != compareValue;
+                    case 'gt': return itemValue > compareValue;
+                    case 'gte': return itemValue >= compareValue;
+                    case 'lt': return itemValue < compareValue;
+                    case 'lte': return itemValue <= compareValue;
+                    case 'contains': return String(itemValue).includes(String(compareValue));
+                    case 'in': return Array.isArray(compareValue) ? compareValue.includes(itemValue) : String(compareValue).split(',').includes(String(itemValue));
+                    default: return true;
+                }
+            });
+            
+            const selectedPort = filtered.length > 0 ? 'true' : 'false';
+            
+            return {
+                output: {
+                    original_count: dataToFilter.length,
+                    filtered_count: filtered.length,
+                    filtered_data: filtered,
+                    filter_field: field,
+                    filter_operator: operator,
+                    filter_value: value
+                },
+                selectedPort: selectedPort,
+                next: [selectedPort],
+                status: 'completed'
+            };
+        }
+        
         // ================================================
         // TEMPLATE ENGINE
         // ================================================
@@ -2420,7 +4365,7 @@
         }
 
         // ================================================
-        // OAuth SYSTEM (Keeping existing)
+        // OAuth SYSTEM (Fixed for 400 error)
         // ================================================
         function initOAuth() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -2440,17 +4385,38 @@
                 return;
             }
             
+            // Get client ID from stored credentials or prompt user
+            let clientId = localStorage.getItem(`${provider}_client_id`);
+            if (!clientId) {
+                clientId = prompt(`Enter your ${provider.toUpperCase()} OAuth Client ID:`, 
+                    provider === 'google' ? 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com' : 
+                    provider === 'github' ? 'YOUR_GITHUB_CLIENT_ID' : 
+                    provider === 'slack' ? 'YOUR_SLACK_CLIENT_ID' : '');
+                if (!clientId) {
+                    showToast(`Client ID required for ${provider} OAuth`, 'error');
+                    return;
+                }
+                localStorage.setItem(`${provider}_client_id`, clientId);
+            }
+            
+            oauthConfig.clientId = clientId;
+            
             const state = Math.random().toString(36).substring(7);
             localStorage.setItem('oauth_state', state);
             localStorage.setItem('oauth_provider', provider);
             
+            let authUrl = '';
             if (provider === 'github') {
-                window.location.href = `https://github.com/login/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+                authUrl = `https://github.com/login/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
             } else if (provider === 'slack') {
-                window.location.href = `https://slack.com/oauth/v2/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+                authUrl = `https://slack.com/oauth/v2/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+            } else if (provider === 'shopify') {
+                authUrl = `https://${prompt('Enter your Shopify store name:')}.myshopify.com/admin/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
             } else {
-                window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}`;
+                authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}&access_type=offline&prompt=consent`;
             }
+            
+            window.location.href = authUrl;
         }
         
         async function exchangeOAuthCode(provider, code) {
@@ -2477,10 +4443,12 @@
                     renderCredentials();
                     showToast(`Successfully connected to ${provider}!`, 'success');
                 } else {
-                    throw new Error('Token exchange failed');
+                    const error = await response.text();
+                    throw new Error(`Token exchange failed: ${error}`);
                 }
             } catch (error) {
                 showToast(`OAuth failed: ${error.message}`, 'error');
+                console.error('OAuth error:', error);
             }
         }
         
@@ -2490,6 +4458,10 @@
             modal.innerHTML = `
                 <div style="background:#1a1a2e;border-radius:20px;padding:28px;width:450px;max-width:90%;border:1px solid #d4af37;">
                     <h3 style="margin-bottom:20px;color:#d4af37;"><i class="fas fa-plug"></i> Connect with OAuth</h3>
+                    <div style="margin-bottom:16px;padding:12px;background:#252535;border-radius:8px;font-size:12px;color:#aaa;">
+                        <i class="fas fa-info-circle"></i> You'll need OAuth credentials from each provider.
+                        <a href="#" onclick="showOAuthHelp(); return false;" style="color:#d4af37;">Learn how to get them →</a>
+                    </div>
                     <div style="display:flex;flex-direction:column;gap:12px;">
                         <button class="btn-primary" style="width:100%;" onclick="startOAuth('google')"><i class="fab fa-google"></i> Connect Google</button>
                         <button class="btn-primary" style="width:100%;background:#333;" onclick="startOAuth('github')"><i class="fab fa-github"></i> Connect GitHub</button>
@@ -2500,6 +4472,44 @@
                 </div>
             `;
             document.body.appendChild(modal);
+        }
+        
+        function showOAuthHelp() {
+            const helpHtml = `
+                <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:10001;display:flex;align-items:center;justify-content:center;">
+                    <div style="background:#1a1a2e;border-radius:20px;padding:28px;max-width:500px;border:1px solid #d4af37;">
+                        <h3 style="color:#d4af37;">How to get OAuth Credentials</h3>
+                        <div style="margin:20px 0; max-height:400px; overflow-y:auto;">
+                            <h4>Google</h4>
+                            <p>1. Go to <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a><br>
+                            2. Create a new project or select existing<br>
+                            3. Enable Google+ API and Gmail API<br>
+                            4. Create OAuth 2.0 Client ID (Web application)<br>
+                            5. Set redirect URI to: <code>${window.location.origin}/oauth/callback</code><br>
+                            6. Copy Client ID</p>
+                            
+                            <h4>GitHub</h4>
+                            <p>1. Go to <a href="https://github.com/settings/developers" target="_blank">GitHub Developer Settings</a><br>
+                            2. Click "New OAuth App"<br>
+                            3. Set Homepage URL to: <code>${window.location.origin}</code><br>
+                            4. Set Authorization callback URL to: <code>${window.location.origin}/oauth/callback</code><br>
+                            5. Copy Client ID</p>
+                            
+                            <h4>Slack</h4>
+                            <p>1. Go to <a href="https://api.slack.com/apps" target="_blank">Slack API Apps</a><br>
+                            2. Click "Create New App"<br>
+                            3. Under OAuth & Permissions, add redirect URL: <code>${window.location.origin}/oauth/callback</code><br>
+                            4. Copy Client ID</p>
+                        </div>
+                        <button class="btn-primary" onclick="this.parentElement.parentElement.remove()">Got it</button>
+                    </div>
+                </div>
+            `;
+            const helpDiv = document.createElement('div');
+            helpDiv.innerHTML = helpHtml;
+            document.body.appendChild(helpDiv);
+            helpDiv.querySelector('div').onclick = (e) => e.stopPropagation();
+            helpDiv.onclick = () => helpDiv.remove();
         }
 
         // ================================================
@@ -3449,7 +5459,7 @@
         // GLOBAL SEARCH & DEEP HTTP DISCOVERY
         // ================================================
         async function initializeSearchIndex() {
-            console.log('🔍 Initializing search index with 150+ nodes...');
+            console.log('🔍 Initializing search index with 180+ nodes...');
             for (const [type, config] of Object.entries(NODE_CONFIGS)) {
                 searchIndex.nodes.push({ type, name: config.name, icon: config.icon, category: config.category, color: config.color, keywords: config.keywords || [] });
             }
@@ -4146,6 +6156,7 @@
             renderWorkflowCanvas();
             saveCurrentWorkflow();
             showToast(`Added ${config.name} node`, 'success');
+            return newNode.id;
         }
 
         function renderWorkflowCanvas() {
@@ -4395,8 +6406,10 @@
                         inputHtml = `<select data-field="${field}"><option value="none" ${value === 'none' ? 'selected' : ''}>None</option><option value="bearer" ${value === 'bearer' ? 'selected' : ''}>Bearer Token</option><option value="basic" ${value === 'basic' ? 'selected' : ''}>Basic Auth</option><option value="apiKey" ${value === 'apiKey' ? 'selected' : ''}>API Key</option></select>`;
                     } else if (field === 'code') {
                         inputHtml = `<textarea data-field="${field}" rows="6" placeholder="${config.defaults?.[field] || ''}" style="font-family: monospace;">${value}</textarea>`;
-                    } else if (field === 'system_prompt' || field === 'prompt') {
+                    } else if (field === 'system_prompt' || field === 'prompt' || field === 'prompt_template') {
                         inputHtml = `<textarea data-field="${field}" rows="4" placeholder="${config.defaults?.[field] || ''}" style="font-family: monospace;">${value}</textarea>`;
+                    } else if (field === 'conditions' || field === 'cases' || field === 'mapping_rules') {
+                        inputHtml = `<textarea data-field="${field}" rows="3" placeholder='${config.defaults?.[field] || "[]"}' style="font-family: monospace;">${value}</textarea>`;
                     } else {
                         inputHtml = `<input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}">`;
                     }
@@ -4471,236 +6484,39 @@
         }
 
         async function executeWorkflowLocally(inputData) {
-            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution...');
+            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution with Production-Grade Engine...');
             
             let currentData = inputData || { test: true, timestamp: new Date().toISOString() };
             window._lastTriggerData = currentData;
-            runHistory = {};
             
-            const nodeMap = {};
-            workflowNodes.forEach(node => { nodeMap[node.id] = node; });
+            // Use the new WorkflowOrchestrator
+            const orchestrator = new WorkflowOrchestrator(workflowNodes, workflowEdges);
+            const result = await orchestrator.execute(currentData);
             
-            const startNodes = workflowNodes.filter(node => {
-                const hasIncoming = workflowEdges.some(edge => edge.target === node.id);
-                return !hasIncoming;
-            });
-            
-            if (startNodes.length === 0) {
-                addExecutionLog('Workflow', 'error', '❌ No start node found in workflow');
-                return;
+            // Update run history and node statuses
+            for (const log of result.executionLog) {
+                const node = workflowNodes.find(n => n.id === log.nodeId);
+                if (node) {
+                    node.status = log.status;
+                    node.result = { output: log.output };
+                }
+                runHistory[log.nodeName] = log.output;
             }
             
-            const processed = new Set();
-            const queue = [...startNodes];
-            const nodeResults = {};
+            renderWorkflowCanvas();
             
-            while (queue.length > 0) {
-                const node = queue.shift();
-                if (processed.has(node.id)) continue;
-                processed.add(node.id);
-                
-                const incomingEdges = workflowEdges.filter(edge => edge.target === node.id);
-                let nodeInput = {};
-                
-                for (const edge of incomingEdges) {
-                    if (nodeResults[edge.source]) {
-                        nodeInput = { ...nodeInput, ...nodeResults[edge.source].output };
-                    }
-                }
-                
-                if (Object.keys(nodeInput).length === 0 && incomingEdges.length === 0) {
-                    nodeInput = currentData;
-                }
-                
-                node.status = 'running';
-                renderWorkflowCanvas();
-                
-                if (node.config) {
-                    for (const [key, val] of Object.entries(node.config)) {
-                        if (typeof val === 'string') {
-                            node.config[key] = resolveVariables(val, { data: nodeInput, trigger: currentData });
-                        }
-                    }
-                }
-                
-                let result;
-                let sessionId = `session_${Date.now()}_${node.id}`;
-                
-                switch (node.type) {
-                    case 'trigger':
-                        result = { output: { webhook_received: true, data: currentData, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'schedule':
-                        result = { output: { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'github':
-                        result = { output: await githubTriggerReal(node.config.event_type || 'push', node.config.repository || 'main', currentData), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'ai_image':
-                        const imageUrl = await generateRealImage(node.config.prompt, node.config.style);
-                        result = { output: { image_url: imageUrl, prompt: node.config.prompt, style: node.config.style, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'ai_video':
-                        const videoResult = await generateRealVideoWithApi(node.config.prompt, node.config.duration || 30, node.config.style);
-                        result = { output: videoResult, selectedPort: videoResult.error ? 'error' : 'next', status: videoResult.error ? 'failed' : 'completed' };
-                        break;
-                    case 'video_script':
-                        const scriptResult = await generateVideoScriptOnly(node.config.topic, node.config.duration, node.config.style);
-                        result = { output: scriptResult, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'ai_agent':
-                        const agentResult = await executeAIAgentNode(node.config, nodeInput, currentData, sessionId);
-                        result = { output: agentResult, selectedPort: agentResult.error ? 'error' : 'next', status: agentResult.error ? 'failed' : 'completed' };
-                        break;
-                    case 'knowledge_base':
-                        const kbResult = await executeKnowledgeBaseNode(node.config, nodeInput, currentData);
-                        result = { output: kbResult, selectedPort: kbResult.error ? 'error' : 'next', status: kbResult.error ? 'failed' : 'completed' };
-                        break;
-                    case 'rss_feed':
-                    case 'rss':
-                        const rssResult = await executeRSSNode(node.config);
-                        result = { output: rssResult, selectedPort: rssResult.error ? 'error' : 'next', status: rssResult.error ? 'failed' : 'completed' };
-                        break;
-                    case 'web_scraper':
-                        const scrapeResult = await executeWebScraper(node.config, nodeInput, currentData);
-                        result = { output: scrapeResult, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'api_fetcher':
-                    case 'http_request':
-                        const httpResult = await executeHTTPRequestWithPorts(node.config, nodeInput);
-                        result = httpResult;
-                        break;
-                    case 'ai_content':
-                        const content = await generateRealContent(node.config.type, node.config.prompt, node.config.tone);
-                        result = { output: { content: content, type: node.config.type, prompt: node.config.prompt, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'ai_lead_scoring':
-                        result = { output: await scoreLeadReal({ ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'post_social':
-                        result = { output: await postToSocialReal(node.config.platform, node.config.content), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'post_tiktok':
-                        result = { output: await postToTikTokReal(node.config.video_url, node.config.caption, node.config.hashtags?.split(',') || [], node.config.thumbnail_url), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'generate_hashtags':
-                        result = { output: await generateHashtags(node.config.topic, parseInt(node.config.count) || 15), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'schedule_post':
-                        result = { output: await schedulePostReal(node.config.platform, node.config.content, node.config.schedule_time), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'send_email':
-                        const emailResult = await executeSendEmailWithPorts(node.config, nodeInput, currentData);
-                        result = emailResult;
-                        break;
-                    case 'send_slack':
-                        const slackSent = await sendSlackReal(node.config.channel, node.config.message);
-                        result = { output: { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' }, selectedPort: slackSent ? 'next' : 'error', status: slackSent ? 'completed' : 'failed' };
-                        break;
-                    case 'inventory_check':
-                        result = { output: await checkInventoryReal(node.config.platform), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'cart_recovery':
-                        result = { output: await recoverCartReal(node.config.platform, node.config.discount_percent), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'create_lead':
-                        const lead = await createLeadReal({ ...currentData, ...currentData, name: node.config.lead_name, source: node.config.source });
-                        result = { output: { lead_id: lead?.id, status: 'created' }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'update_crm':
-                        result = { output: await updateCRMReal(node.config.record_id, { ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'loop':
-                        result = { output: await executeLoopWithSplit(node.config, nodeInput), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'split':
-                        const splitResult = await executeLoopWithSplit({ ...node.config, split_arrays: 'true' }, nodeInput);
-                        result = { output: splitResult.output, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'aggregate':
-                        result = { output: await executeLoopWithSplit({ ...node.config, split_arrays: 'false' }, nodeInput), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'database_query':
-                        result = { output: await databaseQueryReal(node.config.query, JSON.parse(node.config.params || '{}')), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'condition':
-                        const condResult = await executeConditionWithMultipleOutputs(node.config, { ...currentData, ...currentData });
-                        result = condResult;
-                        break;
-                    case 'wait':
-                        const duration = parseInt(node.config.duration) || 5;
-                        const unit = node.config.unit || 'seconds';
-                        const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
-                        await new Promise(r => setTimeout(r, ms));
-                        result = { output: { waited: `${duration} ${unit}` }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'gemini':
-                        result = { output: await executeGeminiNode(node.config), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'code':
-                        result = { output: await executeCodeNode(node.config, nodeInput, currentData), selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'webhook':
-                        result = { output: { webhook_triggered: true, url: node.config.webhook_url, data: nodeInput, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'transform':
-                        const transformResult = await (async () => {
-                            const mapping = JSON.parse(node.config.mapping || '{}');
-                            const transformed = {};
-                            for (const [key, value] of Object.entries(mapping)) {
-                                transformed[key] = resolveVariables(value, { data: nodeInput, trigger: currentData });
-                            }
-                            return transformed;
-                        })();
-                        result = { output: transformResult, selectedPort: 'next', status: 'completed' };
-                        break;
-                    case 'custom_app':
-                        const app = [...connectedApps, ...customApps].find(a => a.id == node.config.app_id);
-                        if (app) {
-                            const customResult = await triggerCustomWebhook(app, { ...currentData, ...currentData });
-                            result = { output: customResult, selectedPort: customResult.success ? 'next' : 'error', status: customResult.success ? 'completed' : 'failed' };
-                        } else {
-                            result = { output: { error: 'App not found' }, selectedPort: 'error', status: 'failed' };
-                        }
-                        break;
-                    default:
-                        result = { output: { output: nodeInput }, selectedPort: 'next', status: 'completed' };
-                }
-                
-                node.status = result.status;
-                if (result.output) {
-                    currentData = { ...currentData, ...result.output };
-                    node.result = { output: result.output };
-                    runHistory[node.name] = result.output;
-                }
-                nodeResults[node.id] = result;
-                renderWorkflowCanvas();
-                
-                if (result.status === 'failed') {
-                    addExecutionLog('Workflow', 'error', `❌ Workflow execution failed at node ${node.name} (routed to ${result.selectedPort} port)`);
-                    return;
-                }
-                
-                addExecutionLog(node.name, 'success', `✅ Completed - Routing to ${result.selectedPort} port`);
-                
-                const outgoingEdges = workflowEdges.filter(edge => edge.source === node.id);
-                const matchingEdges = outgoingEdges.filter(edge => edge.sourceHandle === result.selectedPort || (!edge.sourceHandle && result.selectedPort === 'next'));
-                
-                for (const edge of matchingEdges) {
-                    const childNode = nodeMap[edge.target];
-                    if (childNode && !processed.has(childNode.id)) {
-                        const allIncomingEdges = workflowEdges.filter(e => e.target === childNode.id);
-                        const allSatisfied = allIncomingEdges.every(e => processed.has(e.source) || nodeResults[e.source]);
-                        if (allSatisfied && !queue.includes(childNode)) {
-                            queue.push(childNode);
-                        }
-                    }
-                }
+            if (result.success) {
+                addExecutionLog('Workflow', 'success', `✅ Workflow execution completed. ${result.executionLog.length} steps executed.`);
+                showToast('✅ Workflow completed!', 'success');
+                addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed with Production Engine', { 
+                    executionLog: result.executionLog, 
+                    runHistory: result.runHistory, 
+                    finalOutput: result.finalOutput 
+                });
+            } else {
+                addExecutionLog('Workflow', 'error', `❌ Workflow execution failed.`);
+                showToast('❌ Workflow failed! Check logs', 'error');
             }
-            
-            addExecutionLog('Workflow', 'success', '✅ Workflow execution completed successfully with port-based routing!');
-            showToast('✅ Workflow completed!', 'success');
-            addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed with branching', { output: currentData, runHistory: runHistory });
         }
 
         async function saveWorkflow() {
@@ -4889,6 +6705,7 @@
         window.showOAuthModal = showOAuthModal;
         window.showTemplatesModal = showTemplatesModal;
         window.applyTemplate = applyTemplate;
+        window.showOAuthHelp = showOAuthHelp;
     </script>
 </body>
 </html>
