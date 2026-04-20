@@ -1749,11 +1749,9 @@
 
     <script>
         // ================================================
-        // WORKFLOW STUDIO PRO - PRODUCTION-GRADE NODE ENGINE
+        // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
         // 150+ NODES - AI AGENT - KNOWLEDGE BASE - TEMPLATE ENGINE
         // SORA-LEVEL VIDEO GENERATION - SCRIPT GENERATOR
-        // WITH n8n-Style Schema | WorkflowOrchestrator | Variable Resolver | State Manager
-        // 5 Must-Have Logic Nodes | Data Mapper UI | Save/Load JSON | Fixed OAuth
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -1885,9 +1883,9 @@
                 icon: 'fa-video',
                 nodes: [
                     { id: 'node_1', type: 'trigger', name: 'Video Request', x: 100, y: 200, config: { webhook_path: '/webhook/create-video', method: 'POST' }, outputs: ['next'] },
-                    { id: 'node_2', type: 'ai_video', name: 'Generate Sora Video', x: 400, y: 200, config: { style: 'Cinematic', duration: '30' }, outputs: ['next', 'error'] },
-                    { id: 'node_3', type: 'post_tiktok', name: 'Post to TikTok', x: 700, y: 200, config: {}, outputs: ['next', 'error'] },
-                    { id: 'node_4', type: 'post_youtube', name: 'Post to YouTube', x: 1000, y: 200, config: {}, outputs: ['next', 'error'] }
+                    { id: 'node_2', type: 'ai_video', name: 'Generate Sora Video', x: 400, y: 200, config: { style: 'Cinematic', duration: '30' }, outputs: ['next'] },
+                    { id: 'node_3', type: 'post_tiktok', name: 'Post to TikTok', x: 700, y: 200, config: {}, outputs: ['next'] },
+                    { id: 'node_4', type: 'post_youtube', name: 'Post to YouTube', x: 1000, y: 200, config: {}, outputs: ['next'] }
                 ],
                 edges: [
                     { source: 'node_1', target: 'node_2', sourceHandle: 'next' },
@@ -1903,9 +1901,9 @@
                 icon: 'fa-headset',
                 nodes: [
                     { id: 'node_1', type: 'trigger', name: 'Customer Message', x: 100, y: 200, config: { webhook_path: '/webhook/customer-message', method: 'POST' }, outputs: ['next'] },
-                    { id: 'node_2', type: 'knowledge_base', name: 'Search Knowledge Base', x: 400, y: 200, config: { collection_id: 'support_docs', top_k: '5' }, outputs: ['next', 'error'] },
-                    { id: 'node_3', type: 'ai_agent', name: 'AI Support Agent', x: 700, y: 200, config: { system_prompt: 'You are a helpful customer support agent. Answer based on knowledge base.', model: 'llama-3-70b', memory: 'true' }, outputs: ['next', 'error'] },
-                    { id: 'node_4', type: 'send_webhook', name: 'Send Response', x: 1000, y: 200, config: { url: '{{data.response_url}}', method: 'POST' }, outputs: ['next', 'error'] }
+                    { id: 'node_2', type: 'knowledge_base', name: 'Search Knowledge Base', x: 400, y: 200, config: { collection_id: 'support_docs', top_k: '5' }, outputs: ['next'] },
+                    { id: 'node_3', type: 'ai_agent', name: 'AI Support Agent', x: 700, y: 200, config: { system_prompt: 'You are a helpful customer support agent. Answer based on knowledge base.', model: 'llama-3-70b', memory: 'true' }, outputs: ['next'] },
+                    { id: 'node_4', type: 'send_webhook', name: 'Send Response', x: 1000, y: 200, config: { url: '{{data.response_url}}', method: 'POST' }, outputs: ['next'] }
                 ],
                 edges: [
                     { source: 'node_1', target: 'node_2', sourceHandle: 'next' },
@@ -1921,10 +1919,10 @@
                 icon: 'fa-database',
                 nodes: [
                     { id: 'node_1', type: 'schedule', name: 'Hourly Schedule', x: 100, y: 200, config: { cron: '0 * * * *', timezone: 'UTC' }, outputs: ['next'] },
-                    { id: 'node_2', type: 'rss_feed', name: 'Fetch RSS Feed', x: 400, y: 200, config: { feed_url: 'https://news.google.com/rss', limit: '10' }, outputs: ['next', 'error'] },
+                    { id: 'node_2', type: 'rss_feed', name: 'Fetch RSS Feed', x: 400, y: 200, config: { feed_url: 'https://news.google.com/rss', limit: '10' }, outputs: ['next'] },
                     { id: 'node_3', type: 'split', name: 'Split Items', x: 700, y: 200, config: { field: 'items', batch_size: '1' }, outputs: ['item', 'done'] },
                     { id: 'node_4', type: 'transform', name: 'Transform Data', x: 1000, y: 200, config: { mapping: '{"title":"title","url":"link","date":"pubDate"}' }, outputs: ['next'] },
-                    { id: 'node_5', type: 'database_query', name: 'Insert to DB', x: 1300, y: 200, config: { query: 'INSERT INTO articles (title, url, date) VALUES ({{data.title}}, {{data.url}}, {{data.date}})' }, outputs: ['next', 'error'] }
+                    { id: 'node_5', type: 'database_query', name: 'Insert to DB', x: 1300, y: 200, config: { query: 'INSERT INTO articles (title, url, date) VALUES ({{data.title}}, {{data.url}}, {{data.date}})' }, outputs: ['next'] }
                 ],
                 edges: [
                     { source: 'node_1', target: 'node_2', sourceHandle: 'next' },
@@ -1955,36 +1953,13 @@
         let credentials = [];
         let runHistory = {};
         let agentMemory = {};
-        
-        // Orchestrator instance for production-grade execution
-        let workflowOrchestrator = null;
 
-        // OAuth State - FIXED with proper client_id configuration
+        // OAuth State
         let oauthProviders = {
-            google: { 
-                clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-                authUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
-            },
-            github: { 
-                clientId: 'YOUR_GITHUB_CLIENT_ID', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'user:email repo',
-                authUrl: 'https://github.com/login/oauth/authorize'
-            },
-            slack: { 
-                clientId: 'YOUR_SLACK_CLIENT_ID', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'chat:write channels:read',
-                authUrl: 'https://slack.com/oauth/v2/authorize'
-            },
-            shopify: { 
-                clientId: 'YOUR_SHOPIFY_CLIENT_ID', 
-                redirectUri: `${window.location.origin}/oauth/callback`, 
-                scope: 'read_products write_products',
-                authUrl: 'https://{shop}.myshopify.com/admin/oauth/authorize'
-            }
+            google: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile' },
+            github: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'user:email repo' },
+            slack: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'chat:write channels:read' },
+            shopify: { clientId: '', redirectUri: `${window.location.origin}/oauth/callback`, scope: 'read_products write_products' }
         };
 
         // Global Search State
@@ -1998,660 +1973,9 @@
         let activeInputField = null;
 
         // ================================================
-        // 1. DATA SCHEMA REFACTOR - n8n-Style Node Object
-        // Each node has: id, type, position, parameters, credentials, execute function
-        // ================================================
-        
-        // Node registry with execute functions for production-grade engine
-        const NodeRegistry = {};
-
-        // Base node class structure following n8n schema
-        class WorkflowNode {
-            constructor(id, type, position, parameters = {}, credentials = {}) {
-                this.id = id;
-                this.type = type;
-                this.position = position;
-                this.parameters = parameters;
-                this.credentials = credentials;
-                this.execute = async (input, context) => {
-                    const handler = NodeRegistry[type];
-                    if (handler) {
-                        return await handler(this, input, context);
-                    }
-                    return { output: input, status: 'completed' };
-                };
-            }
-        }
-
-        // ================================================
-        // 2. WORKFLOW ORCHESTRATOR CLASS - Production-Grade Engine
-        // Handles: Topological Sort, Variable Resolution, State Management
-        // ================================================
-        
-        class WorkflowOrchestrator {
-            constructor(nodes, edges) {
-                this.nodes = nodes;
-                this.edges = edges;
-                this.executionLog = []; // State Manager - records input, output, timestamp for every step
-                this.context = {}; // Shared workflow context
-                this.nodeOutputs = new Map(); // Store outputs per node for variable resolution
-            }
-
-            // Topological Sort - ensures Trigger nodes fire before Action nodes
-            topologicalSort() {
-                const nodeMap = new Map();
-                this.nodes.forEach(node => nodeMap.set(node.id, node));
-                
-                const inDegree = new Map();
-                const adjList = new Map();
-                
-                this.nodes.forEach(node => {
-                    inDegree.set(node.id, 0);
-                    adjList.set(node.id, []);
-                });
-                
-                this.edges.forEach(edge => {
-                    adjList.get(edge.source).push(edge.target);
-                    inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
-                });
-                
-                const queue = [];
-                this.nodes.forEach(node => {
-                    if (inDegree.get(node.id) === 0) {
-                        queue.push(node.id);
-                    }
-                });
-                
-                const sorted = [];
-                while (queue.length > 0) {
-                    const nodeId = queue.shift();
-                    sorted.push(nodeId);
-                    
-                    adjList.get(nodeId).forEach(neighbor => {
-                        inDegree.set(neighbor, inDegree.get(neighbor) - 1);
-                        if (inDegree.get(neighbor) === 0) {
-                            queue.push(neighbor);
-                        }
-                    });
-                }
-                
-                if (sorted.length !== this.nodes.length) {
-                    throw new Error('Circular dependency detected in workflow');
-                }
-                
-                return sorted.map(id => this.nodes.find(n => n.id === id));
-            }
-
-            // Variable/Expression Resolver - scans parameters for {{ $json.key }} or {{ $node["NodeName"].output }}
-            resolveVariables(value, currentNodeId) {
-                if (typeof value !== 'string') return value;
-                
-                let resolved = value;
-                
-                // Pattern: {{ $node["NodeName"].json["property"] }}
-                const nodePattern = /\{\{\s*\$node\["([^"]+)"\]\.json\["([^"]+)"\]\s*\}\}/g;
-                let match;
-                while ((match = nodePattern.exec(value)) !== null) {
-                    const nodeName = match[1];
-                    const property = match[2];
-                    const nodeOutput = this.nodeOutputs.get(nodeName);
-                    if (nodeOutput && nodeOutput[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(nodeOutput[property]));
-                    } else if (this.context[nodeName] && this.context[nodeName][property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context[nodeName][property]));
-                    }
-                }
-                
-                // Pattern: {{ $json.property }}
-                const jsonPattern = /\{\{\s*\$json\.([^\s}]+)\s*\}\}/g;
-                while ((match = jsonPattern.exec(value)) !== null) {
-                    const property = match[1];
-                    if (this.context.json && this.context.json[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context.json[property]));
-                    }
-                }
-                
-                // Pattern: {{ data.property }}
-                const dataPattern = /\{\{\s*data\.([^\s}]+)\s*\}\}/g;
-                while ((match = dataPattern.exec(value)) !== null) {
-                    const property = match[1];
-                    if (this.context.data && this.context.data[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context.data[property]));
-                    }
-                }
-                
-                // Pattern: {{ trigger.property }}
-                const triggerPattern = /\{\{\s*trigger\.([^\s}]+)\s*\}\}/g;
-                while ((match = triggerPattern.exec(value)) !== null) {
-                    const property = match[1];
-                    if (this.context.trigger && this.context.trigger[property] !== undefined) {
-                        resolved = resolved.replace(match[0], String(this.context.trigger[property]));
-                    }
-                }
-                
-                return resolved;
-            }
-
-            // Recursively resolve all parameters in an object
-            resolveObjectParams(obj, currentNodeId) {
-                if (obj === null || obj === undefined) return obj;
-                if (typeof obj === 'string') {
-                    return this.resolveVariables(obj, currentNodeId);
-                }
-                if (Array.isArray(obj)) {
-                    return obj.map(item => this.resolveObjectParams(item, currentNodeId));
-                }
-                if (typeof obj === 'object') {
-                    const resolved = {};
-                    for (const [key, value] of Object.entries(obj)) {
-                        resolved[key] = this.resolveObjectParams(value, currentNodeId);
-                    }
-                    return resolved;
-                }
-                return obj;
-            }
-
-            // Execute the workflow with full state management
-            async execute(initialData = {}) {
-                this.executionLog = [];
-                this.context = { json: initialData, data: initialData, trigger: initialData };
-                this.nodeOutputs.clear();
-                
-                const sortedNodes = this.topologicalSort();
-                
-                addExecutionLog('Orchestrator', 'info', `🚀 Starting workflow execution with ${sortedNodes.length} nodes (topologically sorted)`);
-                
-                for (const node of sortedNodes) {
-                    const startTime = Date.now();
-                    addExecutionLog(node.name || node.id, 'info', `▶️ Executing node: ${node.name || node.type}`);
-                    
-                    // Update node UI status
-                    const uiNode = workflowNodes.find(n => n.id === node.id);
-                    if (uiNode) {
-                        uiNode.status = 'running';
-                        if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                    }
-                    
-                    try {
-                        // Resolve parameters before execution using variable resolver
-                        const resolvedParams = this.resolveObjectParams({ ...node.parameters }, node.id);
-                        node.parameters = resolvedParams;
-                        
-                        // Prepare input from context
-                        const input = { ...this.context.data, ...this.context.json, ...this.context.trigger };
-                        
-                        // Execute the node
-                        let output;
-                        if (node.execute) {
-                            output = await node.execute(input, this.context);
-                        } else if (NodeRegistry[node.type]) {
-                            output = await NodeRegistry[node.type](node, input, this.context);
-                        } else {
-                            // Fallback: pass through
-                            output = { output: input, status: 'completed' };
-                        }
-                        
-                        const endTime = Date.now();
-                        
-                        // State Manager: Record execution step with input, output, timestamp
-                        const executionStep = {
-                            nodeId: node.id,
-                            nodeName: node.name || node.type,
-                            nodeType: node.type,
-                            input: JSON.parse(JSON.stringify(input)),
-                            output: output.output || output,
-                            timestamp: new Date().toISOString(),
-                            duration: endTime - startTime,
-                            status: output.status || 'completed'
-                        };
-                        this.executionLog.push(executionStep);
-                        
-                        // Store output for variable resolution
-                        this.nodeOutputs.set(node.name || node.type, output.output || output);
-                        
-                        // Update context with output
-                        if (output.output) {
-                            this.context.data = { ...this.context.data, ...output.output };
-                            this.context.json = { ...this.context.json, ...output.output };
-                        }
-                        
-                        if (uiNode) {
-                            uiNode.status = output.status === 'failed' ? 'failed' : 'completed';
-                            uiNode.result = { output: output.output, executionTime: endTime - startTime };
-                        }
-                        
-                        addExecutionLog(node.name || node.type, 'success', `✅ Completed in ${endTime - startTime}ms - Output keys: ${Object.keys(output.output || {}).join(', ') || 'none'}`);
-                        
-                        // Check if node failed and route to error handler
-                        if (output.status === 'failed') {
-                            const errorEdges = this.edges.filter(e => e.source === node.id && e.sourceHandle === 'error');
-                            if (errorEdges.length > 0) {
-                                addExecutionLog(node.name || node.type, 'info', `⚠️ Routing to error handler`);
-                                // Continue execution with error path
-                            } else {
-                                addExecutionLog('Orchestrator', 'error', `❌ Workflow failed at node ${node.name || node.type}`);
-                                if (uiNode) uiNode.status = 'failed';
-                                if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                                return { success: false, executionLog: this.executionLog, failedAt: node.name || node.type };
-                            }
-                        }
-                        
-                    } catch (error) {
-                        if (uiNode) uiNode.status = 'failed';
-                        addExecutionLog(node.name || node.type, 'error', `❌ Execution error: ${error.message}`);
-                        
-                        const executionStep = {
-                            nodeId: node.id,
-                            nodeName: node.name || node.type,
-                            nodeType: node.type,
-                            input: JSON.parse(JSON.stringify(this.context.data)),
-                            error: error.message,
-                            timestamp: new Date().toISOString(),
-                            status: 'failed'
-                        };
-                        this.executionLog.push(executionStep);
-                        
-                        if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                        return { success: false, executionLog: this.executionLog, failedAt: node.name || node.type, error: error.message };
-                    }
-                }
-                
-                if (typeof renderWorkflowCanvas === 'function') renderWorkflowCanvas();
-                addExecutionLog('Orchestrator', 'success', `✅ Workflow completed successfully! Total steps: ${this.executionLog.length}`);
-                
-                return { success: true, executionLog: this.executionLog, finalContext: this.context.data };
-            }
-
-            // Save workflow as JSON string for perfect restoration
-            toJSON() {
-                return {
-                    nodes: this.nodes.map(node => ({
-                        id: node.id,
-                        type: node.type,
-                        position: node.position,
-                        parameters: node.parameters,
-                        credentials: node.credentials,
-                        name: node.name,
-                        icon: node.icon,
-                        color: node.color,
-                        outputs: node.outputs
-                    })),
-                    edges: this.edges,
-                    name: document.getElementById('workflowName')?.value || 'Untitled Workflow',
-                    version: '2.0',
-                    createdAt: new Date().toISOString()
-                };
-            }
-
-            // Load workflow from JSON
-            static fromJSON(jsonData) {
-                const nodes = jsonData.nodes.map(nodeData => {
-                    const node = new WorkflowNode(
-                        nodeData.id,
-                        nodeData.type,
-                        nodeData.position,
-                        nodeData.parameters || {},
-                        nodeData.credentials || {}
-                    );
-                    node.name = nodeData.name;
-                    node.icon = nodeData.icon;
-                    node.color = nodeData.color;
-                    node.outputs = nodeData.outputs || ['next'];
-                    return node;
-                });
-                return new WorkflowOrchestrator(nodes, jsonData.edges || []);
-            }
-        }
-
-        // ================================================
-        // 3. MUST-HAVE LOGIC NODES - Registry Implementations
-        // ================================================
-
-        // Manual Trigger Node - Entry node with Run button in properties panel
-        NodeRegistry.manual_trigger = async (node, input, context) => {
-            addExecutionLog('Manual Trigger', 'info', `🖱️ Manual trigger activated`);
-            return {
-                output: { 
-                    triggered: true, 
-                    timestamp: new Date().toISOString(),
-                    data: input,
-                    message: 'Manual execution started'
-                },
-                status: 'completed'
-            };
-        };
-
-        // Set/Variables Node - Define JSON object that merges into workflow context
-        NodeRegistry.set_variables = async (node, input, context) => {
-            let variables = {};
-            try {
-                variables = JSON.parse(node.parameters.variables || '{}');
-            } catch (e) {
-                variables = { error: 'Invalid JSON', raw: node.parameters.variables };
-            }
-            
-            addExecutionLog('Set Variables', 'info', `📝 Setting ${Object.keys(variables).length} variables: ${Object.keys(variables).join(', ')}`);
-            
-            return {
-                output: {
-                    ...variables,
-                    _setAt: new Date().toISOString(),
-                    _count: Object.keys(variables).length
-                },
-                status: 'completed'
-            };
-        };
-
-        // Merge Advanced Node - Accepts two inputs, provides dropdown for Merge by Key or Merge by Index
-        NodeRegistry.merge_advanced = async (node, input, context) => {
-            const mergeType = node.parameters.mergeType || 'key';
-            let leftInput = {};
-            let rightInput = {};
-            
-            try {
-                leftInput = node.parameters.leftInput ? JSON.parse(node.parameters.leftInput) : input;
-                rightInput = node.parameters.rightInput ? JSON.parse(node.parameters.rightInput) : {};
-            } catch(e) {
-                leftInput = input;
-                rightInput = {};
-            }
-            
-            let merged = {};
-            
-            if (mergeType === 'key') {
-                // Merge by key - object spread
-                merged = { ...leftInput, ...rightInput };
-            } else if (mergeType === 'index') {
-                // Merge by index - array merge
-                const leftArray = Array.isArray(leftInput) ? leftInput : [leftInput];
-                const rightArray = Array.isArray(rightInput) ? rightInput : [rightInput];
-                const maxLen = Math.max(leftArray.length, rightArray.length);
-                merged = [];
-                for (let i = 0; i < maxLen; i++) {
-                    merged.push({ ...(leftArray[i] || {}), ...(rightArray[i] || {}), _index: i });
-                }
-            } else if (mergeType === 'concat') {
-                const leftArray = Array.isArray(leftInput) ? leftInput : [leftInput];
-                const rightArray = Array.isArray(rightInput) ? rightInput : [rightInput];
-                merged = [...leftArray, ...rightArray];
-            }
-            
-            addExecutionLog('Merge Advanced', 'success', `✅ Merged using ${mergeType} mode`);
-            
-            return {
-                output: { merged, mergeType, originalLeft: leftInput, originalRight: rightInput },
-                status: 'completed'
-            };
-        };
-
-        // Error Handler Node - Takes error port input, triggered automatically on failure
-        NodeRegistry.error_handler = async (node, input, context) => {
-            const errorData = input.error || input;
-            const action = node.parameters.action || 'log';
-            
-            addExecutionLog('Error Handler', 'warning', `⚠️ Handling error: ${JSON.stringify(errorData).substring(0, 200)}`);
-            
-            let result = { handled: true, error: errorData, action: action, timestamp: new Date().toISOString() };
-            
-            if (action === 'log') {
-                result.message = 'Error logged to execution log';
-            } else if (action === 'continue') {
-                result.message = 'Error ignored, continuing execution';
-            } else if (action === 'retry') {
-                result.retryCount = (parseInt(node.parameters.retryCount) || 0) + 1;
-                result.message = `Error will be retried (attempt ${result.retryCount})`;
-            } else if (action === 'notify') {
-                result.message = `Error notification sent to ${node.parameters.notifyChannel || 'admin'}`;
-            }
-            
-            return {
-                output: result,
-                status: 'completed'
-            };
-        };
-
-        // Retry/Delay Node - Uses setTimeout or async-delay to pause execution or retry based on failure counts
-        NodeRegistry.retry_delay = async (node, input, context) => {
-            const mode = node.parameters.mode || 'delay';
-            const duration = parseInt(node.parameters.duration) || 1;
-            const unit = node.parameters.unit || 'seconds';
-            const maxRetries = parseInt(node.parameters.maxRetries) || 3;
-            const currentRetry = parseInt(node.parameters.currentRetry) || 0;
-            
-            const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
-            
-            if (mode === 'delay') {
-                addExecutionLog('Retry/Delay', 'info', `⏳ Delaying for ${duration} ${unit}...`);
-                await new Promise(resolve => setTimeout(resolve, ms));
-                addExecutionLog('Retry/Delay', 'success', `✅ Delay completed`);
-                return {
-                    output: { delayed: true, duration: duration, unit: unit, completedAt: new Date().toISOString() },
-                    status: 'completed'
-                };
-            } else if (mode === 'retry') {
-                const shouldRetry = currentRetry < maxRetries;
-                addExecutionLog('Retry/Delay', 'info', `🔄 Retry mode - Attempt ${currentRetry + 1}/${maxRetries}`);
-                
-                if (shouldRetry) {
-                    await new Promise(resolve => setTimeout(resolve, ms * (currentRetry + 1))); // Exponential backoff
-                    return {
-                        output: { 
-                            retried: true, 
-                            attempt: currentRetry + 1, 
-                            maxRetries: maxRetries,
-                            nextAttemptDelay: ms * (currentRetry + 2),
-                            status: 'retry'
-                        },
-                        status: 'retry',
-                        shouldRetry: true
-                    };
-                } else {
-                    addExecutionLog('Retry/Delay', 'error', `❌ Max retries (${maxRetries}) exceeded`);
-                    return {
-                        output: { 
-                            retried: false, 
-                            maxRetriesReached: true,
-                            totalAttempts: currentRetry,
-                            status: 'failed'
-                        },
-                        status: 'failed'
-                    };
-                }
-            }
-            
-            return { output: { error: 'Invalid mode' }, status: 'failed' };
-        };
-
-        // ================================================
-        // 4. DATA MAPPER UI FUNCTION
-        // Displays visual mapping of output data from previous node to current node's inputs
-        // ================================================
-        
-        function renderDataMapper(previousNodeOutput, currentNodeInputs) {
-            const mapperSection = document.getElementById('dataMapperSection');
-            const mapperContent = document.getElementById('dataMapperContent');
-            
-            if (!previousNodeOutput || Object.keys(previousNodeOutput).length === 0) {
-                if (mapperSection) mapperSection.style.display = 'none';
-                return;
-            }
-            
-            if (mapperSection) mapperSection.style.display = 'block';
-            
-            const outputKeys = Object.keys(previousNodeOutput);
-            const inputFields = Object.keys(currentNodeInputs || {});
-            
-            if (outputKeys.length === 0) {
-                if (mapperContent) mapperContent.innerHTML = '<div style="padding: 16px; text-align: center; color: #888;">No output data from previous node to map</div>';
-                return;
-            }
-            
-            if (mapperContent) {
-                mapperContent.innerHTML = `
-                    <div style="margin-bottom: 12px; font-size: 11px; color: #d4af37;">
-                        <i class="fas fa-arrow-right"></i> From: Previous Node Output
-                    </div>
-                    ${outputKeys.map(key => `
-                        <div class="mapper-field">
-                            <div class="mapper-field-source" onclick="copyToClipboard('{{ $json.${key} }}')" title="Click to copy variable syntax">
-                                <i class="fas fa-copy"></i> {{ $json.${key} }}
-                                <span style="font-size: 9px; color: #888;">${JSON.stringify(previousNodeOutput[key]).substring(0, 50)}</span>
-                            </div>
-                            <div class="mapper-field-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
-                            <div class="mapper-field-target">
-                                <input type="text" placeholder="Map to field..." value="" 
-                                       onchange="mapFieldToCurrentNode('${key}', this.value)"
-                                       data-source-key="${key}">
-                            </div>
-                        </div>
-                    `).join('')}
-                    <div style="margin-top: 12px; font-size: 10px; color: #666; border-top: 1px solid rgba(212,175,55,0.2); padding-top: 12px;">
-                        <i class="fas fa-info-circle"></i> Click on any source value to copy variable syntax. Use {{ $json.fieldName }} in node inputs.
-                    </div>
-                `;
-            }
-        }
-        
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            showToast(`Copied: ${text}`, 'success');
-        }
-        
-        function mapFieldToCurrentNode(sourceKey, targetField) {
-            if (selectedWorkflowNode && targetField) {
-                const node = workflowNodes.find(n => n.id === selectedWorkflowNode);
-                if (node && node.config) {
-                    node.config[targetField] = `{{ $json.${sourceKey} }}`;
-                    renderWorkflowCanvas();
-                    openPropertiesPanel(node);
-                    showToast(`Mapped {{ $json.${sourceKey} }} → ${targetField}`, 'success');
-                }
-            }
-        }
-
-        // ================================================
-        // 5. SAVE/LOAD LOGIC - JSON string capture for perfect restoration
-        // ================================================
-        
-        function saveWorkflowToJSON() {
-            const workflowName = document.getElementById('workflowName').value;
-            const nodes = workflowNodes.map(node => ({
-                id: node.id,
-                type: node.type,
-                name: node.name,
-                icon: node.icon,
-                color: node.color,
-                position: { x: node.x, y: node.y },
-                parameters: node.config || {},
-                credentials: node.credentials || {},
-                outputs: node.outputs || ['next']
-            }));
-            
-            const workflowJSON = {
-                name: workflowName,
-                version: '2.0',
-                createdAt: new Date().toISOString(),
-                nodes: nodes,
-                edges: workflowEdges,
-                settings: {
-                    executionMode: 'sequential',
-                    timeout: 300
-                }
-            };
-            
-            const jsonString = JSON.stringify(workflowJSON, null, 2);
-            localStorage.setItem('saved_workflow_json', jsonString);
-            
-            // Also save for download
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${workflowName.replace(/[^a-z0-9]/gi, '_')}_workflow.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showToast('Workflow saved as JSON!', 'success');
-            return jsonString;
-        }
-        
-        function loadWorkflowFromJSON(jsonString) {
-            try {
-                const workflowData = JSON.parse(jsonString);
-                
-                // Clear current workflow
-                workflowNodes = [];
-                workflowEdges = [];
-                
-                // Restore nodes
-                workflowData.nodes.forEach(nodeData => {
-                    const newNode = {
-                        id: nodeData.id || `node_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                        type: nodeData.type,
-                        name: nodeData.name,
-                        icon: nodeData.icon || 'fa-cube',
-                        color: nodeData.color || '#d4af37',
-                        x: nodeData.position?.x || 100,
-                        y: nodeData.position?.y || 100,
-                        config: nodeData.parameters || {},
-                        credentials: nodeData.credentials || {},
-                        outputs: nodeData.outputs || ['next'],
-                        status: 'waiting'
-                    };
-                    workflowNodes.push(newNode);
-                });
-                
-                // Restore edges
-                workflowData.edges.forEach(edge => {
-                    workflowEdges.push({
-                        source: edge.source,
-                        target: edge.target,
-                        sourceHandle: edge.sourceHandle || 'next'
-                    });
-                });
-                
-                // Restore workflow name
-                if (workflowData.name) {
-                    document.getElementById('workflowName').value = workflowData.name;
-                }
-                
-                renderWorkflowCanvas();
-                saveCurrentWorkflow();
-                showToast('Workflow loaded from JSON!', 'success');
-                
-                return true;
-            } catch (error) {
-                showToast('Invalid workflow JSON: ' + error.message, 'error');
-                return false;
-            }
-        }
-        
-        function importWorkflowJSON() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    loadWorkflowFromJSON(event.target.result);
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-
-        // ================================================
         // 150+ NODE CONFIGURATIONS WITH PORT OUTPUTS
         // ================================================
         const NODE_CONFIGS = {
-            // Core Logic Nodes (5 Must-Have)
-            manual_trigger: { name: 'Manual Trigger', icon: 'fa-hand-pointer', color: '#10B981', fields: [], defaults: {}, outputs: ['next'], category: 'core', keywords: ['manual', 'trigger', 'run'] },
-            set_variables: { name: 'Set Variables', icon: 'fa-code-branch', color: '#8B5CF6', fields: ['variables'], defaults: { variables: '{"key": "value"}' }, outputs: ['next'], category: 'core', keywords: ['set', 'variables', 'json'] },
-            merge_advanced: { name: 'Merge Advanced', icon: 'fa-code-merge', color: '#F59E0B', fields: ['mergeType', 'leftInput', 'rightInput'], defaults: { mergeType: 'key', leftInput: '{}', rightInput: '{}' }, outputs: ['next'], category: 'core', keywords: ['merge', 'combine', 'join'] },
-            error_handler: { name: 'Error Handler', icon: 'fa-bug', color: '#EF4444', fields: ['action', 'notifyChannel', 'retryCount'], defaults: { action: 'log', notifyChannel: 'admin', retryCount: '0' }, outputs: ['next'], category: 'core', keywords: ['error', 'handler', 'catch'] },
-            retry_delay: { name: 'Retry/Delay', icon: 'fa-hourglass-half', color: '#F59E0B', fields: ['mode', 'duration', 'unit', 'maxRetries', 'currentRetry'], defaults: { mode: 'delay', duration: '1', unit: 'seconds', maxRetries: '3', currentRetry: '0' }, outputs: ['next', 'retry'], category: 'core', keywords: ['retry', 'delay', 'wait'] },
-            
             // Triggers (5)
             trigger: { name: 'Webhook Trigger', icon: 'fa-globe', color: '#10B981', fields: ['webhook_path', 'method'], defaults: { webhook_path: '/webhook/my-endpoint', method: 'POST' }, category: 'triggers', keywords: ['webhook', 'http', 'trigger'], outputs: ['next'] },
             schedule: { name: 'Schedule Trigger', icon: 'fa-clock', color: '#3B82F6', fields: ['cron', 'timezone'], defaults: { cron: '0 * * * *', timezone: 'UTC' }, category: 'triggers', keywords: ['schedule', 'cron', 'timer'], outputs: ['next'] },
@@ -3096,7 +2420,7 @@
         }
 
         // ================================================
-        // OAuth SYSTEM - FIXED with proper client_id and error handling
+        // OAuth SYSTEM (Keeping existing)
         // ================================================
         function initOAuth() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -3112,16 +2436,7 @@
         async function startOAuth(provider) {
             const oauthConfig = oauthProviders[provider];
             if (!oauthConfig) {
-                showToast(`OAuth not configured for ${provider}. Please set up client ID in settings.`, 'error');
-                return;
-            }
-            
-            // Check if client_id is configured (not placeholder)
-            if (oauthConfig.clientId === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com' || 
-                oauthConfig.clientId === 'YOUR_GITHUB_CLIENT_ID' ||
-                oauthConfig.clientId === 'YOUR_SLACK_CLIENT_ID' ||
-                oauthConfig.clientId === 'YOUR_SHOPIFY_CLIENT_ID') {
-                showToast(`Please configure your ${provider.toUpperCase()} OAuth Client ID in the code settings first.`, 'error');
+                showToast(`OAuth not configured for ${provider}`, 'error');
                 return;
             }
             
@@ -3129,21 +2444,13 @@
             localStorage.setItem('oauth_state', state);
             localStorage.setItem('oauth_provider', provider);
             
-            let authUrl = '';
             if (provider === 'github') {
-                authUrl = `${oauthConfig.authUrl}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+                window.location.href = `https://github.com/login/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
             } else if (provider === 'slack') {
-                authUrl = `${oauthConfig.authUrl}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
-            } else if (provider === 'shopify') {
-                // For Shopify, need shop parameter - prompt user for shop domain
-                const shop = prompt('Enter your Shopify store domain (e.g., mystore.myshopify.com):');
-                if (!shop) return;
-                authUrl = `${oauthConfig.authUrl.replace('{shop}', shop)}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
+                window.location.href = `https://slack.com/oauth/v2/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&scope=${oauthConfig.scope}&state=${state}`;
             } else {
-                authUrl = `${oauthConfig.authUrl}?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}&access_type=offline&prompt=consent`;
+                window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&response_type=code&scope=${encodeURIComponent(oauthConfig.scope)}&state=${state}`;
             }
-            
-            window.location.href = authUrl;
         }
         
         async function exchangeOAuthCode(provider, code) {
@@ -3183,10 +2490,6 @@
             modal.innerHTML = `
                 <div style="background:#1a1a2e;border-radius:20px;padding:28px;width:450px;max-width:90%;border:1px solid #d4af37;">
                     <h3 style="margin-bottom:20px;color:#d4af37;"><i class="fas fa-plug"></i> Connect with OAuth</h3>
-                    <div style="margin-bottom:16px;padding:12px;background:rgba(212,175,55,0.1);border-radius:8px;font-size:12px;color:#aaa;">
-                        <i class="fas fa-info-circle"></i> Note: You need to configure OAuth Client IDs in the code settings first.
-                        <br>For production, set your actual Client IDs in the oauthProviders object.
-                    </div>
                     <div style="display:flex;flex-direction:column;gap:12px;">
                         <button class="btn-primary" style="width:100%;" onclick="startOAuth('google')"><i class="fab fa-google"></i> Connect Google</button>
                         <button class="btn-primary" style="width:100%;background:#333;" onclick="startOAuth('github')"><i class="fab fa-github"></i> Connect GitHub</button>
@@ -4737,18 +4040,7 @@
             originalOpenPropertiesPanel(node);
             setTimeout(() => {
                 const panel = document.getElementById('propertiesPanel');
-                if (panel && panel.classList.contains('open')) {
-                    attachVariablePickerToInputs(panel);
-                    
-                    // Also render data mapper if there's a previous node
-                    const previousNode = workflowNodes.find(n => workflowEdges.some(e => e.target === node.id && e.source === n.id));
-                    if (previousNode && previousNode.result) {
-                        renderDataMapper(previousNode.result.output, node.config);
-                    } else {
-                        const mapperSection = document.getElementById('dataMapperSection');
-                        if (mapperSection) mapperSection.style.display = 'none';
-                    }
-                }
+                if (panel && panel.classList.contains('open')) attachVariablePickerToInputs(panel);
             }, 100);
         };
 
@@ -4912,7 +4204,6 @@
                 nodeEl.setAttribute('data-node-id', node.id);
                 
                 const displayConfig = Object.entries(node.config).slice(0, 2);
-                const isManualTrigger = node.type === 'manual_trigger';
                 
                 nodeEl.innerHTML = `
                     <div class="workflow-node-header">
@@ -4921,7 +4212,6 @@
                         </div>
                         <div class="workflow-node-header-title">${node.name}</div>
                         <div class="workflow-node-header-actions">
-                            ${isManualTrigger ? `<button class="run-button" onclick="event.stopPropagation(); runManualTrigger('${node.id}')"><i class="fas fa-play"></i> Run</button>` : ''}
                             <button onclick="deleteWorkflowNode('${node.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -5107,14 +4397,6 @@
                         inputHtml = `<textarea data-field="${field}" rows="6" placeholder="${config.defaults?.[field] || ''}" style="font-family: monospace;">${value}</textarea>`;
                     } else if (field === 'system_prompt' || field === 'prompt') {
                         inputHtml = `<textarea data-field="${field}" rows="4" placeholder="${config.defaults?.[field] || ''}" style="font-family: monospace;">${value}</textarea>`;
-                    } else if (field === 'variables') {
-                        inputHtml = `<textarea data-field="${field}" rows="4" placeholder='{"key": "value"}' style="font-family: monospace;">${value}</textarea>`;
-                    } else if (field === 'mergeType') {
-                        inputHtml = `<select data-field="${field}"><option value="key" ${value === 'key' ? 'selected' : ''}>Merge by Key (Object)</option><option value="index" ${value === 'index' ? 'selected' : ''}>Merge by Index (Array)</option><option value="concat" ${value === 'concat' ? 'selected' : ''}>Concat Arrays</option></select>`;
-                    } else if (field === 'mode') {
-                        inputHtml = `<select data-field="${field}"><option value="delay" ${value === 'delay' ? 'selected' : ''}>Delay (Pause)</option><option value="retry" ${value === 'retry' ? 'selected' : ''}>Retry on Failure</option></select>`;
-                    } else if (field === 'action') {
-                        inputHtml = `<select data-field="${field}"><option value="log" ${value === 'log' ? 'selected' : ''}>Log Error</option><option value="continue" ${value === 'continue' ? 'selected' : ''}>Continue Execution</option><option value="retry" ${value === 'retry' ? 'selected' : ''}>Retry</option><option value="notify" ${value === 'notify' ? 'selected' : ''}>Notify Admin</option></select>`;
                     } else {
                         inputHtml = `<input type="text" data-field="${field}" value="${value}" placeholder="${config.defaults?.[field] || ''}">`;
                     }
@@ -5136,17 +4418,7 @@
             });
             
             const testDataEditor = document.getElementById('testDataEditor');
-            testDataEditor.style.display = node.type === 'trigger' || node.type === 'manual_trigger' ? 'block' : 'none';
-            
-            // Show Data Mapper with previous node output if available
-            const previousNode = workflowNodes.find(n => workflowEdges.some(e => e.target === node.id && e.source === n.id));
-            if (previousNode && previousNode.result) {
-                renderDataMapper(previousNode.result.output, node.config);
-            } else {
-                const mapperSection = document.getElementById('dataMapperSection');
-                if (mapperSection) mapperSection.style.display = 'none';
-            }
-            
+            testDataEditor.style.display = node.type === 'trigger' ? 'block' : 'none';
             panel.classList.add('open');
             attachVariablePickerToInputs(panel);
         }
@@ -5199,38 +4471,236 @@
         }
 
         async function executeWorkflowLocally(inputData) {
-            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution with Production-Grade Orchestrator...');
+            addExecutionLog('Workflow', 'info', '🚀 Starting local workflow execution...');
             
-            // Convert to n8n-style nodes for orchestrator
-            const orchestratorNodes = workflowNodes.map(node => {
-                const workflowNode = new WorkflowNode(node.id, node.type, { x: node.x, y: node.y }, node.config || {}, {});
-                workflowNode.name = node.name;
-                workflowNode.icon = node.icon;
-                workflowNode.color = node.color;
-                workflowNode.outputs = node.outputs;
-                return workflowNode;
+            let currentData = inputData || { test: true, timestamp: new Date().toISOString() };
+            window._lastTriggerData = currentData;
+            runHistory = {};
+            
+            const nodeMap = {};
+            workflowNodes.forEach(node => { nodeMap[node.id] = node; });
+            
+            const startNodes = workflowNodes.filter(node => {
+                const hasIncoming = workflowEdges.some(edge => edge.target === node.id);
+                return !hasIncoming;
             });
             
-            workflowOrchestrator = new WorkflowOrchestrator(orchestratorNodes, workflowEdges);
-            const result = await workflowOrchestrator.execute(inputData);
-            
-            // Update node statuses from orchestrator
-            workflowNodes.forEach(node => {
-                const execNode = orchestratorNodes.find(n => n.id === node.id);
-                if (execNode) {
-                    node.status = execNode.status;
-                    node.result = execNode.result;
-                }
-            });
-            renderWorkflowCanvas();
-            
-            if (result.success) {
-                addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed', { steps: result.executionLog.length });
-                showToast('✅ Workflow completed successfully!', 'success');
-            } else {
-                addToHistory(document.getElementById('workflowName').value, 'failed', `Failed at ${result.failedAt}`, { error: result.error });
-                showToast(`❌ Workflow failed at ${result.failedAt}`, 'error');
+            if (startNodes.length === 0) {
+                addExecutionLog('Workflow', 'error', '❌ No start node found in workflow');
+                return;
             }
+            
+            const processed = new Set();
+            const queue = [...startNodes];
+            const nodeResults = {};
+            
+            while (queue.length > 0) {
+                const node = queue.shift();
+                if (processed.has(node.id)) continue;
+                processed.add(node.id);
+                
+                const incomingEdges = workflowEdges.filter(edge => edge.target === node.id);
+                let nodeInput = {};
+                
+                for (const edge of incomingEdges) {
+                    if (nodeResults[edge.source]) {
+                        nodeInput = { ...nodeInput, ...nodeResults[edge.source].output };
+                    }
+                }
+                
+                if (Object.keys(nodeInput).length === 0 && incomingEdges.length === 0) {
+                    nodeInput = currentData;
+                }
+                
+                node.status = 'running';
+                renderWorkflowCanvas();
+                
+                if (node.config) {
+                    for (const [key, val] of Object.entries(node.config)) {
+                        if (typeof val === 'string') {
+                            node.config[key] = resolveVariables(val, { data: nodeInput, trigger: currentData });
+                        }
+                    }
+                }
+                
+                let result;
+                let sessionId = `session_${Date.now()}_${node.id}`;
+                
+                switch (node.type) {
+                    case 'trigger':
+                        result = { output: { webhook_received: true, data: currentData, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'schedule':
+                        result = { output: { scheduled: true, cron: node.config?.cron, triggered_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'github':
+                        result = { output: await githubTriggerReal(node.config.event_type || 'push', node.config.repository || 'main', currentData), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_image':
+                        const imageUrl = await generateRealImage(node.config.prompt, node.config.style);
+                        result = { output: { image_url: imageUrl, prompt: node.config.prompt, style: node.config.style, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_video':
+                        const videoResult = await generateRealVideoWithApi(node.config.prompt, node.config.duration || 30, node.config.style);
+                        result = { output: videoResult, selectedPort: videoResult.error ? 'error' : 'next', status: videoResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'video_script':
+                        const scriptResult = await generateVideoScriptOnly(node.config.topic, node.config.duration, node.config.style);
+                        result = { output: scriptResult, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_agent':
+                        const agentResult = await executeAIAgentNode(node.config, nodeInput, currentData, sessionId);
+                        result = { output: agentResult, selectedPort: agentResult.error ? 'error' : 'next', status: agentResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'knowledge_base':
+                        const kbResult = await executeKnowledgeBaseNode(node.config, nodeInput, currentData);
+                        result = { output: kbResult, selectedPort: kbResult.error ? 'error' : 'next', status: kbResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'rss_feed':
+                    case 'rss':
+                        const rssResult = await executeRSSNode(node.config);
+                        result = { output: rssResult, selectedPort: rssResult.error ? 'error' : 'next', status: rssResult.error ? 'failed' : 'completed' };
+                        break;
+                    case 'web_scraper':
+                        const scrapeResult = await executeWebScraper(node.config, nodeInput, currentData);
+                        result = { output: scrapeResult, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'api_fetcher':
+                    case 'http_request':
+                        const httpResult = await executeHTTPRequestWithPorts(node.config, nodeInput);
+                        result = httpResult;
+                        break;
+                    case 'ai_content':
+                        const content = await generateRealContent(node.config.type, node.config.prompt, node.config.tone);
+                        result = { output: { content: content, type: node.config.type, prompt: node.config.prompt, generated_at: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'ai_lead_scoring':
+                        result = { output: await scoreLeadReal({ ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'post_social':
+                        result = { output: await postToSocialReal(node.config.platform, node.config.content), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'post_tiktok':
+                        result = { output: await postToTikTokReal(node.config.video_url, node.config.caption, node.config.hashtags?.split(',') || [], node.config.thumbnail_url), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'generate_hashtags':
+                        result = { output: await generateHashtags(node.config.topic, parseInt(node.config.count) || 15), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'schedule_post':
+                        result = { output: await schedulePostReal(node.config.platform, node.config.content, node.config.schedule_time), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'send_email':
+                        const emailResult = await executeSendEmailWithPorts(node.config, nodeInput, currentData);
+                        result = emailResult;
+                        break;
+                    case 'send_slack':
+                        const slackSent = await sendSlackReal(node.config.channel, node.config.message);
+                        result = { output: { channel: node.config.channel, status: slackSent ? 'sent' : 'failed' }, selectedPort: slackSent ? 'next' : 'error', status: slackSent ? 'completed' : 'failed' };
+                        break;
+                    case 'inventory_check':
+                        result = { output: await checkInventoryReal(node.config.platform), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'cart_recovery':
+                        result = { output: await recoverCartReal(node.config.platform, node.config.discount_percent), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'create_lead':
+                        const lead = await createLeadReal({ ...currentData, ...currentData, name: node.config.lead_name, source: node.config.source });
+                        result = { output: { lead_id: lead?.id, status: 'created' }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'update_crm':
+                        result = { output: await updateCRMReal(node.config.record_id, { ...currentData, ...currentData }), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'loop':
+                        result = { output: await executeLoopWithSplit(node.config, nodeInput), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'split':
+                        const splitResult = await executeLoopWithSplit({ ...node.config, split_arrays: 'true' }, nodeInput);
+                        result = { output: splitResult.output, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'aggregate':
+                        result = { output: await executeLoopWithSplit({ ...node.config, split_arrays: 'false' }, nodeInput), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'database_query':
+                        result = { output: await databaseQueryReal(node.config.query, JSON.parse(node.config.params || '{}')), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'condition':
+                        const condResult = await executeConditionWithMultipleOutputs(node.config, { ...currentData, ...currentData });
+                        result = condResult;
+                        break;
+                    case 'wait':
+                        const duration = parseInt(node.config.duration) || 5;
+                        const unit = node.config.unit || 'seconds';
+                        const ms = duration * (unit === 'seconds' ? 1000 : unit === 'minutes' ? 60000 : 3600000);
+                        await new Promise(r => setTimeout(r, ms));
+                        result = { output: { waited: `${duration} ${unit}` }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'gemini':
+                        result = { output: await executeGeminiNode(node.config), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'code':
+                        result = { output: await executeCodeNode(node.config, nodeInput, currentData), selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'webhook':
+                        result = { output: { webhook_triggered: true, url: node.config.webhook_url, data: nodeInput, timestamp: new Date().toISOString() }, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'transform':
+                        const transformResult = await (async () => {
+                            const mapping = JSON.parse(node.config.mapping || '{}');
+                            const transformed = {};
+                            for (const [key, value] of Object.entries(mapping)) {
+                                transformed[key] = resolveVariables(value, { data: nodeInput, trigger: currentData });
+                            }
+                            return transformed;
+                        })();
+                        result = { output: transformResult, selectedPort: 'next', status: 'completed' };
+                        break;
+                    case 'custom_app':
+                        const app = [...connectedApps, ...customApps].find(a => a.id == node.config.app_id);
+                        if (app) {
+                            const customResult = await triggerCustomWebhook(app, { ...currentData, ...currentData });
+                            result = { output: customResult, selectedPort: customResult.success ? 'next' : 'error', status: customResult.success ? 'completed' : 'failed' };
+                        } else {
+                            result = { output: { error: 'App not found' }, selectedPort: 'error', status: 'failed' };
+                        }
+                        break;
+                    default:
+                        result = { output: { output: nodeInput }, selectedPort: 'next', status: 'completed' };
+                }
+                
+                node.status = result.status;
+                if (result.output) {
+                    currentData = { ...currentData, ...result.output };
+                    node.result = { output: result.output };
+                    runHistory[node.name] = result.output;
+                }
+                nodeResults[node.id] = result;
+                renderWorkflowCanvas();
+                
+                if (result.status === 'failed') {
+                    addExecutionLog('Workflow', 'error', `❌ Workflow execution failed at node ${node.name} (routed to ${result.selectedPort} port)`);
+                    return;
+                }
+                
+                addExecutionLog(node.name, 'success', `✅ Completed - Routing to ${result.selectedPort} port`);
+                
+                const outgoingEdges = workflowEdges.filter(edge => edge.source === node.id);
+                const matchingEdges = outgoingEdges.filter(edge => edge.sourceHandle === result.selectedPort || (!edge.sourceHandle && result.selectedPort === 'next'));
+                
+                for (const edge of matchingEdges) {
+                    const childNode = nodeMap[edge.target];
+                    if (childNode && !processed.has(childNode.id)) {
+                        const allIncomingEdges = workflowEdges.filter(e => e.target === childNode.id);
+                        const allSatisfied = allIncomingEdges.every(e => processed.has(e.source) || nodeResults[e.source]);
+                        if (allSatisfied && !queue.includes(childNode)) {
+                            queue.push(childNode);
+                        }
+                    }
+                }
+            }
+            
+            addExecutionLog('Workflow', 'success', '✅ Workflow execution completed successfully with port-based routing!');
+            showToast('✅ Workflow completed!', 'success');
+            addToHistory(document.getElementById('workflowName').value, 'success', 'Execution completed with branching', { output: currentData, runHistory: runHistory });
         }
 
         async function saveWorkflow() {
@@ -5327,13 +4797,6 @@
         async function executeWorkflowAndWatch() {
             await executeWorkflowLocally({ test: true, timestamp: new Date().toISOString() });
         }
-        
-        async function runManualTrigger(nodeId) {
-            const node = workflowNodes.find(n => n.id === nodeId);
-            if (!node) return;
-            showToast(`Manual Trigger: Running workflow from ${node.name}`, 'info');
-            await executeWorkflowLocally({ manual: true, triggeredBy: node.name, timestamp: new Date().toISOString() });
-        }
 
         function startExecutionPolling(executionId) {}
 
@@ -5376,8 +4839,8 @@
             renderWorkflowCanvas();
             initOAuth();
             if (workflowNodes.length === 0) {
-                addNodeToCanvas('manual_trigger', 100, 200);
-                addNodeToCanvas('set_variables', 400, 200);
+                addNodeToCanvas('trigger', 100, 200);
+                addNodeToCanvas('condition', 400, 200);
                 workflowEdges.push({ source: workflowNodes[0]?.id, target: workflowNodes[1]?.id, sourceHandle: 'next' });
                 renderWorkflowCanvas();
                 saveCurrentWorkflow();
@@ -5426,11 +4889,6 @@
         window.showOAuthModal = showOAuthModal;
         window.showTemplatesModal = showTemplatesModal;
         window.applyTemplate = applyTemplate;
-        window.saveWorkflowToJSON = saveWorkflowToJSON;
-        window.importWorkflowJSON = importWorkflowJSON;
-        window.copyToClipboard = copyToClipboard;
-        window.mapFieldToCurrentNode = mapFieldToCurrentNode;
-        window.runManualTrigger = runManualTrigger;
     </script>
 </body>
 </html>
