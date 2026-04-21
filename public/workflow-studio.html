@@ -1747,13 +1747,14 @@
         <div style="padding:12px; border-top:1px solid #2a2a3e; font-size:11px; color:#666; display:flex; justify-content:space-between;"><span><i class="fas fa-arrow-up"></i> <i class="fas fa-arrow-down"></i> Navigate</span><span><i class="fas fa-plus"></i> Click to add node</span><span><i class="fas fa-globe"></i> Deep HTTP Discovery</span></div>
     </div>
 
-   
-   <script>
+  
+    <script>
         // ================================================
         // WORKFLOW STUDIO PRO - ENTERPRISE AI AUTOMATION
         // 180+ NODES - AI AGENT - KNOWLEDGE BASE - TEMPLATE ENGINE
         // SORA-LEVEL VIDEO GENERATION - SCRIPT GENERATOR
         // PRODUCTION-GRADE NODE ENGINE WITH TOPOLOGICAL SORT
+        // ENTERPRISE FEATURES: Live Inspector, Checkpointing, Mini-Map, Error Ports, Variable Picker
         // ================================================
 
         const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -1977,6 +1978,26 @@
         // Variable Picker State
         let variablePickerVisible = false;
         let activeInputField = null;
+        
+        // ================================================
+        // ENTERPRISE FEATURE: MINI-MAP STATE
+        // ================================================
+        let miniMapVisible = true;
+        let miniMapPosition = { x: 20, y: 20 };
+        let canvasOffsetX = 0;
+        let canvasOffsetY = 0;
+        let canvasScale = 1;
+        
+        // ================================================
+        // ENTERPRISE FEATURE: NODE INSPECTOR STATE
+        // ================================================
+        let activeInspectorNode = null;
+        let inspectorActiveTab = 'json';
+        
+        // ================================================
+        // ENTERPRISE FEATURE: EXECUTION CHECKPOINTS
+        // ================================================
+        let executionCheckpoints = [];
 
         // ================================================
         // 180+ NODE CONFIGURATIONS WITH PORT OUTPUTS
@@ -2247,7 +2268,752 @@
         };
 
         // ================================================
-        // PRODUCTION-GRADE WORKFLOW ORCHESTRATOR
+        // ENTERPRISE FEATURE: MINI-MAP NAVIGATION
+        // ================================================
+        
+        function initMiniMap() {
+            const miniMap = document.getElementById('miniMap');
+            if (!miniMap) return;
+            
+            miniMap.style.display = miniMapVisible ? 'block' : 'none';
+            
+            // Make mini-map draggable
+            let isDraggingMiniMap = false;
+            let dragStart = { x: 0, y: 0 };
+            let miniMapStartPos = { ...miniMapPosition };
+            
+            miniMap.addEventListener('mousedown', (e) => {
+                if (e.target === miniMap || e.target.parentElement === miniMap) {
+                    isDraggingMiniMap = true;
+                    dragStart = { x: e.clientX, y: e.clientY };
+                    miniMapStartPos = { ...miniMapPosition };
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDraggingMiniMap) return;
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+                miniMapPosition.x = Math.max(10, Math.min(window.innerWidth - 250, miniMapStartPos.x + dx));
+                miniMapPosition.y = Math.max(10, Math.min(window.innerHeight - 200, miniMapStartPos.y + dy));
+                miniMap.style.bottom = 'auto';
+                miniMap.style.right = 'auto';
+                miniMap.style.left = miniMapPosition.x + 'px';
+                miniMap.style.top = miniMapPosition.y + 'px';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDraggingMiniMap = false;
+            });
+            
+            updateMiniMap();
+        }
+        
+        function updateMiniMap() {
+            const miniMap = document.getElementById('miniMap');
+            if (!miniMap || !miniMapVisible) return;
+            
+            const canvas = document.getElementById('workflowCanvas');
+            if (!canvas) return;
+            
+            const canvasRect = canvas.getBoundingClientRect();
+            const miniMapCanvas = document.getElementById('miniMapCanvas');
+            if (!miniMapCanvas) return;
+            
+            const ctx = miniMapCanvas.getContext('2d');
+            const width = 220;
+            const height = 150;
+            miniMapCanvas.width = width;
+            miniMapCanvas.height = height;
+            
+            // Clear background
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+            ctx.strokeStyle = '#d4af37';
+            ctx.strokeRect(0, 0, width, height);
+            
+            // Find bounds of all nodes
+            if (workflowNodes.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No nodes', width/2, height/2);
+                return;
+            }
+            
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            workflowNodes.forEach(node => {
+                minX = Math.min(minX, node.x);
+                minY = Math.min(minY, node.y);
+                maxX = Math.max(maxX, node.x + 260);
+                maxY = Math.max(maxY, node.y + 100);
+            });
+            
+            const worldWidth = maxX - minX;
+            const worldHeight = maxY - minY;
+            const scaleX = width / (worldWidth + 100);
+            const scaleY = height / (worldHeight + 100);
+            const scale = Math.min(scaleX, scaleY, 1);
+            
+            // Draw nodes on mini-map
+            workflowNodes.forEach(node => {
+                const x = ((node.x - minX + 50) * scale);
+                const y = ((node.y - minY + 50) * scale);
+                const w = 260 * scale;
+                const h = 100 * scale;
+                
+                ctx.fillStyle = node.color || '#6B7280';
+                ctx.fillRect(x, y, Math.max(w, 4), Math.max(h, 4));
+                ctx.fillStyle = '#fff';
+                ctx.font = `${Math.max(8, 10 * scale)}px monospace`;
+                ctx.fillText(node.name.substring(0, 8), x + 2, y + 12);
+            });
+            
+            // Draw viewport rectangle
+            const viewportLeft = canvas.scrollLeft;
+            const viewportTop = canvas.scrollTop;
+            const viewportWidth = canvas.clientWidth;
+            const viewportHeight = canvas.clientHeight;
+            
+            const vx = ((viewportLeft - minX + 50) * scale);
+            const vy = ((viewportTop - minY + 50) * scale);
+            const vw = viewportWidth * scale;
+            const vh = viewportHeight * scale;
+            
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(vx, vy, vw, vh);
+        }
+        
+        function toggleMiniMap() {
+            miniMapVisible = !miniMapVisible;
+            const miniMap = document.getElementById('miniMap');
+            if (miniMap) {
+                miniMap.style.display = miniMapVisible ? 'block' : 'none';
+            }
+            if (miniMapVisible) updateMiniMap();
+        }
+        
+        // ================================================
+        // ENTERPRISE FEATURE: NODE INSPECTOR PANEL
+        // ================================================
+        
+        function showNodeInspector(nodeId) {
+            const node = workflowNodes.find(n => n.id === nodeId);
+            if (!node) return;
+            
+            activeInspectorNode = node;
+            
+            const panel = document.getElementById('nodeInspector');
+            if (!panel) return;
+            
+            panel.style.display = 'flex';
+            
+            renderInspectorContent();
+        }
+        
+        function renderInspectorContent() {
+            if (!activeInspectorNode) return;
+            
+            const content = document.getElementById('inspectorContent');
+            if (!content) return;
+            
+            const node = activeInspectorNode;
+            const hasResult = node.result && node.result.output;
+            const inputData = node.lastInput || {};
+            const outputData = node.result?.output || {};
+            const schema = getNodeSchema(node.type);
+            
+            let html = `
+                <div class="inspector-header">
+                    <div class="inspector-title">
+                        <i class="fas ${node.icon}" style="color: ${node.color}"></i>
+                        <span>${node.name}</span>
+                    </div>
+                    <button class="inspector-close" onclick="closeNodeInspector()">✕</button>
+                </div>
+                <div class="inspector-tabs">
+                    <button class="inspector-tab ${inspectorActiveTab === 'json' ? 'active' : ''}" onclick="setInspectorTab('json')">JSON</button>
+                    <button class="inspector-tab ${inspectorActiveTab === 'schema' ? 'active' : ''}" onclick="setInspectorTab('schema')">Schema</button>
+                    <button class="inspector-tab ${inspectorActiveTab === 'mapper' ? 'active' : ''}" onclick="setInspectorTab('mapper')">Data Mapper</button>
+                    <button class="inspector-tab ${inspectorActiveTab === 'history' ? 'active' : ''}" onclick="setInspectorTab('history')">Execution History</button>
+                </div>
+                <div class="inspector-body">
+            `;
+            
+            if (inspectorActiveTab === 'json') {
+                html += `
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Input Data</div>
+                        <pre class="inspector-json">${JSON.stringify(inputData, null, 2) || '{}'}</pre>
+                    </div>
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Output Data</div>
+                        <pre class="inspector-json">${JSON.stringify(outputData, null, 2) || '{}'}</pre>
+                    </div>
+                `;
+            } else if (inspectorActiveTab === 'schema') {
+                html += `
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Expected Input Schema</div>
+                        <pre class="inspector-json">${JSON.stringify(schema.input, null, 2)}</pre>
+                    </div>
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Expected Output Schema</div>
+                        <pre class="inspector-json">${JSON.stringify(schema.output, null, 2)}</pre>
+                    </div>
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Configuration Fields</div>
+                        ${(NODE_CONFIGS[node.type]?.fields || []).map(f => `<div class="schema-field"><code>${f}</code>: ${NODE_CONFIGS[node.type]?.defaults?.[f] || 'any'}</div>`).join('')}
+                    </div>
+                `;
+            } else if (inspectorActiveTab === 'mapper') {
+                // Get available fields from previous nodes
+                const previousNodes = workflowNodes.filter(n => {
+                    return workflowEdges.some(e => e.target === node.id && e.source === n.id);
+                });
+                const availableFields = [];
+                previousNodes.forEach(prevNode => {
+                    if (prevNode.result?.output) {
+                        Object.keys(prevNode.result.output).forEach(key => {
+                            availableFields.push({
+                                field: key,
+                                sourceNode: prevNode.name,
+                                sample: prevNode.result.output[key]
+                            });
+                        });
+                    }
+                });
+                
+                html += `
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Drag & Drop Field Mapping</div>
+                        <div class="mapper-container">
+                            <div class="mapper-source">
+                                <div class="mapper-title">Available Fields (Drag from here)</div>
+                                <div class="mapper-fields">
+                                    ${availableFields.map(f => `
+                                        <div class="mapper-field" draggable="true" ondragstart="startFieldDrag(event, '${f.field}', '${f.sourceNode}')" ondragend="endFieldDrag(event)">
+                                            <i class="fas fa-code-branch"></i>
+                                            <span>${f.sourceNode}.${f.field}</span>
+                                            <small>${JSON.stringify(f.sample).substring(0, 30)}</small>
+                                        </div>
+                                    `).join('')}
+                                    ${availableFields.length === 0 ? '<div class="mapper-empty">No previous node data available. Run workflow first.</div>' : ''}
+                                </div>
+                            </div>
+                            <div class="mapper-target">
+                                <div class="mapper-title">Drop here to map to config fields</div>
+                                <div class="mapper-dropzone" id="mapperDropzone" ondrop="handleFieldDrop(event)" ondragover="allowDrop(event)">
+                                    ${(NODE_CONFIGS[node.type]?.fields || []).map(f => `
+                                        <div class="mapper-target-field" data-field="${f}">
+                                            <span class="field-name">${f}:</span>
+                                            <input type="text" value="${node.config[f] || ''}" data-field="${f}" onchange="updateNodeConfigField('${node.id}', '${f}', this.value)">
+                                            <span class="field-hint">Drop here to map</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (inspectorActiveTab === 'history') {
+                const nodeHistory = executionLogs.filter(log => log.workflowName === node.name);
+                html += `
+                    <div class="inspector-section">
+                        <div class="inspector-section-title">Execution History</div>
+                        ${nodeHistory.length === 0 ? '<div class="mapper-empty">No execution history for this node. Run workflow to see logs.</div>' : ''}
+                        ${nodeHistory.map(log => `
+                            <div class="history-entry">
+                                <div class="history-time">${new Date(log.timestamp).toLocaleString()}</div>
+                                <div class="history-status ${log.status}">${log.status}</div>
+                                <div class="history-message">${log.message}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            content.innerHTML = html;
+        }
+        
+        function getNodeSchema(nodeType) {
+            const config = NODE_CONFIGS[nodeType] || {};
+            return {
+                input: {
+                    type: 'object',
+                    description: 'Data from previous nodes',
+                    properties: { data: 'any', trigger: 'object' }
+                },
+                output: {
+                    type: 'object',
+                    description: `Output from ${config.name || nodeType} node`,
+                    properties: { output: 'any', timestamp: 'string' }
+                }
+            };
+        }
+        
+        function setInspectorTab(tab) {
+            inspectorActiveTab = tab;
+            renderInspectorContent();
+        }
+        
+        function closeNodeInspector() {
+            const panel = document.getElementById('nodeInspector');
+            if (panel) panel.style.display = 'none';
+            activeInspectorNode = null;
+        }
+        
+        function startFieldDrag(event, field, sourceNode) {
+            event.dataTransfer.setData('text/plain', JSON.stringify({
+                type: 'field',
+                field: field,
+                sourceNode: sourceNode,
+                expression: `{{ $node["${sourceNode}"].json["${field}"] }}`
+            }));
+            event.dataTransfer.effectAllowed = 'copy';
+        }
+        
+        function endFieldDrag(event) {
+            // Drag ended
+        }
+        
+        function allowDrop(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+        }
+        
+        function handleFieldDrop(event) {
+            event.preventDefault();
+            const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+            if (data.type === 'field') {
+                const targetField = event.target.closest('[data-field]');
+                if (targetField) {
+                    const fieldName = targetField.dataset.field;
+                    const input = targetField.querySelector('input');
+                    if (input) {
+                        input.value = data.expression;
+                        // Update node config
+                        if (activeInspectorNode) {
+                            activeInspectorNode.config[fieldName] = data.expression;
+                            renderWorkflowCanvas();
+                            saveCurrentWorkflow();
+                        }
+                        showToast(`Mapped ${data.field} to ${fieldName}`, 'success');
+                    }
+                }
+            }
+        }
+        
+        function updateNodeConfigField(nodeId, field, value) {
+            const node = workflowNodes.find(n => n.id === nodeId);
+            if (node) {
+                node.config[field] = value;
+                renderWorkflowCanvas();
+                saveCurrentWorkflow();
+            }
+        }
+        
+        // ================================================
+        // ENTERPRISE FEATURE: EXECUTION CHECKPOINTING
+        // ================================================
+        
+        function updateNodeStatusIndicator(nodeId, status, details) {
+            const nodeEl = document.querySelector(`.workflow-node[data-node-id="${nodeId}"]`);
+            if (!nodeEl) return;
+            
+            let indicator = nodeEl.querySelector('.node-status-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'node-status-indicator';
+                nodeEl.querySelector('.workflow-node-header-icon').appendChild(indicator);
+            }
+            
+            indicator.className = `node-status-indicator status-${status}`;
+            indicator.title = details || '';
+            
+            if (status === 'completed') {
+                indicator.innerHTML = '<i class="fas fa-check-circle"></i>';
+                indicator.style.background = '#10B981';
+            } else if (status === 'failed') {
+                indicator.innerHTML = '<i class="fas fa-times-circle"></i>';
+                indicator.style.background = '#EF4444';
+            } else if (status === 'running') {
+                indicator.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+                indicator.style.background = '#F59E0B';
+            } else {
+                indicator.innerHTML = '<i class="fas fa-circle"></i>';
+                indicator.style.background = '#6B7280';
+            }
+            
+            // Add tooltip
+            if (details) {
+                indicator.setAttribute('data-tooltip', details);
+            }
+        }
+        
+        function addExecutionCheckpoint(nodeName, status, timestamp, errorMessage) {
+            const checkpoint = {
+                nodeName: nodeName,
+                status: status,
+                timestamp: timestamp || new Date().toISOString(),
+                errorMessage: errorMessage || null
+            };
+            
+            executionCheckpoints.push(checkpoint);
+            
+            // Keep last 100 checkpoints
+            if (executionCheckpoints.length > 100) executionCheckpoints.shift();
+            
+            // Update node status indicator
+            const node = workflowNodes.find(n => n.name === nodeName);
+            if (node) {
+                updateNodeStatusIndicator(node.id, status, 
+                    status === 'failed' ? errorMessage : `Completed at ${new Date(timestamp).toLocaleTimeString()}`
+                );
+            }
+            
+            localStorage.setItem('execution_checkpoints', JSON.stringify(executionCheckpoints));
+        }
+        
+        function loadExecutionCheckpoints() {
+            const saved = localStorage.getItem('execution_checkpoints');
+            if (saved) {
+                try {
+                    executionCheckpoints = JSON.parse(saved);
+                    // Update indicators
+                    executionCheckpoints.forEach(cp => {
+                        const node = workflowNodes.find(n => n.name === cp.nodeName);
+                        if (node) {
+                            updateNodeStatusIndicator(node.id, cp.status, 
+                                cp.status === 'failed' ? cp.errorMessage : `Completed at ${new Date(cp.timestamp).toLocaleTimeString()}`
+                            );
+                        }
+                    });
+                } catch(e) {}
+            }
+        }
+        
+        // ================================================
+        // ENTERPRISE FEATURE: CONTEXTUAL VARIABLE PICKER (Enhanced)
+        // ================================================
+        
+        function getAvailableVariablesEnhanced() {
+            const variables = [];
+            
+            // Get all nodes that have executed and have output
+            for (const node of workflowNodes) {
+                if (runHistory[node.name] || node.result?.output) {
+                    const output = runHistory[node.name] || node.result.output;
+                    const properties = Object.keys(output).slice(0, 15);
+                    variables.push({
+                        name: node.name,
+                        type: 'node',
+                        sample: output,
+                        properties: properties,
+                        syntax: `{{ $node["${node.name}"].json["property"] }}`,
+                        preview: JSON.stringify(output).substring(0, 100)
+                    });
+                }
+            }
+            
+            // Add trigger data if available
+            if (window._lastTriggerData) {
+                variables.push({
+                    name: 'trigger',
+                    type: 'trigger',
+                    sample: window._lastTriggerData,
+                    properties: Object.keys(window._lastTriggerData).slice(0, 15),
+                    syntax: `{{ trigger.property }}`,
+                    preview: JSON.stringify(window._lastTriggerData).substring(0, 100)
+                });
+            }
+            
+            // Add workflow variables
+            if (workflowOrchestrator?.variables) {
+                Object.keys(workflowOrchestrator.variables).forEach(varName => {
+                    variables.push({
+                        name: `variable.${varName}`,
+                        type: 'variable',
+                        sample: workflowOrchestrator.variables[varName],
+                        properties: [varName],
+                        syntax: `{{ $variable.${varName} }}`,
+                        preview: JSON.stringify(workflowOrchestrator.variables[varName]).substring(0, 100)
+                    });
+                });
+            }
+            
+            return variables;
+        }
+        
+        function showVariablePickerEnhanced(fieldElement) {
+            if (variablePickerVisible) return;
+            variablePickerVisible = true;
+            activeInputField = fieldElement;
+            
+            const variables = getAvailableVariablesEnhanced();
+            if (variables.length === 0) {
+                showToast('No variables available. Run the workflow first to generate sample data.', 'info');
+                variablePickerVisible = false;
+                return;
+            }
+            
+            // Remove existing picker
+            const existingPicker = document.getElementById('variablePickerEnhanced');
+            if (existingPicker) existingPicker.remove();
+            
+            const picker = document.createElement('div');
+            picker.id = 'variablePickerEnhanced';
+            picker.className = 'variable-picker-enhanced';
+            picker.style.cssText = `
+                position: fixed;
+                background: #1a1a2e;
+                border: 1px solid #d4af37;
+                border-radius: 12px;
+                min-width: 380px;
+                max-height: 450px;
+                overflow-y: auto;
+                z-index: 10002;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                backdrop-filter: blur(8px);
+            `;
+            
+            picker.innerHTML = `
+                <div style="padding: 12px 16px; border-bottom: 1px solid #2a2a3e; background: #252535; border-radius: 12px 12px 0 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; font-weight: 600;">
+                            <i class="fas fa-code-branch"></i> Available Variables
+                        </span>
+                        <input type="text" id="variableSearchInput" placeholder="Filter variables..." style="padding: 4px 8px; font-size: 11px; border-radius: 4px; background: #0f0f1a; border: 1px solid #2a2a3e; color: #e0e0e0;">
+                    </div>
+                </div>
+                <div id="variablePickerList" style="padding: 8px;">
+                    ${variables.map(varItem => `
+                        <div class="variable-item" data-syntax="${varItem.syntax}" data-name="${varItem.name}" data-properties='${JSON.stringify(varItem.properties)}' style="padding: 10px; margin: 4px 0; cursor: pointer; border-radius: 8px; border-bottom: 1px solid #2a2a3e;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <div style="width: 28px; height: 28px; background: ${varItem.type === 'node' ? '#8B5CF6' : varItem.type === 'trigger' ? '#F59E0B' : '#10B981'}; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas ${varItem.type === 'node' ? 'fa-cube' : varItem.type === 'trigger' ? 'fa-bolt' : 'fa-dollar-sign'}" style="font-size: 12px;"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 13px;">${varItem.name}</div>
+                                    <div style="font-size: 10px; color: #888;">${varItem.type}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 10px; background: #0f0f1a; padding: 6px; border-radius: 6px; color: #aaa; overflow-x: auto; max-height: 50px;">${varItem.preview}</div>
+                            <div style="font-size: 10px; color: #d4af37; margin-top: 6px;">
+                                Properties: ${varItem.properties.slice(0, 5).join(', ')}${varItem.properties.length > 5 ? '...' : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="padding: 8px 12px; border-top: 1px solid #2a2a3e; font-size: 10px; color: #888; text-align: center;">
+                    <i class="fas fa-info-circle"></i> Click to insert variable | Type {{ to trigger
+                </div>
+            `;
+            
+            const rect = fieldElement.getBoundingClientRect();
+            picker.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+            picker.style.left = `${Math.min(rect.left, window.innerWidth - 400)}px`;
+            document.body.appendChild(picker);
+            
+            // Add search functionality
+            const searchInput = document.getElementById('variableSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    const items = picker.querySelectorAll('.variable-item');
+                    items.forEach(item => {
+                        const name = item.dataset.name?.toLowerCase() || '';
+                        const properties = item.dataset.properties ? JSON.parse(item.dataset.properties).join(' ').toLowerCase() : '';
+                        const matches = name.includes(query) || properties.includes(query);
+                        item.style.display = matches ? 'block' : 'none';
+                    });
+                });
+            }
+            
+            // Add click handlers
+            picker.querySelectorAll('.variable-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const syntax = item.dataset.syntax;
+                    if (activeInputField && syntax) {
+                        const currentValue = activeInputField.value;
+                        const cursorPos = activeInputField.selectionStart || currentValue.length;
+                        const newValue = currentValue.slice(0, cursorPos) + syntax + currentValue.slice(cursorPos);
+                        activeInputField.value = newValue;
+                        activeInputField.dispatchEvent(new Event('input'));
+                        activeInputField.dispatchEvent(new Event('change'));
+                        activeInputField.focus();
+                        activeInputField.setSelectionRange(cursorPos + syntax.length, cursorPos + syntax.length);
+                        showToast(`📊 Inserted variable: ${syntax}`, 'success');
+                    }
+                    picker.remove();
+                    variablePickerVisible = false;
+                });
+            });
+            
+            // Close on click outside
+            document.addEventListener('click', function closePicker(e) {
+                if (!picker.contains(e.target) && e.target !== fieldElement) {
+                    picker.remove();
+                    variablePickerVisible = false;
+                    document.removeEventListener('click', closePicker);
+                }
+            });
+        }
+        
+        // Enhanced attach function with {{ trigger
+        function attachVariablePickerToInputsEnhanced(container) {
+            if (!container) return;
+            const inputFields = container.querySelectorAll('input[data-field], textarea[data-field]');
+            inputFields.forEach(field => {
+                if (field.hasAttribute('data-variable-picker-attached')) return;
+                field.setAttribute('data-variable-picker-attached', 'true');
+                
+                // Add wrapper for better UX
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                field.parentNode.insertBefore(wrapper, field);
+                wrapper.appendChild(field);
+                
+                const pickerBtn = document.createElement('button');
+                pickerBtn.innerHTML = '<i class="fas fa-code-branch"></i>';
+                pickerBtn.title = 'Insert Variable (Ctrl+Space or type {{)';
+                pickerBtn.style.cssText = `position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: #252535; border: none; color: #d4af37; cursor: pointer; border-radius: 4px; padding: 4px 6px; font-size: 10px;`;
+                wrapper.appendChild(pickerBtn);
+                
+                pickerBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showVariablePickerEnhanced(field);
+                });
+                
+                // Trigger on typing {{
+                field.addEventListener('input', (e) => {
+                    const value = field.value;
+                    const lastTwo = value.slice(-2);
+                    if (lastTwo === '{{') {
+                        showVariablePickerEnhanced(field);
+                    }
+                });
+                
+                field.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
+                        e.preventDefault();
+                        showVariablePickerEnhanced(field);
+                    }
+                });
+            });
+        }
+        
+        // ================================================
+        // ENTERPRISE FEATURE: ERROR PORT UI
+        // ================================================
+        
+        function renderErrorPorts(nodeEl, node) {
+            if (!node.outputs || !node.outputs.includes('error')) return;
+            
+            const portsContainer = nodeEl.querySelector('.workflow-node-ports') || 
+                                  (() => {
+                                      const div = document.createElement('div');
+                                      div.className = 'workflow-node-ports';
+                                      nodeEl.querySelector('.workflow-node-content')?.appendChild(div);
+                                      return div;
+                                  })();
+            
+            if (!portsContainer.querySelector('.port-error')) {
+                const errorPort = document.createElement('span');
+                errorPort.className = 'port-badge port-error';
+                errorPort.setAttribute('data-port', 'error');
+                errorPort.setAttribute('data-node-id', node.id);
+                errorPort.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ERROR';
+                errorPort.style.background = '#EF4444';
+                errorPort.style.cursor = 'pointer';
+                errorPort.onclick = (e) => {
+                    e.stopPropagation();
+                    startConnectionFromPort(node.id, 'error', e);
+                };
+                portsContainer.appendChild(errorPort);
+            }
+        }
+        
+        // Override startConnectionFromPort to handle error port styling
+        const originalStartConnectionFromPort = startConnectionFromPort;
+        startConnectionFromPort = function(nodeId, portName, event) {
+            if (portName === 'error') {
+                isConnecting = true;
+                connectionStartNode = { id: nodeId, port: 'error' };
+                connectionStartPort = 'error';
+                
+                const canvas = document.getElementById('workflowCanvas');
+                const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                tempLine.style.position = 'absolute';
+                tempLine.style.top = '0';
+                tempLine.style.left = '0';
+                tempLine.style.width = '100%';
+                tempLine.style.height = '100%';
+                tempLine.style.pointerEvents = 'none';
+                tempLine.style.zIndex = '100';
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke', '#EF4444');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-dasharray', '5,5');
+                path.setAttribute('fill', 'none');
+                tempLine.appendChild(path);
+                canvas.appendChild(tempLine);
+                
+                const onMouseMove = (me) => {
+                    if (!isConnecting) return;
+                    const startNode = workflowNodes.find(n => n.id === nodeId);
+                    if (startNode) {
+                        const startX = startNode.x + 260;
+                        const startY = startNode.y + 50;
+                        const endX = me.clientX - canvas.getBoundingClientRect().left;
+                        const endY = me.clientY - canvas.getBoundingClientRect().top;
+                        const midX = (startX + endX) / 2;
+                        path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
+                    }
+                };
+                
+                const onMouseUp = (ue) => {
+                    if (!isConnecting) return;
+                    const target = document.elementsFromPoint(ue.clientX, ue.clientY);
+                    let targetPort = null;
+                    for (const el of target) {
+                        if (el.classList && (el.classList.contains('workflow-node-port') || el.classList.contains('port-badge')) && 
+                            (el.dataset.portType === 'input' || el.classList.contains('port-error'))) {
+                            targetPort = el;
+                            break;
+                        }
+                    }
+                    if (targetPort) {
+                        const targetId = targetPort.dataset.nodeId || targetPort.closest?.('.workflow-node')?.dataset.nodeId;
+                        if (targetId && targetId !== nodeId) {
+                            if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId && e.sourceHandle === 'error')) {
+                                workflowEdges.push({ source: nodeId, target: targetId, sourceHandle: 'error' });
+                                renderWorkflowCanvas();
+                                saveCurrentWorkflow();
+                                showToast(`Error connection created from ${portName} port`, 'warning');
+                            }
+                        }
+                    }
+                    isConnecting = false;
+                    connectionStartNode = null;
+                    connectionStartPort = null;
+                    tempLine.remove();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            } else {
+                originalStartConnectionFromPort(nodeId, portName, event);
+            }
+        };
+        
+        // ================================================
+        // PRODUCTION-GRADE WORKFLOW ORCHESTRATOR (Existing - keeping all)
         // ================================================
         
         class WorkflowOrchestrator {
@@ -5643,7 +6409,7 @@
         }
 
         // ================================================
-        // VARIABLE PICKER (Ctrl+Space)
+        // VARIABLE PICKER (Ctrl+Space) - Enhanced version used
         // ================================================
         function getAvailableVariables() {
             const variables = [];
@@ -5662,63 +6428,12 @@
             return variables;
         }
 
-        function showVariablePicker(fieldElement, nodeId) {
-            if (variablePickerVisible) return;
-            variablePickerVisible = true;
-            activeInputField = fieldElement;
-            const variables = getAvailableVariables();
-            if (variables.length === 0) { showToast('No variables available. Run the workflow first to generate sample data.', 'info'); variablePickerVisible = false; return; }
-            const picker = document.createElement('div');
-            picker.id = 'variablePicker';
-            picker.style.cssText = `position:fixed; background:#1a1a2e; border:1px solid #d4af37; border-radius:12px; min-width:320px; max-height:400px; overflow-y:auto; z-index:10002; box-shadow:0 8px 24px rgba(0,0,0,0.4); backdrop-filter:blur(8px);`;
-            picker.innerHTML = `<div style="padding:12px 16px; border-bottom:1px solid #2a2a3e; background:#252535; border-radius:12px 12px 0 0; display:flex; justify-content:space-between;"><span style="font-size:13px; font-weight:600;"><i class="fas fa-code-branch"></i> Available Variables</span><span style="font-size:11px; color:#d4af37;"><i class="fas fa-info-circle"></i> Click to insert</span></div>
-                <div style="padding:8px;">${variables.map(varItem => `<div class="variable-item" data-syntax="${varItem.syntax}" style="padding:12px; margin:4px 0; cursor:pointer; border-radius:8px;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><div style="width:24px; height:24px; background:${varItem.type === 'node' ? '#8B5CF6' : '#F59E0B'}; border-radius:6px; display:flex; align-items:center; justify-content:center;"><i class="fas ${varItem.type === 'node' ? 'fa-cube' : 'fa-bolt'}" style="font-size:10px;"></i></div><div style="font-weight:600; font-size:13px;">${varItem.name}</div><div style="font-size:10px; color:#888;">${varItem.type}</div></div><div style="font-size:10px; background:#0f0f1a; padding:6px; border-radius:6px; color:#aaa; overflow-x:auto; max-height:60px;">${varItem.preview}</div><div style="font-size:10px; color:#d4af37; margin-top:6px;">Properties: ${varItem.properties.slice(0, 5).join(', ')}${varItem.properties.length > 5 ? '...' : ''}</div></div>`).join('')}</div>
-                <div style="padding:12px; border-top:1px solid #2a2a3e; font-size:10px; color:#888; text-align:center;"><i class="fas fa-code"></i> Use {{ $node["NodeName"].json["property"] }} syntax</div>`;
-            const rect = fieldElement.getBoundingClientRect();
-            picker.style.bottom = `${window.innerHeight - rect.top + 10}px`;
-            picker.style.left = `${rect.left}px`;
-            document.body.appendChild(picker);
-            picker.querySelectorAll('.variable-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const syntax = item.dataset.syntax;
-                    if (activeInputField && syntax) {
-                        const currentValue = activeInputField.value;
-                        const cursorPos = activeInputField.selectionStart || currentValue.length;
-                        const newValue = currentValue.slice(0, cursorPos) + syntax + currentValue.slice(cursorPos);
-                        activeInputField.value = newValue;
-                        activeInputField.dispatchEvent(new Event('input'));
-                        activeInputField.dispatchEvent(new Event('change'));
-                        activeInputField.focus();
-                        activeInputField.setSelectionRange(cursorPos + syntax.length, cursorPos + syntax.length);
-                        showToast(`📊 Inserted variable: ${syntax}`, 'success');
-                    }
-                    picker.remove();
-                    variablePickerVisible = false;
-                });
-                item.addEventListener('mouseenter', () => { item.style.background = 'rgba(212,175,55,0.1)'; });
-                item.addEventListener('mouseleave', () => { item.style.background = 'transparent'; });
-            });
-            document.addEventListener('click', function closePicker(e) { if (!picker.contains(e.target) && e.target !== fieldElement && !picker.contains(e.target.parentElement)) { picker.remove(); variablePickerVisible = false; document.removeEventListener('click', closePicker); } });
-        }
+        // Note: showVariablePickerEnhanced is used instead of the original
+        // The original showVariablePicker is kept for compatibility but enhanced version is attached
 
         function attachVariablePickerToInputs(container) {
-            if (!container) return;
-            const inputFields = container.querySelectorAll('input[data-field], textarea[data-field]');
-            inputFields.forEach(field => {
-                if (field.hasAttribute('data-variable-picker-attached')) return;
-                field.setAttribute('data-variable-picker-attached', 'true');
-                const wrapper = document.createElement('div');
-                wrapper.style.position = 'relative';
-                field.parentNode.insertBefore(wrapper, field);
-                wrapper.appendChild(field);
-                const pickerBtn = document.createElement('button');
-                pickerBtn.innerHTML = '<i class="fas fa-code-branch"></i>';
-                pickerBtn.title = 'Insert Variable (Ctrl+Space)';
-                pickerBtn.style.cssText = `position:absolute; right:8px; top:50%; transform:translateY(-50%); background:#252535; border:none; color:#d4af37; cursor:pointer; border-radius:4px; padding:4px 6px; font-size:10px;`;
-                wrapper.appendChild(pickerBtn);
-                pickerBtn.addEventListener('click', (e) => { e.stopPropagation(); showVariablePicker(field, null); });
-                field.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === ' ') { e.preventDefault(); showVariablePicker(field, null); } });
-            });
+            // Use enhanced version
+            attachVariablePickerToInputsEnhanced(container);
         }
 
         // ================================================
@@ -5959,10 +6674,38 @@
                         previewBtn.title = 'Show Output Preview';
                         previewBtn.onclick = (e) => { e.stopPropagation(); const nodeId = nodeEl.dataset.nodeId; showOutputPreview(nodeId); };
                         actionsDiv.appendChild(previewBtn);
+                        
+                        // Add inspector button
+                        const inspectorBtn = document.createElement('button');
+                        inspectorBtn.className = 'inspector-btn';
+                        inspectorBtn.innerHTML = '<i class="fas fa-chart-line"></i>';
+                        inspectorBtn.title = 'Open Node Inspector';
+                        inspectorBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            showNodeInspector(nodeId);
+                        };
+                        actionsDiv.appendChild(inspectorBtn);
                     }
                     
                     const nodeId = nodeEl.dataset.nodeId;
                     const node = workflowNodes.find(n => n.id === nodeId);
+                    if (node) {
+                        // Render error ports
+                        renderErrorPorts(nodeEl, node);
+                        
+                        // Update status indicator if checkpoint exists
+                        const checkpoint = executionCheckpoints?.find(cp => cp.nodeName === node.name);
+                        if (checkpoint) {
+                            updateNodeStatusIndicator(nodeId, checkpoint.status, 
+                                checkpoint.status === 'failed' ? checkpoint.errorMessage : `Completed at ${new Date(checkpoint.timestamp).toLocaleTimeString()}`
+                            );
+                        } else if (node.status === 'completed') {
+                            updateNodeStatusIndicator(nodeId, 'completed', `Completed at execution time`);
+                        } else if (node.status === 'failed') {
+                            updateNodeStatusIndicator(nodeId, 'failed', node.result?.output?.error || 'Execution failed');
+                        }
+                    }
+                    
                     if (node && node.outputs && node.outputs.length > 1 && !nodeEl.querySelector('.workflow-node-ports')) {
                         const contentDiv = nodeEl.querySelector('.workflow-node-content');
                         if (contentDiv) {
@@ -5977,72 +6720,140 @@
         };
 
         function startConnectionFromPort(nodeId, portName, event) {
-            event.stopPropagation();
-            isConnecting = true;
-            connectionStartNode = { id: nodeId, port: portName };
-            connectionStartPort = portName;
-            
-            const canvas = document.getElementById('workflowCanvas');
-            const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            tempLine.style.position = 'absolute';
-            tempLine.style.top = '0';
-            tempLine.style.left = '0';
-            tempLine.style.width = '100%';
-            tempLine.style.height = '100%';
-            tempLine.style.pointerEvents = 'none';
-            tempLine.style.zIndex = '100';
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('stroke', '#d4af37');
-            path.setAttribute('stroke-width', '2');
-            path.setAttribute('stroke-dasharray', '5,5');
-            path.setAttribute('fill', 'none');
-            tempLine.appendChild(path);
-            canvas.appendChild(tempLine);
-            
-            const onMouseMove = (me) => {
-                if (!isConnecting) return;
-                const startNode = workflowNodes.find(n => n.id === nodeId);
-                if (startNode) {
-                    const startX = startNode.x + 260;
-                    const startY = startNode.y + 50;
-                    const endX = me.clientX - canvas.getBoundingClientRect().left;
-                    const endY = me.clientY - canvas.getBoundingClientRect().top;
-                    const midX = (startX + endX) / 2;
-                    path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
-                }
-            };
-            
-            const onMouseUp = (ue) => {
-                if (!isConnecting) return;
-                const target = document.elementsFromPoint(ue.clientX, ue.clientY);
-                let targetPort = null;
-                for (const el of target) {
-                    if (el.classList && el.classList.contains('workflow-node-port') && el.dataset.portType === 'input') {
-                        targetPort = el;
-                        break;
+            if (portName === 'error') {
+                isConnecting = true;
+                connectionStartNode = { id: nodeId, port: 'error' };
+                connectionStartPort = 'error';
+                
+                const canvas = document.getElementById('workflowCanvas');
+                const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                tempLine.style.position = 'absolute';
+                tempLine.style.top = '0';
+                tempLine.style.left = '0';
+                tempLine.style.width = '100%';
+                tempLine.style.height = '100%';
+                tempLine.style.pointerEvents = 'none';
+                tempLine.style.zIndex = '100';
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke', '#EF4444');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-dasharray', '5,5');
+                path.setAttribute('fill', 'none');
+                tempLine.appendChild(path);
+                canvas.appendChild(tempLine);
+                
+                const onMouseMove = (me) => {
+                    if (!isConnecting) return;
+                    const startNode = workflowNodes.find(n => n.id === nodeId);
+                    if (startNode) {
+                        const startX = startNode.x + 260;
+                        const startY = startNode.y + 50;
+                        const endX = me.clientX - canvas.getBoundingClientRect().left;
+                        const endY = me.clientY - canvas.getBoundingClientRect().top;
+                        const midX = (startX + endX) / 2;
+                        path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
                     }
-                }
-                if (targetPort) {
-                    const targetId = targetPort.dataset.nodeId;
-                    if (targetId && targetId !== nodeId) {
-                        if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId && e.sourceHandle === portName)) {
-                            workflowEdges.push({ source: nodeId, target: targetId, sourceHandle: portName });
-                            renderWorkflowCanvas();
-                            saveCurrentWorkflow();
-                            showToast(`Connection created from ${portName} port`, 'success');
+                };
+                
+                const onMouseUp = (ue) => {
+                    if (!isConnecting) return;
+                    const target = document.elementsFromPoint(ue.clientX, ue.clientY);
+                    let targetPort = null;
+                    for (const el of target) {
+                        if (el.classList && (el.classList.contains('workflow-node-port') || el.classList.contains('port-badge')) && 
+                            (el.dataset.portType === 'input' || el.classList.contains('port-error'))) {
+                            targetPort = el;
+                            break;
                         }
                     }
-                }
-                isConnecting = false;
-                connectionStartNode = null;
-                connectionStartPort = null;
-                tempLine.remove();
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            };
-            
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+                    if (targetPort) {
+                        const targetId = targetPort.dataset.nodeId || targetPort.closest?.('.workflow-node')?.dataset.nodeId;
+                        if (targetId && targetId !== nodeId) {
+                            if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId && e.sourceHandle === 'error')) {
+                                workflowEdges.push({ source: nodeId, target: targetId, sourceHandle: 'error' });
+                                renderWorkflowCanvas();
+                                saveCurrentWorkflow();
+                                showToast(`Error connection created from ${portName} port`, 'warning');
+                            }
+                        }
+                    }
+                    isConnecting = false;
+                    connectionStartNode = null;
+                    connectionStartPort = null;
+                    tempLine.remove();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            } else {
+                isConnecting = true;
+                connectionStartNode = { id: nodeId, port: portName };
+                connectionStartPort = portName;
+                
+                const canvas = document.getElementById('workflowCanvas');
+                const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                tempLine.style.position = 'absolute';
+                tempLine.style.top = '0';
+                tempLine.style.left = '0';
+                tempLine.style.width = '100%';
+                tempLine.style.height = '100%';
+                tempLine.style.pointerEvents = 'none';
+                tempLine.style.zIndex = '100';
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke', '#d4af37');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-dasharray', '5,5');
+                path.setAttribute('fill', 'none');
+                tempLine.appendChild(path);
+                canvas.appendChild(tempLine);
+                
+                const onMouseMove = (me) => {
+                    if (!isConnecting) return;
+                    const startNode = workflowNodes.find(n => n.id === nodeId);
+                    if (startNode) {
+                        const startX = startNode.x + 260;
+                        const startY = startNode.y + 50;
+                        const endX = me.clientX - canvas.getBoundingClientRect().left;
+                        const endY = me.clientY - canvas.getBoundingClientRect().top;
+                        const midX = (startX + endX) / 2;
+                        path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
+                    }
+                };
+                
+                const onMouseUp = (ue) => {
+                    if (!isConnecting) return;
+                    const target = document.elementsFromPoint(ue.clientX, ue.clientY);
+                    let targetPort = null;
+                    for (const el of target) {
+                        if (el.classList && el.classList.contains('workflow-node-port') && el.dataset.portType === 'input') {
+                            targetPort = el;
+                            break;
+                        }
+                    }
+                    if (targetPort) {
+                        const targetId = targetPort.dataset.nodeId;
+                        if (targetId && targetId !== nodeId) {
+                            if (!workflowEdges.some(e => e.source === nodeId && e.target === targetId && e.sourceHandle === portName)) {
+                                workflowEdges.push({ source: nodeId, target: targetId, sourceHandle: portName });
+                                renderWorkflowCanvas();
+                                saveCurrentWorkflow();
+                                showToast(`Connection created from ${portName} port`, 'success');
+                            }
+                        }
+                    }
+                    isConnecting = false;
+                    connectionStartNode = null;
+                    connectionStartPort = null;
+                    tempLine.remove();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
         }
 
         const originalOpenPropertiesPanel = openPropertiesPanel;
@@ -6050,8 +6861,25 @@
             originalOpenPropertiesPanel(node);
             setTimeout(() => {
                 const panel = document.getElementById('propertiesPanel');
-                if (panel && panel.classList.contains('open')) attachVariablePickerToInputs(panel);
+                if (panel && panel.classList.contains('open')) attachVariablePickerToInputsEnhanced(panel);
             }, 100);
+        };
+
+        // Override executeNode to add checkpoints
+        const originalExecuteNode = WorkflowOrchestrator.prototype.executeNode;
+        WorkflowOrchestrator.prototype.executeNode = async function(node, inputData, triggerData) {
+            const startTime = Date.now();
+            addExecutionCheckpoint(node.name, 'running', new Date().toISOString());
+            
+            try {
+                const result = await originalExecuteNode.call(this, node, inputData, triggerData);
+                addExecutionCheckpoint(node.name, result.status === 'completed' ? 'completed' : 'failed', 
+                    new Date().toISOString(), result.output?.error);
+                return result;
+            } catch (error) {
+                addExecutionCheckpoint(node.name, 'failed', new Date().toISOString(), error.message);
+                throw error;
+            }
         };
 
         // ================================================
@@ -6064,6 +6892,7 @@
             if (modKey && e.key === 's') { e.preventDefault(); saveWorkflow(); }
             if (modKey && e.key === 'e') { e.preventDefault(); executeWorkflowAndWatch(); }
             if (modKey && e.key === 'd') { e.preventDefault(); deployWorkflow(); }
+            if (modKey && e.key === 'm') { e.preventDefault(); toggleMiniMap(); }
             if (e.key === ' ' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') { e.preventDefault(); toggleExecutionPanel(); }
             
             const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
@@ -6074,11 +6903,20 @@
             }
             
             if (modKey && e.key === '/') { e.preventDefault(); showKeyboardShortcuts(); }
-            if (e.ctrlKey && e.key === ' ' && document.activeElement?.tagName === 'INPUT') { e.preventDefault(); showVariablePicker(document.activeElement, null); }
+            if (e.ctrlKey && e.key === ' ' && document.activeElement?.tagName === 'INPUT') { e.preventDefault(); showVariablePickerEnhanced(document.activeElement); }
         });
 
         function showKeyboardShortcuts() {
-            const shortcuts = { '⌘K / Ctrl+K': 'Open Global Search', '⌘S / Ctrl+S': 'Save Workflow', '⌘E / Ctrl+E': 'Execute Workflow', '⌘D / Ctrl+D': 'Deploy Workflow', 'Space': 'Toggle Execution Panel', 'Delete / Backspace': 'Delete Selected Node (when canvas focused)', 'Ctrl+Space': 'Open Variable Picker' };
+            const shortcuts = { 
+                '⌘K / Ctrl+K': 'Open Global Search', 
+                '⌘S / Ctrl+S': 'Save Workflow', 
+                '⌘E / Ctrl+E': 'Execute Workflow', 
+                '⌘D / Ctrl+D': 'Deploy Workflow',
+                '⌘M / Ctrl+M': 'Toggle Mini-Map',
+                'Space': 'Toggle Execution Panel', 
+                'Delete / Backspace': 'Delete Selected Node (when canvas focused)', 
+                'Ctrl+Space': 'Open Variable Picker' 
+            };
             const modal = document.createElement('div');
             modal.style.cssText = `position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10003; display:flex; align-items:center; justify-content:center;`;
             modal.innerHTML = `<div style="background:#1a1a2e; border-radius:16px; padding:24px; max-width:500px; width:90%; border:1px solid #d4af37;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><h3 style="color:#d4af37;"><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h3><button class="btn-outline" onclick="this.closest('div').parentElement.remove()">✕</button></div><div style="max-height:400px; overflow-y:auto;">${Object.entries(shortcuts).map(([key, desc]) => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #2a2a3e;"><span style="font-family:monospace; background:#252535; padding:4px 8px; border-radius:6px;">${key}</span><span style="color:#aaa;">${desc}</span></div>`).join('')}</div><div style="margin-top:16px; padding-top:12px; border-top:1px solid #2a2a3e; font-size:11px; color:#666;"><i class="fas fa-info-circle"></i> Hold Ctrl/Cmd for modifier keys</div></div>`;
@@ -6180,8 +7018,10 @@
                     svg.style.zIndex = '5';
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     const midX = (startX + endX) / 2;
+                    // Use red for error connections
+                    const strokeColor = edge.sourceHandle === 'error' ? '#EF4444' : '#d4af37';
                     path.setAttribute('d', `M ${startX} ${startY} C ${midX} ${startY - 20}, ${midX} ${endY + 20}, ${endX} ${endY}`);
-                    path.setAttribute('stroke', '#d4af37');
+                    path.setAttribute('stroke', strokeColor);
                     path.setAttribute('stroke-width', '2');
                     path.setAttribute('fill', 'none');
                     svg.appendChild(path);
@@ -6190,7 +7030,7 @@
                         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                         text.setAttribute('x', midX - 15);
                         text.setAttribute('y', startY - 5);
-                        text.setAttribute('fill', '#d4af37');
+                        text.setAttribute('fill', strokeColor);
                         text.setAttribute('font-size', '8');
                         text.setAttribute('font-family', 'monospace');
                         text.textContent = edge.sourceHandle.toUpperCase();
@@ -6243,11 +7083,13 @@
                         node.x = originalX + (me.clientX - startX);
                         node.y = originalY + (me.clientY - startY);
                         renderWorkflowCanvas();
+                        updateMiniMap();
                     };
                     const onMouseUp = () => {
                         document.removeEventListener('mousemove', onMouseMove);
                         document.removeEventListener('mouseup', onMouseUp);
                         saveCurrentWorkflow();
+                        updateMiniMap();
                     };
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
@@ -6272,7 +7114,12 @@
                     const rect = canvas.getBoundingClientRect();
                     addNodeToCanvas(data, e.clientX - rect.left - 130, e.clientY - rect.top - 50);
                 }
+                updateMiniMap();
             };
+            
+            // Add scroll listener for mini-map
+            canvas.addEventListener('scroll', () => updateMiniMap());
+            updateMiniMap();
         }
 
         function startConnection(nodeId, portType, event) {
@@ -6350,6 +7197,7 @@
             if (selectedWorkflowNode === nodeId) selectedWorkflowNode = null;
             renderWorkflowCanvas();
             saveCurrentWorkflow();
+            updateMiniMap();
             showToast('Node deleted', 'info');
         }
 
@@ -6433,7 +7281,7 @@
             const testDataEditor = document.getElementById('testDataEditor');
             testDataEditor.style.display = node.type === 'trigger' ? 'block' : 'none';
             panel.classList.add('open');
-            attachVariablePickerToInputs(panel);
+            attachVariablePickerToInputsEnhanced(panel);
         }
 
         function closePropertiesPanel() {
@@ -6652,8 +7500,23 @@
             await loadCredentials();
             await initializeSearchIndex();
             loadSavedData();
+            loadExecutionCheckpoints();
             renderWorkflowCanvas();
             initOAuth();
+            initMiniMap();
+            
+            // Set up canvas scroll listener for mini-map
+            const canvas = document.getElementById('workflowCanvas');
+            if (canvas) {
+                canvas.addEventListener('scroll', () => updateMiniMap());
+                window.addEventListener('resize', () => updateMiniMap());
+            }
+            
+            // Periodic mini-map update
+            setInterval(() => {
+                if (miniMapVisible) updateMiniMap();
+            }, 500);
+            
             if (workflowNodes.length === 0) {
                 addNodeToCanvas('trigger', 100, 200);
                 addNodeToCanvas('condition', 400, 200);
@@ -6706,6 +7569,15 @@
         window.showTemplatesModal = showTemplatesModal;
         window.applyTemplate = applyTemplate;
         window.showOAuthHelp = showOAuthHelp;
+        window.toggleMiniMap = toggleMiniMap;
+        window.showNodeInspector = showNodeInspector;
+        window.closeNodeInspector = closeNodeInspector;
+        window.setInspectorTab = setInspectorTab;
+        window.startFieldDrag = startFieldDrag;
+        window.endFieldDrag = endFieldDrag;
+        window.allowDrop = allowDrop;
+        window.handleFieldDrop = handleFieldDrop;
+        window.updateNodeConfigField = updateNodeConfigField;
     </script>
 </body>
 </html>
