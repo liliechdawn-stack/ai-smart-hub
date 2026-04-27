@@ -155,7 +155,6 @@ router.post("/deactivate", auth, async (req, res) => {
 
         if (error) throw error;
 
-        // Record activity
         await recordActivity(userId, `${toolType} was deactivated`, 'info', 'fa-power-off');
 
         console.log(`[SMART-HUB] Tool deactivated: ${toolType} for user ${userId}`);
@@ -424,27 +423,23 @@ router.get("/metrics", auth, async (req, res) => {
     const userId = req.user.id;
 
     try {
-        // Get leads count
         const { count: totalLeads, error: leadsError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId);
 
-        // Get delivered count (from leads where status = 'delivered')
         const { count: deliveredCount, error: deliveredError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
             .eq('status', 'delivered');
 
-        // Get failed count
         const { count: failedCount, error: failedError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
             .eq('status', 'failed');
 
-        // Get active chats count (from sessions table if exists, otherwise 0)
         let activeChats = 0;
         try {
             const { count: chatsCount, error: chatsError } = await supabase
@@ -458,7 +453,6 @@ router.get("/metrics", auth, async (req, res) => {
             activeChats = 0;
         }
 
-        // Get average response time
         let avgResponseTime = 4.2;
         try {
             const { data: responses, error: respError } = await supabase
@@ -570,7 +564,6 @@ router.get("/api-keys", auth, async (req, res) => {
 
         if (error) throw error;
 
-        // Mask values for security
         const maskedKeys = (keys || []).map(key => ({
             id: key.id,
             name: key.name,
@@ -595,7 +588,6 @@ router.post("/api-keys", auth, async (req, res) => {
     }
 
     try {
-        // Encrypt the API key before storing (using simple encryption for demo)
         const encryptedValue = Buffer.from(value).toString('base64');
 
         const { data: newKey, error } = await supabase
@@ -737,36 +729,60 @@ router.delete("/custom-links/:linkId", auth, async (req, res) => {
 });
 
 // ============================================
-// PROOF IMAGES UPLOAD (for widget customer proof)
+// PROOF IMAGES UPLOAD (FIXED)
 // ============================================
 router.post("/upload-proof", auth, async (req, res) => {
     const userId = req.user.id;
     const { images } = req.body;
 
+    console.log("[UPLOAD-PROOF] Received request for user:", userId);
+    console.log("[UPLOAD-PROOF] Images received:", images ? images.length : 0);
+
     if (!images || !images.length) {
+        console.log("[UPLOAD-PROOF] No images provided");
         return res.status(400).json({ error: "No images provided" });
     }
 
     try {
-        // Store each image as a record
-        for (const imageData of images) {
+        let successCount = 0;
+        
+        for (let i = 0; i < images.length; i++) {
+            const imageData = images[i];
+            
+            // Validate image data is not too large (max 5MB per image)
+            const imageSize = Buffer.byteLength(imageData, 'utf8');
+            if (imageSize > 5 * 1024 * 1024) {
+                console.log(`[UPLOAD-PROOF] Image ${i} too large: ${imageSize} bytes`);
+                continue;
+            }
+            
             const { error } = await supabase
                 .from('proof_images')
                 .insert({
                     user_id: userId,
-                    image_data: imageData, // Base64 image data
+                    image_data: imageData,
                     created_at: new Date().toISOString()
                 });
 
-            if (error) throw error;
+            if (error) {
+                console.error(`[UPLOAD-PROOF] Error inserting image ${i}:`, error);
+            } else {
+                successCount++;
+            }
         }
 
-        await recordActivity(userId, `${images.length} proof image(s) uploaded`, 'success', 'fa-image');
+        if (successCount === 0) {
+            throw new Error("Failed to save any images");
+        }
 
-        res.json({ success: true, count: images.length });
+        await recordActivity(userId, `${successCount} proof image(s) uploaded`, 'success', 'fa-image');
+
+        console.log(`[UPLOAD-PROOF] Successfully saved ${successCount} images`);
+        res.json({ success: true, count: successCount, message: `${successCount} image(s) saved as proof!` });
+        
     } catch (err) {
-        console.error("[PROOF-IMAGES] Error uploading:", err);
-        res.status(500).json({ error: "Failed to upload images" });
+        console.error("[UPLOAD-PROOF] Error:", err);
+        res.status(500).json({ error: "Failed to upload images: " + err.message });
     }
 });
 
@@ -976,7 +992,6 @@ router.post("/webhooks/delivery-status", async (req, res) => {
     }
 
     try {
-        // Find user by widget_key or by customer_email
         let userId = null;
         
         if (widget_key) {
@@ -1004,7 +1019,6 @@ router.post("/webhooks/delivery-status", async (req, res) => {
         }
 
         if (userId) {
-            // Update lead status
             await supabase
                 .from('leads')
                 .update({ 
