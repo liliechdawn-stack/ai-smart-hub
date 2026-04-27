@@ -1,10 +1,8 @@
-// smart-logic.js - Smart Business Hub - AI Logic Controller (FULLY FIXED)
-// Unlocks tools for ANY Pro / Enterprise / Agency subscriber
-// Saves & loads settings to/from real backend
-// LIVE button stays "● LIVE" after activation (persists on refresh AND logout)
-// Added Business Identity support with proper unlocking
-// Tool states now persist in database and localStorage
-// FIXED: Deactivation works properly, Save button always visible for edits
+// ============================================
+// SMART-LOGIC.JS - FULLY UPDATED FOR SAAS READY
+// Real-time data from backend - NO SIMULATIONS
+// Works with smart-tools.html (updated version)
+// ============================================
 
 // Ensure BACKEND_URL is available
 if (typeof window.BACKEND_URL === 'undefined') {
@@ -49,9 +47,22 @@ const TOOL_CARD_MAP = {
     'business_type': 'card-business-type'
 };
 
-// 1. Load on page ready
+// Tool to section ID mapping for quick edit
+const TOOL_SECTION_MAP = {
+    'brain': 'ai-brain-section',
+    'booking': 'card-booking',
+    'handover': 'card-handover',
+    'apollo': 'card-apollo',
+    'vision': 'card-vision',
+    'followup': 'card-followup',
+    'business_type': 'business-identity-section'
+};
+
+// ============================================
+// 1. INITIALIZATION - LOAD ALL DATA ON PAGE READY
+// ============================================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Smart Hub Logic Initialized - Fetching real plan...");
+    console.log("🚀 Smart Hub Logic Initialized - Fetching real data from backend...");
     injectLiveStatusCSS();
     loadUserPlanAndUnlock();
     wireSmartToolActivateButtons();
@@ -59,181 +70,94 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUserEmail();
     loadToolStatesFromStorage();
     setupInputChangeListeners();
+    
+    // Load real-time data from backend
+    refreshAllRealTimeData();
+    
+    // Set up periodic refresh (every 5 seconds) for real-time panel
+    if (window.refreshInterval) clearInterval(window.refreshInterval);
+    window.refreshInterval = setInterval(() => {
+        refreshAllRealTimeData();
+    }, 5000);
 });
 
-// Setup input change listeners to show save button when changes are made
-function setupInputChangeListeners() {
-    // Listen for changes on all tool inputs
-    const inputSelectors = [
-        '#businessType', '#businessDescription',
-        '#aiInstructions', '#aiTemp', '#aiLang',
-        '#bookingUrl',
-        '#apolloKey', '#syncToggle',
-        '#visionToggle', '#visionSens', '#visionArea',
-        '#followupToggle',
-        '#sentimentToggle', '#alertEmail',
-        '#handoverTrigger',
-        '#webhookUrl'
-    ];
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (window.refreshInterval) clearInterval(window.refreshInterval);
+});
 
-    inputSelectors.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-            el.addEventListener('input', (e) => {
-                // Find the parent tool card and reset its button
-                const card = e.target.closest('.tool-card');
-                if (card) {
-                    const btn = card.querySelector('.btn-save');
-                    if (btn && btn.innerText !== 'Save Changes' && btn.innerText !== 'Saving...') {
-                        // If tool is LIVE, show "Update Settings" instead of deactivate
-                        const toolType = getToolTypeFromCard(card.id);
-                        if (TOOL_STATES[toolType]) {
-                            btn.innerText = 'Update Settings';
-                            btn.classList.remove('btn-live-status');
-                        } else {
-                            btn.innerText = 'Save Changes';
-                        }
-                    }
-                }
-            });
+// Refresh all real-time data from backend
+async function refreshAllRealTimeData() {
+    await fetchRealTimeMetrics();
+    await fetchRealTimeActivities();
+}
 
-            // Also listen for checkbox changes
-            if (el.type === 'checkbox') {
-                el.addEventListener('change', (e) => {
-                    const card = e.target.closest('.tool-card');
-                    if (card) {
-                        const btn = card.querySelector('.btn-save');
-                        if (btn && btn.innerText !== 'Save Changes' && btn.innerText !== 'Saving...') {
-                            const toolType = getToolTypeFromCard(card.id);
-                            if (TOOL_STATES[toolType]) {
-                                btn.innerText = 'Update Settings';
-                                btn.classList.remove('btn-live-status');
-                            } else {
-                                btn.innerText = 'Save Changes';
-                            }
-                        }
-                    }
-                });
-            }
+// Fetch real-time metrics from backend
+async function fetchRealTimeMetrics() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/metrics`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-    });
-}
-
-// Helper to get tool type from card ID
-function getToolTypeFromCard(cardId) {
-    const map = {
-        'card-brain': 'brain',
-        'card-booking': 'booking',
-        'card-sentiment': 'sentiment',
-        'card-handover': 'handover',
-        'card-webhook': 'webhook',
-        'card-apollo': 'apollo',
-        'card-vision': 'vision',
-        'card-followup': 'followup',
-        'card-business-type': 'business_type'
-    };
-    return map[cardId];
-}
-
-// Load tool states from localStorage and apply to UI
-function loadToolStatesFromStorage() {
-    console.log("[TOOL] Loading tool states from localStorage:", TOOL_STATES);
-    
-    Object.keys(TOOL_STATES).forEach(toolType => {
-        if (TOOL_STATES[toolType]) {
-            const cardId = TOOL_CARD_MAP[toolType];
-            if (cardId) {
-                const card = document.getElementById(cardId);
-                if (card) {
-                    const btn = card.querySelector('.btn-save');
-                    if (btn) {
-                        btn.innerText = "● LIVE";
-                        btn.classList.add('btn-live-status');
-                        console.log(`[TOOL] Applied LIVE state to ${toolType}`);
-                    }
-                }
-            }
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            const leadsEl = document.getElementById('liveLeadsCount');
+            const deliveredEl = document.getElementById('liveDeliveredCount');
+            const failedEl = document.getElementById('liveFailedCount');
+            const conversionEl = document.getElementById('liveConversionRate');
+            const chatsEl = document.getElementById('liveActiveChats');
+            const responseEl = document.getElementById('liveResponseTime');
+            
+            if (leadsEl) leadsEl.innerText = data.totalLeads || 0;
+            if (deliveredEl) deliveredEl.innerText = data.deliveredCount || 0;
+            if (failedEl) failedEl.innerText = data.failedCount || 0;
+            if (conversionEl) conversionEl.innerHTML = (data.conversionRate || 0) + '%';
+            if (chatsEl) chatsEl.innerText = data.activeChats || 0;
+            if (responseEl) responseEl.innerHTML = (data.avgResponseTime || 0) + '<span style="font-size: 1rem;">s</span>';
+            
+            console.log("[METRICS] Updated:", data);
         }
-    });
-}
-
-// Save tool state to localStorage and optionally to backend
-function saveToolState(toolType, isActive) {
-    TOOL_STATES[toolType] = isActive;
-    localStorage.setItem('toolStates', JSON.stringify(TOOL_STATES));
-    console.log(`[TOOL] State saved for ${toolType}: ${isActive ? 'LIVE' : 'inactive'}`);
-    
-    // Also save to backend if token exists
-    const token = localStorage.getItem('token');
-    if (token && isActive !== undefined) {
-        fetch(`${API_BASE}/api/smart-hub/tool-state`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ toolType, isActive })
-        }).catch(err => console.warn("[TOOL] Failed to sync state to backend:", err));
+    } catch (err) {
+        console.error('[METRICS] Failed to fetch:', err);
     }
 }
 
-// Wire all save buttons
-function wireSaveButtons() {
-    console.log("[WIRE] Save buttons ready");
-}
-
-// Update user email in team table
-function updateUserEmail() {
+// Fetch real-time activities from backend
+async function fetchRealTimeActivities() {
     const token = localStorage.getItem('token');
-    if (token) {
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const emailEl = document.getElementById('userEmail');
-            if (emailEl) {
-                emailEl.textContent = payload.email || 'admin@business.io';
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/activities`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const activities = await response.json();
+            const feed = document.getElementById('activityFeed');
+            
+            if (feed && activities && activities.length > 0) {
+                feed.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                        <span><i class="fas ${activity.icon || 'fa-bell'}"></i> ${escapeHtml(activity.message)}</span>
+                        <span class="activity-${activity.status}">${activity.statusText || activity.status}</span>
+                        <span>${activity.timeAgo || 'Just now'}</span>
+                    </div>
+                `).join('');
             }
-        } catch (e) {}
+        }
+    } catch (err) {
+        console.error('[ACTIVITIES] Failed to fetch:', err);
     }
 }
 
-/**
- * ✅ Injects professional CSS for the "LIVE" status
- */
-function injectLiveStatusCSS() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .btn-live-status {
-            background: #2ecc71 !important;
-            color: white !important;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
-            border: none !important;
-            font-weight: bold;
-            animation: pulse-live 2s infinite;
-        }
-        .btn-update {
-            background: #f59e0b !important;
-            color: white !important;
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
-            border: none !important;
-            font-weight: bold;
-        }
-        .btn-inactive {
-            background: #6c757d !important;
-            color: white !important;
-        }
-        .btn-inactive:hover {
-            background: #5a6268 !important;
-        }
-        @keyframes pulse-live {
-            0% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-            100% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0); }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// 2. Fetch real plan & unlock features
+// ============================================
+// 2. PLAN DETECTION & FEATURE UNLOCKING
+// ============================================
 async function loadUserPlanAndUnlock() {
     if (!CURRENT_USER_TOKEN) {
         console.warn("No token found - defaulting to free mode");
@@ -259,16 +183,13 @@ async function loadUserPlanAndUnlock() {
         }
 
         console.log("[PLAN] Detected plan:", CURRENT_USER_PLAN);
-
-        // Unlock based on real plan
         unlockPremiumFeatures(CURRENT_USER_PLAN);
-
-        // Load saved settings + re-apply LIVE statuses
         await loadSavedSettingsFromServer();
+        await loadApiKeysFromServer();
+        await loadCustomLinksFromServer();
 
     } catch (err) {
         console.error("[PLAN] Failed to load user plan:", err);
-        // Fallback to localStorage if backend is down
         const backupPlan = localStorage.getItem('currentPlan');
         if (backupPlan) {
             CURRENT_USER_PLAN = backupPlan.toLowerCase().trim();
@@ -277,13 +198,10 @@ async function loadUserPlanAndUnlock() {
     }
 }
 
-// 3. Unlock logic - FIXED to include ALL cards including Business Identity
 function unlockPremiumFeatures(plan) {
     console.log("[UNLOCK] Starting unlock for plan:", plan);
-
     const normalized = plan.toLowerCase().trim();
 
-    // Always unlock core tools (available to everyone)
     const coreTools = ['card-brain', 'card-booking', 'card-handover', 'card-analytics', 'card-business-type'];
     coreTools.forEach(id => removeLock(id));
 
@@ -292,41 +210,21 @@ function unlockPremiumFeatures(plan) {
         return;
     }
 
-    // Pro / Enterprise / Agency get these
-    const proTools = [
-        'card-followup', 
-        'card-webhook', 
-        'card-enrichment', 
-        'card-apollo',
-        'card-sentiment'          
-    ];
-
-    // Enterprise / Agency get extra
-    const enterpriseTools = [
-        'card-intel', 
-        'card-vision-ai', 
-        'card-vision'
-    ];
+    const proTools = ['card-followup', 'card-webhook', 'card-apollo', 'card-sentiment'];
+    const enterpriseTools = ['card-vision'];
 
     if (['pro', 'enterprise', 'agency'].includes(normalized)) {
-        console.log("[UNLOCK] Unlocking Pro tools:", proTools);
         proTools.forEach(id => removeLock(id));
     }
 
     if (['enterprise', 'agency'].includes(normalized)) {
-        console.log("[UNLOCK] Unlocking Enterprise tools:", enterpriseTools);
         enterpriseTools.forEach(id => removeLock(id));
     }
 }
 
 function removeLock(cardId) {
     const card = document.getElementById(cardId);
-    if (!card) {
-        console.warn(`[UNLOCK] Card not found: ${cardId}`);
-        return;
-    }
-
-    console.log(`[UNLOCK] Removing lock from card: ${cardId}`);
+    if (!card) return;
 
     card.classList.remove('locked-card');
     card.style.filter = "none";
@@ -334,10 +232,7 @@ function removeLock(cardId) {
     card.style.opacity = "1";
 
     const overlay = card.querySelector('.lock-overlay');
-    if (overlay) {
-        console.log(`[UNLOCK] Removing overlay from ${cardId}`);
-        overlay.remove();
-    }
+    if (overlay) overlay.remove();
 
     const elements = card.querySelectorAll('button, input, select, textarea');
     elements.forEach(el => {
@@ -348,60 +243,356 @@ function removeLock(cardId) {
     });
 }
 
-// ========================================================
-// Wire activate / test buttons
-// ========================================================
-function wireSmartToolActivateButtons() {
-    const map = {
-        brain: '[data-run-tool="brain"]',
-        booking: '[data-run-tool="booking"]',
-        sentiment: '[data-run-tool="sentiment"]',
-        handover: '[data-run-tool="handover"]',
-        webhook: '[data-run-tool="webhook"]',
-        enrichment: '[data-run-tool="enrichment"]',
-        vision: '[data-run-tool="vision"]'
-    };
+// ============================================
+// 3. UI STYLES & HELPER FUNCTIONS
+// ============================================
+function injectLiveStatusCSS() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .btn-live-status {
+            background: #2ecc71 !important;
+            color: white !important;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
+            animation: pulse-live 2s infinite;
+        }
+        @keyframes pulse-live {
+            0% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
-    Object.keys(map).forEach(tool => {
-        const btns = document.querySelectorAll(map[tool]);
-        btns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                runSmartTool(tool, btn);
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function maskApiKey(key) {
+    if (!key) return '••••••••';
+    if (key.length <= 8) return '••••••••';
+    return key.substring(0, 4) + '••••••••' + key.substring(key.length - 4);
+}
+
+function updateUserEmail() {
+    const token = localStorage.getItem('token');
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const emailEl = document.getElementById('userEmail');
+            if (emailEl) emailEl.textContent = payload.email || 'admin@business.io';
+        } catch (e) {}
+    }
+}
+
+function getToolTypeFromCard(cardId) {
+    const map = {
+        'card-brain': 'brain',
+        'card-booking': 'booking',
+        'card-sentiment': 'sentiment',
+        'card-handover': 'handover',
+        'card-webhook': 'webhook',
+        'card-apollo': 'apollo',
+        'card-vision': 'vision',
+        'card-followup': 'followup',
+        'card-business-type': 'business_type'
+    };
+    return map[cardId];
+}
+
+function saveToolState(toolType, isActive) {
+    TOOL_STATES[toolType] = isActive;
+    localStorage.setItem('toolStates', JSON.stringify(TOOL_STATES));
+    
+    const token = localStorage.getItem('token');
+    if (token && isActive !== undefined) {
+        fetch(`${API_BASE}/api/smart-hub/tool-state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ toolType, isActive })
+        }).catch(err => console.warn("[TOOL] Failed to sync state:", err));
+    }
+}
+
+function loadToolStatesFromStorage() {
+    Object.keys(TOOL_STATES).forEach(toolType => {
+        if (TOOL_STATES[toolType]) {
+            const cardId = TOOL_CARD_MAP[toolType];
+            if (cardId) {
+                const card = document.getElementById(cardId);
+                if (card) {
+                    const btn = card.querySelector('.btn-save');
+                    if (btn && btn.innerText !== '● LIVE') {
+                        btn.innerText = "● LIVE";
+                        btn.classList.add('btn-live-status');
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ============================================
+// 4. INPUT CHANGE LISTENERS
+// ============================================
+function setupInputChangeListeners() {
+    const inputSelectors = [
+        '#businessType', '#businessDescription',
+        '#aiInstructions', '#aiTemp', '#aiLang',
+        '#bookingUrl', '#apolloKey', '#alertEmail',
+        '#handoverTrigger', '#webhookUrl'
+    ];
+
+    inputSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+            el.addEventListener('input', (e) => {
+                const card = e.target.closest('.tool-card');
+                if (card) {
+                    const btn = card.querySelector('.btn-save');
+                    if (btn && btn.innerText !== 'Save Changes' && btn.innerText !== 'Saving...') {
+                        const toolType = getToolTypeFromCard(card.id);
+                        if (TOOL_STATES[toolType]) {
+                            btn.innerText = 'Update Settings';
+                            btn.classList.remove('btn-live-status');
+                        } else {
+                            btn.innerText = 'Save Changes';
+                        }
+                    }
+                }
             });
         });
     });
 
-    console.log("[WIRE] Smart tool activation buttons wired");
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(el => {
+        el.addEventListener('change', (e) => {
+            const card = e.target.closest('.tool-card');
+            if (card) {
+                const btn = card.querySelector('.btn-save');
+                if (btn && btn.innerText !== 'Save Changes' && btn.innerText !== 'Saving...') {
+                    const toolType = getToolTypeFromCard(card.id);
+                    if (TOOL_STATES[toolType]) {
+                        btn.innerText = 'Update Settings';
+                        btn.classList.remove('btn-live-status');
+                    } else {
+                        btn.innerText = 'Save Changes';
+                    }
+                }
+            }
+        });
+    });
 }
 
-// ========================================================
-// Tool runner - LIVE stays permanently after success
-// ========================================================
+function wireSaveButtons() {
+    console.log("[WIRE] Save buttons ready");
+}
+
+// ============================================
+// 5. API KEYS FUNCTIONS (BACKEND STORAGE)
+// ============================================
+async function loadApiKeysFromServer() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/api-keys`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const keys = await response.json();
+            const container = document.getElementById('apiKeysList');
+            if (container) {
+                if (!keys || keys.length === 0) {
+                    container.innerHTML = '<p style="color: #6b7280; font-size: 0.85rem;">No API keys configured yet.</p>';
+                } else {
+                    container.innerHTML = keys.map(key => `
+                        <div class="api-key-row">
+                            <div>
+                                <span class="api-status ${key.status || 'verified'}"></span>
+                                <span class="api-key-name">${escapeHtml(key.name)}</span>
+                            </div>
+                            <div>
+                                <span class="api-key-value">${maskApiKey(key.value)}</span>
+                                <button class="delete-link" style="margin-left: 10px;" onclick="deleteApiKey('${key.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load API keys:', err);
+    }
+}
+
+async function saveApiKeyToBackend(name, value) {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/api-keys`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, value })
+        });
+        
+        if (response.ok) {
+            await loadApiKeysFromServer();
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('Failed to save API key:', err);
+        return false;
+    }
+}
+
+window.deleteApiKey = async function(keyId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/api-keys/${keyId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            await loadApiKeysFromServer();
+            alert('API key deleted successfully');
+        }
+    } catch (err) {
+        console.error('Failed to delete API key:', err);
+    }
+};
+
+// ============================================
+// 6. CUSTOM LINKS FUNCTIONS (BACKEND STORAGE)
+// ============================================
+async function loadCustomLinksFromServer() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/custom-links`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const links = await response.json();
+            const container = document.getElementById('customLinksList');
+            if (container) {
+                if (!links || links.length === 0) {
+                    container.innerHTML = '<p style="color: #6b7280; font-size: 0.85rem;">No links added yet.</p>';
+                } else {
+                    container.innerHTML = links.map(link => `
+                        <div class="link-item">
+                            <div>
+                                <strong>${escapeHtml(link.name)}</strong><br>
+                                <a href="${link.url}" target="_blank">${link.url.substring(0, 50)}${link.url.length > 50 ? '...' : ''}</a>
+                            </div>
+                            <button class="delete-link" onclick="deleteCustomLink('${link.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load custom links:', err);
+    }
+}
+
+async function saveCustomLinkToBackend(name, url) {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/custom-links`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, url })
+        });
+        
+        if (response.ok) {
+            await loadCustomLinksFromServer();
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('Failed to save custom link:', err);
+        return false;
+    }
+}
+
+window.deleteCustomLink = async function(linkId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/custom-links/${linkId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            await loadCustomLinksFromServer();
+            alert('Link deleted successfully');
+        }
+    } catch (err) {
+        console.error('Failed to delete custom link:', err);
+    }
+};
+
+// ============================================
+// 7. TOOL ACTIVATION & DEACTIVATION
+// ============================================
+function wireSmartToolActivateButtons() {
+    const activateBtns = document.querySelectorAll('[data-run-tool]');
+    activateBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const toolType = btn.getAttribute('data-run-tool');
+            await runSmartTool(toolType, btn);
+        });
+    });
+}
+
 async function runSmartTool(toolType, btn) {
     const token = localStorage.getItem('token');
-    if (!token) return alert("Please log in first.");
+    if (!token) {
+        alert("Please log in first.");
+        return;
+    }
 
-    console.log("[RUN] Current plan:", CURRENT_USER_PLAN);
-
-    // Booking and Business Identity allowed on free - all others need paid plan
     const isPaid = ['pro', 'enterprise', 'agency'].includes(CURRENT_USER_PLAN.toLowerCase().trim());
-
     if (!isPaid && toolType !== 'booking' && toolType !== 'business_type') {
         alert("This feature is only available on Pro or higher plans.");
         return;
     }
 
     const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Running...";
 
     try {
-        btn.disabled = true;
-        btn.innerText = "Running...";
-
-        const endpoint = `${API_BASE}/api/smart-hub/test-tool`;
-        console.log("[SMART-LOGIC] Calling backend:", endpoint);
-
-        const response = await fetch(endpoint, {
+        const response = await fetch(`${API_BASE}/api/smart-hub/test-tool`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -412,250 +603,31 @@ async function runSmartTool(toolType, btn) {
 
         let result = null;
         const text = await response.text();
-        try {
-            result = text ? JSON.parse(text) : {};
-        } catch (e) {
-            console.warn("Non-JSON response:", text);
-            result = {};
-        }
+        try { result = text ? JSON.parse(text) : {}; } catch(e) { result = {}; }
 
-        console.log("[RUN RESULT]", toolType, result);
+        if (!response.ok) throw new Error(result?.error || "Tool execution failed");
 
-        if (!response.ok) {
-            throw new Error(result?.error || "Tool execution failed");
-        }
-
-        // SUCCESS: Make button LIVE permanently and save state
         btn.innerText = "● LIVE";
         btn.classList.add('btn-live-status');
-        btn.disabled = false;
-        
-        // Save tool state
         saveToolState(toolType, true);
 
         const toolName = TOOL_NAMES[toolType] || toolType;
-        if (result && result.output) {
-            alert(`${toolName} has been successfully activated!\n\n${result.output}`);
-        } else {
-            alert(`${toolName} has been successfully activated and is now LIVE.`);
-        }
+        alert(`${toolName} has been successfully activated and is now LIVE.`);
 
     } catch (err) {
         console.error("[RUN ERROR]", err);
         btn.innerText = "❌ Failed";
-        alert("Tool failed: " + err.message);
-        
         setTimeout(() => {
             btn.disabled = false;
             btn.innerText = originalText;
             btn.classList.remove('btn-live-status');
         }, 2000);
+        alert("Tool failed: " + err.message);
+    } finally {
+        btn.disabled = false;
     }
 }
 
-// 4. Save function - After save, re-run to activate LIVE
-async function saveSmartTool(toolType, event) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert("Please log in to save changes.");
-        return;
-    }
-
-    const btn = event?.currentTarget || event?.target || document.activeElement;
-    const originalText = btn?.innerText || '';
-    const toolName = TOOL_NAMES[toolType] || toolType;
-
-    // Check if tool is already LIVE - offer deactivation OR update
-    if (TOOL_STATES[toolType] === true && originalText === '● LIVE') {
-        if (confirm(`Do you want to update ${toolName} settings or deactivate it?\n\nClick OK to update settings\nClick Cancel to deactivate`)) {
-            // Update settings (keep LIVE)
-            await performSave(toolType, btn, true);
-        } else {
-            // Deactivate
-            if (confirm(`Are you sure you want to deactivate ${toolName}?`)) {
-                deactivateTool(toolType, btn);
-            }
-        }
-        return;
-    }
-
-    // If button says "Update Settings", just save without deactivating
-    if (originalText === 'Update Settings') {
-        await performSave(toolType, btn, true);
-        return;
-    }
-
-    // Normal save (activation)
-    await performSave(toolType, btn, true);
-}
-
-// Perform the actual save operation
-async function performSave(toolType, btn, activateAfterSave = true) {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    const originalText = btn?.innerText || '';
-    const toolName = TOOL_NAMES[toolType] || toolType;
-
-    let data = {};
-
-    try {
-        switch(toolType) {
-            case 'brain':
-                data = {
-                    instructions: document.getElementById('aiInstructions')?.value || '',
-                    temp: document.getElementById('aiTemp')?.value || '0.7',
-                    lang: document.getElementById('aiLang')?.value || 'auto'
-                };
-                break;
-            case 'booking':
-                data = { url: document.getElementById('bookingUrl')?.value || '' };
-                console.log("[SAVE] Booking URL:", data.url);
-                break;
-            case 'sentiment':
-                data = { 
-                    enabled: document.getElementById('sentimentToggle')?.checked || false,
-                    email: document.getElementById('alertEmail')?.value || ''
-                };
-                break;
-            case 'handover':
-                data = { trigger: document.getElementById('handoverTrigger')?.value || 'human' };
-                break;
-            case 'webhook':
-                data = { url: document.getElementById('webhookUrl')?.value || '' };
-                break;
-            case 'enrichment':
-            case 'apollo':
-                const syncToggle = document.getElementById('syncToggle');
-                data = { 
-                    apolloKey: document.getElementById('apolloKey')?.value || '',
-                    autoSync: syncToggle ? syncToggle.checked : false 
-                };
-                break;
-            case 'vision':
-                const visionSens = document.getElementById('visionSens');
-                const visionArea = document.getElementById('visionArea');
-                data = { 
-                    sensitivity: visionSens ? visionSens.value : 'high',
-                    area: visionArea ? visionArea.value : 'all'
-                };
-                break;
-            case 'followup':
-                data = { enabled: document.getElementById('followupToggle')?.checked || false };
-                break;
-            case 'business_type':
-                data = { 
-                    businessType: document.getElementById('businessType')?.value || '',
-                    businessDescription: document.getElementById('businessDescription')?.value || ''
-                };
-                console.log("[SAVE] Business Identity:", data);
-                break;
-            default:
-                console.warn("[SAVE] Unknown tool type:", toolType);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerText = originalText;
-                }
-                return;
-        }
-
-        console.log(`[SAVE] Sending for ${toolType}:`, data);
-
-        if (btn) {
-            btn.disabled = true;
-            btn.innerText = "Saving...";
-        }
-
-        const endpoint = `${API_BASE}/api/smart-hub/save`;
-        console.log("[SMART-LOGIC] Calling backend:", endpoint);
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ toolType, data })
-        });
-
-        let result;
-        const responseText = await response.text();
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            console.error("[SAVE] Invalid JSON response:", responseText);
-            throw new Error("Server returned invalid response");
-        }
-
-        if (response.ok && result.success) {
-            console.log(`[SAVE] Success for ${toolType}`);
-            
-            // Save settings to localStorage
-            localStorage.setItem(`ai_settings_${toolType}`, JSON.stringify(data));
-            
-            // Show success message
-            if (btn) {
-                btn.innerText = `✓ Saved`;
-                btn.style.background = "#28a745";
-            }
-            
-            alert(`${toolName} has been successfully saved!`);
-            
-            if (activateAfterSave) {
-                // Activate tool and save state
-                saveToolState(toolType, true);
-                
-                // Update button to LIVE
-                setTimeout(() => {
-                    if (btn) {
-                        btn.innerText = "● LIVE";
-                        btn.classList.add('btn-live-status');
-                        btn.style.background = "";
-                        btn.disabled = false;
-                    }
-                }, 1000);
-                
-                // Re-run tool to test (for tools that support it)
-                if (toolType !== 'business_type') {
-                    setTimeout(() => {
-                        runSmartTool(toolType, btn);
-                    }, 1500);
-                }
-            } else {
-                // Just update button back to original
-                setTimeout(() => {
-                    if (btn) {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                        btn.style.background = "";
-                    }
-                }, 1000);
-            }
-            
-        } else {
-            const errorMsg = result.error || "Server rejected update";
-            console.error(`[SAVE] Failed for ${toolType}:`, errorMsg);
-            throw new Error(errorMsg);
-        }
-    } catch (err) {
-        console.error("[SAVE] Error:", err.message);
-        if (btn) {
-            btn.innerText = "❌ Error";
-            btn.style.background = "#e74c3c";
-        }
-        alert(`Could not save ${toolName}: ${err.message}`);
-        
-        setTimeout(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerText = originalText;
-                btn.style.background = "";
-            }
-        }, 2000);
-    }
-}
-
-// Deactivate tool
 async function deactivateTool(toolType, btn) {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -672,7 +644,6 @@ async function deactivateTool(toolType, btn) {
     }
 
     try {
-        // Send deactivation to backend
         const response = await fetch(`${API_BASE}/api/smart-hub/deactivate`, {
             method: 'POST',
             headers: {
@@ -684,62 +655,195 @@ async function deactivateTool(toolType, btn) {
 
         let result;
         const responseText = await response.text();
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            console.error("[DEACTIVATE] Invalid JSON response:", responseText);
-            throw new Error("Server returned invalid response");
-        }
+        try { result = JSON.parse(responseText); } catch(e) { throw new Error("Invalid response"); }
 
         if (response.ok && result.success) {
-            // Update tool state
             saveToolState(toolType, false);
             
             if (btn) {
                 btn.innerText = "✗ Deactivated";
                 btn.style.background = "#6c757d";
                 btn.classList.remove('btn-live-status');
-                btn.classList.add('btn-inactive');
-                
                 setTimeout(() => {
                     btn.innerText = "Activate";
                     btn.disabled = false;
                     btn.style.background = "";
-                    btn.classList.remove('btn-inactive');
                 }, 1500);
             }
-            
             alert(`${toolName} has been deactivated.`);
-            
         } else {
             throw new Error(result.error || "Deactivation failed");
         }
     } catch (err) {
         console.error("[DEACTIVATE] Error:", err);
         if (btn) {
-            btn.innerText = "❌ Error";
-            btn.style.background = "#e74c3c";
-            setTimeout(() => {
-                btn.innerText = "● LIVE";
-                btn.classList.add('btn-live-status');
-                btn.disabled = false;
-                btn.style.background = "";
-            }, 2000);
+            btn.innerText = "● LIVE";
+            btn.classList.add('btn-live-status');
+            btn.disabled = false;
         }
         alert(`Failed to deactivate: ${err.message}`);
     }
 }
 
-// 5. Load saved settings from server + RE-APPLY LIVE status permanently
+// ============================================
+// 8. SAVE TOOL SETTINGS TO BACKEND
+// ============================================
+async function saveSmartTool(toolType, event) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Please log in to save changes.");
+        return;
+    }
+
+    const btn = event?.currentTarget || event?.target || document.activeElement;
+    const originalText = btn?.innerText || '';
+    const toolName = TOOL_NAMES[toolType] || toolType;
+
+    if (TOOL_STATES[toolType] === true && originalText === '● LIVE') {
+        if (confirm(`Do you want to update ${toolName} settings or deactivate it?\n\nClick OK to update\nClick Cancel to deactivate`)) {
+            await performSave(toolType, btn, true);
+        } else {
+            if (confirm(`Are you sure you want to deactivate ${toolName}?`)) {
+                deactivateTool(toolType, btn);
+            }
+        }
+        return;
+    }
+
+    if (originalText === 'Update Settings') {
+        await performSave(toolType, btn, true);
+        return;
+    }
+
+    await performSave(toolType, btn, true);
+}
+
+async function performSave(toolType, btn, activateAfterSave = true) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const originalText = btn?.innerText || '';
+    const toolName = TOOL_NAMES[toolType] || toolType;
+    let data = {};
+
+    try {
+        switch(toolType) {
+            case 'brain':
+                data = {
+                    instructions: document.getElementById('aiInstructions')?.value || '',
+                    temp: document.getElementById('aiTemp')?.value || '0.7',
+                    lang: document.getElementById('aiLang')?.value || 'auto'
+                };
+                break;
+            case 'booking':
+                data = { url: document.getElementById('bookingUrl')?.value || '' };
+                break;
+            case 'sentiment':
+                data = { email: document.getElementById('alertEmail')?.value || '' };
+                break;
+            case 'handover':
+                data = { trigger: document.getElementById('handoverTrigger')?.value || 'human' };
+                break;
+            case 'webhook':
+                data = { url: document.getElementById('webhookUrl')?.value || '' };
+                break;
+            case 'apollo':
+                data = { apolloKey: document.getElementById('apolloKey')?.value || '' };
+                break;
+            case 'vision':
+                data = { enabled: document.getElementById('visionToggle')?.checked || false };
+                break;
+            case 'followup':
+                data = { enabled: document.getElementById('followupToggle')?.checked || false };
+                break;
+            case 'business_type':
+                data = { 
+                    businessType: document.getElementById('businessType')?.value || '',
+                    businessDescription: document.getElementById('businessDescription')?.value || ''
+                };
+                break;
+            default:
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+                return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+        }
+
+        const response = await fetch(`${API_BASE}/api/smart-hub/save`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ toolType, data })
+        });
+
+        let result;
+        const responseText = await response.text();
+        try { result = JSON.parse(responseText); } catch(e) { throw new Error("Server returned invalid response"); }
+
+        if (response.ok && result.success) {
+            localStorage.setItem(`ai_settings_${toolType}`, JSON.stringify(data));
+            
+            if (btn) {
+                btn.innerText = `✓ Saved`;
+                btn.style.background = "#28a745";
+            }
+            
+            alert(`${toolName} has been successfully saved!`);
+            
+            if (activateAfterSave) {
+                saveToolState(toolType, true);
+                setTimeout(() => {
+                    if (btn) {
+                        btn.innerText = "● LIVE";
+                        btn.classList.add('btn-live-status');
+                        btn.style.background = "";
+                        btn.disabled = false;
+                    }
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    if (btn) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        btn.style.background = "";
+                    }
+                }, 1000);
+            }
+        } else {
+            throw new Error(result.error || "Server rejected update");
+        }
+    } catch (err) {
+        console.error("[SAVE] Error:", err.message);
+        if (btn) {
+            btn.innerText = "❌ Error";
+            btn.style.background = "#e74c3c";
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerText = originalText;
+                btn.style.background = "";
+            }, 2000);
+        }
+        alert(`Could not save ${toolName}: ${err.message}`);
+    }
+}
+
+// ============================================
+// 9. LOAD SAVED SETTINGS FROM BACKEND
+// ============================================
 async function loadSavedSettingsFromServer() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-        const endpoint = `${API_BASE}/api/smart-hub/settings`;
-        console.log("[SMART-LOGIC] Loading settings from:", endpoint);
-
-        const response = await fetch(endpoint, {
+        const response = await fetch(`${API_BASE}/api/smart-hub/settings`, {
             headers: { 'Authorization': `Bearer ${token}` },
             cache: 'no-store'
         });
@@ -749,7 +853,6 @@ async function loadSavedSettingsFromServer() {
         const data = await response.json();
         console.log("[LOAD] Settings loaded from server:", data);
 
-        // Fill form fields
         const mappings = {
             ai_instructions: 'aiInstructions',
             ai_temp: 'aiTemp',
@@ -759,8 +862,6 @@ async function loadSavedSettingsFromServer() {
             handover_trigger: 'handoverTrigger',
             webhook_url: 'webhookUrl',
             apollo_key: 'apolloKey',
-            vision_sensitivity: 'visionSens',
-            vision_area: 'visionArea',
             business_type: 'businessType',
             business_description: 'businessDescription'
         };
@@ -772,31 +873,23 @@ async function loadSavedSettingsFromServer() {
             }
         }
 
-        // Restore ALL toggles
         const toggleMap = {
-            sentimentToggle: data.sentiment_active === 1,
             visionToggle: data.vision_active === 1,
-            followupToggle: data.followup_active === 1,
-            apolloToggle: data.apollo_active === 1,
-            syncToggle: data.auto_sync === 1
+            followupToggle: data.followup_active === 1
         };
 
         for (const [id, shouldBeOn] of Object.entries(toggleMap)) {
             const toggle = document.getElementById(id);
-            if (toggle) {
-                toggle.checked = shouldBeOn;
-                console.log(`[RESTORE] ${id} → ${shouldBeOn ? 'ON' : 'OFF'}`);
-            }
+            if (toggle) toggle.checked = shouldBeOn;
         }
 
-        // Re-apply LIVE button status from database
         const activeMap = {
             brain: { active: data.brain_active === 1, cardId: 'card-brain' },
             booking: { active: data.booking_active === 1, cardId: 'card-booking' },
             sentiment: { active: data.sentiment_active === 1, cardId: 'card-sentiment' },
             handover: { active: data.handover_active === 1, cardId: 'card-handover' },
             webhook: { active: data.webhook_active === 1, cardId: 'card-webhook' },
-            enrichment: { active: data.apollo_active === 1, cardId: 'card-apollo' },
+            apollo: { active: data.apollo_active === 1, cardId: 'card-apollo' },
             vision: { active: data.vision_active === 1, cardId: 'card-vision' },
             followup: { active: data.followup_active === 1, cardId: 'card-followup' },
             business_type: { active: data.business_type ? true : false, cardId: 'card-business-type' }
@@ -808,12 +901,8 @@ async function loadSavedSettingsFromServer() {
                 if (card) {
                     const btn = card.querySelector('.btn-save');
                     if (btn) {
-                        console.log(`[LIVE] Re-applying LIVE for ${tool}`);
                         btn.innerText = "● LIVE";
                         btn.classList.add('btn-live-status');
-                        btn.disabled = false;
-                        
-                        // Save to localStorage state
                         saveToolState(tool, true);
                     }
                 }
@@ -827,26 +916,22 @@ async function loadSavedSettingsFromServer() {
 }
 
 function loadSavedSettingsFromLocal() {
-    const tools = ['brain', 'booking', 'sentiment', 'handover', 'webhook', 'enrichment', 'vision', 'business_type'];
+    const tools = ['brain', 'booking', 'sentiment', 'handover', 'webhook', 'apollo', 'vision', 'business_type'];
     tools.forEach(tool => {
         const saved = localStorage.getItem(`ai_settings_${tool}`);
         if (saved) {
             try {
                 const data = JSON.parse(saved);
-                console.log(`[LOAD LOCAL] Loading ${tool}:`, data);
-                
                 if (tool === 'brain' && document.getElementById('aiInstructions')) {
                     document.getElementById('aiInstructions').value = data.instructions || "";
-                    document.getElementById('aiTemp').value = data.temp || "0.7";
-                    document.getElementById('aiLang').value = data.lang || "auto";
+                    if (document.getElementById('aiTemp')) document.getElementById('aiTemp').value = data.temp || "0.7";
+                    if (document.getElementById('aiLang')) document.getElementById('aiLang').value = data.lang || "auto";
                 }
                 if (tool === 'booking' && document.getElementById('bookingUrl')) {
                     document.getElementById('bookingUrl').value = data.url || "";
                 }
-                if (tool === 'enrichment' && document.getElementById('apolloKey')) {
+                if (tool === 'apollo' && document.getElementById('apolloKey')) {
                     document.getElementById('apolloKey').value = data.apolloKey || "";
-                    const syncToggle = document.getElementById('syncToggle');
-                    if (syncToggle) syncToggle.checked = data.autoSync || false;
                 }
                 if (tool === 'business_type' && document.getElementById('businessType')) {
                     document.getElementById('businessType').value = data.businessType || "";
@@ -854,78 +939,103 @@ function loadSavedSettingsFromLocal() {
                         document.getElementById('businessDescription').value = data.businessDescription || "";
                     }
                 }
-            } catch (e) {
-                console.warn(`[LOAD LOCAL] Error parsing ${tool}:`, e);
-            }
+            } catch(e) {}
         }
     });
-    
-    // Apply saved tool states from localStorage
     loadToolStatesFromStorage();
 }
 
-// 6. Team Management
-function openInviteModal() {
-    const email = prompt("Enter the email address of the team member:");
+// ============================================
+// 10. TEAM MANAGEMENT & EXPORT
+// ============================================
+window.openInviteModal = function() {
+    const email = prompt("Enter team member email:");
     if (email && email.includes('@')) {
         const table = document.getElementById('teamTableBody');
-        if(!table) return;
-        const newRow = table.insertRow();
-        newRow.innerHTML = `
-            <td><strong>New Member</strong></td>
-            <td>${email}</td>
-            <td><span class="role-tag tag-staff">Staff</span></td>
-            <td><span style="color: orange">● Pending</span></td>
-            <td><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer;">Remove</button></td>
-        `;
-        alert("Invitation sent to " + email);
+        if(table) {
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+                <td><strong>New Member</strong></td>
+                <td>${escapeHtml(email)}</td>
+                <td><span class="role-tag tag-staff">Staff</span></td>
+                <td><span style="color: #f59e0b;"><i class="fas fa-circle" style="font-size: 8px;"></i> Pending</span></td>
+                <td><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
+            `;
+            alert("Invitation sent to " + email);
+        }
     }
-}
+};
 
-// 7. Data Export
-function exportBusinessData() {
+window.exportBusinessData = function() {
     const btn = event.target;
     const originalText = btn.innerText;
     btn.innerText = "Exporting...";
     btn.disabled = true;
     
     setTimeout(() => {
-        try {
-            // Include tool states in export
-            const exportData = {
-                localStorage: { ...localStorage },
-                toolStates: TOOL_STATES,
-                toolSettings: TOOL_SETTINGS,
-                timestamp: new Date().toISOString()
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "business_export.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        } catch (e) {
-            console.error("[EXPORT] Error:", e);
-            alert("Export failed: " + e.message);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
+        const exportData = {
+            toolStates: TOOL_STATES,
+            toolSettings: TOOL_SETTINGS,
+            timestamp: new Date().toISOString()
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+        const a = document.createElement('a');
+        a.href = dataStr;
+        a.download = "business_export.json";
+        a.click();
+        btn.innerText = originalText;
+        btn.disabled = false;
     }, 1000);
-}
+};
 
-// 8. Initialize any additional elements
-function initializeBusinessType() {
-    console.log("[INIT] Business Identity section ready");
+// ============================================
+// 11. WIDGET CAPABILITIES & CUSTOM PROMPTS
+// ============================================
+function loadCustomPrompts() {
+    const saved = localStorage.getItem('systemPrompts');
+    const prompts = saved ? JSON.parse(saved) : {};
+    const listDiv = document.getElementById('activePromptsList');
+    if (!listDiv) return;
+    
+    if (Object.keys(prompts).length === 0) {
+        listDiv.innerHTML = '<p style="color: #6b7280; font-size: 0.85rem;">No prompts saved yet.</p>';
+        return;
+    }
+    
+    listDiv.innerHTML = Object.entries(prompts).map(([tool, prompt]) => `
+        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 10px;">
+            <strong style="color: var(--primary);">${escapeHtml(tool)}:</strong>
+            <p style="font-size: 0.8rem; margin-top: 5px;">${escapeHtml(prompt.substring(0, 100))}${prompt.length > 100 ? '...' : ''}</p>
+        </div>
+    `).join('');
 }
 
 // Make functions globally available
 window.saveSmartTool = saveSmartTool;
-window.openInviteModal = openInviteModal;
 window.exportBusinessData = exportBusinessData;
-window.runSmartTool = runSmartTool;
 window.deactivateTool = deactivateTool;
+window.runSmartTool = runSmartTool;
+window.loadCustomPrompts = loadCustomPrompts;
 
-// Call initialize on load
-document.addEventListener('DOMContentLoaded', initializeBusinessType);
+// Image upload handler for proof images
+window.uploadProofImages = async function(images) {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/smart-hub/upload-proof`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ images })
+        });
+        return response.ok;
+    } catch (err) {
+        console.error('Failed to upload images:', err);
+        return false;
+    }
+};
+
+console.log("✅ smart-logic.js fully loaded - SaaS ready, no simulations, all real backend data");

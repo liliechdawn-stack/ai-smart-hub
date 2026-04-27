@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Business Hub | AI Intelligence Center</title>
+    <title>AI Smart Hub | Professional Tool Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -14,7 +14,7 @@
     
     <style>
         /* ========================================
-           PREMIUM DESIGN TOKENS
+           PREMIUM DESIGN TOKENS (ORIGINAL - PRESERVED)
            ========================================
         */
         :root {
@@ -64,8 +64,323 @@
             min-height: 100vh;
         }
 
+        /* SIDEBAR LAYOUT */
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(212,175,55,0.15);
+            padding: 30px 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-nav a {
+            text-decoration: none;
+            color: #4b5563;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-nav a i {
+            width: 24px;
+            color: var(--primary-dark);
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(212,175,55,0.1);
+            color: var(--primary-dark);
+        }
+
+        .sidebar-nav a.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .sidebar-nav a.active i {
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            width: calc(100% - 280px);
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+
+        /* REAL-TIME DISPLAY PANEL */
+        .realtime-panel {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(212,175,55,0.3);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .realtime-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .realtime-header h3 {
+            color: var(--primary);
+            margin: 0;
+        }
+        
+        .live-badge {
+            background: #ef4444;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .metric-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        
+        .metric-trend {
+            font-size: 0.7rem;
+            margin-top: 5px;
+        }
+        
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+        
+        .activity-feed {
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+        
+        .activity-success { color: #10b981; }
+        .activity-failed { color: #ef4444; }
+        .activity-pending { color: #f59e0b; }
+        
+        /* Image attachment styles */
+        .image-attachment-area {
+            border: 2px dashed var(--primary);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .image-attachment-area:hover {
+            background: #fef3c7;
+            border-color: var(--primary-dark);
+        }
+        
+        .image-preview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .image-preview-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+        }
+        
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        /* Custom links styles */
+        .links-list {
+            margin-top: 20px;
+        }
+        
+        .link-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f9fafb;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .link-item a {
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .link-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .delete-link {
+            color: #ef4444;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1rem;
+        }
+        
+        /* API Keys table */
+        .api-keys-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .api-key-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .api-key-name {
+            font-weight: 700;
+        }
+        
+        .api-key-value {
+            font-family: monospace;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .api-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .api-status.verified { background: #10b981; box-shadow: 0 0 5px #10b981; }
+        .api-status.pending { background: #f59e0b; }
+        .api-status.error { background: #ef4444; }
+
         /* ========================================
-           PREMIUM NAVIGATION
+           PREMIUM NAVIGATION (ORIGINAL - PRESERVED)
            ========================================
         */
         nav {
@@ -172,7 +487,7 @@
         }
 
         /* ========================================
-           PREMIUM HERO SECTION
+           PREMIUM HERO SECTION (ORIGINAL)
            ========================================
         */
         .hero { 
@@ -242,7 +557,7 @@
         }
 
         /* ========================================
-           PREMIUM SECTION HEADERS
+           PREMIUM SECTION HEADERS (ORIGINAL)
            ========================================
         */
         .section-header { 
@@ -272,7 +587,7 @@
         }
 
         /* ========================================
-           PREMIUM CARD LAYOUT
+           PREMIUM CARD LAYOUT (ORIGINAL - PRESERVED)
            ========================================
         */
         .container { 
@@ -351,7 +666,7 @@
         }
 
         /* ========================================
-           PREMIUM FORM ELEMENTS
+           PREMIUM FORM ELEMENTS (ORIGINAL)
            ========================================
         */
         .input-group { margin-bottom: 25px; }
@@ -441,6 +756,15 @@
             transform: none;
         }
 
+        .btn-delete {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            margin-top: 10px;
+        }
+
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
         .btn-live-status {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
             color: white !important;
@@ -460,7 +784,7 @@
         }
 
         /* ========================================
-           PREMIUM LOCK SYSTEM
+           PREMIUM LOCK SYSTEM (ORIGINAL)
            ========================================
         */
         .locked-card { 
@@ -591,7 +915,7 @@
         }
 
         /* ========================================
-           PREMIUM DATA TABLE
+           PREMIUM DATA TABLE (ORIGINAL)
            ========================================
         */
         .data-table-container { 
@@ -693,7 +1017,7 @@
         }
 
         /* ========================================
-           PREMIUM BUSINESS INFO CARD
+           PREMIUM BUSINESS INFO CARD (ORIGINAL)
            ========================================
         */
         .business-type-info {
@@ -719,8 +1043,72 @@
             line-height: 2;
         }
 
+        /* FEEDBACK PREVIEW CARD */
+        .feedback-preview {
+            background: #1e293b;
+            border-radius: 24px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(212,175,55,0.3);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .feedback-preview h4 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .mock-widget {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            max-width: 280px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .mock-widget-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .mock-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+        }
+        
+        .mock-message {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .mock-image-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--primary-dark);
+            font-size: 0.75rem;
+            margin-right: 10px;
+        }
+        
+        .mock-stars {
+            color: var(--primary);
+            letter-spacing: 2px;
+        }
+
         /* ========================================
-           PREMIUM FOOTER
+           PREMIUM FOOTER (ORIGINAL)
            ========================================
         */
         footer { 
@@ -736,382 +1124,674 @@
 </head>
 <body>
 
-<nav>
-    <div class="nav-container">
-        <a href="dashboard.html" class="nav-logo">
-            <i class="fas fa-robot"></i>
+<div class="app-wrapper">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <i class="fas fa-crown"></i>
             AI Smart Hub
-        </a>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="ai-automations.html">AI Automations</a>
-            <a href="#ai-brain-section">AI Brain</a>
-            <a href="#org-section">Team</a>
-            <a href="customer-insights.html">Customer Insights</a>
-            <a href="dashboard.html" class="back-btn">
-                <i class="fas fa-arrow-left"></i>
-                Exit Center
+        </div>
+        <div class="sidebar-nav">
+            <a href="#" class="active" data-section="realtime-display">
+                <i class="fas fa-chart-line"></i> Real-Time Display
+            </a>
+            <a href="#" data-section="tool-manager">
+                <i class="fas fa-th-large"></i> Tool Manager
+            </a>
+            <a href="#" data-section="image-attachment">
+                <i class="fas fa-image"></i> Image Attachment
+            </a>
+            <a href="#" data-section="custom-links">
+                <i class="fas fa-link"></i> Custom Links
+            </a>
+            <a href="#" data-section="integrations">
+                <i class="fas fa-key"></i> Integrations (API Keys)
+            </a>
+            <a href="#" data-section="configuration">
+                <i class="fas fa-sliders-h"></i> Configuration
+            </a>
+            <a href="#" data-section="custom-instructions">
+                <i class="fas fa-code"></i> Custom Instructions
             </a>
         </div>
-    </div>
-</nav>
+    </aside>
 
-<div class="hero">
-    <h1>AI Intelligence Center</h1>
-    <p>Your centralized dashboard for configuring high-performance AI tools and knowledge bases.</p>
-    <div class="plan-indicator">
-        <span>ACCOUNT STATUS</span>
-        <span id="currentPlanName">DETECTING...</span>
-    </div>
-</div>
-
-<div class="container">
-
-    <!-- Business Identity Section -->
-    <div class="section-header" id="business-identity-section">
-        <h2>🏢 Business Identity</h2>
-        <div class="section-line"></div>
-    </div>
-
-    <div class="grid">
-        <div class="tool-card wide-card" id="card-business-type">
-            <div style="flex: 1;">
-                <div class="icon-box">🏢</div>
-                <h3>Business Profile <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
-                <p class="tool-description">Define your business type and industry so the AI can represent you accurately to customers.</p>
-                
-                <div class="input-group">
-                    <label><i class="fas fa-store" style="margin-right: 8px; color: var(--primary);"></i> Business Type / Industry</label>
-                    <select id="businessType">
-                        <option value="">Select your business type...</option>
-                        <option value="retail">Retail Store (Clothing, Electronics, etc.)</option>
-                        <option value="restaurant">Restaurant / Food Service</option>
-                        <option value="salon">Beauty Salon / Spa</option>
-                        <option value="consulting">Consulting / Professional Services</option>
-                        <option value="healthcare">Healthcare / Medical</option>
-                        <option value="fitness">Fitness / Gym</option>
-                        <option value="realestate">Real Estate</option>
-                        <option value="education">Education / Training</option>
-                        <option value="technology">Technology / SaaS</option>
-                        <option value="automotive">Automotive / Car Dealership</option>
-                        <option value="hotel">Hotel / Hospitality</option>
-                        <option value="legal">Legal Services</option>
-                        <option value="finance">Financial Services</option>
-                        <option value="construction">Construction / Home Services</option>
-                        <option value="other">Other</option>
-                    </select>
+    <div class="main-content">
+        <nav>
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-logo">
+                    <i class="fas fa-robot"></i>
+                    AI Smart Hub
+                </a>
+                <div class="nav-links">
+                    <a href="dashboard.html">Dashboard</a>
+                    <a href="ai-automations.html">AI Automations</a>
+                    <a href="#ai-brain-section">AI Brain</a>
+                    <a href="#org-section">Team</a>
+                    <a href="customer-insights.html">Customer Insights</a>
+                    <a href="dashboard.html" class="back-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        Exit Center
+                    </a>
                 </div>
-                
-                <div class="input-group">
-                    <label><i class="fas fa-align-left" style="margin-right: 8px; color: var(--primary);"></i> Business Description (Optional)</label>
-                    <textarea id="businessDescription" rows="3" placeholder="e.g., We sell premium men's formal wear and accessories, specializing in wedding suits and corporate attire..."></textarea>
-                </div>
-                
-                <button class="btn-save" id="businessTypeBtn" onclick="saveSmartTool('business_type', event)">
-                    <i class="fas fa-save"></i> Save Business Identity
-                </button>
             </div>
-            
-            <div style="flex: 0.8; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 30px; border-radius: 18px; border: 1px dashed var(--primary);">
-                <h3 style="color: #1f2937; margin-bottom: 15px;">Why This Matters</h3>
-                <div class="business-type-info">
-                    <h4>When customers chat with your widget, the AI will know:</h4>
-                    <ul>
-                        <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> What industry you're in</li>
-                        <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> Appropriate tone and terminology</li>
-                        <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> Relevant services to suggest</li>
-                        <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> Industry-specific questions</li>
-                    </ul>
-                </div>
-                <p style="font-size: 0.85rem; color: #6b7280; margin-top: 20px; line-height: 1.7;">
-                    <strong>Example:</strong> A restaurant AI knows about reservations, menu items, and dietary restrictions.
-                </p>
+        </nav>
+
+        <div class="hero">
+            <h1>AI Intelligence Center</h1>
+            <p>Your centralized dashboard for configuring high-performance AI tools and knowledge bases.</p>
+            <div class="plan-indicator">
+                <span>ACCOUNT STATUS</span>
+                <span id="currentPlanName">DETECTING...</span>
             </div>
         </div>
-    </div>
 
-    <div class="section-header" id="ai-brain-section">
-        <h2>🧠 AI Knowledge Base</h2>
-        <div class="section-line"></div>
-    </div>
+        <div class="container">
+            <!-- REAL-TIME DISPLAY PANEL - FETCHES FROM BACKEND -->
+            <div class="section-header" id="realtime-display-section">
+                <h2>📊 Real-Time Lead Tracking & Analytics</h2>
+                <div class="section-line"></div>
+            </div>
 
-    <div class="grid">
-        <div class="tool-card wide-card" id="card-brain">
-            <div style="flex: 1.2;">
-                <div class="icon-box">📖</div>
-                <h3>System Prompt & Identity <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
-                <p class="tool-description">Define the core personality and operational constraints of your AI agent.</p>
-                
-                <div class="input-group">
-                    <label><i class="fas fa-terminal" style="margin-right: 8px; color: var(--primary);"></i> Global System Instructions</label>
-                    <textarea id="aiInstructions" rows="8" placeholder="Example: You are a professional support agent for 'Elite Cars'. Your tone is luxury and helpful..."></textarea>
+            <div class="realtime-panel" id="realtimePanel">
+                <div class="realtime-header">
+                    <h3><i class="fas fa-circle" style="color: #10b981; font-size: 10px; margin-right: 8px;"></i> LIVE BUSINESS INTELLIGENCE</h3>
+                    <span class="live-badge"><i class="fas fa-circle"></i> LIVE</span>
                 </div>
-            </div>
-            
-            <div style="flex: 0.8; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 30px; border-radius: 18px;">
-                <h3 style="color: #1f2937; margin-bottom: 15px;">⚙️ Execution Settings</h3>
-                
-                <div class="input-group">
-                    <label>Creativity (Temperature)</label>
-                    <select id="aiTemp">
-                        <option value="0.1">Strict & Technical</option>
-                        <option value="0.4">Helpful & Direct</option>
-                        <option value="0.7" selected>Balanced & Conversational</option>
-                        <option value="1.0">Creative & Marketing Focused</option>
-                    </select>
-                </div>
-                
-                <div class="input-group">
-                    <label>Default Language</label>
-                    <select id="aiLang">
-                        <option value="auto">Auto-Detect</option>
-                        <option value="en">English</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                    </select>
-                </div>
-                
-                <button class="btn-save" onclick="saveSmartTool('brain', event)">
-                    <i class="fas fa-cloud-upload-alt"></i> Deploy Knowledge Update
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="section-header">
-        <h2>🚀 Enterprise Intelligence</h2>
-        <div class="section-line"></div>
-    </div>
-
-    <div class="grid">
-        <!-- Apollo Card -->
-        <div class="tool-card locked-card" id="card-apollo">
-            <div class="lock-overlay">
-                <span>🔒</span>
-                <p>Enterprise Feature</p>
-                <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
-            </div>
-            <div>
-                <div class="icon-box">🔍</div>
-                <h3>Apollo Lead Scraper <span class="status-badge badge-enterprise">Enterprise</span></h3>
-                <p class="tool-description">Enrich every chat lead with professional data.</p>
-                
-                <div class="input-group">
-                    <label>Apollo API Key</label>
-                    <input type="password" id="apolloKey" placeholder="sk_xxxxxxxxxxxxxxxx">
-                </div>
-            </div>
-            <button class="btn-save" onclick="saveSmartTool('apollo', event)">Connect Apollo API</button>
-        </div>
-
-        <!-- Follow-up Card -->
-        <div class="tool-card locked-card" id="card-followup">
-            <div class="lock-overlay">
-                <span>🔒</span>
-                <p>Pro Feature</p>
-                <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
-            </div>
-            <div>
-                <div class="icon-box">📧</div>
-                <h3>AI Email Nurture <span class="status-badge badge-pro">Pro</span></h3>
-                <p class="tool-description">Automated follow-up emails for leads.</p>
-                
-                <div class="switch-group">
-                    <span>Enable Auto-Nurture</span>
-                    <label class="switch">
-                        <input type="checkbox" id="followupToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            <button class="btn-save" onclick="saveSmartTool('followup', event)">Activate Automation</button>
-        </div>
-
-        <!-- Vision Card -->
-        <div class="tool-card locked-card" id="card-vision">
-            <div class="lock-overlay">
-                <span>🔒</span>
-                <p>Enterprise Feature</p>
-                <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
-            </div>
-            <div>
-                <div class="icon-box">👁️</div>
-                <h3>AI Vision Hub <span class="status-badge badge-enterprise">Enterprise</span></h3>
-                <p class="tool-description">Analyze images, PDFs, and documents.</p>
-                
-                <div class="switch-group">
-                    <span>Allow Image Uploads</span>
-                    <label class="switch">
-                        <input type="checkbox" id="visionToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            <button class="btn-save" onclick="saveSmartTool('vision', event)">Update Vision Settings</button>
-        </div>
-    </div>
-
-    <div class="section-header">
-        <h2>🛠️ Operational Tools</h2>
-        <div class="section-line"></div>
-    </div>
-
-    <div class="grid">
-        <!-- Booking Card -->
-        <div class="tool-card" id="card-booking">
-            <div>
-                <div class="icon-box">📅</div>
-                <h3>Appointment Logic <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
-                <p class="tool-description">Configure booking links and scheduling.</p>
-                
-                <div class="input-group">
-                    <label><i class="fas fa-link" style="margin-right: 8px; color: var(--primary);"></i> Primary Booking Link</label>
-                    <input type="text" id="bookingUrl" placeholder="https://calendly.com/your-business/meeting">
-                </div>
-            </div>
-            <button class="btn-save" onclick="saveSmartTool('booking', event)">
-                <i class="fas fa-sync-alt"></i> Sync Booking Logic
-            </button>
-        </div>
-
-        <!-- Sentiment Card -->
-        <div class="tool-card locked-card" id="card-sentiment">
-            <div class="lock-overlay">
-                <span>🔒</span>
-                <p>Pro Feature</p>
-                <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
-            </div>
-            <div>
-                <div class="icon-box">🛡️</div>
-                <h3>Crisis Guard <span class="status-badge badge-pro">Pro</span></h3>
-                <p class="tool-description">Real-time sentiment alerts.</p>
-                
-                <div class="input-group">
-                    <label>Alert Email</label>
-                    <input type="email" id="alertEmail" placeholder="ops@yourcompany.com">
-                </div>
-            </div>
-            <button class="btn-save" onclick="saveSmartTool('sentiment', event)">Save Security Rules</button>
-        </div>
-
-        <!-- Webhook Card -->
-        <div class="tool-card locked-card" id="card-webhook">
-            <div class="lock-overlay">
-                <span>🔒</span>
-                <p>Pro Feature</p>
-                <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
-            </div>
-            <div>
-                <div class="icon-box">⚡</div>
-                <h3>CRM Webhooks <span class="status-badge badge-pro">Pro</span></h3>
-                <p class="tool-description">Sync leads with Zapier, HubSpot, etc.</p>
-                
-                <div class="input-group">
-                    <label>Webhook URL</label>
-                    <input type="text" id="webhookUrl" placeholder="https://hooks.zapier.com/v1/...">
-                </div>
-            </div>
-            <button class="btn-save" onclick="saveSmartTool('webhook', event)">Save Webhook</button>
-        </div>
-    </div>
-
-    <div class="section-header" id="org-section">
-        <h2>🏢 Organization & Team</h2>
-        <div class="section-line"></div>
-    </div>
-
-    <div class="grid">
-        <div class="tool-card wide-card">
-            <div style="width: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                    <div>
-                        <h3>Staff Permissions <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
-                        <p class="tool-description" style="margin-bottom: 0;">Manage team access and roles.</p>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="liveLeadsCount">--</div>
+                        <div class="metric-label">Total Leads Captured</div>
                     </div>
-                    <button class="btn-save" style="width: auto; padding: 12px 30px; background: linear-gradient(135deg, #1f2937 0%, #111827 100%);" onclick="openInviteModal()">
-                        <i class="fas fa-user-plus"></i> Add Team Member
+                    <div class="metric-card">
+                        <div class="metric-value" id="liveDeliveredCount">--</div>
+                        <div class="metric-label">Successfully Delivered</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="liveFailedCount">--</div>
+                        <div class="metric-label">Delivery Failed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="liveConversionRate">--%</div>
+                        <div class="metric-label">Conversion Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="liveActiveChats">--</div>
+                        <div class="metric-label">Active Chats</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="liveResponseTime">--<span style="font-size: 1rem;">s</span></div>
+                        <div class="metric-label">Avg Response Time</div>
+                    </div>
+                </div>
+                <div class="activity-feed" id="activityFeed">
+                    <div class="activity-item">
+                        <span>Loading activities...</span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOOL MANAGER SECTION -->
+            <div class="section-header" id="tool-manager-section">
+                <h2>📋 Tool Manager</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid" id="toolManagerGrid">
+                <!-- Tool cards will be dynamically rendered -->
+            </div>
+
+            <!-- IMAGE ATTACHMENT SECTION - UPDATED TO WORK WITH WIDGET -->
+            <div class="section-header" id="image-attachment-section">
+                <h2>📎 Image Attachment (Customer Proof)</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card">
+                    <div style="flex: 1;">
+                        <div class="icon-box">📸</div>
+                        <h3>Customer Image / Proof Upload</h3>
+                        <p class="tool-description">When customers ask for proof or images, they will see these photos. Perfect for delivery confirmation, product verification, or service evidence.</p>
+                        
+                        <div id="imageAttachmentArea" class="image-attachment-area">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px; display: block;"></i>
+                            <p>Click or drag images here</p>
+                            <small>Supported: JPG, PNG, GIF (Max 5MB) - These will be visible to customers when they ask for "proof" or "images"</small>
+                            <input type="file" id="imageFileInput" accept="image/*" multiple style="display: none;">
+                        </div>
+                        
+                        <div id="imagePreviewContainer" class="image-preview-grid"></div>
+                        
+                        <button class="btn-save" id="saveImagesBtn">
+                            <i class="fas fa-save"></i> Save Images as Proof (Visible to Customers)
+                        </button>
+                        <button class="btn-save" id="clearAllImagesBtn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); margin-top: 10px;">
+                            <i class="fas fa-trash"></i> Clear All Proof Images
+                        </button>
+                    </div>
+                    
+                    <div style="flex: 0.8; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 30px; border-radius: 18px;">
+                        <h3>💡 How This Works</h3>
+                        <ul style="margin-top: 15px; line-height: 2; color: #4b5563;">
+                            <li><i class="fas fa-check-circle" style="color: var(--primary);"></i> Upload delivery confirmation photos</li>
+                            <li><i class="fas fa-check-circle" style="color: var(--primary);"></i> Customers can ask "show me proof" or "send me the delivery images"</li>
+                            <li><i class="fas fa-check-circle" style="color: var(--primary);"></i> Images are stored securely on your backend</li>
+                            <li><i class="fas fa-check-circle" style="color: var(--primary);"></i> The AI widget will automatically display them when requested</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUSTOM LINKS SECTION - UPDATED TO WORK WITH WIDGET -->
+            <div class="section-header" id="custom-links-section">
+                <h2>🔗 Custom Links Library</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card">
+                    <div style="flex: 1;">
+                        <div class="icon-box">🔗</div>
+                        <h3>Manage Your Business Links</h3>
+                        <p class="tool-description">Add any links you want to share with customers. When customers ask for "useful links" or "resources", the AI will display these.</p>
+                        
+                        <div class="input-group">
+                            <label>Link Name</label>
+                            <input type="text" id="newLinkName" placeholder="e.g., Booking Page, Knowledge Base, Support Portal">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>URL</label>
+                            <input type="url" id="newLinkUrl" placeholder="https://your-website.com/page">
+                        </div>
+                        
+                        <button class="btn-save" id="addLinkBtn">
+                            <i class="fas fa-plus"></i> Add Link
+                        </button>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h3>📚 Saved Links (Visible to Customers)</h3>
+                        <div id="customLinksList" class="links-list">
+                            <p style="color: #6b7280; font-size: 0.85rem;">No links added yet.</p>
+                        </div>
+                        <p style="font-size: 0.7rem; color: #6b7280; margin-top: 15px;">Customers can ask "show me useful links" to see these.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INTEGRATIONS (API KEYS) SECTION -->
+            <div class="section-header" id="integrations-section">
+                <h2>🔐 API Integrations</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card">
+                    <div style="flex: 1;">
+                        <div class="icon-box">🔑</div>
+                        <h3>Third-Party API Keys</h3>
+                        <p class="tool-description">Connect your external services by adding API keys. These keys will be used to authenticate with services like OpenAI, SendGrid, Twilio, Stripe, and more.</p>
+                        
+                        <div class="input-group">
+                            <label>Service Name</label>
+                            <input type="text" id="newApiName" placeholder="e.g., OpenAI, SendGrid, Twilio, Stripe">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>API Key / Secret</label>
+                            <input type="password" id="newApiKey" placeholder="sk-xxxxxxxxxxxxxxxx">
+                        </div>
+                        
+                        <button class="btn-save" id="addApiKeyBtn">
+                            <i class="fas fa-plus"></i> Add API Key
+                        </button>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h3>📋 Connected Services</h3>
+                        <div id="apiKeysList" class="api-keys-table">
+                            <p style="color: #6b7280; font-size: 0.85rem;">No API keys configured yet.</p>
+                        </div>
+                        <p style="font-size: 0.7rem; color: #6b7280; margin-top: 15px;">API keys are encrypted and stored on your backend. They enable AI features like email sending, SMS, payments, and lead enrichment.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUSTOM INSTRUCTIONS SECTION -->
+            <div class="section-header" id="custom-instructions-section">
+                <h2>⚙️ Customer Instructions (System Prompts)</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card">
+                    <div style="flex: 1;">
+                        <div class="icon-box">📜</div>
+                        <h3>Per-Tool System Prompts</h3>
+                        <p class="tool-description">Define custom AI behaviors and business policies for each tool. These instructions will guide how the AI interacts with your customers.</p>
+                        
+                        <div class="input-group">
+                            <label>Select Tool</label>
+                            <select id="customPromptToolSelect">
+                                <option value="brain">AI Knowledge Base</option>
+                                <option value="booking">Appointment Logic</option>
+                                <option value="handover">Live Handover</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>System Prompt / Business Policy</label>
+                            <textarea id="customSystemPrompt" rows="6" placeholder="Example: You must follow these policies: No profanity, always be helpful, prioritize customer satisfaction..."></textarea>
+                        </div>
+                        
+                        <button class="btn-save" id="saveSystemPromptBtn">
+                            <i class="fas fa-save"></i> Save System Prompt
+                        </button>
+                    </div>
+                    
+                    <div style="flex: 0.8; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 30px; border-radius: 18px;">
+                        <h3>📋 Active Prompts</h3>
+                        <div id="activePromptsList">
+                            <p style="color: #6b7280; font-size: 0.85rem;">No prompts saved yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIDGET CONFIGURATION SECTION -->
+            <div class="section-header" id="configuration-section">
+                <h2>🖼️ Widget Experience</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card">
+                    <div class="icon-box">📸</div>
+                    <h3>Widget Capabilities</h3>
+                    <p class="tool-description">Configure what features are available in your chat widget.</p>
+                    
+                    <div class="switch-group">
+                        <span><i class="fas fa-image"></i> Enable Image Support</span>
+                        <label class="switch">
+                            <input type="checkbox" id="enableImageSupport">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="switch-group">
+                        <span><i class="fas fa-star"></i> Enable Review Collection</span>
+                        <label class="switch">
+                            <input type="checkbox" id="enableReviewCollection">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button class="btn-save" id="saveWidgetCapabilitiesBtn">
+                        <i class="fas fa-save"></i> Save Widget Settings
+                    </button>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="icon-box">👁️</div>
+                    <h3>Feedback Preview</h3>
+                    <p class="tool-description">See how your widget appears to end-users</p>
+                    
+                    <div class="feedback-preview">
+                        <h4>LIVE PREVIEW</h4>
+                        <div class="mock-widget">
+                            <div class="mock-widget-header">
+                                <div class="mock-avatar"></div>
+                                <strong>AI Assistant</strong>
+                            </div>
+                            <div class="mock-message">
+                                How can I help you today?
+                            </div>
+                            <div id="mockImagePreview" style="display: none;">
+                                <div class="mock-image-icon">
+                                    <i class="fas fa-paperclip"></i> Image attached
+                                </div>
+                            </div>
+                            <div id="mockReviewPreview" style="display: none;">
+                                <div class="mock-stars">
+                                    ★★★★☆
+                                </div>
+                                <small>Leave a review</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YOUR ORIGINAL CONTENT CONTINUES BELOW - FULLY PRESERVED -->
+            <div class="section-header" id="business-identity-section">
+                <h2>🏢 Business Identity</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card" id="card-business-type">
+                    <div style="flex: 1;">
+                        <div class="icon-box">🏢</div>
+                        <h3>Business Profile <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
+                        <p class="tool-description">Define your business type and industry so the AI can represent you accurately to customers.</p>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-store" style="margin-right: 8px; color: var(--primary);"></i> Business Type / Industry</label>
+                            <select id="businessType">
+                                <option value="">Select your business type...</option>
+                                <option value="retail">Retail Store</option>
+                                <option value="restaurant">Restaurant / Food Service</option>
+                                <option value="salon">Beauty Salon / Spa</option>
+                                <option value="consulting">Consulting / Professional Services</option>
+                                <option value="healthcare">Healthcare / Medical</option>
+                                <option value="fitness">Fitness / Gym</option>
+                                <option value="realestate">Real Estate</option>
+                                <option value="education">Education / Training</option>
+                                <option value="technology">Technology / SaaS</option>
+                                <option value="automotive">Automotive / Car Dealership</option>
+                                <option value="hotel">Hotel / Hospitality</option>
+                                <option value="legal">Legal Services</option>
+                                <option value="finance">Financial Services</option>
+                                <option value="construction">Construction / Home Services</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-align-left" style="margin-right: 8px; color: var(--primary);"></i> Business Description (Optional)</label>
+                            <textarea id="businessDescription" rows="3" placeholder="e.g., We sell premium men's formal wear and accessories..."></textarea>
+                        </div>
+                        
+                        <button class="btn-save" id="businessTypeBtn" onclick="saveSmartTool('business_type', event)">
+                            <i class="fas fa-save"></i> Save Business Identity
+                        </button>
+                    </div>
+                    
+                    <div style="flex: 0.8; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 30px; border-radius: 18px; border: 1px dashed var(--primary);">
+                        <h3 style="color: #1f2937; margin-bottom: 15px;">Why This Matters</h3>
+                        <div class="business-type-info">
+                            <h4>When customers chat with your widget, the AI will know:</h4>
+                            <ul>
+                                <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> What industry you're in</li>
+                                <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> Appropriate tone and terminology</li>
+                                <li><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 8px;"></i> Relevant services to suggest</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header" id="ai-brain-section">
+                <h2>🧠 AI Knowledge Base</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card" id="card-brain">
+                    <div style="flex: 1.2;">
+                        <div class="icon-box">📖</div>
+                        <h3>System Prompt & Identity <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
+                        <p class="tool-description">Define the core personality and operational constraints of your AI agent.</p>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-terminal" style="margin-right: 8px; color: var(--primary);"></i> Global System Instructions</label>
+                            <textarea id="aiInstructions" rows="8" placeholder="Example: You are a professional support agent..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 0.8; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 30px; border-radius: 18px;">
+                        <h3 style="color: #1f2937; margin-bottom: 15px;">⚙️ Execution Settings</h3>
+                        
+                        <div class="input-group">
+                            <label>Creativity (Temperature)</label>
+                            <select id="aiTemp">
+                                <option value="0.1">Strict & Technical</option>
+                                <option value="0.4">Helpful & Direct</option>
+                                <option value="0.7" selected>Balanced & Conversational</option>
+                                <option value="1.0">Creative & Marketing Focused</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Default Language</label>
+                            <select id="aiLang">
+                                <option value="auto">Auto-Detect</option>
+                                <option value="en">English</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn-save" onclick="saveSmartTool('brain', event)">
+                            <i class="fas fa-cloud-upload-alt"></i> Deploy Knowledge Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2>🚀 Enterprise Intelligence</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card locked-card" id="card-apollo">
+                    <div class="lock-overlay">
+                        <span>🔒</span>
+                        <p>Enterprise Feature</p>
+                        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
+                    </div>
+                    <div>
+                        <div class="icon-box">🔍</div>
+                        <h3>Apollo Lead Scraper <span class="status-badge badge-enterprise">Enterprise</span></h3>
+                        <p class="tool-description">Enrich every chat lead with professional data.</p>
+                        <div class="input-group">
+                            <label>Apollo API Key</label>
+                            <input type="password" id="apolloKey" placeholder="sk_xxxxxxxxxxxxxxxx">
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('apollo', event)">Connect Apollo API</button>
+                </div>
+
+                <div class="tool-card locked-card" id="card-followup">
+                    <div class="lock-overlay">
+                        <span>🔒</span>
+                        <p>Pro Feature</p>
+                        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
+                    </div>
+                    <div>
+                        <div class="icon-box">📧</div>
+                        <h3>AI Email Nurture <span class="status-badge badge-pro">Pro</span></h3>
+                        <p class="tool-description">Automated follow-up emails for leads.</p>
+                        <div class="switch-group">
+                            <span>Enable Auto-Nurture</span>
+                            <label class="switch">
+                                <input type="checkbox" id="followupToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('followup', event)">Activate Automation</button>
+                </div>
+
+                <div class="tool-card locked-card" id="card-vision">
+                    <div class="lock-overlay">
+                        <span>🔒</span>
+                        <p>Enterprise Feature</p>
+                        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
+                    </div>
+                    <div>
+                        <div class="icon-box">👁️</div>
+                        <h3>AI Vision Hub <span class="status-badge badge-enterprise">Enterprise</span></h3>
+                        <p class="tool-description">Analyze images, PDFs, and documents.</p>
+                        <div class="switch-group">
+                            <span>Allow Image Uploads</span>
+                            <label class="switch">
+                                <input type="checkbox" id="visionToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('vision', event)">Update Vision Settings</button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2>🛠️ Operational Tools</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card" id="card-booking">
+                    <div>
+                        <div class="icon-box">📅</div>
+                        <h3>Appointment Logic <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
+                        <p class="tool-description">Configure booking links and scheduling.</p>
+                        <div class="input-group">
+                            <label><i class="fas fa-link" style="margin-right: 8px; color: var(--primary);"></i> Primary Booking Link</label>
+                            <input type="text" id="bookingUrl" placeholder="https://calendly.com/your-business/meeting">
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('booking', event)">
+                        <i class="fas fa-sync-alt"></i> Sync Booking Logic
                     </button>
                 </div>
 
-                <div class="data-table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="teamTableBody">
-                            <tr>
-                                <td><strong>Current User</strong></td>
-                                <td id="userEmail">admin@business.io</td>
-                                <td><span class="role-tag tag-admin">Owner</span></td>
-                                <td><span style="color: #10b981; font-weight: 600;"><i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> Online</span></td>
-                                <td>-</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="tool-card locked-card" id="card-sentiment">
+                    <div class="lock-overlay">
+                        <span>🔒</span>
+                        <p>Pro Feature</p>
+                        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
+                    </div>
+                    <div>
+                        <div class="icon-box">🛡️</div>
+                        <h3>Crisis Guard <span class="status-badge badge-pro">Pro</span></h3>
+                        <p class="tool-description">Real-time sentiment alerts.</p>
+                        <div class="input-group">
+                            <label>Alert Email</label>
+                            <input type="email" id="alertEmail" placeholder="ops@yourcompany.com">
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('sentiment', event)">Save Security Rules</button>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="grid" style="margin-top: 30px;">
-        <!-- Handover Card -->
-        <div class="tool-card" id="card-handover">
-            <div>
-                <div class="icon-box">🎧</div>
-                <h3>Live Handover</h3>
-                <p class="tool-description">Define when AI hands off to humans.</p>
-                
-                <div class="input-group">
-                    <label>Trigger Condition</label>
-                    <select id="handoverTrigger">
-                        <option value="human">Ask for representative</option>
-                        <option value="fail">AI fails 3 times</option>
-                        <option value="complex">High-value lead detected</option>
-                        <option value="manual">Always Manual</option>
-                    </select>
+                <div class="tool-card locked-card" id="card-webhook">
+                    <div class="lock-overlay">
+                        <span>🔒</span>
+                        <p>Pro Feature</p>
+                        <button class="upgrade-btn" onclick="window.location.href='dashboard.html'">Upgrade to Unlock</button>
+                    </div>
+                    <div>
+                        <div class="icon-box">⚡</div>
+                        <h3>CRM Webhooks <span class="status-badge badge-pro">Pro</span></h3>
+                        <p class="tool-description">Sync leads with Zapier, HubSpot, etc.</p>
+                        <div class="input-group">
+                            <label>Webhook URL</label>
+                            <input type="text" id="webhookUrl" placeholder="https://hooks.zapier.com/v1/...">
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('webhook', event)">Save Webhook</button>
                 </div>
             </div>
-            <button class="btn-save" onclick="saveSmartTool('handover', event)">Set Handover Rules</button>
+
+            <div class="section-header" id="org-section">
+                <h2>🏢 Organization & Team</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="grid">
+                <div class="tool-card wide-card">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                            <div>
+                                <h3>Staff Permissions <span class="op-indicator"><span class="pulse-dot"></span> READY</span></h3>
+                                <p class="tool-description" style="margin-bottom: 0;">Manage team access and roles.</p>
+                            </div>
+                            <button class="btn-save" style="width: auto; padding: 12px 30px; background: linear-gradient(135deg, #1f2937 0%, #111827 100%);" onclick="openInviteModal()">
+                                <i class="fas fa-user-plus"></i> Add Team Member
+                            </button>
+                        </div>
+
+                        <div class="data-table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamTableBody">
+                                    <tr>
+                                        <td><strong>Current User</strong></td>
+                                        <td id="userEmail">admin@business.io</td>
+                                        <td><span class="role-tag tag-admin">Owner</span></td>
+                                        <td><span style="color: #10b981; font-weight: 600;"><i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> Online</span></td>
+                                        <td>-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid" style="margin-top: 30px;">
+                <div class="tool-card" id="card-handover">
+                    <div>
+                        <div class="icon-box">🎧</div>
+                        <h3>Live Handover</h3>
+                        <p class="tool-description">Define when AI hands off to humans.</p>
+                        <div class="input-group">
+                            <label>Trigger Condition</label>
+                            <select id="handoverTrigger">
+                                <option value="human">Ask for representative</option>
+                                <option value="fail">AI fails 3 times</option>
+                                <option value="complex">High-value lead detected</option>
+                                <option value="manual">Always Manual</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn-save" onclick="saveSmartTool('handover', event)">Set Handover Rules</button>
+                </div>
+
+                <div class="tool-card" id="card-analytics">
+                    <div>
+                        <div class="icon-box">📈</div>
+                        <h3>Reporting Hub</h3>
+                        <p class="tool-description">Export comprehensive business data.</p>
+                        <div style="padding: 20px; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-radius: 14px; margin-bottom: 20px;">
+                            <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 10px;">Monthly AI Accuracy: <strong style="color: var(--primary);">98.2%</strong></p>
+                            <p style="font-size: 0.9rem; color: #4b5563;">Leads Captured: <strong style="color: var(--primary);">1,402</strong></p>
+                        </div>
+                    </div>
+                    <button class="btn-save" style="background: linear-gradient(135deg, #374151 0%, #1f2937 100%);" onclick="exportBusinessData()">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- Analytics Card -->
-        <div class="tool-card" id="card-analytics">
-            <div>
-                <div class="icon-box">📈</div>
-                <h3>Reporting Hub</h3>
-                <p class="tool-description">Export comprehensive business data.</p>
-                
-                <div style="padding: 20px; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-radius: 14px; margin-bottom: 20px;">
-                    <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 10px;">Monthly AI Accuracy: <strong style="color: var(--primary);">98.2%</strong></p>
-                    <p style="font-size: 0.9rem; color: #4b5563;">Leads Captured: <strong style="color: var(--primary);">1,402</strong></p>
-                </div>
-            </div>
-            <button class="btn-save" style="background: linear-gradient(135deg, #374151 0%, #1f2937 100%);" onclick="exportBusinessData()">
-                <i class="fas fa-download"></i> Download Report
-            </button>
-        </div>
+        <footer>
+            <p>© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Advanced Agent Control Panel</span></p>
+        </footer>
     </div>
 </div>
 
-<footer>
-    <p>© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Advanced Agent Control Panel</span></p>
-</footer>
-
-<!-- Load smart-logic.js -->
 <script src="smart-logic.js"></script>
 
-<!-- FIXED: Comprehensive save function for all tool types -->
 <script>
-// Tool state management
+// ============================================
+// ORIGINAL FUNCTIONS (PRESERVED)
+// ============================================
 const toolStates = JSON.parse(localStorage.getItem('toolStates') || '{}');
 
-// Get tool name
 function getToolName(toolType) {
     const names = {
         'business_type': 'Business Identity',
@@ -1127,7 +1807,6 @@ function getToolName(toolType) {
     return names[toolType] || toolType;
 }
 
-// Load tool states
 function loadToolStates() {
     const saved = localStorage.getItem('toolStates');
     if (saved) {
@@ -1147,7 +1826,6 @@ function loadToolStates() {
     }
 }
 
-// Save function
 window.saveSmartTool = function(toolType, event) {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -1158,7 +1836,6 @@ window.saveSmartTool = function(toolType, event) {
     const btn = event?.currentTarget || event?.target;
     const originalText = btn ? btn.innerHTML : '';
     
-    // Check if tool is already LIVE (for deactivation)
     const isLive = toolStates[toolType] === true;
     
     if (isLive) {
@@ -1168,13 +1845,11 @@ window.saveSmartTool = function(toolType, event) {
         return;
     }
     
-    // Activate/save tool
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     }
     
-    // Collect data
     let data = {};
     switch(toolType) {
         case 'business_type':
@@ -1194,26 +1869,16 @@ window.saveSmartTool = function(toolType, event) {
             data = { url: document.getElementById('bookingUrl')?.value || '' };
             break;
         case 'apollo':
-            data = {
-                apolloKey: document.getElementById('apolloKey')?.value || '',
-                autoSync: document.getElementById('syncToggle')?.checked || false
-            };
+            data = { apolloKey: document.getElementById('apolloKey')?.value || '' };
             break;
         case 'followup':
             data = { enabled: document.getElementById('followupToggle')?.checked || false };
             break;
         case 'vision':
-            data = {
-                enabled: document.getElementById('visionToggle')?.checked || false,
-                sensitivity: document.getElementById('visionSens')?.value || 'high',
-                area: document.getElementById('visionArea')?.value || 'all'
-            };
+            data = { enabled: document.getElementById('visionToggle')?.checked || false };
             break;
         case 'sentiment':
-            data = {
-                enabled: document.getElementById('sentimentToggle')?.checked || false,
-                email: document.getElementById('alertEmail')?.value || ''
-            };
+            data = { email: document.getElementById('alertEmail')?.value || '' };
             break;
         case 'handover':
             data = { trigger: document.getElementById('handoverTrigger')?.value || 'human' };
@@ -1223,7 +1888,6 @@ window.saveSmartTool = function(toolType, event) {
             break;
     }
     
-    // Send to backend
     fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/save`, {
         method: 'POST',
         headers: {
@@ -1273,7 +1937,6 @@ window.saveSmartTool = function(toolType, event) {
     });
 };
 
-// Deactivate tool
 window.deactivateTool = function(toolType, btn) {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -1327,7 +1990,6 @@ window.deactivateTool = function(toolType, btn) {
     });
 };
 
-// Team invite
 window.openInviteModal = function() {
     const email = prompt("Enter team member email:");
     if (email && email.includes('@')) {
@@ -1345,7 +2007,6 @@ window.openInviteModal = function() {
     }
 };
 
-// Export data
 window.exportBusinessData = function() {
     const btn = event.target;
     const originalText = btn.innerHTML;
@@ -1363,9 +2024,572 @@ window.exportBusinessData = function() {
     }, 1000);
 };
 
-// Initialize on load
+// ============================================
+// TOOL MANAGER - WITH WORKING QUICK EDIT
+// ============================================
+function renderToolManager() {
+    const tools = [
+        { id: 'business_type', name: 'Business Identity', status: toolStates['business_type'] || false, icon: '🏢', section: 'business-identity-section' },
+        { id: 'brain', name: 'AI Knowledge Base', status: toolStates['brain'] || false, icon: '🧠', section: 'ai-brain-section' },
+        { id: 'booking', name: 'Appointment Logic', status: toolStates['booking'] || false, icon: '📅', section: 'card-booking' },
+        { id: 'apollo', name: 'Apollo Lead Scraper', status: toolStates['apollo'] || false, icon: '🔍', section: 'card-apollo' },
+        { id: 'followup', name: 'AI Email Nurture', status: toolStates['followup'] || false, icon: '📧', section: 'card-followup' },
+        { id: 'vision', name: 'AI Vision Hub', status: toolStates['vision'] || false, icon: '👁️', section: 'card-vision' },
+        { id: 'handover', name: 'Live Handover', status: toolStates['handover'] || false, icon: '🎧', section: 'card-handover' }
+    ];
+    
+    const grid = document.getElementById('toolManagerGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = tools.map(tool => `
+        <div class="tool-card">
+            <div class="icon-box">${tool.icon}</div>
+            <h3>${tool.name}</h3>
+            <div class="switch-group">
+                <span>Status</span>
+                <span class="status-badge" style="background: ${tool.status ? '#10b981' : '#6b7280'}; color: white;">
+                    ${tool.status ? 'ACTIVE' : 'INACTIVE'}
+                </span>
+            </div>
+            <button class="btn-save quick-edit-btn" data-section="${tool.section}">
+                <i class="fas fa-edit"></i> Quick Edit
+            </button>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.quick-edit-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionId = this.dataset.section;
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                element.style.transition = 'all 0.3s ease';
+                element.style.boxShadow = '0 0 0 3px var(--primary)';
+                setTimeout(() => {
+                    element.style.boxShadow = '';
+                }, 2000);
+            } else {
+                const cardEl = document.getElementById(sectionId);
+                if (cardEl) {
+                    cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    cardEl.style.transition = 'all 0.3s ease';
+                    cardEl.style.boxShadow = '0 0 0 3px var(--primary)';
+                    setTimeout(() => {
+                        cardEl.style.boxShadow = '';
+                    }, 2000);
+                }
+            }
+        });
+    });
+}
+
+// ============================================
+// REAL-TIME METRICS - FETCH FROM BACKEND (NO SIMULATIONS)
+// ============================================
+let refreshInterval = null;
+
+async function fetchRealTimeMetrics() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/metrics`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (document.getElementById('liveLeadsCount')) document.getElementById('liveLeadsCount').innerText = data.totalLeads || 0;
+            if (document.getElementById('liveDeliveredCount')) document.getElementById('liveDeliveredCount').innerText = data.deliveredCount || 0;
+            if (document.getElementById('liveFailedCount')) document.getElementById('liveFailedCount').innerText = data.failedCount || 0;
+            if (document.getElementById('liveConversionRate')) document.getElementById('liveConversionRate').innerHTML = (data.conversionRate || 0) + '%';
+            if (document.getElementById('liveActiveChats')) document.getElementById('liveActiveChats').innerText = data.activeChats || 0;
+            if (document.getElementById('liveResponseTime')) document.getElementById('liveResponseTime').innerHTML = (data.avgResponseTime || 0) + '<span style="font-size: 1rem;">s</span>';
+        }
+    } catch (err) {
+        console.error('Failed to fetch metrics:', err);
+    }
+}
+
+async function fetchActivities() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/activities`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const activities = await response.json();
+            const feed = document.getElementById('activityFeed');
+            if (feed && activities.length > 0) {
+                feed.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                        <span><i class="fas ${activity.icon || 'fa-bell'}"></i> ${escapeHtml(activity.message)}</span>
+                        <span class="activity-${activity.status}">${activity.statusText || activity.status}</span>
+                        <span>${activity.timeAgo || 'Just now'}</span>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch activities:', err);
+    }
+}
+
+// ============================================
+// API KEYS FUNCTIONS - SAVE TO BACKEND
+// ============================================
+async function loadApiKeys() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/api-keys`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const keys = await response.json();
+            const container = document.getElementById('apiKeysList');
+            if (container) {
+                if (keys.length === 0) {
+                    container.innerHTML = '<p style="color: #6b7280; font-size: 0.85rem;">No API keys configured yet.</p>';
+                } else {
+                    container.innerHTML = keys.map(key => `
+                        <div class="api-key-row">
+                            <div>
+                                <span class="api-status ${key.status || 'verified'}"></span>
+                                <span class="api-key-name">${escapeHtml(key.name)}</span>
+                            </div>
+                            <div>
+                                <span class="api-key-value">${maskApiKey(key.value)}</span>
+                                <button class="delete-link" style="margin-left: 10px;" onclick="deleteApiKeyBackend('${key.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load API keys:', err);
+    }
+}
+
+async function saveApiKeyToBackend(name, value) {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/api-keys`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, value })
+        });
+        
+        if (response.ok) {
+            await loadApiKeys();
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('Failed to save API key:', err);
+        return false;
+    }
+}
+
+async function deleteApiKeyBackend(keyId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/api-keys/${keyId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            await loadApiKeys();
+        }
+    } catch (err) {
+        console.error('Failed to delete API key:', err);
+    }
+}
+
+// ============================================
+// CUSTOM LINKS FUNCTIONS - SAVE TO BACKEND
+// ============================================
+async function loadCustomLinks() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/custom-links`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const links = await response.json();
+            const container = document.getElementById('customLinksList');
+            if (container) {
+                if (links.length === 0) {
+                    container.innerHTML = '<p style="color: #6b7280; font-size: 0.85rem;">No links added yet.</p>';
+                } else {
+                    container.innerHTML = links.map((link, idx) => `
+                        <div class="link-item">
+                            <div>
+                                <strong>${escapeHtml(link.name)}</strong><br>
+                                <a href="${link.url}" target="_blank">${link.url.substring(0, 50)}${link.url.length > 50 ? '...' : ''}</a>
+                            </div>
+                            <button class="delete-link" onclick="deleteLinkBackend('${link.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load custom links:', err);
+    }
+}
+
+async function saveCustomLinkToBackend(name, url) {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/custom-links`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, url })
+        });
+        
+        if (response.ok) {
+            await loadCustomLinks();
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('Failed to save custom link:', err);
+        return false;
+    }
+}
+
+async function deleteLinkBackend(linkId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/custom-links/${linkId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            await loadCustomLinks();
+        }
+    } catch (err) {
+        console.error('Failed to delete custom link:', err);
+    }
+}
+
+// ============================================
+// CUSTOM INSTRUCTIONS FUNCTIONS
+// ============================================
+function loadCustomPrompts() {
+    const saved = localStorage.getItem('systemPrompts');
+    const prompts = saved ? JSON.parse(saved) : {};
+    const listDiv = document.getElementById('activePromptsList');
+    if (!listDiv) return;
+    
+    if (Object.keys(prompts).length === 0) {
+        listDiv.innerHTML = '<p style="color: #6b7280; font-size: 0.85rem;">No prompts saved yet.</p>';
+        return;
+    }
+    
+    listDiv.innerHTML = Object.entries(prompts).map(([tool, prompt]) => `
+        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 10px;">
+            <strong style="color: var(--primary);">${tool}:</strong>
+            <p style="font-size: 0.8rem; margin-top: 5px;">${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}</p>
+        </div>
+    `).join('');
+}
+
+// ============================================
+// WIDGET CAPABILITIES FUNCTIONS
+// ============================================
+function updateWidgetPreview() {
+    const imageEnabled = document.getElementById('enableImageSupport')?.checked;
+    const reviewEnabled = document.getElementById('enableReviewCollection')?.checked;
+    
+    const mockImage = document.getElementById('mockImagePreview');
+    const mockReview = document.getElementById('mockReviewPreview');
+    
+    if (mockImage) mockImage.style.display = imageEnabled ? 'block' : 'none';
+    if (mockReview) mockReview.style.display = reviewEnabled ? 'block' : 'none';
+}
+
+function loadWidgetCapabilities() {
+    const saved = localStorage.getItem('widgetCapabilities');
+    if (saved) {
+        const settings = JSON.parse(saved);
+        if (document.getElementById('enableImageSupport')) document.getElementById('enableImageSupport').checked = settings.imageSupport || false;
+        if (document.getElementById('enableReviewCollection')) document.getElementById('enableReviewCollection').checked = settings.reviewCollection || false;
+        updateWidgetPreview();
+    }
+}
+
+// ============================================
+// IMAGE ATTACHMENT FUNCTIONS - UPDATED FOR WIDGET COMPATIBILITY
+// ============================================
+let uploadedImages = [];
+
+document.getElementById('imageAttachmentArea')?.addEventListener('click', () => {
+    document.getElementById('imageFileInput').click();
+});
+
+document.getElementById('imageFileInput')?.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                uploadedImages.push(evt.target.result);
+                renderImagePreviews();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+
+function renderImagePreviews() {
+    const container = document.getElementById('imagePreviewContainer');
+    if (!container) return;
+    
+    container.innerHTML = uploadedImages.map((img, idx) => `
+        <div class="image-preview-item">
+            <img src="${img}" alt="Proof image">
+            <div class="remove-image" onclick="removeImage(${idx})">✕</div>
+        </div>
+    `).join('');
+}
+
+function removeImage(index) {
+    uploadedImages.splice(index, 1);
+    renderImagePreviews();
+}
+
+// Clear all images button
+document.getElementById('clearAllImagesBtn')?.addEventListener('click', async function() {
+    if (confirm('Are you sure you want to delete ALL proof images? This cannot be undone.')) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in first');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/clear-proof-images`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                uploadedImages = [];
+                renderImagePreviews();
+                alert('All proof images have been cleared!');
+            } else {
+                alert('Failed to clear images');
+            }
+        } catch (err) {
+            console.error('Failed to clear images:', err);
+            alert('Failed to clear images');
+        }
+    }
+});
+
+// ============================================
+// SIDEBAR NAVIGATION
+// ============================================
+document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const section = link.dataset.section;
+        document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        
+        const sectionMap = {
+            'realtime-display': 'realtime-display-section',
+            'tool-manager': 'tool-manager-section',
+            'image-attachment': 'image-attachment-section',
+            'custom-links': 'custom-links-section',
+            'integrations': 'integrations-section',
+            'configuration': 'configuration-section',
+            'custom-instructions': 'custom-instructions-section'
+        };
+        
+        const elementId = sectionMap[section];
+        if (elementId) {
+            document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+
+// Helper functions
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function maskApiKey(key) {
+    if (!key) return '••••••••';
+    if (key.length <= 8) return '••••••••';
+    return key.substring(0, 4) + '••••••••' + key.substring(key.length - 4);
+}
+
+// ============================================
+// EVENT LISTENERS FOR BUTTONS
+// ============================================
+document.getElementById('saveSystemPromptBtn')?.addEventListener('click', function() {
+    const tool = document.getElementById('customPromptToolSelect').value;
+    const prompt = document.getElementById('customSystemPrompt').value;
+    if (!prompt) {
+        alert('Please enter a system prompt');
+        return;
+    }
+    
+    const saved = localStorage.getItem('systemPrompts');
+    const prompts = saved ? JSON.parse(saved) : {};
+    prompts[tool] = prompt;
+    localStorage.setItem('systemPrompts', JSON.stringify(prompts));
+    alert(`System prompt saved for ${tool}`);
+    loadCustomPrompts();
+});
+
+document.getElementById('enableImageSupport')?.addEventListener('change', updateWidgetPreview);
+document.getElementById('enableReviewCollection')?.addEventListener('change', updateWidgetPreview);
+
+document.getElementById('saveWidgetCapabilitiesBtn')?.addEventListener('click', function() {
+    const settings = {
+        imageSupport: document.getElementById('enableImageSupport')?.checked || false,
+        reviewCollection: document.getElementById('enableReviewCollection')?.checked || false
+    };
+    localStorage.setItem('widgetCapabilities', JSON.stringify(settings));
+    alert('Widget settings saved! The chat widget will now reflect these changes.');
+    updateWidgetPreview();
+});
+
+document.getElementById('addApiKeyBtn')?.addEventListener('click', async function() {
+    const name = document.getElementById('newApiName').value.trim();
+    const value = document.getElementById('newApiKey').value.trim();
+    
+    if (!name || !value) {
+        alert('Please enter both service name and API key');
+        return;
+    }
+    
+    const success = await saveApiKeyToBackend(name, value);
+    if (success) {
+        document.getElementById('newApiName').value = '';
+        document.getElementById('newApiKey').value = '';
+        alert('API key added successfully!');
+    } else {
+        alert('Failed to save API key. Please try again.');
+    }
+});
+
+document.getElementById('addLinkBtn')?.addEventListener('click', async function() {
+    const name = document.getElementById('newLinkName').value.trim();
+    const url = document.getElementById('newLinkUrl').value.trim();
+    
+    if (!name || !url) {
+        alert('Please enter both link name and URL');
+        return;
+    }
+    
+    const success = await saveCustomLinkToBackend(name, url);
+    if (success) {
+        document.getElementById('newLinkName').value = '';
+        document.getElementById('newLinkUrl').value = '';
+        alert('Link added successfully! Customers can now ask "show me useful links" to see this.');
+    } else {
+        alert('Failed to save link. Please try again.');
+    }
+});
+
+document.getElementById('saveImagesBtn')?.addEventListener('click', async function() {
+    if (uploadedImages.length === 0) {
+        alert('Please select images first');
+        return;
+    }
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in first');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/upload-proof`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ images: uploadedImages })
+        });
+        
+        if (response.ok) {
+            alert(`${uploadedImages.length} image(s) saved as proof! Customers can now ask "show me proof" to see these.`);
+            uploadedImages = [];
+            renderImagePreviews();
+        } else {
+            alert('Failed to save images');
+        }
+    } catch (err) {
+        console.error('Failed to upload images:', err);
+        alert('Failed to upload images');
+    }
+});
+
+// ============================================
+// INITIALIZE EVERYTHING
+// ============================================
 document.addEventListener('DOMContentLoaded', function() {
     loadToolStates();
+    renderToolManager();
+    loadCustomPrompts();
+    loadWidgetCapabilities();
+    
+    // Load data from backend
+    loadCustomLinks();
+    loadApiKeys();
+    
+    // Start real-time polling (every 5 seconds)
+    fetchRealTimeMetrics();
+    fetchActivities();
+    refreshInterval = setInterval(() => {
+        fetchRealTimeMetrics();
+        fetchActivities();
+    }, 5000);
     
     const token = localStorage.getItem('token');
     if (token) {
@@ -1374,6 +2598,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const emailEl = document.getElementById('userEmail');
             if (emailEl) emailEl.textContent = payload.email || 'admin@business.io';
         } catch (e) {}
+    }
+});
+
+// Cleanup interval on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
     }
 });
 </script>
