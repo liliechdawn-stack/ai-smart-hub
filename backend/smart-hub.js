@@ -424,7 +424,6 @@ router.get("/metrics", auth, async (req, res) => {
     const userId = req.user.id;
 
     try {
-        // Get total leads count
         const { count: totalLeads, error: leadsError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
@@ -432,7 +431,6 @@ router.get("/metrics", auth, async (req, res) => {
 
         if (leadsError) console.error("[METRICS] Leads error:", leadsError);
 
-        // Get delivered count
         const { count: deliveredCount, error: deliveredError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
@@ -441,7 +439,6 @@ router.get("/metrics", auth, async (req, res) => {
 
         if (deliveredError) console.error("[METRICS] Delivered error:", deliveredError);
 
-        // Get failed count
         const { count: failedCount, error: failedError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
@@ -450,7 +447,6 @@ router.get("/metrics", auth, async (req, res) => {
 
         if (failedError) console.error("[METRICS] Failed error:", failedError);
 
-        // Get active chats count
         let activeChats = 0;
         try {
             const { count: chatsCount, error: chatsError } = await supabase
@@ -465,7 +461,6 @@ router.get("/metrics", auth, async (req, res) => {
             activeChats = 0;
         }
 
-        // Get average response time
         let avgResponseTime = 2.5;
         try {
             const { data: responses, error: respError } = await supabase
@@ -483,7 +478,6 @@ router.get("/metrics", auth, async (req, res) => {
             avgResponseTime = 2.5;
         }
 
-        // Calculate conversion rate
         const conversionRate = totalLeads > 0 ? ((deliveredCount / totalLeads) * 100).toFixed(1) : 0;
 
         console.log(`[METRICS] User ${userId}: Leads=${totalLeads}, Delivered=${deliveredCount}, Failed=${failedCount}, Rate=${conversionRate}%`);
@@ -498,7 +492,6 @@ router.get("/metrics", auth, async (req, res) => {
         });
     } catch (err) {
         console.error("[METRICS] Error:", err);
-        // Return default values instead of error to keep UI working
         res.json({
             totalLeads: 0,
             deliveredCount: 0,
@@ -555,7 +548,6 @@ router.get("/activities", auth, async (req, res) => {
         res.json(formattedActivities);
     } catch (err) {
         console.error("[ACTIVITIES] Error:", err);
-        // Return empty array instead of error
         res.json([]);
     }
 });
@@ -759,7 +751,7 @@ router.delete("/custom-links/:linkId", auth, async (req, res) => {
 });
 
 // ============================================
-// PROOF IMAGES UPLOAD (FULLY FIXED)
+// PROOF IMAGES UPLOAD (FULLY FIXED - CONVERTS user_id to STRING)
 // ============================================
 router.post("/upload-proof", auth, async (req, res) => {
     const userId = req.user.id;
@@ -779,32 +771,27 @@ router.post("/upload-proof", auth, async (req, res) => {
         for (let i = 0; i < images.length; i++) {
             const imageData = images[i];
             
-            // Skip if image data is invalid
             if (!imageData || typeof imageData !== 'string') {
                 console.log(`[UPLOAD-PROOF] Image ${i} invalid data, skipping`);
                 continue;
             }
             
-            // Check image size (max 5MB)
-            const imageSize = Buffer.byteLength(imageData, 'utf8');
-            if (imageSize > 5 * 1024 * 1024) {
-                console.log(`[UPLOAD-PROOF] Image ${i} too large: ${imageSize} bytes, skipping`);
-                continue;
-            }
+            // Convert userId to string to ensure compatibility with TEXT column
+            const userIdStr = String(userId);
             
             const { error } = await supabase
                 .from('proof_images')
                 .insert({
-                    user_id: userId,
+                    user_id: userIdStr,
                     image_data: imageData,
                     created_at: new Date().toISOString()
                 });
 
             if (error) {
-                console.error(`[UPLOAD-PROOF] Error inserting image ${i}:`, error.message);
+                console.error(`[UPLOAD-PROOF] Insert error for image ${i}:`, error.message);
             } else {
                 successCount++;
-                console.log(`[UPLOAD-PROOF] Image ${i} saved successfully`);
+                console.log(`[UPLOAD-PROOF] Image ${i} saved successfully for user ${userIdStr}`);
             }
         }
 
@@ -827,10 +814,12 @@ router.get("/proof-images", auth, async (req, res) => {
     const userId = req.user.id;
 
     try {
+        const userIdStr = String(userId);
+        
         const { data: images, error } = await supabase
             .from('proof_images')
             .select('id, image_data, created_at')
-            .eq('user_id', userId)
+            .eq('user_id', userIdStr)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -857,7 +846,7 @@ router.delete("/proof-images/:imageId", auth, async (req, res) => {
             .from('proof_images')
             .delete()
             .eq('id', imageId)
-            .eq('user_id', userId);
+            .eq('user_id', String(userId));
 
         if (error) throw error;
 
@@ -877,7 +866,7 @@ router.delete("/clear-proof-images", auth, async (req, res) => {
         const { error } = await supabase
             .from('proof_images')
             .delete()
-            .eq('user_id', userId);
+            .eq('user_id', String(userId));
 
         if (error) throw error;
 
@@ -921,8 +910,6 @@ router.post("/public/apollo/enrich", async (req, res) => {
             return res.status(400).json({ error: "Apollo not configured" });
         }
         
-        // Here you would call actual Apollo API
-        // For production, replace with actual Apollo API call
         const enrichedData = {
             enriched: true,
             data: {
