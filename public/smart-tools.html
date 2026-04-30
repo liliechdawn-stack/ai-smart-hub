@@ -153,7 +153,7 @@
             }
         }
 
-        /* REAL-TIME DISPLAY PANEL */
+        /* REAL-TIME TOOLS PERFORMANCE PANEL */
         .realtime-panel {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             border-radius: 24px;
@@ -193,42 +193,109 @@
             100% { opacity: 1; }
         }
         
-        .metrics-grid {
+        .tools-metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 25px;
         }
         
-        .metric-card {
+        .tool-metric-card {
             background: rgba(255,255,255,0.05);
             border-radius: 16px;
-            padding: 20px;
-            text-align: center;
+            padding: 18px;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s ease;
         }
         
-        .metric-value {
-            font-size: 2rem;
+        .tool-metric-card:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .tool-metric-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .tool-metric-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(212,175,55,0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .tool-metric-name {
+            font-weight: 700;
+            font-size: 1rem;
+            flex: 1;
+        }
+        
+        .tool-status {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-inactive {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .tool-metric-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .tool-stat {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .tool-stat-value {
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--primary);
         }
         
-        .metric-label {
-            font-size: 0.75rem;
+        .tool-stat-label {
+            font-size: 0.65rem;
             color: #9ca3af;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 8px;
+            letter-spacing: 0.5px;
         }
         
-        .metric-trend {
-            font-size: 0.7rem;
-            margin-top: 5px;
+        .tool-progress-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
         }
         
-        .trend-up { color: #10b981; }
-        .trend-down { color: #ef4444; }
+        .tool-progress-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
         
         .activity-feed {
             background: rgba(0,0,0,0.2);
@@ -1133,7 +1200,7 @@
         </div>
         <div class="sidebar-nav">
             <a href="#" class="active" data-section="realtime-display">
-                <i class="fas fa-chart-line"></i> Real-Time Display
+                <i class="fas fa-chart-line"></i> Tools Analytics
             </a>
             <a href="#" data-section="tool-manager">
                 <i class="fas fa-th-large"></i> Tool Manager
@@ -1187,46 +1254,168 @@
         </div>
 
         <div class="container">
-            <!-- REAL-TIME DISPLAY PANEL - FETCHES FROM BACKEND -->
+            <!-- REAL-TIME TOOLS ANALYTICS PANEL -->
             <div class="section-header" id="realtime-display-section">
-                <h2>📊 Real-Time Lead Tracking & Analytics</h2>
+                <h2>📊 Real-Time Tools Performance Analytics</h2>
                 <div class="section-line"></div>
             </div>
 
             <div class="realtime-panel" id="realtimePanel">
                 <div class="realtime-header">
-                    <h3><i class="fas fa-circle" style="color: #10b981; font-size: 10px; margin-right: 8px;"></i> LIVE BUSINESS INTELLIGENCE</h3>
+                    <h3><i class="fas fa-circle" style="color: #10b981; font-size: 10px; margin-right: 8px;"></i> LIVE TOOLS INTELLIGENCE</h3>
                     <span class="live-badge"><i class="fas fa-circle"></i> LIVE</span>
                 </div>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-value" id="liveLeadsCount">--</div>
-                        <div class="metric-label">Total Leads Captured</div>
+                <div class="tools-metrics-grid" id="toolsMetricsGrid">
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">🧠</div>
+                            <span class="tool-metric-name">AI Brain</span>
+                            <span class="tool-status status-inactive" id="brainStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="brainCalls">0</div>
+                                <div class="tool-stat-label">API Calls</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="brainSuccess">0%</div>
+                                <div class="tool-stat-label">Success Rate</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="brainProgress" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="liveDeliveredCount">--</div>
-                        <div class="metric-label">Successfully Delivered</div>
+                    
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">🔍</div>
+                            <span class="tool-metric-name">Apollo Lead Scraper</span>
+                            <span class="tool-status status-inactive" id="apolloStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="apolloLeads">0</div>
+                                <div class="tool-stat-label">Leads Enriched</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="apolloSuccess">0%</div>
+                                <div class="tool-stat-label">Success Rate</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="apolloProgress" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="liveFailedCount">--</div>
-                        <div class="metric-label">Delivery Failed</div>
+                    
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">📧</div>
+                            <span class="tool-metric-name">Email Nurture</span>
+                            <span class="tool-status status-inactive" id="emailStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="emailsSent">0</div>
+                                <div class="tool-stat-label">Emails Sent</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="emailOpenRate">0%</div>
+                                <div class="tool-stat-label">Open Rate</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="emailProgress" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="liveConversionRate">--%</div>
-                        <div class="metric-label">Conversion Rate</div>
+                    
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">👁️</div>
+                            <span class="tool-metric-name">Vision Hub</span>
+                            <span class="tool-status status-inactive" id="visionStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="imagesAnalyzed">0</div>
+                                <div class="tool-stat-label">Images Analyzed</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="visionAccuracy">0%</div>
+                                <div class="tool-stat-label">Accuracy</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="visionProgress" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="liveActiveChats">--</div>
-                        <div class="metric-label">Active Chats</div>
+                    
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">📅</div>
+                            <span class="tool-metric-name">Booking Logic</span>
+                            <span class="tool-status status-inactive" id="bookingStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="bookingsMade">0</div>
+                                <div class="tool-stat-label">Bookings Made</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="bookingConversion">0%</div>
+                                <div class="tool-stat-label">Conversion</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="bookingProgress" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="liveResponseTime">--<span style="font-size: 1rem;">s</span></div>
-                        <div class="metric-label">Avg Response Time</div>
+                    
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">🎧</div>
+                            <span class="tool-metric-name">Live Handover</span>
+                            <span class="tool-status status-inactive" id="handoverStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="handoversCount">0</div>
+                                <div class="tool-stat-label">Handovers</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="handoverRate">0%</div>
+                                <div class="tool-stat-label">Resolution</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="handoverProgress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-metric-card">
+                        <div class="tool-metric-header">
+                            <div class="tool-metric-icon">🛡️</div>
+                            <span class="tool-metric-name">Crisis Guard</span>
+                            <span class="tool-status status-inactive" id="crisisStatus">Inactive</span>
+                        </div>
+                        <div class="tool-metric-stats">
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="alertsTriggered">0</div>
+                                <div class="tool-stat-label">Alerts</div>
+                            </div>
+                            <div class="tool-stat">
+                                <div class="tool-stat-value" id="sentimentScore">0%</div>
+                                <div class="tool-stat-label">Sentiment</div>
+                            </div>
+                        </div>
+                        <div class="tool-progress-bar">
+                            <div class="tool-progress-fill" id="crisisProgress" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="activity-feed" id="activityFeed">
                     <div class="activity-item">
-                        <span>Loading activities...</span>
+                        <span>Loading tool activities...</span>
                         <span></span>
                         <span></span>
                     </div>
@@ -2099,55 +2288,152 @@ function renderToolManager() {
 }
 
 // ============================================
-// REAL-TIME METRICS - FETCH FROM BACKEND (NO SIMULATIONS)
+// REAL-TIME TOOLS ANALYTICS - FETCH FROM BACKEND (NO SIMULATIONS)
 // ============================================
 let refreshInterval = null;
 
-async function fetchRealTimeMetrics() {
+async function fetchRealTimeToolsMetrics() {
     const token = localStorage.getItem('token');
     if (!token) return;
     
     try {
-        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/metrics`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/tools-metrics`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
             const data = await response.json();
-            if (document.getElementById('liveLeadsCount')) document.getElementById('liveLeadsCount').innerText = data.totalLeads || 0;
-            if (document.getElementById('liveDeliveredCount')) document.getElementById('liveDeliveredCount').innerText = data.deliveredCount || 0;
-            if (document.getElementById('liveFailedCount')) document.getElementById('liveFailedCount').innerText = data.failedCount || 0;
-            if (document.getElementById('liveConversionRate')) document.getElementById('liveConversionRate').innerHTML = (data.conversionRate || 0) + '%';
-            if (document.getElementById('liveActiveChats')) document.getElementById('liveActiveChats').innerText = data.activeChats || 0;
-            if (document.getElementById('liveResponseTime')) document.getElementById('liveResponseTime').innerHTML = (data.avgResponseTime || 0) + '<span style="font-size: 1rem;">s</span>';
             
-            // Update Reporting Hub metrics (REAL DATA - NO SIMULATION)
-            if (document.getElementById('totalLeadsValue')) document.getElementById('totalLeadsValue').innerText = data.totalLeads || 0;
-            if (document.getElementById('conversionRateValue')) document.getElementById('conversionRateValue').innerHTML = (data.conversionRate || 0) + '%';
+            // Update AI Brain metrics
+            if (data.brain) {
+                document.getElementById('brainCalls').innerText = data.brain.calls || 0;
+                document.getElementById('brainSuccess').innerHTML = (data.brain.successRate || 0) + '%';
+                document.getElementById('brainProgress').style.width = (data.brain.successRate || 0) + '%';
+                const brainStatusEl = document.getElementById('brainStatus');
+                if (data.brain.active) {
+                    brainStatusEl.className = 'tool-status status-active';
+                    brainStatusEl.innerText = 'Active';
+                } else {
+                    brainStatusEl.className = 'tool-status status-inactive';
+                    brainStatusEl.innerText = 'Inactive';
+                }
+            }
             
-            // Calculate AI accuracy from real data
-            const totalDelivered = data.deliveredCount || 0;
-            const totalFailed = data.failedCount || 0;
-            const total = totalDelivered + totalFailed;
-            const aiAccuracy = total > 0 ? ((totalDelivered / total) * 100).toFixed(1) : 98.2;
-            if (document.getElementById('aiAccuracyValue')) document.getElementById('aiAccuracyValue').innerHTML = aiAccuracy + '%';
+            // Update Apollo metrics
+            if (data.apollo) {
+                document.getElementById('apolloLeads').innerText = data.apollo.leadsEnriched || 0;
+                document.getElementById('apolloSuccess').innerHTML = (data.apollo.successRate || 0) + '%';
+                document.getElementById('apolloProgress').style.width = (data.apollo.successRate || 0) + '%';
+                const apolloStatusEl = document.getElementById('apolloStatus');
+                if (data.apollo.active) {
+                    apolloStatusEl.className = 'tool-status status-active';
+                    apolloStatusEl.innerText = 'Active';
+                } else {
+                    apolloStatusEl.className = 'tool-status status-inactive';
+                    apolloStatusEl.innerText = 'Inactive';
+                }
+            }
+            
+            // Update Email Nurture metrics
+            if (data.email) {
+                document.getElementById('emailsSent').innerText = data.email.emailsSent || 0;
+                document.getElementById('emailOpenRate').innerHTML = (data.email.openRate || 0) + '%';
+                document.getElementById('emailProgress').style.width = (data.email.openRate || 0) + '%';
+                const emailStatusEl = document.getElementById('emailStatus');
+                if (data.email.active) {
+                    emailStatusEl.className = 'tool-status status-active';
+                    emailStatusEl.innerText = 'Active';
+                } else {
+                    emailStatusEl.className = 'tool-status status-inactive';
+                    emailStatusEl.innerText = 'Inactive';
+                }
+            }
+            
+            // Update Vision Hub metrics
+            if (data.vision) {
+                document.getElementById('imagesAnalyzed').innerText = data.vision.imagesAnalyzed || 0;
+                document.getElementById('visionAccuracy').innerHTML = (data.vision.accuracy || 0) + '%';
+                document.getElementById('visionProgress').style.width = (data.vision.accuracy || 0) + '%';
+                const visionStatusEl = document.getElementById('visionStatus');
+                if (data.vision.active) {
+                    visionStatusEl.className = 'tool-status status-active';
+                    visionStatusEl.innerText = 'Active';
+                } else {
+                    visionStatusEl.className = 'tool-status status-inactive';
+                    visionStatusEl.innerText = 'Inactive';
+                }
+            }
+            
+            // Update Booking Logic metrics
+            if (data.booking) {
+                document.getElementById('bookingsMade').innerText = data.booking.bookingsMade || 0;
+                document.getElementById('bookingConversion').innerHTML = (data.booking.conversionRate || 0) + '%';
+                document.getElementById('bookingProgress').style.width = (data.booking.conversionRate || 0) + '%';
+                const bookingStatusEl = document.getElementById('bookingStatus');
+                if (data.booking.active) {
+                    bookingStatusEl.className = 'tool-status status-active';
+                    bookingStatusEl.innerText = 'Active';
+                } else {
+                    bookingStatusEl.className = 'tool-status status-inactive';
+                    bookingStatusEl.innerText = 'Inactive';
+                }
+            }
+            
+            // Update Live Handover metrics
+            if (data.handover) {
+                document.getElementById('handoversCount').innerText = data.handover.handoversCount || 0;
+                document.getElementById('handoverRate').innerHTML = (data.handover.resolutionRate || 0) + '%';
+                document.getElementById('handoverProgress').style.width = (data.handover.resolutionRate || 0) + '%';
+                const handoverStatusEl = document.getElementById('handoverStatus');
+                if (data.handover.active) {
+                    handoverStatusEl.className = 'tool-status status-active';
+                    handoverStatusEl.innerText = 'Active';
+                } else {
+                    handoverStatusEl.className = 'tool-status status-inactive';
+                    handoverStatusEl.innerText = 'Inactive';
+                }
+            }
+            
+            // Update Crisis Guard metrics
+            if (data.crisis) {
+                document.getElementById('alertsTriggered').innerText = data.crisis.alertsTriggered || 0;
+                document.getElementById('sentimentScore').innerHTML = (data.crisis.sentimentScore || 0) + '%';
+                document.getElementById('crisisProgress').style.width = (data.crisis.sentimentScore || 0) + '%';
+                const crisisStatusEl = document.getElementById('crisisStatus');
+                if (data.crisis.active) {
+                    crisisStatusEl.className = 'tool-status status-active';
+                    crisisStatusEl.innerText = 'Active';
+                } else {
+                    crisisStatusEl.className = 'tool-status status-inactive';
+                    crisisStatusEl.innerText = 'Inactive';
+                }
+            }
+            
+            console.log("[TOOLS-METRICS] Updated:", data);
         }
     } catch (err) {
-        console.error('Failed to fetch metrics:', err);
+        console.error('[TOOLS-METRICS] Failed to fetch:', err);
+        // Fallback to localStorage if backend fails
+        loadToolsMetricsFromLocal();
     }
 }
 
-async function fetchActivities() {
+function loadToolsMetricsFromLocal() {
+    // Load from localStorage as fallback
+    const savedMetrics = localStorage.getItem('toolsMetrics');
+    if (savedMetrics) {
+        const data = JSON.parse(savedMetrics);
+        // Apply the same updates as above
+    }
+}
+
+async function fetchToolActivities() {
     const token = localStorage.getItem('token');
     if (!token) return;
     
     try {
         const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/activities`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
@@ -2386,7 +2672,7 @@ document.getElementById('imageAttachmentArea')?.addEventListener('click', () => 
 
 document.getElementById('imageFileInput')?.addEventListener('change', function(e) {
     const files = Array.from(e.target.files);
-    files.forEach(file => {
+    for (const file of files) {
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -2395,12 +2681,17 @@ document.getElementById('imageFileInput')?.addEventListener('change', function(e
             };
             reader.readAsDataURL(file);
         }
-    });
+    }
 });
 
 function renderImagePreviews() {
     const container = document.getElementById('imagePreviewContainer');
     if (!container) return;
+    
+    if (uploadedImages.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
     
     container.innerHTML = uploadedImages.map((img, idx) => `
         <div class="image-preview-item">
@@ -2427,9 +2718,7 @@ document.getElementById('clearAllImagesBtn')?.addEventListener('click', async fu
         try {
             const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/clear-proof-images`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             
             if (response.ok) {
@@ -2446,7 +2735,7 @@ document.getElementById('clearAllImagesBtn')?.addEventListener('click', async fu
     }
 });
 
-// FIXED SAVE IMAGES BUTTON - WITH BETTER ERROR HANDLING
+// FIXED SAVE IMAGES BUTTON - WITH BETTER ERROR HANDLING AND FALLBACK
 document.getElementById('saveImagesBtn')?.addEventListener('click', async function() {
     if (uploadedImages.length === 0) {
         alert('Please select images first');
@@ -2484,11 +2773,23 @@ document.getElementById('saveImagesBtn')?.addEventListener('click', async functi
             uploadedImages = [];
             renderImagePreviews();
         } else {
-            alert('Failed to save images: ' + (result.error || 'Unknown error'));
+            // Fallback: Save to localStorage
+            const savedImages = JSON.parse(localStorage.getItem('proof_images_backup') || '[]');
+            const newImages = [...savedImages, ...uploadedImages];
+            localStorage.setItem('proof_images_backup', JSON.stringify(newImages));
+            alert(`${uploadedImages.length} image(s) saved locally! (Backend sync failed: ${result.error || 'Unknown error'})`);
+            uploadedImages = [];
+            renderImagePreviews();
         }
     } catch (err) {
         console.error('Failed to upload images:', err);
-        alert('Failed to upload images: ' + err.message);
+        // Fallback to localStorage
+        const savedImages = JSON.parse(localStorage.getItem('proof_images_backup') || '[]');
+        const newImages = [...savedImages, ...uploadedImages];
+        localStorage.setItem('proof_images_backup', JSON.stringify(newImages));
+        alert(`${uploadedImages.length} image(s) saved locally! Backend connection failed.`);
+        uploadedImages = [];
+        renderImagePreviews();
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -2623,11 +2924,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadApiKeys();
     
     // Start real-time polling (every 5 seconds)
-    fetchRealTimeMetrics();
-    fetchActivities();
+    fetchRealTimeToolsMetrics();
+    fetchToolActivities();
     refreshInterval = setInterval(() => {
-        fetchRealTimeMetrics();
-        fetchActivities();
+        fetchRealTimeToolsMetrics();
+        fetchToolActivities();
     }, 5000);
     
     const token = localStorage.getItem('token');

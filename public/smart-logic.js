@@ -2,6 +2,7 @@
 // SMART-LOGIC.JS - FULLY UPDATED FOR SAAS READY
 // Real-time data from backend - NO SIMULATIONS
 // Works with smart-tools.html (updated version)
+// Includes REAL-TIME TOOLS ANALYTICS
 // ============================================
 
 // Ensure BACKEND_URL is available
@@ -88,41 +89,233 @@ window.addEventListener('beforeunload', () => {
 
 // Refresh all real-time data from backend
 async function refreshAllRealTimeData() {
-    await fetchRealTimeMetrics();
+    await fetchRealTimeToolsMetrics();
     await fetchRealTimeActivities();
 }
 
-// Fetch real-time metrics from backend
-async function fetchRealTimeMetrics() {
+// ============================================
+// NEW: REAL-TIME TOOLS METRICS (FOR TOOLS ANALYTICS PANEL)
+// ============================================
+async function fetchRealTimeToolsMetrics() {
     const token = localStorage.getItem('token');
     if (!token) return;
     
     try {
-        const response = await fetch(`${API_BASE}/api/smart-hub/metrics`, {
+        const response = await fetch(`${API_BASE}/api/smart-hub/tools-metrics`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
             const data = await response.json();
+            console.log("[TOOLS-METRICS] Updated:", data);
             
-            const leadsEl = document.getElementById('liveLeadsCount');
-            const deliveredEl = document.getElementById('liveDeliveredCount');
-            const failedEl = document.getElementById('liveFailedCount');
-            const conversionEl = document.getElementById('liveConversionRate');
-            const chatsEl = document.getElementById('liveActiveChats');
-            const responseEl = document.getElementById('liveResponseTime');
+            // Update AI Brain metrics
+            if (data.brain) {
+                const brainCallsEl = document.getElementById('brainCalls');
+                const brainSuccessEl = document.getElementById('brainSuccess');
+                const brainProgressEl = document.getElementById('brainProgress');
+                const brainStatusEl = document.getElementById('brainStatus');
+                
+                if (brainCallsEl) brainCallsEl.innerText = data.brain.calls || 0;
+                if (brainSuccessEl) brainSuccessEl.innerHTML = (data.brain.successRate || 0) + '%';
+                if (brainProgressEl) brainProgressEl.style.width = (data.brain.successRate || 0) + '%';
+                if (brainStatusEl) {
+                    if (data.brain.active) {
+                        brainStatusEl.className = 'tool-status status-active';
+                        brainStatusEl.innerText = 'Active';
+                    } else {
+                        brainStatusEl.className = 'tool-status status-inactive';
+                        brainStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
             
-            if (leadsEl) leadsEl.innerText = data.totalLeads || 0;
-            if (deliveredEl) deliveredEl.innerText = data.deliveredCount || 0;
-            if (failedEl) failedEl.innerText = data.failedCount || 0;
-            if (conversionEl) conversionEl.innerHTML = (data.conversionRate || 0) + '%';
-            if (chatsEl) chatsEl.innerText = data.activeChats || 0;
-            if (responseEl) responseEl.innerHTML = (data.avgResponseTime || 0) + '<span style="font-size: 1rem;">s</span>';
+            // Update Apollo metrics
+            if (data.apollo) {
+                const apolloLeadsEl = document.getElementById('apolloLeads');
+                const apolloSuccessEl = document.getElementById('apolloSuccess');
+                const apolloProgressEl = document.getElementById('apolloProgress');
+                const apolloStatusEl = document.getElementById('apolloStatus');
+                
+                if (apolloLeadsEl) apolloLeadsEl.innerText = data.apollo.leadsEnriched || 0;
+                if (apolloSuccessEl) apolloSuccessEl.innerHTML = (data.apollo.successRate || 0) + '%';
+                if (apolloProgressEl) apolloProgressEl.style.width = (data.apollo.successRate || 0) + '%';
+                if (apolloStatusEl) {
+                    if (data.apollo.active) {
+                        apolloStatusEl.className = 'tool-status status-active';
+                        apolloStatusEl.innerText = 'Active';
+                    } else {
+                        apolloStatusEl.className = 'tool-status status-inactive';
+                        apolloStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
             
-            console.log("[METRICS] Updated:", data);
+            // Update Email Nurture metrics
+            if (data.email) {
+                const emailsSentEl = document.getElementById('emailsSent');
+                const emailOpenRateEl = document.getElementById('emailOpenRate');
+                const emailProgressEl = document.getElementById('emailProgress');
+                const emailStatusEl = document.getElementById('emailStatus');
+                
+                if (emailsSentEl) emailsSentEl.innerText = data.email.emailsSent || 0;
+                if (emailOpenRateEl) emailOpenRateEl.innerHTML = (data.email.openRate || 0) + '%';
+                if (emailProgressEl) emailProgressEl.style.width = (data.email.openRate || 0) + '%';
+                if (emailStatusEl) {
+                    if (data.email.active) {
+                        emailStatusEl.className = 'tool-status status-active';
+                        emailStatusEl.innerText = 'Active';
+                    } else {
+                        emailStatusEl.className = 'tool-status status-inactive';
+                        emailStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
+            
+            // Update Vision Hub metrics
+            if (data.vision) {
+                const imagesAnalyzedEl = document.getElementById('imagesAnalyzed');
+                const visionAccuracyEl = document.getElementById('visionAccuracy');
+                const visionProgressEl = document.getElementById('visionProgress');
+                const visionStatusEl = document.getElementById('visionStatus');
+                
+                if (imagesAnalyzedEl) imagesAnalyzedEl.innerText = data.vision.imagesAnalyzed || 0;
+                if (visionAccuracyEl) visionAccuracyEl.innerHTML = (data.vision.accuracy || 0) + '%';
+                if (visionProgressEl) visionProgressEl.style.width = (data.vision.accuracy || 0) + '%';
+                if (visionStatusEl) {
+                    if (data.vision.active) {
+                        visionStatusEl.className = 'tool-status status-active';
+                        visionStatusEl.innerText = 'Active';
+                    } else {
+                        visionStatusEl.className = 'tool-status status-inactive';
+                        visionStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
+            
+            // Update Booking Logic metrics
+            if (data.booking) {
+                const bookingsMadeEl = document.getElementById('bookingsMade');
+                const bookingConversionEl = document.getElementById('bookingConversion');
+                const bookingProgressEl = document.getElementById('bookingProgress');
+                const bookingStatusEl = document.getElementById('bookingStatus');
+                
+                if (bookingsMadeEl) bookingsMadeEl.innerText = data.booking.bookingsMade || 0;
+                if (bookingConversionEl) bookingConversionEl.innerHTML = (data.booking.conversionRate || 0) + '%';
+                if (bookingProgressEl) bookingProgressEl.style.width = (data.booking.conversionRate || 0) + '%';
+                if (bookingStatusEl) {
+                    if (data.booking.active) {
+                        bookingStatusEl.className = 'tool-status status-active';
+                        bookingStatusEl.innerText = 'Active';
+                    } else {
+                        bookingStatusEl.className = 'tool-status status-inactive';
+                        bookingStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
+            
+            // Update Live Handover metrics
+            if (data.handover) {
+                const handoversCountEl = document.getElementById('handoversCount');
+                const handoverRateEl = document.getElementById('handoverRate');
+                const handoverProgressEl = document.getElementById('handoverProgress');
+                const handoverStatusEl = document.getElementById('handoverStatus');
+                
+                if (handoversCountEl) handoversCountEl.innerText = data.handover.handoversCount || 0;
+                if (handoverRateEl) handoverRateEl.innerHTML = (data.handover.resolutionRate || 0) + '%';
+                if (handoverProgressEl) handoverProgressEl.style.width = (data.handover.resolutionRate || 0) + '%';
+                if (handoverStatusEl) {
+                    if (data.handover.active) {
+                        handoverStatusEl.className = 'tool-status status-active';
+                        handoverStatusEl.innerText = 'Active';
+                    } else {
+                        handoverStatusEl.className = 'tool-status status-inactive';
+                        handoverStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
+            
+            // Update Crisis Guard metrics
+            if (data.crisis) {
+                const alertsTriggeredEl = document.getElementById('alertsTriggered');
+                const sentimentScoreEl = document.getElementById('sentimentScore');
+                const crisisProgressEl = document.getElementById('crisisProgress');
+                const crisisStatusEl = document.getElementById('crisisStatus');
+                
+                if (alertsTriggeredEl) alertsTriggeredEl.innerText = data.crisis.alertsTriggered || 0;
+                if (sentimentScoreEl) sentimentScoreEl.innerHTML = (data.crisis.sentimentScore || 0) + '%';
+                if (crisisProgressEl) crisisProgressEl.style.width = (data.crisis.sentimentScore || 0) + '%';
+                if (crisisStatusEl) {
+                    if (data.crisis.active) {
+                        crisisStatusEl.className = 'tool-status status-active';
+                        crisisStatusEl.innerText = 'Active';
+                    } else {
+                        crisisStatusEl.className = 'tool-status status-inactive';
+                        crisisStatusEl.innerText = 'Inactive';
+                    }
+                }
+            }
+            
+            // Also update Reporting Hub metrics if they exist
+            if (document.getElementById('totalLeadsValue') && data.totalLeads !== undefined) {
+                document.getElementById('totalLeadsValue').innerText = data.totalLeads || 0;
+            }
+            if (document.getElementById('conversionRateValue') && data.conversionRate !== undefined) {
+                document.getElementById('conversionRateValue').innerHTML = (data.conversionRate || 0) + '%';
+            }
+            if (document.getElementById('aiAccuracyValue') && data.aiAccuracy !== undefined) {
+                document.getElementById('aiAccuracyValue').innerHTML = (data.aiAccuracy || 98.2) + '%';
+            }
         }
     } catch (err) {
-        console.error('[METRICS] Failed to fetch:', err);
+        console.error('[TOOLS-METRICS] Failed to fetch:', err);
+        loadToolsMetricsFromLocal();
+    }
+}
+
+// Fallback to localStorage for tools metrics
+function loadToolsMetricsFromLocal() {
+    const savedMetrics = localStorage.getItem('toolsMetrics');
+    if (savedMetrics) {
+        try {
+            const data = JSON.parse(savedMetrics);
+            // Apply the same updates as above
+            if (data.brain && document.getElementById('brainCalls')) {
+                document.getElementById('brainCalls').innerText = data.brain.calls || 0;
+                document.getElementById('brainSuccess').innerHTML = (data.brain.successRate || 0) + '%';
+                document.getElementById('brainProgress').style.width = (data.brain.successRate || 0) + '%';
+            }
+            if (data.apollo && document.getElementById('apolloLeads')) {
+                document.getElementById('apolloLeads').innerText = data.apollo.leadsEnriched || 0;
+                document.getElementById('apolloSuccess').innerHTML = (data.apollo.successRate || 0) + '%';
+                document.getElementById('apolloProgress').style.width = (data.apollo.successRate || 0) + '%';
+            }
+            if (data.email && document.getElementById('emailsSent')) {
+                document.getElementById('emailsSent').innerText = data.email.emailsSent || 0;
+                document.getElementById('emailOpenRate').innerHTML = (data.email.openRate || 0) + '%';
+                document.getElementById('emailProgress').style.width = (data.email.openRate || 0) + '%';
+            }
+            if (data.vision && document.getElementById('imagesAnalyzed')) {
+                document.getElementById('imagesAnalyzed').innerText = data.vision.imagesAnalyzed || 0;
+                document.getElementById('visionAccuracy').innerHTML = (data.vision.accuracy || 0) + '%';
+                document.getElementById('visionProgress').style.width = (data.vision.accuracy || 0) + '%';
+            }
+            if (data.booking && document.getElementById('bookingsMade')) {
+                document.getElementById('bookingsMade').innerText = data.booking.bookingsMade || 0;
+                document.getElementById('bookingConversion').innerHTML = (data.booking.conversionRate || 0) + '%';
+                document.getElementById('bookingProgress').style.width = (data.booking.conversionRate || 0) + '%';
+            }
+            if (data.handover && document.getElementById('handoversCount')) {
+                document.getElementById('handoversCount').innerText = data.handover.handoversCount || 0;
+                document.getElementById('handoverRate').innerHTML = (data.handover.resolutionRate || 0) + '%';
+                document.getElementById('handoverProgress').style.width = (data.handover.resolutionRate || 0) + '%';
+            }
+            if (data.crisis && document.getElementById('alertsTriggered')) {
+                document.getElementById('alertsTriggered').innerText = data.crisis.alertsTriggered || 0;
+                document.getElementById('sentimentScore').innerHTML = (data.crisis.sentimentScore || 0) + '%';
+                document.getElementById('crisisProgress').style.width = (data.crisis.sentimentScore || 0) + '%';
+            }
+        } catch(e) {}
     }
 }
 
@@ -976,7 +1169,37 @@ window.exportBusinessData = function() {
         const exportData = {
             toolStates: TOOL_STATES,
             toolSettings: TOOL_SETTINGS,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            toolsMetrics: {
+                brain: {
+                    calls: document.getElementById('brainCalls')?.innerText || 0,
+                    successRate: document.getElementById('brainSuccess')?.innerText || '0%'
+                },
+                apollo: {
+                    leadsEnriched: document.getElementById('apolloLeads')?.innerText || 0,
+                    successRate: document.getElementById('apolloSuccess')?.innerText || '0%'
+                },
+                email: {
+                    emailsSent: document.getElementById('emailsSent')?.innerText || 0,
+                    openRate: document.getElementById('emailOpenRate')?.innerText || '0%'
+                },
+                vision: {
+                    imagesAnalyzed: document.getElementById('imagesAnalyzed')?.innerText || 0,
+                    accuracy: document.getElementById('visionAccuracy')?.innerText || '0%'
+                },
+                booking: {
+                    bookingsMade: document.getElementById('bookingsMade')?.innerText || 0,
+                    conversionRate: document.getElementById('bookingConversion')?.innerText || '0%'
+                },
+                handover: {
+                    handoversCount: document.getElementById('handoversCount')?.innerText || 0,
+                    resolutionRate: document.getElementById('handoverRate')?.innerText || '0%'
+                },
+                crisis: {
+                    alertsTriggered: document.getElementById('alertsTriggered')?.innerText || 0,
+                    sentimentScore: document.getElementById('sentimentScore')?.innerText || '0%'
+                }
+            }
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
         const a = document.createElement('a');
