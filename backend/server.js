@@ -13,7 +13,7 @@ const { Resend } = require('resend');
 require("dotenv").config();
 
 const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 // ================= IMPORT NEW SERVICES =================
 const CloudflareGateway = require('../services/cloudflare-gateway');
@@ -245,6 +245,19 @@ try {
 const app = express();
 
 // ================================================
+// IMPORT SMART HUB ROUTES (MUST BE DEFINED BEFORE USE)
+// ================================================
+let smartHubRoutes;
+try {
+  smartHubRoutes = require('./smart-hub');
+  console.log('✅ smart-hub.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load smart-hub.js:', err.message);
+  console.error('   Stack:', err.stack);
+  smartHubRoutes = (req, res) => res.status(500).json({ error: 'Smart Hub routes not available', details: err.message });
+}
+
+// ================================================
 // GLOBAL LOGGING SYSTEM
 // ================================================
 const systemLogs = [];
@@ -447,7 +460,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight requests
 
-// Then body-parser
+// Then body-parser with increased limit for image uploads
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
@@ -703,8 +716,10 @@ app.get('/api/platform/metrics', authenticateToken, async (req, res) => {
   }
 });
 
-// ================= ROUTES =================
-app.use('/api/smart-hub', require('./smart-hub'));
+// ================= SMART HUB ROUTES - MOUNTED HERE =================
+// This is CRITICAL for image upload and tools analytics to work
+app.use('/api/smart-hub', smartHubRoutes);
+console.log('✅ Smart Hub routes mounted at /api/smart-hub');
 
 // Health check endpoint for Render
 app.get('/healthz', (req, res) => {
@@ -3171,6 +3186,9 @@ app.get("/api/user/profile", auth, (req, res) => {
 // ================= START SERVER =================
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📋 Smart Hub API: /api/smart-hub/*`);
+  console.log(`📸 Image upload endpoint: /api/smart-hub/upload-proof`);
+  console.log(`📊 Tools metrics endpoint: /api/smart-hub/tools-metrics`);
   console.log(`📋 Workflow API Endpoints:`);
   console.log(`   - GET /api/workflows - List workflows`);
   console.log(`   - POST /api/workflows - Create workflow`);
