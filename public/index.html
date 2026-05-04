@@ -924,7 +924,7 @@
         /* ========== WHO IS THIS FOR SECTION - ENHANCED ========== */
         .target-audience-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 25px;
             margin-top: 20px;
         }
@@ -1048,6 +1048,7 @@
             cursor: pointer;
             transition: var(--transition);
             text-decoration: none;
+            display: inline-block;
         }
 
         .audience-cta .btn-small:hover {
@@ -1055,17 +1056,17 @@
             color: white;
         }
 
-        /* Content Creator specific styling */
-        .audience-card.creator-card {
+        /* Featured business card styling */
+        .audience-card.business-card {
             background: linear-gradient(135deg, #fff9e6, #ffffff);
             border: 2px solid var(--primary);
         }
 
-        .audience-card.creator-card .audience-icon {
+        .audience-card.business-card .audience-icon {
             background: var(--primary);
         }
 
-        .audience-card.creator-card .audience-icon i {
+        .audience-card.business-card .audience-icon i {
             color: white;
         }
 
@@ -1194,7 +1195,7 @@
                 <li>
                     <a href="ai-powerhouse.html">
                         <i class="fas fa-bolt"></i>
-                        <span>AI Powerhouse 2.0</span>
+                        <span>AI Powerhouse</span>
                         <span class="badge" style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: auto;">ULTIMATE</span>
                     </a>
                 </li>
@@ -1342,52 +1343,13 @@
 
             <!-- Dashboard Section (default view) -->
             <div id="dashboardSection">
-                <!-- ENHANCED: Who Is This For Section - Focused on Content Creators & Automation Users -->
+                <!-- ENHANCED: Who Is This For Section - Focused on Business & Automation Users -->
                 <div class="section-card">
                     <div class="section-header">
-                        <h2><i class="fas fa-users"></i> Who Is AI Powerhouse For?</h2>
-                        <span class="badge" style="background: var(--primary); color: white; padding: 5px 15px; border-radius: 30px;">Choose Your Path</span>
+                        <h2><i class="fas fa-users"></i> Who Is the Platform For?</h2>
+                        <span class="badge" style="background: var(--primary); color: white; padding: 5px 15px; border-radius: 30px;">Choose Your Industry</span>
                     </div>
                     <div class="target-audience-grid">
-                        <!-- Content Creators - Featured Card -->
-                        <div class="audience-card creator-card featured">
-                            <div class="audience-icon">
-                                <i class="fas fa-video"></i>
-                            </div>
-                            <h4>🎬 Content Creators</h4>
-                            <p>Supercharge your content creation with AI-powered tools that work 24/7 to grow your audience and revenue.</p>
-                            <ul class="audience-features">
-                                <li><i class="fas fa-check-circle"></i> Generate viral video scripts for TikTok, Reels & YouTube</li>
-                                <li><i class="fas fa-check-circle"></i> Create stunning thumbnails with AI image generation</li>
-                                <li><i class="fas fa-check-circle"></i> Auto-schedule posts at peak engagement times</li>
-                                <li><i class="fas fa-check-circle"></i> Generate trending hashtags and captions</li>
-                                <li><i class="fas fa-check-circle"></i> Track influencer collaborations and engagement</li>
-                            </ul>
-                            <div class="audience-cta">
-                                <a href="ai-powerhouse.html" class="btn-small">🚀 Start Creating</a>
-                            </div>
-                            <span class="audience-badge">10K+ creators</span>
-                        </div>
-
-                        <!-- Social Media Managers -->
-                        <div class="audience-card">
-                            <div class="audience-icon">
-                                <i class="fas fa-hashtag"></i>
-                            </div>
-                            <h4>📱 Social Media Managers</h4>
-                            <p>Manage multiple platforms from one dashboard with AI-powered scheduling and analytics.</p>
-                            <ul class="audience-features">
-                                <li><i class="fas fa-check-circle"></i> Schedule across 12+ platforms (TikTok, IG, YouTube)</li>
-                                <li><i class="fas fa-check-circle"></i> AI-optimized posting times for maximum reach</li>
-                                <li><i class="fas fa-check-circle"></i> Real-time engagement tracking and alerts</li>
-                                <li><i class="fas fa-check-circle"></i> Auto-respond to comments and DMs</li>
-                            </ul>
-                            <div class="audience-cta">
-                                <a href="ai-automations.html" class="btn-small">📊 Start Managing</a>
-                            </div>
-                            <span class="audience-badge">5K+ managers</span>
-                        </div>
-
                         <!-- E-commerce Businesses -->
                         <div class="audience-card">
                             <div class="audience-icon">
@@ -1445,23 +1407,64 @@
                             <span class="audience-badge">50K+ businesses</span>
                         </div>
 
-                        <!-- Video Producers -->
-                        <div class="audience-card">
+                        <!-- Schools & Educational Institutions - NEW -->
+                        <div class="audience-card business-card featured">
                             <div class="audience-icon">
-                                <i class="fas fa-film"></i>
+                                <i class="fas fa-graduation-cap"></i>
                             </div>
-                            <h4>🎥 Video Producers</h4>
-                            <p>Create engaging video content faster with AI-powered script writing and editing tools.</p>
+                            <h4>🏫 Schools & Educational Institutions</h4>
+                            <p>Streamline parent communication, automate enrollment inquiries, and provide 24/7 student support.</p>
                             <ul class="audience-features">
-                                <li><i class="fas fa-check-circle"></i> Generate video scripts for any length (15s-10min)</li>
-                                <li><i class="fas fa-check-circle"></i> Auto-generate captions and subtitles</li>
-                                <li><i class="fas fa-check-circle"></i> AI thumbnail generation from video content</li>
-                                <li><i class="fas fa-check-circle"></i> Trend analysis and topic suggestions</li>
+                                <li><i class="fas fa-check-circle"></i> AI assistant for admissions & enrollment questions</li>
+                                <li><i class="fas fa-check-circle"></i> Automated parent-teacher meeting scheduling</li>
+                                <li><i class="fas fa-check-circle"></i> Send mass updates about events and deadlines</li>
+                                <li><i class="fas fa-check-circle"></i> FAQ automation for tuition, fees, and policies</li>
+                                <li><i class="fas fa-check-circle"></i> Collect feedback from parents automatically</li>
                             </ul>
                             <div class="audience-cta">
-                                <a href="ai-powerhouse.html" class="btn-small">🎬 Start Creating</a>
+                                <a href="ai-automations.html" class="btn-small">🏫 Automate Your School</a>
                             </div>
-                            <span class="audience-badge">8K+ producers</span>
+                            <span class="audience-badge">8K+ institutions</span>
+                        </div>
+
+                        <!-- Construction & Real Estate - NEW -->
+                        <div class="audience-card">
+                            <div class="audience-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <h4>🏗️ Construction & Real Estate</h4>
+                            <p>Handle property inquiries, schedule site visits, and manage client documents automatically.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> Automated lead qualification from property inquiries</li>
+                                <li><i class="fas fa-check-circle"></i> Schedule site visits and property showings</li>
+                                <li><i class="fas fa-check-circle"></i> Collect and organize client documents securely</li>
+                                <li><i class="fas fa-check-circle"></i> Send price quotes and availability updates</li>
+                                <li><i class="fas fa-check-circle"></i> Automate follow-ups with potential buyers/renters</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="smart-tools.html" class="btn-small">🏗️ Manage Properties</a>
+                            </div>
+                            <span class="audience-badge">12K+ real estate pros</span>
+                        </div>
+
+                        <!-- Clinics & Wellness Centers - NEW -->
+                        <div class="audience-card">
+                            <div class="audience-icon">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <h4>🏥 Clinics & Wellness Centers</h4>
+                            <p>Automate appointment booking, patient intake, and follow-up reminders to reduce no-shows.</p>
+                            <ul class="audience-features">
+                                <li><i class="fas fa-check-circle"></i> 24/7 appointment booking and rescheduling</li>
+                                <li><i class="fas fa-check-circle"></i> Automated patient intake forms and document collection</li>
+                                <li><i class="fas fa-check-circle"></i> Smart reminders via email and text</li>
+                                <li><i class="fas fa-check-circle"></i> Triage common symptoms before appointments</li>
+                                <li><i class="fas fa-check-circle"></i> Send medication reminders and follow-up care instructions</li>
+                            </ul>
+                            <div class="audience-cta">
+                                <a href="ai-automations.html" class="btn-small">🏥 Manage Your Practice</a>
+                            </div>
+                            <span class="audience-badge">20K+ clinics</span>
                         </div>
                     </div>
                 </div>
