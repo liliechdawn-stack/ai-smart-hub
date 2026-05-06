@@ -51,6 +51,7 @@
             --card-radius: 24px;
             --button-radius: 12px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --sidebar-width: 280px;
         }
 
         * { 
@@ -68,7 +69,130 @@
         }
 
         /* ========================================
-           PREMIUM NAVIGATION
+           APP CONTAINER WITH SIDEBAR
+           ========================================
+        */
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ========== SIDEBAR STYLES (Facebook-style from index.html) ========== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #0f0f0f;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        /* Scrollbar styling for sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #b8962e;
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h2 {
+            color: #d4af37;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header h2 i {
+            font-size: 1.8rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 15px;
+            margin-bottom: 100px;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .sidebar-menu a i {
+            width: 24px;
+            font-size: 1.2rem;
+            color: #d4af37;
+        }
+
+        .sidebar-menu a:hover {
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .sidebar-menu a.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: #d4af37;
+            border-left: 3px solid #d4af37;
+        }
+
+        .sidebar-menu a.active i {
+            color: #d4af37;
+        }
+
+        /* Section divider in sidebar */
+        .sidebar-divider {
+            margin: 15px 0 10px;
+            padding: 8px 15px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 1px;
+        }
+
+        /* Main content area - shifted for sidebar */
+        .main-content-area {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+        }
+
+        /* ========================================
+           PREMIUM NAVIGATION (Top Navbar)
            ========================================
         */
         nav {
@@ -78,7 +202,7 @@
             border-bottom: 1px solid rgba(212,175,55,0.2);
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 999;
             box-shadow: var(--shadow-sm);
         }
         
@@ -1142,699 +1266,818 @@
         .mt-4 { margin-top: 30px; }
         
         .mb-2 { margin-bottom: 15px; }
+
+        /* Scroll to section smooth behavior */
+        html {
+            scroll-behavior: smooth;
+        }
+        .section-scroll {
+            scroll-margin-top: 80px;
+        }
     </style>
 </head>
 <body>
 
-<nav>
-    <div class="nav-container">
-        <a href="dashboard.html" class="nav-logo">
-            <i class="fas fa-robot"></i>
-            AI Smart Hub
-        </a>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="smart-tools.html">AI Tools</a>
-            <a href="customer-insights.html" class="active-nav">Customer Insights</a>
-            <a href="team.html">Team</a>
-            <div class="notification-badge" id="notification-bell" onclick="toggleNotifications()">
-                <i class="fas fa-bell" style="color: var(--text-secondary); font-size: 1.2rem;"></i>
-                <span class="notification-count" id="notification-count" style="display: none;">0</span>
+<div class="app-wrapper">
+    <!-- ========== SIDEBAR (Facebook-style from index.html) ========== -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>
+                <i class="fas fa-chart-pie"></i>
+                Customer Insights
+            </h2>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#service-tracking" class="active" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Service Completion Tracking</span>
+                </a>
+            </li>
+            <li>
+                <a href="#customer-search" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-search"></i>
+                    <span>Customer Search & Filters</span>
+                </a>
+            </li>
+            <li>
+                <a href="#customer-list" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-users"></i>
+                    <span>Customer List & Issues</span>
+                </a>
+            </li>
+            <li>
+                <a href="#ai-widget" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-robot"></i>
+                    <span>Business AI Widget</span>
+                </a>
+            </li>
+            <li>
+                <a href="#ai-solver" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-brain"></i>
+                    <span>AI Problem Solver</span>
+                </a>
+            </li>
+            <li>
+                <a href="#problem-suite" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Problem-Solving Suite</span>
+                </a>
+            </li>
+            <li>
+                <a href="#detailed-analysis" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-table"></i>
+                    <span>Detailed Problem Analysis</span>
+                </a>
+            </li>
+            <li>
+                <a href="#email-broadcast" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email Broadcast</span>
+                </a>
+            </li>
+            <li>
+                <a href="#analytics" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Analytics & Predictions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#premium-tools" onclick="setActiveSidebar(this)">
+                    <i class="fas fa-tools"></i>
+                    <span>Premium Business Tools</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content-area">
+        <!-- ========== TOP NAVBAR (Preserved from original) ========== -->
+        <nav>
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-logo">
+                    <i class="fas fa-robot"></i>
+                    AI Smart Hub
+                </a>
+                <div class="nav-links">
+                    <a href="dashboard.html">Dashboard</a>
+                    <a href="smart-tools.html">AI Tools</a>
+                    <a href="customer-insights.html" class="active-nav">Customer Insights</a>
+                    <a href="team.html">Team</a>
+                    <div class="notification-badge" id="notification-bell" onclick="toggleNotifications()">
+                        <i class="fas fa-bell" style="color: var(--text-secondary); font-size: 1.2rem;"></i>
+                        <span class="notification-count" id="notification-count" style="display: none;">0</span>
+                    </div>
+                    <a href="dashboard.html" class="back-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        Exit Center
+                    </a>
+                </div>
             </div>
-            <a href="dashboard.html" class="back-btn">
-                <i class="fas fa-arrow-left"></i>
-                Exit Center
-            </a>
-        </div>
-    </div>
-</nav>
+        </nav>
 
-<!-- Notifications Panel -->
-<div id="notifications-panel" class="notifications-panel">
-    <div class="notifications-header">
-        <span><i class="fas fa-bell"></i> Notifications</span>
-        <span style="font-size: 12px; cursor: pointer;" onclick="markAllNotificationsRead()">Mark all read</span>
-    </div>
-    <div id="notifications-list" class="notifications-list">
-        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            No notifications yet
-        </div>
-    </div>
-</div>
-
-<div class="hero">
-    <h1>Customer Insights & Problem Solver</h1>
-    <p>Real-time visibility into customer issues — powered by Cloudflare AI with fast summaries, fixes, churn prediction, and instant alerts.</p>
-</div>
-
-<div class="container">
-
-    <!-- Plan Lock Overlay -->
-    <div id="plan-lock" class="tool-card locked-card">
-        <div class="lock-overlay">
-            <i class="fas fa-crown"></i>
-            <h3>Pro or Agency Plan Required</h3>
-            <p>Upgrade to unlock real-time customer intelligence, AI problem solving, predictive analytics, and team collaboration tools.</p>
-            <button class="upgrade-btn" onclick="window.location.href='pricing.html'">Upgrade Now</button>
-        </div>
-    </div>
-
-    <div id="main-content" class="hidden">
-
-        <!-- ===== SERVICE COMPLETION NOTIFICATIONS SECTION (NEW) ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 10px;"></i> Service Completion Tracking</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="service-completion-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <h3 style="color: white; margin-bottom: 5px;"><i class="fas fa-tasks"></i> Active & Completed Services</h3>
-                    <p style="color: #94a3b8; font-size: 0.85rem;">Track service status and send real-time notifications to customers</p>
-                </div>
-                <button class="btn-primary" onclick="showCreateServiceModal()" style="background: var(--primary-gradient);">
-                    <i class="fas fa-plus"></i> Create New Service
-                </button>
+        <!-- Notifications Panel -->
+        <div id="notifications-panel" class="notifications-panel">
+            <div class="notifications-header">
+                <span><i class="fas fa-bell"></i> Notifications</span>
+                <span style="font-size: 12px; cursor: pointer;" onclick="markAllNotificationsRead()">Mark all read</span>
             </div>
-            
-            <div id="service-list-container" class="service-list">
-                <div style="text-align: center; padding: 40px; color: #94a3b8;">
-                    <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
-                    Loading services...
+            <div id="notifications-list" class="notifications-list">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    No notifications yet
                 </div>
             </div>
         </div>
 
-        <!-- ===== CUSTOMER SEARCH SECTION ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-search" style="color: var(--primary); margin-right: 10px;"></i> Customer Search & Filters</h2>
-            <div class="section-line"></div>
+        <div class="hero">
+            <h1>Customer Insights & Problem Solver</h1>
+            <p>Real-time visibility into customer issues — powered by Cloudflare AI with fast summaries, fixes, churn prediction, and instant alerts.</p>
         </div>
 
-        <div class="tool-card">
-            <div class="input-group">
-                <div>
-                    <label><i class="fas fa-user" style="margin-right: 5px;"></i> Search Customers</label>
-                    <input type="text" id="customer-search" placeholder="Type name or email to filter..." oninput="applyFilters()" />
+        <div class="container">
+
+            <!-- Plan Lock Overlay -->
+            <div id="plan-lock" class="tool-card locked-card">
+                <div class="lock-overlay">
+                    <i class="fas fa-crown"></i>
+                    <h3>Pro or Agency Plan Required</h3>
+                    <p>Upgrade to unlock real-time customer intelligence, AI problem solving, predictive analytics, and team collaboration tools.</p>
+                    <button class="upgrade-btn" onclick="window.location.href='pricing.html'">Upgrade Now</button>
                 </div>
-                <div>
-                    <label><i class="fas fa-smile" style="margin-right: 5px;"></i> Filter by Sentiment</label>
-                    <select id="sentiment-filter" onchange="applyFilters()">
-                        <option value="all">All Sentiments</option>
-                        <option value="positive">Positive Only</option>
-                        <option value="negative">Negative Only</option>
-                        <option value="neutral">Neutral Only</option>
-                    </select>
+            </div>
+
+            <div id="main-content" class="hidden">
+
+                <!-- ===== SERVICE COMPLETION NOTIFICATIONS SECTION ===== -->
+                <div id="service-tracking" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-check-circle" style="color: var(--primary); margin-right: 10px;"></i> Service Completion Tracking</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="service-completion-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <h3 style="color: white; margin-bottom: 5px;"><i class="fas fa-tasks"></i> Active & Completed Services</h3>
+                                <p style="color: #94a3b8; font-size: 0.85rem;">Track service status and send real-time notifications to customers</p>
+                            </div>
+                            <button class="btn-primary" onclick="showCreateServiceModal()" style="background: var(--primary-gradient);">
+                                <i class="fas fa-plus"></i> Create New Service
+                            </button>
+                        </div>
+                        
+                        <div id="service-list-container" class="service-list">
+                            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                                <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
+                                Loading services...
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: flex-end;">
-                    <button class="btn-primary" onclick="applyFilters()" style="width: 100%;">
-                        <i class="fas fa-filter"></i> Apply Filters
+
+                <!-- ===== CUSTOMER SEARCH SECTION ===== -->
+                <div id="customer-search" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-search" style="color: var(--primary); margin-right: 10px;"></i> Customer Search & Filters</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="tool-card">
+                        <div class="input-group">
+                            <div>
+                                <label><i class="fas fa-user" style="margin-right: 5px;"></i> Search Customers</label>
+                                <input type="text" id="customer-search" placeholder="Type name or email to filter..." oninput="applyFilters()" />
+                            </div>
+                            <div>
+                                <label><i class="fas fa-smile" style="margin-right: 5px;"></i> Filter by Sentiment</label>
+                                <select id="sentiment-filter" onchange="applyFilters()">
+                                    <option value="all">All Sentiments</option>
+                                    <option value="positive">Positive Only</option>
+                                    <option value="negative">Negative Only</option>
+                                    <option value="neutral">Neutral Only</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button class="btn-primary" onclick="applyFilters()" style="width: 100%;">
+                                    <i class="fas fa-filter"></i> Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <div>
+                                <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date From</label>
+                                <input type="date" id="date-from" onchange="applyFilters()">
+                            </div>
+                            <div>
+                                <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date To</label>
+                                <input type="date" id="date-to" onchange="applyFilters()">
+                            </div>
+                            <div>
+                                <label><i class="fas fa-tag" style="margin-right: 5px;"></i> Filter by Problem</label>
+                                <select id="problem-filter" onchange="applyFilters()">
+                                    <option value="all">All Problems</option>
+                                    <option value="delivery">Delivery Issues</option>
+                                    <option value="quality">Product Quality</option>
+                                    <option value="pricing">Pricing Concerns</option>
+                                    <option value="support">Customer Support</option>
+                                    <option value="refund">Refund Requests</option>
+                                    <option value="ux">UX/Confusion</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button class="btn-secondary" onclick="resetFilters()" style="width: 100%;">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== CUSTOMER LIST SECTION ===== -->
+                <div id="customer-list" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users" style="color: var(--primary); margin-right: 10px;"></i> Customer List & Issues <span class="live-indicator"><span class="pulse-dot"></span>LIVE</span></h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="wide-card tool-card">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                                <h3>All Customers & Detected Problems</h3>
+                                <div style="display: flex; gap: 10px;">
+                                    <span id="customer-count" style="background: var(--primary-gradient); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
+                                    <span id="problem-count" style="background: var(--info); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
+                                </div>
+                            </div>
+                            <p class="tool-description">Real-time overview — sorted by highest churn risk first. Click column headers to sort.</p>
+                            
+                            <div class="data-table-container">
+                                <table class="customer-table">
+                                    <thead>
+                                        <tr>
+                                            <th onclick="sortTable('name')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Name</th>
+                                            <th onclick="sortTable('email')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Email</th>
+                                            <th onclick="sortTable('messages')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Messages / Sentiment</th>
+                                            <th onclick="sortTable('risk')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Churn Risk</th>
+                                            <th>Problem Tags</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="customer-table-body">
+                                        <tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin: 0 auto;"></div><br>Loading customer data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== AI WIDGET PREVIEW ===== -->
+                <div id="ai-widget" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-robot" style="color: var(--primary); margin-right: 10px;"></i> Business AI Widget (Live Preview)</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="wide-card tool-card" style="text-align:center;">
+                        <p class="tool-description">Click below to preview how your customers see the AI widget — it knows your full business, all leads, detected problems, churn risks, and more.</p>
+                        <button class="btn-primary" onclick="showAIWidget()" style="margin: 0 auto; padding: 16px 40px;">
+                            <i class="fas fa-play"></i> Show AI Widget Now
+                        </button>
+                        <div id="widget-preview-area" style="min-height:400px; margin-top:30px; border:2px dashed var(--medium-gray); border-radius:16px; background:#fafafa; position:relative;"></div>
+                    </div>
+                </div>
+
+                <!-- ===== AI PROBLEM SOLVER ===== -->
+                <div id="ai-solver" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-brain" style="color: var(--primary); margin-right: 10px;"></i> AI Problem Solver Assistant</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="wide-card tool-card">
+                        <div>
+                            <h3>Your Cloudflare AI Consultant <span class="status-badge badge-info">Agency Exclusive</span></h3>
+                            <p class="tool-description">Ask anything about your customers — powered by fast Cloudflare AI with real-time analysis.</p>
+                            
+                            <div class="ai-chat" id="ai-chat-messages">
+                                <div style="text-align:center;padding:80px 20px;color:var(--text-secondary);">
+                                    <i class="fas fa-comment-dots" style="font-size: 3rem; opacity: 0.3; margin-bottom: 15px;"></i>
+                                    <br>Start typing to chat with your AI consultant...
+                                </div>
+                            </div>
+                            
+                            <div style="display:flex; gap:12px; margin-bottom: 15px;">
+                                <input type="text" id="ai-input" placeholder="e.g., 'Summarize John Doe's issues' or 'Show all high-risk customers'" style="flex:1;" onkeypress="if(event.key==='Enter') sendAiMessage()" />
+                                <button class="btn-primary" onclick="sendAiMessage()" style="width:auto; padding:0 32px;">
+                                    <i class="fas fa-paper-plane"></i> Ask AI
+                                </button>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn-secondary" onclick="sendAiMessage('Show top 5 customers with highest churn risk')">
+                                    <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> High Risk
+                                </button>
+                                <button class="btn-secondary" onclick="sendAiMessage('Summarize all negative feedback from last 7 days')">
+                                    <i class="fas fa-chart-line"></i> Weekly Summary
+                                </button>
+                                <button class="btn-secondary" onclick="sendAiMessage('Suggest improvements based on customer complaints')">
+                                    <i class="fas fa-lightbulb"></i> Improvements
+                                </button>
+                                <button class="btn-secondary" onclick="sendAiMessage('What are the top 3 recurring problems?')">
+                                    <i class="fas fa-exclamation-circle"></i> Top Problems
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== CUSTOMER PROBLEM-SOLVING SUITE ===== -->
+                <div id="problem-suite" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 10px;"></i> Customer Problem-Solving Suite <span class="live-indicator"><span class="pulse-dot"></span>AI POWERED</span></h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <!-- Problem Categories Tabs -->
+                    <div class="problem-tabs">
+                        <div class="problem-tab active" onclick="switchProblemTab('all')">All Problems</div>
+                        <div class="problem-tab" onclick="switchProblemTab('delivery')"><i class="fas fa-truck"></i> Delivery</div>
+                        <div class="problem-tab" onclick="switchProblemTab('quality')"><i class="fas fa-star"></i> Quality</div>
+                        <div class="problem-tab" onclick="switchProblemTab('pricing')"><i class="fas fa-tag"></i> Pricing</div>
+                        <div class="problem-tab" onclick="switchProblemTab('support')"><i class="fas fa-headset"></i> Support</div>
+                        <div class="problem-tab" onclick="switchProblemTab('refund')"><i class="fas fa-undo"></i> Refunds</div>
+                        <div class="problem-tab" onclick="switchProblemTab('ux')"><i class="fas fa-mouse-pointer"></i> UX Issues</div>
+                    </div>
+
+                    <!-- Problem Metrics Dashboard -->
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="total-problems">0</div>
+                            <div class="metric-label">Total Problems</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="critical-problems">0</div>
+                            <div class="metric-label">Critical Issues</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="avg-resolution">2.4h</div>
+                            <div class="metric-label">Avg Resolution</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="satisfaction-rate">87%</div>
+                            <div class="metric-label">Satisfaction</div>
+                        </div>
+                    </div>
+
+                    <!-- Problem Resolution Tools Grid -->
+                    <div class="grid" style="margin-top: 30px;">
+                        
+                        <!-- Tool 1: AI Problem Classifier -->
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-tags"></i></div>
+                            <h3>AI Problem Classifier</h3>
+                            <p class="tool-description">Automatically categorizes customer issues with 98% accuracy. Detects root causes in real-time.</p>
+                            
+                            <div style="background: var(--light-gray); padding: 20px; border-radius: 12px; margin: 15px 0;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                                    <span><i class="fas fa-truck" style="color: var(--warning);"></i> Delivery Issues</span>
+                                    <span id="stat-delivery" style="font-weight:700;">0</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                                    <span><i class="fas fa-star" style="color: var(--danger);"></i> Quality Concerns</span>
+                                    <span id="stat-quality" style="font-weight:700;">0</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                                    <span><i class="fas fa-tag" style="color: var(--info);"></i> Pricing Questions</span>
+                                    <span id="stat-pricing" style="font-weight:700;">0</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span><i class="fas fa-headset" style="color: var(--success);"></i> Support Requests</span>
+                                    <span id="stat-support" style="font-weight:700;">0</span>
+                                </div>
+                            </div>
+                            
+                            <button class="btn-secondary" onclick="analyzeProblemTrends()" style="width:100%;">
+                                <i class="fas fa-chart-bar"></i> Analyze Trends
+                            </button>
+                        </div>
+
+                        <!-- Tool 2: Smart Response Generator -->
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-reply"></i></div>
+                            <h3>Smart Response Generator</h3>
+                            <p class="tool-description">Generates personalized, empathetic responses based on problem type and customer history.</p>
+                            
+                            <select id="response-problem-type" style="margin-bottom:10px;">
+                                <option value="delivery">🚚 Delivery Delay</option>
+                                <option value="quality">⭐ Product Quality</option>
+                                <option value="refund">↩️ Refund Request</option>
+                                <option value="support">🎧 Technical Support</option>
+                                <option value="complaint">💬 General Complaint</option>
+                            </select>
+                            
+                            <textarea id="response-context" placeholder="Additional context (optional)..." rows="2"></textarea>
+                            
+                            <button class="btn-primary" onclick="generateSmartResponse()" style="margin-top:10px; width:100%;">
+                                <i class="fas fa-magic"></i> Generate Response
+                            </button>
+                            
+                            <div id="response-output" style="margin-top:15px; padding:15px; background:var(--light-gray); border-radius:12px; display:none;"></div>
+                        </div>
+
+                        <!-- Tool 3: Churn Prevention AI -->
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-exclamation-triangle"></i></div>
+                            <h3>Churn Prevention AI</h3>
+                            <p class="tool-description">Predicts which customers are about to churn and suggests intervention strategies.</p>
+                            
+                            <div style="margin:20px 0;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                    <span><i class="fas fa-circle" style="color: var(--danger);"></i> High Risk Customers:</span>
+                                    <span id="high-risk-count" style="font-weight:700; color:var(--danger);">0</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span><i class="fas fa-circle" style="color: var(--warning);"></i> Medium Risk:</span>
+                                    <span id="medium-risk-count" style="font-weight:700; color:var(--warning);">0</span>
+                                </div>
+                            </div>
+                            
+                            <button class="btn-danger" onclick="showAtRiskCustomers()" style="width:100%;">
+                                <i class="fas fa-eye"></i> View At-Risk Customers
+                            </button>
+                        </div>
+
+                        <!-- Tool 4: Sentiment Timeline -->
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                            <h3>Sentiment Timeline</h3>
+                            <p class="tool-description">Track how customer sentiment evolves over time and spot emerging issues.</p>
+                            
+                            <canvas id="sentiment-timeline" height="150"></canvas>
+                            
+                            <div style="margin-top:15px;">
+                                <button class="btn-secondary" onclick="refreshSentimentTimeline()" style="width:100%;">
+                                    <i class="fas fa-sync-alt"></i> Refresh Data
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tool 5: Auto-Ticket Creator -->
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-ticket-alt"></i></div>
+                            <h3>Auto-Ticket Creator</h3>
+                            <p class="tool-description">Automatically creates support tickets for critical issues and assigns to the right team.</p>
+                            
+                            <div style="margin:20px 0;">
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; flex-wrap: wrap;">
+                                    <span style="font-size:0.9rem;">Auto-create tickets for:</span>
+                                    <select id="ticket-threshold" style="width:100px;">
+                                        <option value="70">70% risk</option>
+                                        <option value="80">80% risk</option>
+                                        <option value="90">90% risk</option>
+                                    </select>
+                                </div>
+                                
+                                <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                                    <span style="font-size:0.9rem;">Auto-assign to:</span>
+                                    <select id="ticket-assignee">
+                                        <option value="support">Support Team</option>
+                                        <option value="technical">Technical Team</option>
+                                        <option value="billing">Billing Team</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button class="btn-primary" onclick="saveTicketSettings()">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            
+                            <div style="margin-top:15px; padding:15px; background:var(--light-gray); border-radius:12px;">
+                                <span><i class="fas fa-ticket-alt" style="color: var(--primary);"></i> Open Tickets: <strong id="open-tickets">0</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Tool 6: Knowledge Base Suggester -->
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-book"></i></div>
+                            <h3>Knowledge Base Suggester</h3>
+                            <p class="tool-description">Identifies knowledge gaps and suggests articles to prevent future issues.</p>
+                            
+                            <div id="knowledge-suggestions" style="margin:20px 0;">
+                                <div style="padding:12px; background:var(--light-gray); border-radius:10px; margin-bottom:8px;">
+                                    <strong>📝 "Delivery times"</strong> - 23 mentions
+                                </div>
+                                <div style="padding:12px; background:var(--light-gray); border-radius:10px; margin-bottom:8px;">
+                                    <strong>📝 "Return policy"</strong> - 15 mentions
+                                </div>
+                                <div style="padding:12px; background:var(--light-gray); border-radius:10px;">
+                                    <strong>📝 "Sizing guide"</strong> - 12 mentions
+                                </div>
+                            </div>
+                            
+                            <button class="btn-secondary" onclick="refreshKnowledgeSuggestions()">
+                                <i class="fas fa-sync-alt"></i> Refresh Suggestions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== PROBLEM ANALYSIS TABLE ===== -->
+                <div id="detailed-analysis" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-table" style="color: var(--primary); margin-right: 10px;"></i> Detailed Problem Analysis</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="wide-card tool-card">
+                        <div>
+                            <h3>Customer Problems Dashboard</h3>
+                            <p class="tool-description">Comprehensive view of all customer issues with AI-powered insights and trend analysis.</p>
+                            
+                            <div class="data-table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Problem Type</th>
+                                            <th>Frequency</th>
+                                            <th>Trend</th>
+                                            <th>Avg Resolution</th>
+                                            <th>Impact Score</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="problem-table-body">
+                                        <tr><td colspan="7" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin: 0 auto;"></div><br>Loading problem data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== EMAIL BROADCAST SYSTEM ===== -->
+                <div id="email-broadcast" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-envelope" style="color: var(--primary); margin-right: 10px;"></i> Mass Email Broadcast</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="email-broadcast">
+                        <h3><i class="fas fa-bullhorn"></i> Communicate with Your Customers</h3>
+                        <p style="margin:20px 0; opacity:0.9;">Send important updates, product announcements, or personalized offers to your entire customer base.</p>
+                        
+                        <div class="email-stats">
+                            <div class="email-stat">
+                                <div class="email-stat-number" id="total-recipients">0</div>
+                                <div class="email-stat-label">Total Customers</div>
+                            </div>
+                            <div class="email-stat">
+                                <div class="email-stat-number" id="emails-sent">0</div>
+                                <div class="email-stat-label">Emails Sent</div>
+                            </div>
+                            <div class="email-stat">
+                                <div class="email-stat-number" id="open-rate">0%</div>
+                                <div class="email-stat-label">Avg Open Rate</div>
+                            </div>
+                        </div>
+
+                        <div style="background:rgba(255,255,255,0.1); padding:30px; border-radius:20px; margin-top:20px;">
+                            <h4 style="color:white; margin-bottom:20px;">Create New Broadcast</h4>
+                            
+                            <div class="input-group" style="margin-bottom:20px;">
+                                <div style="flex:2;">
+                                    <label style="color:white;">Email Subject</label>
+                                    <input type="text" id="email-subject" placeholder="e.g., Important Update About Your Orders" style="background:white; color: var(--text-primary);">
+                                </div>
+                                <div style="flex:1;">
+                                    <label style="color:white;">Target Audience</label>
+                                    <select id="email-target" style="background:white; color: var(--text-primary);">
+                                        <option value="all">All Customers</option>
+                                        <option value="high-risk">High Risk Customers</option>
+                                        <option value="recent">Recent Customers (30 days)</option>
+                                        <option value="inactive">Inactive (90+ days)</option>
+                                        <option value="problem">Customers with Issues</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Email Templates -->
+                            <div class="response-templates">
+                                <div class="template-item" onclick="loadEmailTemplate('update')"><i class="fas fa-megaphone"></i> Business Update</div>
+                                <div class="template-item" onclick="loadEmailTemplate('product')"><i class="fas fa-box"></i> New Products</div>
+                                <div class="template-item" onclick="loadEmailTemplate('offer')"><i class="fas fa-gift"></i> Special Offer</div>
+                                <div class="template-item" onclick="loadEmailTemplate('issue')"><i class="fas fa-exclamation-circle"></i> Issue Resolution</div>
+                                <div class="template-item" onclick="loadEmailTemplate('feedback')"><i class="fas fa-comment"></i> Feedback Request</div>
+                            </div>
+
+                            <div style="margin-bottom:20px;">
+                                <label style="color:white;">Email Content</label>
+                                <textarea id="email-content" rows="8" placeholder="Write your email content here... Use {{name}} for personalization" style="background:white; color: var(--text-primary);"></textarea>
+                            </div>
+
+                            <!-- Preview -->
+                            <div class="template-preview" id="email-preview">
+                                <strong><i class="fas fa-eye"></i> Preview:</strong> Your email will appear here...
+                            </div>
+
+                            <div style="display:flex; gap:15px; margin-top:20px; flex-wrap: wrap;">
+                                <button class="btn-primary" onclick="sendBroadcast()" style="flex:2;">
+                                    <i class="fas fa-paper-plane"></i> Send Broadcast
+                                </button>
+                                <button class="btn-secondary" onclick="testBroadcast()" style="flex:1;">
+                                    <i class="fas fa-vial"></i> Send Test
+                                </button>
+                                <button class="btn-secondary" onclick="scheduleBroadcast()" style="flex:1;">
+                                    <i class="fas fa-clock"></i> Schedule
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ANALYTICS SECTION ===== -->
+                <div id="analytics" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-chart-pie" style="color: var(--primary); margin-right: 10px;"></i> Analytics & Predictions</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
+                            <h3>Sentiment Overview</h3>
+                            <p class="tool-description">Positive vs Negative across all interactions.</p>
+                            
+                            <canvas id="sentiment-chart" height="260"></canvas>
+                            
+                            <div style="margin-top: 20px; display: flex; justify-content: space-around;">
+                                <div><span style="color: #28a745;">●</span> Positive: <span id="positive-count">0</span></div>
+                                <div><span style="color: #dc3545;">●</span> Negative: <span id="negative-count">0</span></div>
+                                <div><span style="color: #6b7280;">●</span> Neutral: <span id="neutral-count">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-exclamation-triangle"></i></div>
+                            <h3>Top Recurring Problems</h3>
+                            <p class="tool-description">Most frequent customer pain points right now.</p>
+                            
+                            <div id="top-issues" style="margin-top:20px;">
+                                <div style="text-align:center;color:var(--text-secondary);">Analyzing conversations...</div>
+                            </div>
+                        </div>
+
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                            <h3>Churn Prediction</h3>
+                            <p class="tool-description">Overall risk level based on negative trends.</p>
+                            
+                            <div style="margin-top:24px;background:var(--light-gray);padding:20px;border-radius:12px;text-align:center;">
+                                <label style="display:block;margin-bottom:12px;font-weight:600;">Global Churn Risk</label>
+                                <input type="range" min="0" max="100" value="0" disabled id="global-churn-slider" style="width:100%; accent-color: var(--primary);">
+                                <div id="global-churn-value" style="font-size:2.4rem;font-weight:800;color:var(--danger);margin-top:12px;">--%</div>
+                                <div style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);" id="churn-description"></div>
+                            </div>
+                        </div>
+
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-bell"></i></div>
+                            <h3>Proactive Alerts</h3>
+                            <p class="tool-description">Get instant email notifications on negative sentiment.</p>
+                            
+                            <div style="margin-top:24px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--light-gray);padding:20px;border-radius:12px;margin-bottom:10px;">
+                                    <span style="font-weight:600;">Enable Real-time Alerts</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="alert-toggle" checked onchange="toggleAlerts()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div id="alert-status" style="font-size:0.9rem; color: var(--success);">
+                                    <i class="fas fa-check-circle"></i> Alerts are active
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== PREMIUM BUSINESS TOOLS ===== -->
+                <div id="premium-tools" class="section-scroll">
+                    <div class="section-header">
+                        <h2><i class="fas fa-tools" style="color: var(--primary); margin-right: 10px;"></i> Premium Business Tools</h2>
+                        <div class="section-line"></div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-lightbulb"></i></div>
+                            <h3>AI Resolution Generator</h3>
+                            <p class="tool-description">Instant email/call scripts for any issue.</p>
+                            
+                            <select id="resolution-type" style="margin-bottom: 10px;">
+                                <option value="email"><i class="fas fa-envelope"></i> Email Response</option>
+                                <option value="call"><i class="fas fa-phone"></i> Call Script</option>
+                                <option value="chat"><i class="fas fa-comment"></i> Chat Response</option>
+                            </select>
+                            
+                            <textarea id="resolution-input" placeholder="Describe the customer issue..." rows="3"></textarea>
+                            
+                            <button class="btn-primary" onclick="generateResolution()" style="margin-top:12px; width: 100%;">
+                                <i class="fas fa-magic"></i> Generate Fix
+                            </button>
+                            
+                            <div id="resolution-output" style="margin-top:20px; min-height:120px; padding:15px; background:var(--light-gray); border-radius:12px; line-height:1.6;"></div>
+                        </div>
+
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                            <h3>Sentiment Trend</h3>
+                            <p class="tool-description">Weekly negative sentiment movement with predictive analytics.</p>
+                            
+                            <canvas id="trend-chart" height="200"></canvas>
+                            
+                            <div style="margin-top: 15px; text-align: center;">
+                                <button class="btn-secondary" onclick="refreshTrendData()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-users"></i></div>
+                            <h3>AI Customer Personas</h3>
+                            <p class="tool-description">Auto-generated profiles from real chat data and behavior patterns.</p>
+                            
+                            <div id="persona-output" style="margin-top:16px; min-height: 120px;"></div>
+                            
+                            <button class="btn-primary" onclick="generatePersonas()" style="margin-top:16px; width: 100%;">
+                                <i class="fas fa-users-cog"></i> Generate Personas
+                            </button>
+                        </div>
+
+                        <div class="tool-card">
+                            <div class="icon-box"><i class="fas fa-clipboard-list"></i></div>
+                            <h3>Team Notes & Tasks</h3>
+                            <p class="tool-description">Internal notes, task assignments, and team collaboration.</p>
+                            
+                            <textarea id="team-note" placeholder="Add note or assign task..." rows="3"></textarea>
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="btn-primary" onclick="saveTeamNote()" style="flex: 1;">
+                                    <i class="fas fa-save"></i> Save & Share
+                                </button>
+                                <button class="btn-secondary" onclick="loadTeamNotes()" style="flex: 1;">
+                                    <i class="fas fa-folder-open"></i> View Notes
+                                </button>
+                            </div>
+                            
+                            <div id="notes-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== EXPORT BUTTONS ===== -->
+                <div style="text-align:center; margin:70px 0; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn-primary" style="padding:16px 60px; font-size:1.1rem;" onclick="exportInsights()">
+                        <i class="fas fa-download"></i> Export Full Report (CSV)
                     </button>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <div>
-                    <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date From</label>
-                    <input type="date" id="date-from" onchange="applyFilters()">
-                </div>
-                <div>
-                    <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date To</label>
-                    <input type="date" id="date-to" onchange="applyFilters()">
-                </div>
-                <div>
-                    <label><i class="fas fa-tag" style="margin-right: 5px;"></i> Filter by Problem</label>
-                    <select id="problem-filter" onchange="applyFilters()">
-                        <option value="all">All Problems</option>
-                        <option value="delivery">Delivery Issues</option>
-                        <option value="quality">Product Quality</option>
-                        <option value="pricing">Pricing Concerns</option>
-                        <option value="support">Customer Support</option>
-                        <option value="refund">Refund Requests</option>
-                        <option value="ux">UX/Confusion</option>
-                    </select>
-                </div>
-                <div style="display: flex; align-items: flex-end;">
-                    <button class="btn-secondary" onclick="resetFilters()" style="width: 100%;">
-                        <i class="fas fa-undo"></i> Reset
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== CUSTOMER LIST SECTION ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-users" style="color: var(--primary); margin-right: 10px;"></i> Customer List & Issues <span class="live-indicator"><span class="pulse-dot"></span>LIVE</span></h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="wide-card tool-card">
-            <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                    <h3>All Customers & Detected Problems</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <span id="customer-count" style="background: var(--primary-gradient); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
-                        <span id="problem-count" style="background: var(--info); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
-                    </div>
-                </div>
-                <p class="tool-description">Real-time overview — sorted by highest churn risk first. Click column headers to sort.</p>
-                
-                <div class="data-table-container">
-                    <table class="customer-table">
-                        <thead>
-                            <tr>
-                                <th onclick="sortTable('name')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Name</th>
-                                <th onclick="sortTable('email')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Email</th>
-                                <th onclick="sortTable('messages')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Messages / Sentiment</th>
-                                <th onclick="sortTable('risk')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Churn Risk</th>
-                                <th>Problem Tags</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="customer-table-body">
-                            <tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin: 0 auto;"></div><br>Loading customer data...</td><tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== AI WIDGET PREVIEW ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-robot" style="color: var(--primary); margin-right: 10px;"></i> Business AI Widget (Live Preview)</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="wide-card tool-card" style="text-align:center;">
-            <p class="tool-description">Click below to preview how your customers see the AI widget — it knows your full business, all leads, detected problems, churn risks, and more.</p>
-            <button class="btn-primary" onclick="showAIWidget()" style="margin: 0 auto; padding: 16px 40px;">
-                <i class="fas fa-play"></i> Show AI Widget Now
-            </button>
-            <div id="widget-preview-area" style="min-height:400px; margin-top:30px; border:2px dashed var(--medium-gray); border-radius:16px; background:#fafafa; position:relative;"></div>
-        </div>
-
-        <!-- ===== AI PROBLEM SOLVER ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-brain" style="color: var(--primary); margin-right: 10px;"></i> AI Problem Solver Assistant</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="wide-card tool-card">
-            <div>
-                <h3>Your Cloudflare AI Consultant <span class="status-badge badge-info">Agency Exclusive</span></h3>
-                <p class="tool-description">Ask anything about your customers — powered by fast Cloudflare AI with real-time analysis.</p>
-                
-                <div class="ai-chat" id="ai-chat-messages">
-                    <div style="text-align:center;padding:80px 20px;color:var(--text-secondary);">
-                        <i class="fas fa-comment-dots" style="font-size: 3rem; opacity: 0.3; margin-bottom: 15px;"></i>
-                        <br>Start typing to chat with your AI consultant...
-                    </div>
-                </div>
-                
-                <div style="display:flex; gap:12px; margin-bottom: 15px;">
-                    <input type="text" id="ai-input" placeholder="e.g., 'Summarize John Doe's issues' or 'Show all high-risk customers'" style="flex:1;" onkeypress="if(event.key==='Enter') sendAiMessage()" />
-                    <button class="btn-primary" onclick="sendAiMessage()" style="width:auto; padding:0 32px;">
-                        <i class="fas fa-paper-plane"></i> Ask AI
-                    </button>
-                </div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn-secondary" onclick="sendAiMessage('Show top 5 customers with highest churn risk')">
-                        <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> High Risk
-                    </button>
-                    <button class="btn-secondary" onclick="sendAiMessage('Summarize all negative feedback from last 7 days')">
-                        <i class="fas fa-chart-line"></i> Weekly Summary
-                    </button>
-                    <button class="btn-secondary" onclick="sendAiMessage('Suggest improvements based on customer complaints')">
-                        <i class="fas fa-lightbulb"></i> Improvements
-                    </button>
-                    <button class="btn-secondary" onclick="sendAiMessage('What are the top 3 recurring problems?')">
-                        <i class="fas fa-exclamation-circle"></i> Top Problems
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== CUSTOMER PROBLEM-SOLVING SUITE ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 10px;"></i> Customer Problem-Solving Suite <span class="live-indicator"><span class="pulse-dot"></span>AI POWERED</span></h2>
-            <div class="section-line"></div>
-        </div>
-
-        <!-- Problem Categories Tabs -->
-        <div class="problem-tabs">
-            <div class="problem-tab active" onclick="switchProblemTab('all')">All Problems</div>
-            <div class="problem-tab" onclick="switchProblemTab('delivery')"><i class="fas fa-truck"></i> Delivery</div>
-            <div class="problem-tab" onclick="switchProblemTab('quality')"><i class="fas fa-star"></i> Quality</div>
-            <div class="problem-tab" onclick="switchProblemTab('pricing')"><i class="fas fa-tag"></i> Pricing</div>
-            <div class="problem-tab" onclick="switchProblemTab('support')"><i class="fas fa-headset"></i> Support</div>
-            <div class="problem-tab" onclick="switchProblemTab('refund')"><i class="fas fa-undo"></i> Refunds</div>
-            <div class="problem-tab" onclick="switchProblemTab('ux')"><i class="fas fa-mouse-pointer"></i> UX Issues</div>
-        </div>
-
-        <!-- Problem Metrics Dashboard -->
-        <div class="metric-grid">
-            <div class="metric-card">
-                <div class="metric-value" id="total-problems">0</div>
-                <div class="metric-label">Total Problems</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value" id="critical-problems">0</div>
-                <div class="metric-label">Critical Issues</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value" id="avg-resolution">2.4h</div>
-                <div class="metric-label">Avg Resolution</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value" id="satisfaction-rate">87%</div>
-                <div class="metric-label">Satisfaction</div>
-            </div>
-        </div>
-
-        <!-- Problem Resolution Tools Grid -->
-        <div class="grid" style="margin-top: 30px;">
-            
-            <!-- Tool 1: AI Problem Classifier -->
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-tags"></i></div>
-                <h3>AI Problem Classifier</h3>
-                <p class="tool-description">Automatically categorizes customer issues with 98% accuracy. Detects root causes in real-time.</p>
-                
-                <div style="background: var(--light-gray); padding: 20px; border-radius: 12px; margin: 15px 0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                        <span><i class="fas fa-truck" style="color: var(--warning);"></i> Delivery Issues</span>
-                        <span id="stat-delivery" style="font-weight:700;">0</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                        <span><i class="fas fa-star" style="color: var(--danger);"></i> Quality Concerns</span>
-                        <span id="stat-quality" style="font-weight:700;">0</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                        <span><i class="fas fa-tag" style="color: var(--info);"></i> Pricing Questions</span>
-                        <span id="stat-pricing" style="font-weight:700;">0</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span><i class="fas fa-headset" style="color: var(--success);"></i> Support Requests</span>
-                        <span id="stat-support" style="font-weight:700;">0</span>
-                    </div>
-                </div>
-                
-                <button class="btn-secondary" onclick="analyzeProblemTrends()" style="width:100%;">
-                    <i class="fas fa-chart-bar"></i> Analyze Trends
-                </button>
-            </div>
-
-            <!-- Tool 2: Smart Response Generator -->
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-reply"></i></div>
-                <h3>Smart Response Generator</h3>
-                <p class="tool-description">Generates personalized, empathetic responses based on problem type and customer history.</p>
-                
-                <select id="response-problem-type" style="margin-bottom:10px;">
-                    <option value="delivery">🚚 Delivery Delay</option>
-                    <option value="quality">⭐ Product Quality</option>
-                    <option value="refund">↩️ Refund Request</option>
-                    <option value="support">🎧 Technical Support</option>
-                    <option value="complaint">💬 General Complaint</option>
-                </select>
-                
-                <textarea id="response-context" placeholder="Additional context (optional)..." rows="2"></textarea>
-                
-                <button class="btn-primary" onclick="generateSmartResponse()" style="margin-top:10px; width:100%;">
-                    <i class="fas fa-magic"></i> Generate Response
-                </button>
-                
-                <div id="response-output" style="margin-top:15px; padding:15px; background:var(--light-gray); border-radius:12px; display:none;"></div>
-            </div>
-
-            <!-- Tool 3: Churn Prevention AI -->
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-exclamation-triangle"></i></div>
-                <h3>Churn Prevention AI</h3>
-                <p class="tool-description">Predicts which customers are about to churn and suggests intervention strategies.</p>
-                
-                <div style="margin:20px 0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                        <span><i class="fas fa-circle" style="color: var(--danger);"></i> High Risk Customers:</span>
-                        <span id="high-risk-count" style="font-weight:700; color:var(--danger);">0</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span><i class="fas fa-circle" style="color: var(--warning);"></i> Medium Risk:</span>
-                        <span id="medium-risk-count" style="font-weight:700; color:var(--warning);">0</span>
-                    </div>
-                </div>
-                
-                <button class="btn-danger" onclick="showAtRiskCustomers()" style="width:100%;">
-                    <i class="fas fa-eye"></i> View At-Risk Customers
-                </button>
-            </div>
-
-            <!-- Tool 4: Sentiment Timeline -->
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
-                <h3>Sentiment Timeline</h3>
-                <p class="tool-description">Track how customer sentiment evolves over time and spot emerging issues.</p>
-                
-                <canvas id="sentiment-timeline" height="150"></canvas>
-                
-                <div style="margin-top:15px;">
-                    <button class="btn-secondary" onclick="refreshSentimentTimeline()" style="width:100%;">
-                        <i class="fas fa-sync-alt"></i> Refresh Data
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool 5: Auto-Ticket Creator -->
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-ticket-alt"></i></div>
-                <h3>Auto-Ticket Creator</h3>
-                <p class="tool-description">Automatically creates support tickets for critical issues and assigns to the right team.</p>
-                
-                <div style="margin:20px 0;">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; flex-wrap: wrap;">
-                        <span style="font-size:0.9rem;">Auto-create tickets for:</span>
-                        <select id="ticket-threshold" style="width:100px;">
-                            <option value="70">70% risk</option>
-                            <option value="80">80% risk</option>
-                            <option value="90">90% risk</option>
-                        </select>
-                    </div>
                     
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
-                        <span style="font-size:0.9rem;">Auto-assign to:</span>
-                        <select id="ticket-assignee">
-                            <option value="support">Support Team</option>
-                            <option value="technical">Technical Team</option>
-                            <option value="billing">Billing Team</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button class="btn-primary" onclick="saveTicketSettings()">
-                    <i class="fas fa-save"></i> Save Settings
-                </button>
-                
-                <div style="margin-top:15px; padding:15px; background:var(--light-gray); border-radius:12px;">
-                    <span><i class="fas fa-ticket-alt" style="color: var(--primary);"></i> Open Tickets: <strong id="open-tickets">0</strong></span>
-                </div>
-            </div>
-
-            <!-- Tool 6: Knowledge Base Suggester -->
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-book"></i></div>
-                <h3>Knowledge Base Suggester</h3>
-                <p class="tool-description">Identifies knowledge gaps and suggests articles to prevent future issues.</p>
-                
-                <div id="knowledge-suggestions" style="margin:20px 0;">
-                    <div style="padding:12px; background:var(--light-gray); border-radius:10px; margin-bottom:8px;">
-                        <strong>📝 "Delivery times"</strong> - 23 mentions
-                    </div>
-                    <div style="padding:12px; background:var(--light-gray); border-radius:10px; margin-bottom:8px;">
-                        <strong>📝 "Return policy"</strong> - 15 mentions
-                    </div>
-                    <div style="padding:12px; background:var(--light-gray); border-radius:10px;">
-                        <strong>📝 "Sizing guide"</strong> - 12 mentions
-                    </div>
-                </div>
-                
-                <button class="btn-secondary" onclick="refreshKnowledgeSuggestions()">
-                    <i class="fas fa-sync-alt"></i> Refresh Suggestions
-                </button>
-            </div>
-        </div>
-
-        <!-- ===== PROBLEM ANALYSIS TABLE ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-table" style="color: var(--primary); margin-right: 10px;"></i> Detailed Problem Analysis</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="wide-card tool-card">
-            <div>
-                <h3>Customer Problems Dashboard</h3>
-                <p class="tool-description">Comprehensive view of all customer issues with AI-powered insights and trend analysis.</p>
-                
-                <div class="data-table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Problem Type</th>
-                                <th>Frequency</th>
-                                <th>Trend</th>
-                                <th>Avg Resolution</th>
-                                <th>Impact Score</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="problem-table-body">
-                            <tr><td colspan="7" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin: 0 auto;"></div><br>Loading problem data...</td><tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== EMAIL BROADCAST SYSTEM ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-envelope" style="color: var(--primary); margin-right: 10px;"></i> Mass Email Broadcast</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="email-broadcast">
-            <h3><i class="fas fa-bullhorn"></i> Communicate with Your Customers</h3>
-            <p style="margin:20px 0; opacity:0.9;">Send important updates, product announcements, or personalized offers to your entire customer base.</p>
-            
-            <div class="email-stats">
-                <div class="email-stat">
-                    <div class="email-stat-number" id="total-recipients">0</div>
-                    <div class="email-stat-label">Total Customers</div>
-                </div>
-                <div class="email-stat">
-                    <div class="email-stat-number" id="emails-sent">0</div>
-                    <div class="email-stat-label">Emails Sent</div>
-                </div>
-                <div class="email-stat">
-                    <div class="email-stat-number" id="open-rate">0%</div>
-                    <div class="email-stat-label">Avg Open Rate</div>
-                </div>
-            </div>
-
-            <div style="background:rgba(255,255,255,0.1); padding:30px; border-radius:20px; margin-top:20px;">
-                <h4 style="color:white; margin-bottom:20px;">Create New Broadcast</h4>
-                
-                <div class="input-group" style="margin-bottom:20px;">
-                    <div style="flex:2;">
-                        <label style="color:white;">Email Subject</label>
-                        <input type="text" id="email-subject" placeholder="e.g., Important Update About Your Orders" style="background:white; color: var(--text-primary);">
-                    </div>
-                    <div style="flex:1;">
-                        <label style="color:white;">Target Audience</label>
-                        <select id="email-target" style="background:white; color: var(--text-primary);">
-                            <option value="all">All Customers</option>
-                            <option value="high-risk">High Risk Customers</option>
-                            <option value="recent">Recent Customers (30 days)</option>
-                            <option value="inactive">Inactive (90+ days)</option>
-                            <option value="problem">Customers with Issues</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Email Templates -->
-                <div class="response-templates">
-                    <div class="template-item" onclick="loadEmailTemplate('update')"><i class="fas fa-megaphone"></i> Business Update</div>
-                    <div class="template-item" onclick="loadEmailTemplate('product')"><i class="fas fa-box"></i> New Products</div>
-                    <div class="template-item" onclick="loadEmailTemplate('offer')"><i class="fas fa-gift"></i> Special Offer</div>
-                    <div class="template-item" onclick="loadEmailTemplate('issue')"><i class="fas fa-exclamation-circle"></i> Issue Resolution</div>
-                    <div class="template-item" onclick="loadEmailTemplate('feedback')"><i class="fas fa-comment"></i> Feedback Request</div>
-                </div>
-
-                <div style="margin-bottom:20px;">
-                    <label style="color:white;">Email Content</label>
-                    <textarea id="email-content" rows="8" placeholder="Write your email content here... Use {{name}} for personalization" style="background:white; color: var(--text-primary);"></textarea>
-                </div>
-
-                <!-- Preview -->
-                <div class="template-preview" id="email-preview">
-                    <strong><i class="fas fa-eye"></i> Preview:</strong> Your email will appear here...
-                </div>
-
-                <div style="display:flex; gap:15px; margin-top:20px; flex-wrap: wrap;">
-                    <button class="btn-primary" onclick="sendBroadcast()" style="flex:2;">
-                        <i class="fas fa-paper-plane"></i> Send Broadcast
+                    <button class="btn-info" style="padding:16px 60px; font-size:1.1rem;" onclick="exportProblemReport()">
+                        <i class="fas fa-file-export"></i> Export Problem Analysis
                     </button>
-                    <button class="btn-secondary" onclick="testBroadcast()" style="flex:1;">
-                        <i class="fas fa-vial"></i> Send Test
-                    </button>
-                    <button class="btn-secondary" onclick="scheduleBroadcast()" style="flex:1;">
-                        <i class="fas fa-clock"></i> Schedule
+                    
+                    <button class="btn-secondary" style="padding:16px 60px; font-size:1.1rem;" onclick="refreshAllData()">
+                        <i class="fas fa-sync-alt"></i> Refresh All Data
                     </button>
                 </div>
+
             </div>
         </div>
 
-        <!-- ===== ANALYTICS SECTION ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-chart-pie" style="color: var(--primary); margin-right: 10px;"></i> Analytics & Predictions</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="grid">
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
-                <h3>Sentiment Overview</h3>
-                <p class="tool-description">Positive vs Negative across all interactions.</p>
-                
-                <canvas id="sentiment-chart" height="260"></canvas>
-                
-                <div style="margin-top: 20px; display: flex; justify-content: space-around;">
-                    <div><span style="color: #28a745;">●</span> Positive: <span id="positive-count">0</span></div>
-                    <div><span style="color: #dc3545;">●</span> Negative: <span id="negative-count">0</span></div>
-                    <div><span style="color: #6b7280;">●</span> Neutral: <span id="neutral-count">0</span></div>
-                </div>
-            </div>
-
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-exclamation-triangle"></i></div>
-                <h3>Top Recurring Problems</h3>
-                <p class="tool-description">Most frequent customer pain points right now.</p>
-                
-                <div id="top-issues" style="margin-top:20px;">
-                    <div style="text-align:center;color:var(--text-secondary);">Analyzing conversations...</div>
-                </div>
-            </div>
-
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
-                <h3>Churn Prediction</h3>
-                <p class="tool-description">Overall risk level based on negative trends.</p>
-                
-                <div style="margin-top:24px;background:var(--light-gray);padding:20px;border-radius:12px;text-align:center;">
-                    <label style="display:block;margin-bottom:12px;font-weight:600;">Global Churn Risk</label>
-                    <input type="range" min="0" max="100" value="0" disabled id="global-churn-slider" style="width:100%; accent-color: var(--primary);">
-                    <div id="global-churn-value" style="font-size:2.4rem;font-weight:800;color:var(--danger);margin-top:12px;">--%</div>
-                    <div style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);" id="churn-description"></div>
-                </div>
-            </div>
-
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-bell"></i></div>
-                <h3>Proactive Alerts</h3>
-                <p class="tool-description">Get instant email notifications on negative sentiment.</p>
-                
-                <div style="margin-top:24px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--light-gray);padding:20px;border-radius:12px;margin-bottom:10px;">
-                        <span style="font-weight:600;">Enable Real-time Alerts</span>
-                        <label class="switch">
-                            <input type="checkbox" id="alert-toggle" checked onchange="toggleAlerts()">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div id="alert-status" style="font-size:0.9rem; color: var(--success);">
-                        <i class="fas fa-check-circle"></i> Alerts are active
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== PREMIUM BUSINESS TOOLS ===== -->
-        <div class="section-header">
-            <h2><i class="fas fa-tools" style="color: var(--primary); margin-right: 10px;"></i> Premium Business Tools</h2>
-            <div class="section-line"></div>
-        </div>
-
-        <div class="grid">
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-lightbulb"></i></div>
-                <h3>AI Resolution Generator</h3>
-                <p class="tool-description">Instant email/call scripts for any issue.</p>
-                
-                <select id="resolution-type" style="margin-bottom: 10px;">
-                    <option value="email"><i class="fas fa-envelope"></i> Email Response</option>
-                    <option value="call"><i class="fas fa-phone"></i> Call Script</option>
-                    <option value="chat"><i class="fas fa-comment"></i> Chat Response</option>
-                </select>
-                
-                <textarea id="resolution-input" placeholder="Describe the customer issue..." rows="3"></textarea>
-                
-                <button class="btn-primary" onclick="generateResolution()" style="margin-top:12px; width: 100%;">
-                    <i class="fas fa-magic"></i> Generate Fix
-                </button>
-                
-                <div id="resolution-output" style="margin-top:20px; min-height:120px; padding:15px; background:var(--light-gray); border-radius:12px; line-height:1.6;"></div>
-            </div>
-
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
-                <h3>Sentiment Trend</h3>
-                <p class="tool-description">Weekly negative sentiment movement with predictive analytics.</p>
-                
-                <canvas id="trend-chart" height="200"></canvas>
-                
-                <div style="margin-top: 15px; text-align: center;">
-                    <button class="btn-secondary" onclick="refreshTrendData()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-            </div>
-
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-users"></i></div>
-                <h3>AI Customer Personas</h3>
-                <p class="tool-description">Auto-generated profiles from real chat data and behavior patterns.</p>
-                
-                <div id="persona-output" style="margin-top:16px; min-height: 120px;"></div>
-                
-                <button class="btn-primary" onclick="generatePersonas()" style="margin-top:16px; width: 100%;">
-                    <i class="fas fa-users-cog"></i> Generate Personas
-                </button>
-            </div>
-
-            <div class="tool-card">
-                <div class="icon-box"><i class="fas fa-clipboard-list"></i></div>
-                <h3>Team Notes & Tasks</h3>
-                <p class="tool-description">Internal notes, task assignments, and team collaboration.</p>
-                
-                <textarea id="team-note" placeholder="Add note or assign task..." rows="3"></textarea>
-                
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="btn-primary" onclick="saveTeamNote()" style="flex: 1;">
-                        <i class="fas fa-save"></i> Save & Share
-                    </button>
-                    <button class="btn-secondary" onclick="loadTeamNotes()" style="flex: 1;">
-                        <i class="fas fa-folder-open"></i> View Notes
-                    </button>
-                </div>
-                
-                <div id="notes-list" style="margin-top: 15px; max-height: 150px; overflow-y: auto;"></div>
-            </div>
-        </div>
-
-        <!-- ===== EXPORT BUTTONS ===== -->
-        <div style="text-align:center; margin:70px 0; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn-primary" style="padding:16px 60px; font-size:1.1rem;" onclick="exportInsights()">
-                <i class="fas fa-download"></i> Export Full Report (CSV)
-            </button>
-            
-            <button class="btn-info" style="padding:16px 60px; font-size:1.1rem;" onclick="exportProblemReport()">
-                <i class="fas fa-file-export"></i> Export Problem Analysis
-            </button>
-            
-            <button class="btn-secondary" style="padding:16px 60px; font-size:1.1rem;" onclick="refreshAllData()">
-                <i class="fas fa-sync-alt"></i> Refresh All Data
-            </button>
-        </div>
-
+        <footer>
+            <p>© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Powered by Cloudflare AI</span></p>
+        </footer>
     </div>
 </div>
-
-<footer>
-    <p>© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Powered by Cloudflare AI</span></p>
-</footer>
 
 <script>
+// ================================================
+// SIDEBAR NAVIGATION FUNCTION
+// ================================================
+function setActiveSidebar(element) {
+    // Remove active class from all sidebar links
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.classList.remove('active');
+    });
+    // Add active class to clicked link
+    element.classList.add('active');
+}
+
 // ================================================
 // CUSTOMER INSIGHTS - ENHANCED PROBLEM-SOLVING VERSION
 // WITH SERVICE COMPLETION NOTIFICATIONS
@@ -2008,7 +2251,7 @@ async function completeService(serviceId) {
                     service_id: serviceId
                 });
                 
-                // Send alert to widget via backend (will be picked up by widget.js)
+                // Send alert to widget via backend
                 await fetch(`${BACKEND_URL}/api/widget/send-notification`, {
                     method: 'POST',
                     headers: {
@@ -2223,7 +2466,7 @@ async function loadCustomers(silent = false) {
         }
 
         if (!silent) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin:0 auto;"></div><br>Loading customer data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin:0 auto;"></div><br>Loading customer data...</div></td></tr>';
         }
 
         console.log("Fetching leads...");
@@ -2383,11 +2626,11 @@ function renderProblemTable() {
     tbody.innerHTML = problems.map(p => `
         <tr>
             <td><strong>${p.type}</strong></td>
-            <td>${p.freq}</td>
+            <td>${p.freq}</div></td>
             <td><span style="color: ${p.trend.startsWith('+') ? '#dc3545' : '#28a745'}">${p.trend}</span></td>
-            <td>${p.resolution}</td>
-            <td><span class="status-badge ${p.impact > 80 ? 'badge-high' : p.impact > 60 ? 'badge-med' : 'badge-low'}">${p.impact}</span></td>
-            <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></td>
+            <td>${p.resolution}</div></td>
+            <td><span class="status-badge ${p.impact > 80 ? 'badge-high' : p.impact > 60 ? 'badge-med' : 'badge-low'}">${p.impact}</span></div></td>
+            <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></div></td>
             <td>
                 <button class="btn-secondary" style="padding:4px 8px; font-size:0.85rem;" onclick="analyzeProblemType('${p.key}')">Analyze</button>
              </td
@@ -2578,10 +2821,10 @@ function renderCustomers() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${c.name || 'Visitor'}</strong></td>
-            <td>${c.email || 'No email'}</td>
-            <td>${messages} ${messages > 0 ? `(${sentimentDisplay})` : ''}</td>
-            <td><span class="status-badge ${risk > 70 ? 'badge-high' : risk > 40 ? 'badge-med' : 'badge-low'}" style="font-size:1rem; font-weight:700;">${risk}%</span></td>
-            <td>${problemTags || '—'}</td>
+            <td>${c.email || 'No email'}</div></td>
+            <td>${messages} ${messages > 0 ? `(${sentimentDisplay})` : ''}</div></td>
+            <td><span class="status-badge ${risk > 70 ? 'badge-high' : risk > 40 ? 'badge-med' : 'badge-low'}" style="font-size:1rem; font-weight:700;">${risk}%</span></div></td>
+            <td>${problemTags || '—'}</div></td>
             <td>
                 <button class="btn-primary" style="padding:6px 12px; margin-right:5px;" onclick="viewCustomer('${c.email}')">View</button>
                 <button class="btn-secondary" style="padding:6px 12px;" onclick="quickAnalyze('${c.email}')">Analyze</button>
@@ -2818,11 +3061,11 @@ function switchProblemTab(tab) {
         tbody.innerHTML = filteredProblems.map(p => `
             <tr>
                 <td><strong>${p.type}</strong></td>
-                <td>${p.freq}</td>
+                <td>${p.freq}</div></td>
                 <td><span style="color: #f59e0b">${p.trend}</span></td>
-                <td>${p.resolution}</td>
-                <td><span class="status-badge badge-med">${p.impact}</span></td>
-                <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></td>
+                <td>${p.resolution}</div></td>
+                <td><span class="status-badge badge-med">${p.impact}</span></div></td>
+                <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></div></td>
                 <td>
                     <button class="btn-secondary" style="padding:4px 8px;" onclick="analyzeProblemType('${tab}')">Analyze</button>
                  </td
