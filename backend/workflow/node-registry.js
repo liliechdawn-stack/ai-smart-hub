@@ -2499,3 +2499,23 @@ class NodeRegistry {
 }
 
 module.exports = new NodeRegistry();
+
+    // ================================================
+    // FIX: Ensure all nodes have error ports
+    // ================================================
+    const nodeTypesWithError = [
+        'ai_agent', 'knowledge_base', 'basic_llm_chain', 'ai_content', 'ai_image', 
+        'ai_video', 'gemini', 'ai_chat', 'ai_memory', 'vector_db',
+        'post_instagram', 'post_facebook', 'post_twitter', 'post_linkedin', 'post_tiktok', 
+        'post_youtube', 'shopify_order', 'woo_order', 'stripe_payment', 'paypal_payment',
+        'create_lead', 'update_crm', 'salesforce_contact', 'hubspot_contact',
+        'send_email', 'send_slack', 'send_webhook', 'http_request', 'database_query'
+    ];
+    
+    for (const nodeType of nodeTypesWithError) {
+        const node = this.nodes.get(nodeType);
+        if (node && node.outputPorts && !node.outputPorts.some(p => p.name === 'error')) {
+            node.outputPorts.push({ name: 'error', label: 'Error', type: 'error' });
+            console.log(Added error port to );
+        }
+    }
