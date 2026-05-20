@@ -128,7 +128,7 @@ class NodeRegistry {
       color: '#10B981',
       canBeStart: true,
       inputPorts: [],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         webhook_path: { type: 'string', label: 'Webhook Path', default: '/webhook/my-endpoint', placeholder: '/webhook/unique-id', required: true },
         method: { type: 'select', label: 'HTTP Method', options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], default: 'POST' },
@@ -152,7 +152,7 @@ class NodeRegistry {
       color: '#3B82F6',
       canBeStart: true,
       inputPorts: [],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         cron: { type: 'string', label: 'Cron Expression', default: '0 * * * *', placeholder: '0 9 * * *', required: true },
         timezone: { type: 'string', label: 'Timezone', default: 'UTC', placeholder: 'America/New_York' }
@@ -174,7 +174,7 @@ class NodeRegistry {
       color: '#333333',
       canBeStart: true,
       inputPorts: [],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         event_type: { type: 'select', label: 'Event Type', options: ['push', 'pull_request', 'issues', 'star', 'fork'], default: 'push' },
         repository: { type: 'string', label: 'Repository', placeholder: 'username/repo', required: true },
@@ -197,7 +197,7 @@ class NodeRegistry {
       color: '#F59E0B',
       canBeStart: true,
       inputPorts: [],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         test_data: { type: 'json', label: 'Test Data', default: '{"test": true}', placeholder: '{"key": "value"}' }
       },
@@ -508,7 +508,7 @@ class NodeRegistry {
       icon: 'fa-scroll',
       color: '#F59E0B',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         topic: { type: 'string', label: 'Topic', required: true, placeholder: 'How AI is changing the world' },
         duration: { type: 'number', label: 'Duration (seconds)', min: 30, max: 300, default: 60 },
@@ -545,7 +545,7 @@ class NodeRegistry {
       icon: 'fa-chart-line',
       color: '#F59E0B',
       inputPorts: [{ name: 'input', label: 'Lead Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         scoring_model: { type: 'select', label: 'Scoring Model', options: ['default', 'b2b', 'b2c', 'enterprise'], default: 'default' }
       },
@@ -633,7 +633,7 @@ class NodeRegistry {
       icon: 'fa-compress',
       color: '#8B5CF6',
       inputPorts: [{ name: 'input', label: 'Text to Summarize', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         max_length: { type: 'number', label: 'Max Summary Length', min: 50, max: 500, default: 200 },
         credentialId: { type: 'credential', label: 'AI API Key', service: 'openai', required: true }
@@ -662,7 +662,7 @@ class NodeRegistry {
       icon: 'fa-language',
       color: '#8B5CF6',
       inputPorts: [{ name: 'input', label: 'Text to Translate', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         target_language: { type: 'select', label: 'Target Language', options: ['Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Arabic', 'Portuguese', 'Russian'], default: 'Spanish' },
         credentialId: { type: 'credential', label: 'Translation API Key', service: 'google', required: true }
@@ -699,7 +699,7 @@ class NodeRegistry {
       icon: 'fa-smile',
       color: '#8B5CF6',
       inputPorts: [{ name: 'input', label: 'Text to Analyze', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {},
       execute: async (node, context) => {
         const text = context.nodeInput?.text || context.triggerData?.text || '';
@@ -940,7 +940,7 @@ class NodeRegistry {
       icon: 'fa-hashtag',
       color: '#F59E0B',
       inputPorts: [{ name: 'input', label: 'Topic', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         topic: { type: 'string', label: 'Topic', required: true, placeholder: 'AI automation business' },
         count: { type: 'number', label: 'Number of Hashtags', min: 5, max: 30, default: 15 }
@@ -971,7 +971,7 @@ class NodeRegistry {
       icon: 'fa-calendar-alt',
       color: '#F59E0B',
       inputPorts: [{ name: 'input', label: 'Post Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         platform: { type: 'select', label: 'Platform', options: ['instagram', 'facebook', 'twitter', 'linkedin', 'tiktok'], default: 'instagram' },
         content: { type: 'textarea', label: 'Content', required: true, placeholder: 'Your scheduled post content...' },
@@ -1033,7 +1033,7 @@ class NodeRegistry {
       icon: 'fa-boxes',
       color: '#7AB55C',
       inputPorts: [{ name: 'input', label: 'Product Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         platform: { type: 'select', label: 'Platform', options: ['shopify', 'woocommerce', 'custom'], default: 'shopify' },
         product_id: { type: 'string', label: 'Product ID/SKU', placeholder: '{{data.product_id}}' },
@@ -1057,7 +1057,7 @@ class NodeRegistry {
       icon: 'fa-shopping-cart',
       color: '#FF6B6B',
       inputPorts: [{ name: 'input', label: 'Cart Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         platform: { type: 'select', label: 'Platform', options: ['shopify', 'woocommerce'], default: 'shopify' },
         discount_percent: { type: 'number', label: 'Discount %', min: 5, max: 50, default: 10 },
@@ -1485,7 +1485,7 @@ class NodeRegistry {
       icon: 'fa-hourglass-half',
       color: '#F59E0B',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         duration: { type: 'number', label: 'Duration', required: true, min: 1, max: 3600, default: 5 },
         unit: { type: 'select', label: 'Unit', options: ['seconds', 'minutes', 'hours'], default: 'seconds' }
@@ -1511,7 +1511,7 @@ class NodeRegistry {
       icon: 'fa-redo-alt',
       color: '#6B7280',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         iterations: { type: 'number', label: 'Max Iterations', min: 1, max: 100, default: 10 },
         split_arrays: { type: 'boolean', label: 'Split Arrays', default: false }
@@ -1596,7 +1596,7 @@ class NodeRegistry {
       icon: 'fa-chart-simple',
       color: '#6B7280',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         operation: { type: 'select', label: 'Operation', options: ['sum', 'average', 'min', 'max', 'count', 'merge'], default: 'sum' },
         field: { type: 'string', label: 'Field to Aggregate', placeholder: 'value' }
@@ -1703,7 +1703,7 @@ class NodeRegistry {
       icon: 'fa-exchange-alt',
       color: '#6B7280',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         mapping: { type: 'json', label: 'Field Mapping', default: '{"newField": "{{data.oldField}}"}' }
       },
@@ -1794,7 +1794,7 @@ class NodeRegistry {
       icon: 'fa-sort',
       color: '#6B7280',
       inputPorts: [{ name: 'input', label: 'Array Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         field: { type: 'string', label: 'Field Name', required: true, placeholder: 'timestamp' },
         order: { type: 'select', label: 'Order', options: ['asc', 'desc'], default: 'desc' }
@@ -1837,7 +1837,7 @@ class NodeRegistry {
       icon: 'fa-code-branch',
       color: '#8B5CF6',
       inputPorts: [{ name: 'input', label: 'Value Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         variable_name: { type: 'string', label: 'Variable Name', required: true, placeholder: 'myVariable' },
         variable_value: { type: 'string', label: 'Value', placeholder: '{{data.value}}' }
@@ -1868,7 +1868,7 @@ class NodeRegistry {
       icon: 'fa-code-branch',
       color: '#8B5CF6',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         variable_name: { type: 'string', label: 'Variable Name', required: true, placeholder: 'myVariable' },
         default_value: { type: 'string', label: 'Default Value', placeholder: '{}' }
@@ -1900,7 +1900,7 @@ class NodeRegistry {
       icon: 'fa-copy',
       color: '#6B7280',
       inputPorts: [{ name: 'input', label: 'Array Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         fields: { type: 'json', label: 'Fields to Compare', default: '["id"]' },
         keep_first: { type: 'boolean', label: 'Keep First Occurrence', default: true }
@@ -2279,7 +2279,7 @@ class NodeRegistry {
       icon: 'fab fa-google',
       color: '#E37400',
       inputPorts: [{ name: 'input', label: 'Date Range', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {
         property_id: { type: 'string', label: 'Property ID', required: true, placeholder: 'UA-123456789-1' },
         metrics: { type: 'string', label: 'Metrics', default: 'users,sessions,bounceRate' },
@@ -2305,7 +2305,7 @@ class NodeRegistry {
       icon: 'fa-forward',
       color: '#6B7280',
       inputPorts: [{ name: 'input', label: 'Input Data', type: 'object' }],
-      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }],
+      outputPorts: [{ name: 'next', label: 'Next', type: 'success' }, { name: 'error', label: 'Error', type: 'error' }],
       configSchema: {},
       execute: async (node, context) => {
         return {
