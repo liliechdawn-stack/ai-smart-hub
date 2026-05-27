@@ -3,6 +3,7 @@
 // Real-time data from backend - NO SIMULATIONS
 // Works with smart-tools.html (updated version)
 // Includes REAL-TIME TOOLS ANALYTICS
+// FIXED: Image upload with compression
 // ============================================
 
 // Ensure BACKEND_URL is available
@@ -58,6 +59,34 @@ const TOOL_SECTION_MAP = {
     'followup': 'card-followup',
     'business_type': 'business-identity-section'
 };
+
+// ============================================
+// IMAGE COMPRESSION HELPER (FIXED)
+// ============================================
+async function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = dataUrl;
+    });
+}
 
 // ============================================
 // 1. INITIALIZATION - LOAD ALL DATA ON PAGE READY
@@ -1233,17 +1262,23 @@ function loadCustomPrompts() {
     `).join('');
 }
 
-// Make functions globally available
-window.saveSmartTool = saveSmartTool;
-window.exportBusinessData = exportBusinessData;
-window.deactivateTool = deactivateTool;
-window.runSmartTool = runSmartTool;
-window.loadCustomPrompts = loadCustomPrompts;
-
-// Image upload handler for proof images
+// ============================================
+// 12. IMAGE UPLOAD HANDLER (FIXED WITH COMPRESSION)
+// ============================================
 window.uploadProofImages = async function(images) {
     const token = localStorage.getItem('token');
     if (!token) return false;
+    
+    // Compress images before sending
+    const compressedImages = [];
+    for (const img of images) {
+        try {
+            const compressed = await compressImage(img, 800, 0.7);
+            compressedImages.push(compressed);
+        } catch(e) {
+            compressedImages.push(img);
+        }
+    }
     
     try {
         const response = await fetch(`${API_BASE}/api/smart-hub/upload-proof`, {
@@ -1252,7 +1287,7 @@ window.uploadProofImages = async function(images) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ images })
+            body: JSON.stringify({ images: compressedImages })
         });
         return response.ok;
     } catch (err) {
@@ -1260,5 +1295,13 @@ window.uploadProofImages = async function(images) {
         return false;
     }
 };
+
+// Make functions globally available
+window.saveSmartTool = saveSmartTool;
+window.exportBusinessData = exportBusinessData;
+window.deactivateTool = deactivateTool;
+window.runSmartTool = runSmartTool;
+window.loadCustomPrompts = loadCustomPrompts;
+window.compressImage = compressImage;
 
 console.log("✅ smart-logic.js fully loaded - SaaS ready, no simulations, all real backend data");
