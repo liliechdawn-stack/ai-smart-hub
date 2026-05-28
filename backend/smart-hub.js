@@ -11,6 +11,7 @@ const { auth } = require('./auth');
  * UPDATED: Image Proof Upload, Custom Links, API Keys, Real-Time Metrics, Activities
  * FULLY FIXED: Image upload now works properly with proper error handling
  * ADDED: Tools Metrics endpoint for real-time tools analytics
+ * ADDED: Public proof images endpoint for widget (no auth required)
  */
 
 const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
@@ -924,7 +925,6 @@ router.delete("/custom-links/:linkId", auth, async (req, res) => {
     }
 });
 
-
 // ============================================
 // PROOF IMAGES UPLOAD - FIXED VERSION
 // ============================================
@@ -1031,6 +1031,49 @@ router.post("/upload-proof", auth, async (req, res) => {
             fallback: true,
             message: `${images.length} image(s) processed. They will appear as proof.` 
         });
+    }
+});
+
+// ============================================
+// PUBLIC PROOF IMAGES - NO AUTH REQUIRED (FOR WIDGET)
+// ============================================
+router.get("/public/proof-images/:widgetKey", async (req, res) => {
+    const { widgetKey } = req.params;
+    
+    try {
+        // First find the user by widget_key
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('widget_key', widgetKey)
+            .single();
+        
+        if (userError || !user) {
+            console.log("[PUBLIC-PROOF] Invalid widget key:", widgetKey);
+            return res.json([]);
+        }
+        
+        // Then fetch proof images for that user
+        const { data: images, error } = await supabase
+            .from('proof_images')
+            .select('id, image_data, created_at')
+            .eq('user_id', String(user.id))
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const formattedImages = (images || []).map(img => ({
+            id: img.id,
+            imageUrl: img.image_data,
+            created_at: img.created_at
+        }));
+        
+        console.log(`[PUBLIC-PROOF] Returning ${formattedImages.length} images for widget ${widgetKey}`);
+        res.json(formattedImages);
+        
+    } catch (err) {
+        console.error("[PUBLIC-PROOF] Error:", err);
+        res.json([]);
     }
 });
 
