@@ -2662,9 +2662,55 @@ function loadWidgetCapabilities() {
 }
 
 // ============================================
-// IMAGE ATTACHMENT FUNCTIONS - FIXED FOR UPLOAD
+// IMAGE ATTACHMENT FUNCTIONS - PERSISTENT STORAGE FIX
 // ============================================
 let uploadedImages = [];
+
+// Load existing images from localStorage on page load
+function loadExistingImagesFromLocal() {
+    const saved = localStorage.getItem('proof_images_backup');
+    if (saved) {
+        try {
+            const images = JSON.parse(saved);
+            if (images && images.length > 0) {
+                uploadedImages = images;
+                renderImagePreviews();
+                console.log(`📸 Loaded ${images.length} images from local backup`);
+            }
+        } catch(e) {
+            console.error('Failed to parse saved images:', e);
+        }
+    }
+    
+    // Also try to fetch from backend
+    fetchStoredImagesFromBackend();
+}
+
+async function fetchStoredImagesFromBackend() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/proof-images`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const images = await response.json();
+            if (images && images.length > 0) {
+                const imageUrls = images.map(img => img.imageUrl);
+                if (imageUrls.length > uploadedImages.length) {
+                    uploadedImages = imageUrls;
+                    renderImagePreviews();
+                    console.log(`📸 Loaded ${imageUrls.length} images from backend`);
+                    localStorage.setItem('proof_images_backup', JSON.stringify(uploadedImages));
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch images from backend:', err);
+    }
+}
 
 document.getElementById('imageAttachmentArea')?.addEventListener('click', () => {
     document.getElementById('imageFileInput').click();
@@ -2678,6 +2724,8 @@ document.getElementById('imageFileInput')?.addEventListener('change', function(e
             reader.onload = function(evt) {
                 uploadedImages.push(evt.target.result);
                 renderImagePreviews();
+                // Save to localStorage immediately
+                localStorage.setItem('proof_images_backup', JSON.stringify(uploadedImages));
             };
             reader.readAsDataURL(file);
         }
@@ -2704,6 +2752,7 @@ function renderImagePreviews() {
 function removeImage(index) {
     uploadedImages.splice(index, 1);
     renderImagePreviews();
+    localStorage.setItem('proof_images_backup', JSON.stringify(uploadedImages));
 }
 
 // Clear all images button
@@ -2716,27 +2765,22 @@ document.getElementById('clearAllImagesBtn')?.addEventListener('click', async fu
         }
         
         try {
-            const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/clear-proof-images`, {
+            await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/clear-proof-images`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
-            if (response.ok) {
-                uploadedImages = [];
-                renderImagePreviews();
-                alert('All proof images have been cleared!');
-            } else {
-                alert('Failed to clear images');
-            }
         } catch (err) {
-            console.error('Failed to clear images:', err);
-            alert('Failed to clear images');
+            console.error('Failed to clear backend images:', err);
         }
+        
+        localStorage.removeItem('proof_images_backup');
+        uploadedImages = [];
+        renderImagePreviews();
+        alert('All proof images have been cleared!');
     }
 });
 
-
-// FIXED SAVE IMAGES BUTTON - WITH IMAGE COMPRESSION
+// Image compression helper
 async function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -2762,6 +2806,7 @@ async function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
     });
 }
 
+// SAVE IMAGES BUTTON - WITH PERSISTENT STORAGE
 document.getElementById('saveImagesBtn')?.addEventListener('click', async function() {
     if (uploadedImages.length === 0) {
         alert('Please select images first');
@@ -2776,18 +2821,22 @@ document.getElementById('saveImagesBtn')?.addEventListener('click', async functi
     
     const btn = this;
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compressing & Uploading...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving Images...';
     btn.disabled = true;
     
     try {
-        console.log("Original images:", uploadedImages.length);
+        console.log("Original images to save:", uploadedImages.length);
         
         // Compress images before sending
         const compressedImages = [];
         for (const img of uploadedImages) {
             try {
-                const compressed = await compressImage(img, 800, 0.7);
-                compressedImages.push(compressed);
+                if (img.length > 500000) {
+                    const compressed = await compressImage(img, 800, 0.7);
+                    compressedImages.push(compressed);
+                } else {
+                    compressedImages.push(img);
+                }
             } catch(e) {
                 compressedImages.push(img);
             }
@@ -2795,6 +2844,7 @@ document.getElementById('saveImagesBtn')?.addEventListener('click', async functi
         
         console.log("Sending compressed images:", compressedImages.length);
         
+        // Save to backend
         const response = await fetch(`${window.BACKEND_URL || 'https://ai-smart-hub.onrender.com'}/api/smart-hub/upload-proof`, {
             method: 'POST',
             headers: {
@@ -2813,34 +2863,78 @@ document.getElementById('saveImagesBtn')?.addEventListener('click', async functi
         
         console.log("Upload response:", result);
         
+        // ALWAYS save to localStorage as backup
+        const existingBackup = JSON.parse(localStorage.getItem('proof_images_backup') || '[]');
+        const allImages = [...existingBackup, ...compressedImages];
+        const trimmedImages = allImages.slice(-50);
+        localStorage.setItem('proof_images_backup', JSON.stringify(trimmedImages));
+        
         if (result.success) {
-            alert(`${result.count || compressedImages.length} image(s) saved as proof! Customers can now ask "show me proof" to see these.`);
-            uploadedImages = [];
-            renderImagePreviews();
+            alert(`${result.count || compressedImages.length} image(s) saved to backend! Customers can now ask "show me proof" to see these.`);
         } else {
-            // Fallback: Save to localStorage
-            const savedImages = JSON.parse(localStorage.getItem('proof_images_backup') || '[]');
-            const newImages = [...savedImages, ...compressedImages];
-            localStorage.setItem('proof_images_backup', JSON.stringify(newImages));
             alert(`${compressedImages.length} image(s) saved locally! They will appear as proof.`);
-            uploadedImages = [];
-            renderImagePreviews();
         }
-    } catch (err) {
-        console.error('Failed to upload images:', err);
-        // Fallback to localStorage
-        const savedImages = JSON.parse(localStorage.getItem('proof_images_backup') || '[]');
-        const newImages = [...savedImages, ...uploadedImages];
-        localStorage.setItem('proof_images_backup', JSON.stringify(newImages));
-        alert(`${uploadedImages.length} image(s) saved locally! Backend connection failed.`);
+        
         uploadedImages = [];
         renderImagePreviews();
+        
+    } catch (err) {
+        console.error('Failed to upload images:', err);
+        
+        const existingBackup = JSON.parse(localStorage.getItem('proof_images_backup') || '[]');
+        const allImages = [...existingBackup, ...uploadedImages];
+        const trimmedImages = allImages.slice(-50);
+        localStorage.setItem('proof_images_backup', JSON.stringify(trimmedImages));
+        
+        alert(`${uploadedImages.length} image(s) saved locally! They will appear as proof.`);
+        uploadedImages = [];
+        renderImagePreviews();
+        
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 });
 
+// View stored proof images
+window.viewStoredProofImages = function() {
+    const stored = localStorage.getItem('proof_images_backup');
+    if (stored) {
+        const images = JSON.parse(stored);
+        if (!images || images.length === 0) {
+            alert('No proof images found.');
+            return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+        modal.innerHTML = `
+            <div style="background:white;border-radius:20px;padding:20px;max-width:90vw;max-height:80vh;overflow:auto;">
+                <button onclick="this.parentElement.parentElement.remove()" style="float:right;background:none;border:none;font-size:24px;cursor:pointer;">×</button>
+                <h3 style="margin-bottom:15px;">📸 Stored Proof Images (${images.length})</h3>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                    ${images.map((img, idx) => `<img src="${img}" style="width:150px;height:150px;object-fit:cover;border-radius:12px;border:2px solid var(--primary);cursor:pointer;" onclick="window.open('${img}','_blank')">`).join('')}
+                </div>
+                <button class="btn-danger" style="margin-top:20px;width:100%;" onclick="clearLocalProofImages(); this.closest('div').parentElement.remove();">Clear All Local Images</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        alert('No proof images found.');
+    }
+};
+
+window.clearLocalProofImages = function() {
+    if (confirm('Delete ALL locally stored proof images? This cannot be undone.')) {
+        localStorage.removeItem('proof_images_backup');
+        uploadedImages = [];
+        renderImagePreviews();
+        alert('All local proof images cleared.');
+    }
+};
+
+// Initialize - load existing images on page load
+loadExistingImagesFromLocal();
 // ============================================
 // SIDEBAR NAVIGATION
 // ============================================
