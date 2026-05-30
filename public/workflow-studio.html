@@ -2423,6 +2423,54 @@
             initZoomControls();
         }
     </script>
+<script>
+// ================================================
+// FIX: Add missing error ports to all node configs
+// ================================================
+(function fixNodeErrorPorts() {
+    console.log("?? Running node error port fix...");
+    
+    if (!window.NODE_CONFIGS) {
+        console.log("? NODE_CONFIGS not found");
+        return;
+    }
+    
+    const nodeTypes = Object.keys(window.NODE_CONFIGS);
+    let fixed = 0;
+    
+    for (const nodeType of nodeTypes) {
+        const config = window.NODE_CONFIGS[nodeType];
+        
+        // Ensure outputs array exists
+        if (!config.outputs) {
+            config.outputs = ['next'];
+        }
+        
+        // Add error port to nodes that should have it
+        const needsError = nodeType.includes('ai_') || 
+                          nodeType.includes('post_') || 
+                          nodeType.includes('send_') ||
+                          nodeType.includes('shopify_') ||
+                          nodeType.includes('create_') ||
+                          nodeType.includes('update_') ||
+                          nodeType.includes('http_') ||
+                          nodeType.includes('database_') ||
+                          nodeType === 'condition' ||
+                          nodeType === 'code' ||
+                          nodeType === 'transform' ||
+                          nodeType === 'webhook' ||
+                          nodeType === 'rss';
+        
+        if (needsError && !config.outputs.includes('error')) {
+            config.outputs.push('error');
+            fixed++;
+            console.log(`? Added error port to ${nodeType}`);
+        }
+    }
+    
+    console.log(`? Fixed ${fixed} node configurations`);
+})();
+</script>
 </body>
 
 
