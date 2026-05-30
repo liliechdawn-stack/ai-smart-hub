@@ -375,9 +375,29 @@
             background: #dc2626;
         }
 
-        .canvas-container {
+                .canvas-container {
             flex: 1;
-            background: radial-gradient(circle at 50% 50%, #0a0a0f, #050508);
+            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px);
+            background-size: 28px 28px;
+            background-color: #0a0a0f;
+            position: relative;
+            overflow: auto;
+            display: none;
+        }
+        .canvas-container:active {
+            cursor: grabbing;
+        }
+        .workflow-node {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+        }
+        .workflow-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(212,175,55,0.2);
+        
+
+            flex: 1;
+            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px); background-size: 28px 28px; background-color: #0a0a0f;
             position: relative;
             overflow: auto;
             display: none;
@@ -495,7 +515,7 @@
 
         .history-panel {
             flex: 1;
-            background: radial-gradient(circle at 50% 50%, #0a0a0f, #050508);
+            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px); background-size: 28px 28px; background-color: #0a0a0f;
             overflow-y: auto;
             padding: 20px;
             display: none;
@@ -606,7 +626,7 @@
 
         .gallery-panel {
             flex: 1;
-            background: radial-gradient(circle at 50% 50%, #0a0a0f, #050508);
+            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px); background-size: 28px 28px; background-color: #0a0a0f;
             overflow-y: auto;
             padding: 20px;
             display: none;
@@ -2471,7 +2491,7 @@
     console.log(`? Fixed ${fixed} node configurations`);
 })();
 </script>
-</body>
+<script src="workflow-api-fix.js"></script></body>
 
 
 <script>
