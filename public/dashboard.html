@@ -143,47 +143,6 @@
             background: #cc0000;
         }
 
-        /* ROI Dashboard Styles */
-        .roi-dashboard {
-            background: linear-gradient(135deg, #1a2a1a 0%, #0f1a0f 100%);
-            border-radius: 24px;
-            padding: 28px;
-            margin-bottom: 32px;
-            border: 1px solid rgba(46, 204, 113, 0.3);
-        }
-
-        .roi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .roi-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .roi-value {
-            font-size: 2.8rem;
-            font-weight: 800;
-            color: var(--success);
-        }
-
-        .roi-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-top: 8px;
-        }
-
-        .roi-trend {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
         /* AI Business Intelligence Section */
         .bi-section {
             background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
@@ -519,9 +478,6 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            .roi-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
     </style>
 </head>
@@ -558,51 +514,6 @@
         <div id="verification-banner" class="verification-banner hidden">
             <span style="color: var(--gold);">⚠️ Your business email is not verified. Some features may be limited.</span>
             <button onclick="window.location.href='verification.html'" class="btn-gold" style="padding: 8px 16px; font-size: 0.8rem;">Verify Now</button>
-        </div>
-
-        <!-- ========== ROI DASHBOARD ========== -->
-        <div class="roi-dashboard" id="roiDashboard">
-            <div class="roi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="display: flex; align-items: center; gap: 12px; margin: 0;">
-                    <i class="fas fa-chart-line" style="color: var(--success);"></i>
-                    ROI Dashboard
-                    <span class="live-badge pulse"><i class="fas fa-circle"></i> Live Tracking</span>
-                </h2>
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">
-                    Last 30 days
-                </div>
-            </div>
-            
-            <div class="roi-grid">
-                <div class="roi-card">
-                    <div class="roi-value" id="hoursSavedValue">0</div>
-                    <div class="roi-label">Hours Saved</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">= <span id="hoursValue">0</span> days of work</div>
-                </div>
-                <div class="roi-card">
-                    <div class="roi-value" id="leadsValue">0</div>
-                    <div class="roi-label">Leads Generated</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">↑ <span id="leadsGrowth">0</span>% from last month</div>
-                </div>
-                <div class="roi-card">
-                    <div class="roi-value" id="revenueValue">$0</div>
-                    <div class="roi-label">Revenue Impact</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">Estimated from automation</div>
-                </div>
-                <div class="roi-card">
-                    <div class="roi-value" id="tasksValue">0</div>
-                    <div class="roi-label">Tasks Automated</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">This month</div>
-                </div>
-            </div>
-            
-            <div class="roi-trend">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                    <span style="font-weight: 600;">Weekly Impact Trend</span>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Last 4 weeks</span>
-                </div>
-                <canvas id="roiTrendChart" height="100"></canvas>
-            </div>
         </div>
 
         <!-- AI BUSINESS INTELLIGENCE SECTION -->
@@ -764,7 +675,6 @@
 
     // ========== JAVASCRIPT VARIABLES ==========
     let businessProfile = null;
-    let roiChart = null;
     let riseFallChart = null;
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -819,7 +729,7 @@
 
         // ========== ENHANCED BUSINESS INTELLIGENCE ALGORITHM ==========
 
-        // Comprehensive industry profiles with insights (no automation recommendations)
+        // Comprehensive industry profiles with insights
         const INDUSTRY_PROFILES = {
             agency: {
                 name: "Digital Agency",
@@ -871,31 +781,6 @@
             }
         };
 
-        // ========== ROI CALCULATION FUNCTIONS ==========
-        function calculateHoursSaved() {
-            let totalHours = 0;
-            // Estimate based on business profile
-            if (businessProfile && businessProfile.hours) {
-                const hoursMap = { '0-5': 2, '5-15': 8, '15-25': 15, '25-40': 25, '40+': 35 };
-                totalHours = hoursMap[businessProfile.hours] || 5;
-            } else {
-                totalHours = 12;
-            }
-            return totalHours;
-        }
-
-        function calculateRevenueImpact() {
-            let monthlyRevenue = 10000;
-            if (businessProfile && businessProfile.revenue) {
-                if (businessProfile.revenue === '0-1k') monthlyRevenue = 500;
-                else if (businessProfile.revenue === '1k-10k') monthlyRevenue = 5000;
-                else if (businessProfile.revenue === '10k-50k') monthlyRevenue = 25000;
-                else if (businessProfile.revenue === '50k+') monthlyRevenue = 75000;
-            }
-            let impactPercent = 15;
-            return Math.round(monthlyRevenue * (impactPercent / 100));
-        }
-
         async function loadBusinessInsights() {
             try {
                 const res = await fetch(`${BACKEND_URL}/api/business/insights`, {
@@ -923,7 +808,6 @@
                 
                 updateBusinessStatus(businessProfile);
                 renderInsights(generatedInsights);
-                updateROIDashboard();
 
             } catch (error) {
                 console.error("Error loading business insights:", error);
@@ -936,55 +820,11 @@
                         <div class="insight-icon"><i class="fas fa-plus"></i></div>
                         <div class="insight-content">
                             <div class="insight-title">Set up your business profile</div>
-                            <div class="insight-description">Tell us about your business to get personalized AI insights and ROI estimates.</div>
+                            <div class="insight-description">Tell us about your business to get personalized AI insights and recommendations.</div>
                         </div>
                     </div>
                 `;
             }
-        }
-
-        function updateROIDashboard() {
-            const hoursSaved = calculateHoursSaved();
-            const revenueImpact = calculateRevenueImpact();
-            const leadsGenerated = Math.floor(hoursSaved * 3.5);
-            
-            document.getElementById('hoursSavedValue').textContent = hoursSaved;
-            document.getElementById('hoursValue').textContent = Math.floor(hoursSaved / 8);
-            document.getElementById('leadsValue').textContent = leadsGenerated;
-            document.getElementById('leadsGrowth').textContent = Math.floor(Math.random() * 30) + 15;
-            document.getElementById('revenueValue').textContent = `$${revenueImpact.toLocaleString()}`;
-            document.getElementById('tasksValue').textContent = Math.floor(hoursSaved * 2.5);
-            
-            // Create ROI trend chart
-            if (roiChart) roiChart.destroy();
-            const ctx = document.getElementById('roiTrendChart').getContext('2d');
-            roiChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'Hours Saved',
-                        data: [Math.floor(hoursSaved * 0.25), Math.floor(hoursSaved * 0.5), Math.floor(hoursSaved * 0.75), hoursSaved],
-                        borderColor: '#2ecc71',
-                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }, {
-                        label: 'Revenue ($)',
-                        data: [Math.floor(revenueImpact * 0.2), Math.floor(revenueImpact * 0.4), Math.floor(revenueImpact * 0.7), revenueImpact],
-                        borderColor: '#d4af37',
-                        backgroundColor: 'rgba(212, 175, 55, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { position: 'top', labels: { color: 'white' } } },
-                    scales: { y: { grid: { color: '#333' }, ticks: { color: '#aaa' } }, x: { grid: { display: false }, ticks: { color: '#aaa' } } }
-                }
-            });
         }
 
         function generateAdvancedInsights(profile) {
@@ -1116,7 +956,7 @@
         function renderInsights(insights) {
             const container = document.getElementById("businessInsights");
             if (!insights || insights.length === 0) {
-                container.innerHTML = `<div class="insight-card"><div class="insight-icon"><i class="fas fa-chart-line"></i></div><div class="insight-content"><div class="insight-title">Complete your profile</div><div class="insight-description">Add more business details to unlock AI-powered insights with ROI estimates.</div></div></div>`;
+                container.innerHTML = `<div class="insight-card"><div class="insight-icon"><i class="fas fa-chart-line"></i></div><div class="insight-content"><div class="insight-title">Complete your profile</div><div class="insight-description">Add more business details to unlock AI-powered insights.</div></div></div>`;
                 return;
             }
             container.innerHTML = insights.map(insight => `
@@ -1154,7 +994,7 @@
                 title: '🎯 Let AI Understand Your Business',
                 html: `
                     <div style="text-align: left; max-height: 500px; overflow-y: auto; padding-right: 10px;">
-                        <p>Answer these questions to get personalized insights with ROI estimates:</p>
+                        <p>Answer these questions to get personalized insights:</p>
                         
                         <div style="margin: 20px 0;">
                             <label style="font-weight: 600; display: block; margin-bottom: 8px;">1. What best describes your business?</label>
@@ -1232,32 +1072,8 @@
                         </div>
                         
                         <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">6. Monthly revenue range? (helps us prioritize ROI)</label>
-                            <select id="onboardRevenue" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
-                                <option value="">Prefer not to say</option>
-                                <option value="0-1k">Less than $1,000</option>
-                                <option value="1k-10k">$1,000 - $10,000</option>
-                                <option value="10k-50k">$10,000 - $50,000</option>
-                                <option value="50k-200k">$50,000 - $200,000</option>
-                                <option value="200k+">$200,000+</option>
-                            </select>
-                        </div>
-                        
-                        <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">7. How many hours per week do you spend on repetitive manual tasks?</label>
-                            <select id="onboardHours" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;">
-                                <option value="">Select...</option>
-                                <option value="0-5">0-5 hours</option>
-                                <option value="5-15">5-15 hours</option>
-                                <option value="15-25">15-25 hours</option>
-                                <option value="25-40">25-40 hours</option>
-                                <option value="40+">40+ hours</option>
-                            </select>
-                        </div>
-                        
-                        <div style="margin: 20px 0;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">8. Extra info about your business (optional - helps AI understand better)</label>
-                            <textarea id="onboardExtraInfo" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;" placeholder="e.g., We sell handmade jewelry, target audience is women 25-45, main competitors are...</textarea>
+                            <label style="font-weight: 600; display: block; margin-bottom: 8px;">6. Extra info about your business (optional)</label>
+                            <textarea id="onboardExtraInfo" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; background: #1a1a1a; color: white; border: 1px solid #333;" placeholder="e.g., We sell handmade jewelry, target audience is women 25-45...</textarea>
                         </div>
                     </div>
                 `,
@@ -1274,8 +1090,6 @@
                     const goal = document.getElementById('onboardGoal').value;
                     const challenge = document.getElementById('onboardChallenge').value;
                     const tools = Array.from(document.querySelectorAll('#onboardIndustry ~ div input:checked')).map(cb => cb.value);
-                    const revenue = document.getElementById('onboardRevenue').value;
-                    const hours = document.getElementById('onboardHours').value;
                     const extraInfo = document.getElementById('onboardExtraInfo').value;
                     
                     if (!industry || !goal) {
@@ -1283,7 +1097,7 @@
                         return false;
                     }
                     
-                    return { industry, size, goal, challenge, tools, revenue, hours, extraInfo };
+                    return { industry, size, goal, challenge, tools, extraInfo };
                 }
             }).then(async (result) => {
                 if (result.isConfirmed) await saveBusinessProfile(result.value);
@@ -1298,7 +1112,7 @@
                     body: JSON.stringify(profile)
                 });
                 if (res.ok) {
-                    Swal.fire({ title: 'Profile Saved!', text: 'AI is now analyzing your business to provide personalized insights with ROI estimates.', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'Great!', customClass: { confirmButton: 'btn-gold' } });
+                    Swal.fire({ title: 'Profile Saved!', text: 'AI is now analyzing your business to provide personalized insights.', icon: 'success', background: '#1a1a1a', color: 'white', confirmButtonText: 'Great!', customClass: { confirmButton: 'btn-gold' } });
                     await loadBusinessInsights();
                     await loadDashboard();
                 } else throw new Error('Failed to save');
@@ -1393,7 +1207,7 @@
             chatTableBody.innerHTML = "";
             const threads = {};
             chats.forEach(c => { const session = c.session_id || 'manual'; if (!threads[session]) { threads[session] = { client: c.client_name || "Guest", count: 0, last: c.created_at, messages: [] }; } threads[session].count++; threads[session].messages.push(c); });
-            Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = `    <td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td><td>${t.count} messages</div></td><td>${new Date(t.last).toLocaleString()}</td><td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>`; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); });
+            Object.keys(threads).forEach(sid => { const t = threads[sid]; const tr = document.createElement("tr"); tr.innerHTML = `    <td><strong>${t.client}</strong><br><small style="color:gray">${sid}</small></td><td>${t.count} messages</div><td>${new Date(t.last).toLocaleString()}<tr><td><button class="btn-gold view-thread-btn" style="padding:5px 10px; font-size:12px">View History</button></td>`; tr.querySelector(".view-thread-btn").onclick = () => openChatModal(t.client, t.messages); chatTableBody.appendChild(tr); });
         }
 
         function openChatModal(client, messages) {
