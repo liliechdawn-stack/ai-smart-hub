@@ -341,7 +341,7 @@
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
+            
             box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
 
@@ -375,6 +375,7 @@
             background: #dc2626;
         }
 
+            
                 .canvas-container {
             flex: 1;
             background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px);
@@ -383,24 +384,29 @@
             position: relative;
             overflow: auto;
             display: none;
+            cursor: grab;
         }
         .canvas-container:active {
             cursor: grabbing;
         }
+        .canvas-container.active {
+            display: block;
+        }
         .workflow-node {
+            position: absolute;
+            min-width: 260px;
+            background: rgba(30, 30, 46, 0.95);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 16px;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s ease;
+            z-index: 10;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: transform 0.1s ease, box-shadow 0.2s ease;
         }
         .workflow-node:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(212,175,55,0.2);
-        
-
-            flex: 1;
-            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px); background-size: 28px 28px; background-color: #0a0a0f;
-            position: relative;
-            overflow: auto;
-            display: none;
+            box-shadow: 0 8px 24px rgba(212,175,55,0.3);
         }
 
         .canvas-container.active {
@@ -2491,7 +2497,7 @@
     console.log(`? Fixed ${fixed} node configurations`);
 })();
 </script>
-<script src="workflow-api-fix.js"></script></body>
+<script src="workflow-api-fix.js"></script>
 
 
 <script>
@@ -8326,3 +8332,4 @@
         window.updateNodeConfigField = updateNodeConfigField;
     </script>
 </html>
+</body>
