@@ -1,8 +1,6 @@
 // widget.js - Professional SaaS AI Chat Widget (FULLY UPDATED)
 // Features: Business Identity Integration, Proper Conversation Memory, Professional AI Responses, 
 // Apollo Enrichment, Follow-ups, IMAGE ATTACHMENT FROM SMART TOOLS, CUSTOM LINKS INTEGRATION
-// UPDATED: Public proof images endpoint, Image analysis for uploaded images
-// LOCATION: backend/widget.js (served as static file or embedded)
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -95,10 +93,10 @@
       console.log("[WIDGET] Business Identity:", businessIdentity);
       console.log("[WIDGET] Widget Capabilities:", widgetCapabilities);
       
-      // Load custom links from backend (public endpoint)
+      // Load custom links from backend
       await loadCustomLinksForWidget();
       
-      // Load proof images from public endpoint (no auth needed)
+      // Load proof images from backend
       await loadProofImagesForWidget();
       
       initWidget(dbConfig);
@@ -115,45 +113,41 @@
       initWidget({});
     });
 
-  // ===== LOAD CUSTOM LINKS FROM BACKEND (PUBLIC ENDPOINT) =====
+  // ===== LOAD CUSTOM LINKS FROM BACKEND =====
   async function loadCustomLinksForWidget() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     try {
-      const response = await fetch(`${SERVER_URL}/api/smart-hub/public/custom-links/${WIDGET_KEY}`);
+      const response = await fetch(`${SERVER_URL}/api/smart-hub/custom-links`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       
       if (response.ok) {
         customLinks = await response.json();
-        console.log("[WIDGET] Loaded custom links from public endpoint:", customLinks.length);
-      } else {
-        console.warn("[WIDGET] Failed to load custom links, status:", response.status);
-        customLinks = [];
+        console.log("[WIDGET] Loaded custom links:", customLinks.length);
       }
     } catch (err) {
       console.warn("[WIDGET] Failed to load custom links:", err);
-      customLinks = [];
     }
   }
 
-  // ===== LOAD PROOF IMAGES FROM BACKEND (PUBLIC ENDPOINT - NO TOKEN NEEDED) =====
+  // ===== LOAD PROOF IMAGES FROM BACKEND =====
   async function loadProofImagesForWidget() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     try {
-      const response = await fetch(`${SERVER_URL}/api/smart-hub/public/proof-images/${WIDGET_KEY}`);
+      const response = await fetch(`${SERVER_URL}/api/smart-hub/proof-images`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       
       if (response.ok) {
         proofImages = await response.json();
-        console.log("[WIDGET] Loaded proof images from public endpoint:", proofImages.length);
-        
-        // Update proof button visibility
-        const proofBtn = document.getElementById("widget-proof-btn");
-        if (proofBtn) {
-          proofBtn.style.display = proofImages.length > 0 ? "flex" : "none";
-        }
-      } else {
-        console.warn("[WIDGET] Failed to load proof images, status:", response.status);
-        proofImages = [];
+        console.log("[WIDGET] Loaded proof images:", proofImages.length);
       }
     } catch (err) {
       console.warn("[WIDGET] Failed to load proof images:", err);
-      proofImages = [];
     }
   }
 
@@ -175,7 +169,7 @@
     if (!proofImages || proofImages.length === 0) return '';
     
     const imagesHtml = proofImages.map(img => `
-      <img src="${img.imageUrl}" alt="Proof" style="max-width: 100%; border-radius: 12px; margin: 5px 0; border: 1px solid #e5e7eb; cursor: pointer;" onclick="window.open('${img.imageUrl}', '_blank')">
+      <img src="${img.imageUrl}" alt="Proof" style="max-width: 100%; border-radius: 12px; margin: 5px 0; border: 1px solid #e5e7eb;">
     `).join('');
     
     return `<div style="margin-top: 10px; background: #f9fafb; padding: 12px; border-radius: 12px;">
@@ -192,30 +186,6 @@
 
   function getProofImagesArray() {
     return proofImages;
-  }
-
-  // ===== ANALYZE IMAGE WITH VISION AI =====
-  async function analyzeImageWithVision(imageData) {
-    if (!smartSettings?.vision_active) return null;
-    
-    try {
-      const response = await fetch(`${SERVER_URL}/api/public/vision/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          image: imageData,
-          widget_key: WIDGET_KEY
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.analysis || "I can see the image you shared. What would you like to know about it?";
-      }
-    } catch (err) {
-      console.warn("[WIDGET] Vision analysis failed:", err);
-    }
-    return null;
   }
 
   function initWidget(dbConfig) {
@@ -1104,9 +1074,6 @@
             const imagesHtml = getProofImagesMessage();
             appendMessage(imagesHtml, "bot");
             return true;
-          } else {
-            appendMessage("I don't have any proof images available at the moment. Please check back later.", "bot");
-            return true;
           }
         }
       }
@@ -1122,9 +1089,6 @@
           if (customLinks && customLinks.length > 0) {
             const linksHtml = getCustomLinksMessage();
             appendMessage(linksHtml, "bot");
-            return true;
-          } else {
-            appendMessage("I don't have any custom links configured yet. Please check back later.", "bot");
             return true;
           }
         }
@@ -1330,23 +1294,13 @@
       }
 
       const reader = new FileReader();
-      reader.onload = async (ev) => {
+      reader.onload = (ev) => {
         pendingFileData = ev.target.result;
         pendingFileName = file.name;
 
         const isImage = file.type.startsWith('image/');
         if (isImage) {
           previewIcon.innerHTML = `<img src="${pendingFileData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
-          
-          // Auto-analyze image if vision is enabled
-          if (smartSettings?.vision_active) {
-            typingInd.style.display = "block";
-            const analysis = await analyzeImageWithVision(pendingFileData);
-            typingInd.style.display = "none";
-            if (analysis) {
-              appendMessage(analysis, "bot");
-            }
-          }
         } else {
           previewIcon.innerHTML = '📄';
         }
@@ -1382,6 +1336,13 @@
         const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo/i;
         if (bookingKeywords.test(text)) {
           linkedText += `<br><br>📅 <a href="${bookingUrl}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book</a>`;
+        }
+      }
+      
+      if (role === 'bot' && customLinks && customLinks.length > 0) {
+        const linkKeywords = /links|useful links|resources|helpful links/i;
+        if (!linkKeywords.test(text) && !text.includes('Useful Links')) {
+          // Don't auto-add links - they should be requested
         }
       }
 
