@@ -4,7 +4,7 @@
  * Features: Metrics logging, retries, rate limiting, model fallback, token management
  * 
  * Cloudflare AI Models Used:
- * - Text: @cf/meta/llama-3-8b-instruct, @cf/meta/llama-3-70b-instruct
+ * - Text: @cf/meta/llama-3.1-8b-instruct, @cf/meta/llama-3.3-70b-instruct
  * - Image: @cf/stabilityai/stable-diffusion-xl-base-1.0, @cf/lykon/dreamshaper-8-lcm
  * - Multi-modal: @cf/unum/uform-gen2-qwen-500m
  * - Embeddings: @cf/baai/bge-base-en-v1.5
@@ -26,10 +26,10 @@ const CLOUDFLARE_API_BASE = `https://api.cloudflare.com/client/v4/accounts/${CLO
 // Available Cloudflare AI Models
 const MODELS = {
     // Text Generation
-    TEXT_FAST: '@cf/meta/llama-3-8b-instruct',
-    TEXT_POWERFUL: '@cf/meta/llama-3-70b-instruct',
+    TEXT_FAST: '@cf/meta/llama-3.1-8b-instruct',
+    TEXT_POWERFUL: '@cf/meta/llama-3.3-70b-instruct',
     TEXT_CODE: '@cf/deepseek-ai/deepseek-math-7b-instruct',
-    TEXT_FALLBACK: '@cf/meta/llama-3-8b-instruct',
+    TEXT_FALLBACK: '@cf/meta/llama-3.1-8b-instruct',
     
     // Image Generation
     IMAGE_SDXL: '@cf/stabilityai/stable-diffusion-xl-base-1.0',

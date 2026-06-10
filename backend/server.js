@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -116,27 +116,27 @@ const fs = require('fs');
 const pathModule = require('path');
 
 const routesPath = pathModule.join(__dirname, 'routes');
-console.log(`🔍 Checking routes directory: ${routesPath}`);
+console.log(`?? Checking routes directory: ${routesPath}`);
 
 try {
   const files = fs.readdirSync(routesPath);
-  console.log(`📁 Files in routes directory: ${files.join(', ')}`);
+  console.log(`?? Files in routes directory: ${files.join(', ')}`);
 } catch (err) {
-  console.error(`❌ Could not read routes directory: ${err.message}`);
+  console.error(`? Could not read routes directory: ${err.message}`);
 }
 
 const templateRouteFile = pathModule.join(__dirname, 'routes', 'automation-templates-routes.js');
-console.log(`🔍 Checking template route file: ${templateRouteFile}`);
+console.log(`?? Checking template route file: ${templateRouteFile}`);
 if (fs.existsSync(templateRouteFile)) {
-  console.log(`✅ File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
+  console.log(`? File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
   try {
     const content = fs.readFileSync(templateRouteFile, 'utf8');
-    console.log(`📄 First 100 chars: ${content.substring(0, 100)}...`);
+    console.log(`?? First 100 chars: ${content.substring(0, 100)}...`);
   } catch (readErr) {
-    console.log(`⚠️ Could not read file: ${readErr.message}`);
+    console.log(`?? Could not read file: ${readErr.message}`);
   }
 } else {
-  console.log(`❌ File NOT FOUND at: ${templateRouteFile}`);
+  console.log(`? File NOT FOUND at: ${templateRouteFile}`);
 }
 
 // Import new automation modules
@@ -158,27 +158,27 @@ let leadsRoutes;
 
 try {
   automationTemplatesRoutes = require('./routes/automation-templates-routes');
-  console.log('✅ automation-templates-routes.js loaded successfully');
+  console.log('? automation-templates-routes.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load automation-templates-routes.js:', err.message);
+  console.error('? Failed to load automation-templates-routes.js:', err.message);
   console.error('   Stack:', err.stack);
   automationTemplatesRoutes = (req, res) => res.status(500).json({ error: 'Templates routes not available', details: err.message });
 }
 
 try {
   userAutomationsRoutes = require('./routes/user-automations-routes');
-  console.log('✅ user-automations-routes.js loaded successfully');
+  console.log('? user-automations-routes.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load user-automations-routes.js:', err.message);
+  console.error('? Failed to load user-automations-routes.js:', err.message);
   console.error('   Stack:', err.stack);
   userAutomationsRoutes = (req, res) => res.status(500).json({ error: 'User automations routes not available', details: err.message });
 }
 
 try {
   leadsRoutes = require('./routes/leads-routes');
-  console.log('✅ leads-routes.js loaded successfully');
+  console.log('? leads-routes.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load leads-routes.js:', err.message);
+  console.error('? Failed to load leads-routes.js:', err.message);
   console.error('   Stack:', err.stack);
   leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
 }
@@ -187,9 +187,9 @@ try {
 let coachRoutes;
 try {
   coachRoutes = require('./routes/coach');
-  console.log('✅ coach.js loaded successfully');
+  console.log('? coach.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load coach.js:', err.message);
+  console.error('? Failed to load coach.js:', err.message);
   coachRoutes = (req, res) => res.status(500).json({ error: 'Business Coach routes not available', details: err.message });
 }
 
@@ -202,42 +202,42 @@ let workflowTemplatesRoutes;
 
 try {
   workflowRoutes = require('./routes/workflow-routes');
-  console.log('✅ workflow-routes.js loaded successfully');
+  console.log('? workflow-routes.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load workflow-routes.js:', err.message);
+  console.error('? Failed to load workflow-routes.js:', err.message);
   workflowRoutes = null;
 }
 
 try {
   webhookHandler = require('./webhook-handler');
-  console.log('✅ webhook-handler.js loaded successfully');
+  console.log('? webhook-handler.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load webhook-handler.js:', err.message);
+  console.error('? Failed to load webhook-handler.js:', err.message);
   webhookHandler = null;
 }
 
 try {
   const { webhookRouter } = require('./webhook-listener');
   webhookListener = webhookRouter;
-  console.log('✅ webhook-listener.js loaded successfully');
+  console.log('? webhook-listener.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load webhook-listener.js:', err.message);
+  console.error('? Failed to load webhook-listener.js:', err.message);
   webhookListener = null;
 }
 
 try {
   workflowScheduler = require('./scheduler');
-  console.log('✅ scheduler.js loaded successfully');
+  console.log('? scheduler.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load scheduler.js:', err.message);
+  console.error('? Failed to load scheduler.js:', err.message);
   workflowScheduler = null;
 }
 
 try {
   workflowTemplatesRoutes = require('./workflow-templates');
-  console.log('✅ workflow-templates.js loaded successfully');
+  console.log('? workflow-templates.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load workflow-templates.js:', err.message);
+  console.error('? Failed to load workflow-templates.js:', err.message);
   workflowTemplatesRoutes = null;
 }
 
@@ -250,9 +250,9 @@ const app = express();
 let smartHubRoutes;
 try {
   smartHubRoutes = require('./smart-hub');
-  console.log('✅ smart-hub.js loaded successfully');
+  console.log('? smart-hub.js loaded successfully');
 } catch (err) {
-  console.error('❌ Failed to load smart-hub.js:', err.message);
+  console.error('? Failed to load smart-hub.js:', err.message);
   console.error('   Stack:', err.stack);
   smartHubRoutes = (req, res) => res.status(500).json({ error: 'Smart Hub routes not available', details: err.message });
 }
@@ -289,7 +289,7 @@ async function logSystemEvent(eventType, message, details = {}, userId = null) {
     console.error('Failed to persist system log:', err.message);
   }
   
-  console.log(`📋 [SYS-LOG] ${eventType}: ${message}`);
+  console.log(`?? [SYS-LOG] ${eventType}: ${message}`);
   return logEntry;
 }
 
@@ -499,7 +499,7 @@ io.use(async (socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  console.log(`👤 User connected: ${socket.userId}`);
+  console.log(`?? User connected: ${socket.userId}`);
   
   // Join user to their personal room
   socket.join(`user:${socket.userId}`);
@@ -511,11 +511,11 @@ io.on("connection", (socket) => {
 
   socket.on("join", (userId) => {
     socket.join(`user:${userId}`);
-    console.log(`👤 User joined socket room: user:${userId}`);
+    console.log(`?? User joined socket room: user:${userId}`);
   });
 
   socket.on("disconnect", () => {
-    console.log(`👤 User disconnected: ${socket.userId}`);
+    console.log(`?? User disconnected: ${socket.userId}`);
   });
 });
 
@@ -537,9 +537,9 @@ const metricsService = new MetricsService();
 let resend = null;
 if (process.env.RESEND_API_KEY) {
   resend = new Resend(process.env.RESEND_API_KEY);
-  console.log("✅ Resend configured for reliable email delivery");
+  console.log("? Resend configured for reliable email delivery");
 } else {
-  console.warn("⚠️ RESEND_API_KEY not found. Using nodemailer fallback.");
+  console.warn("?? RESEND_API_KEY not found. Using nodemailer fallback.");
 }
 
 // Fallback to Nodemailer
@@ -571,10 +571,10 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
         throw new Error(error.message);
       }
 
-      console.log(`✅ Resend email sent to: ${to}`);
+      console.log(`? Resend email sent to: ${to}`);
       return { success: true, method: 'resend' };
     } catch (err) {
-      console.error(`❌ Resend failed for ${to}:`, err.message);
+      console.error(`? Resend failed for ${to}:`, err.message);
     }
   }
 
@@ -587,10 +587,10 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
       html,
       text: text || html.replace(/<[^>]*>/g, '')
     });
-    console.log(`✅ Nodemailer email sent to: ${to}`);
+    console.log(`? Nodemailer email sent to: ${to}`);
     return { success: true, method: 'nodemailer' };
   } catch (err) {
-    console.error(`❌ Both email methods failed for ${to}:`, err.message);
+    console.error(`? Both email methods failed for ${to}:`, err.message);
     return { success: false, error: err.message };
   }
 }
@@ -719,7 +719,7 @@ app.get('/api/platform/metrics', authenticateToken, async (req, res) => {
 // ================= SMART HUB ROUTES - MOUNTED HERE =================
 // This is CRITICAL for image upload and tools analytics to work
 app.use('/api/smart-hub', smartHubRoutes);
-console.log('✅ Smart Hub routes mounted at /api/smart-hub');
+console.log('? Smart Hub routes mounted at /api/smart-hub');
 
 // Health check endpoint for Render
 app.get('/healthz', (req, res) => {
@@ -730,9 +730,9 @@ app.get('/healthz', (req, res) => {
 let customerRouter;
 try {
   customerRouter = require('./customer-insights');
-  console.log("✅ SUCCESS: customer-insights.js LOADED correctly");
+  console.log("? SUCCESS: customer-insights.js LOADED correctly");
 } catch (err) {
-  console.error("❌ FAILED to load customer-insights.js:", err.message);
+  console.error("? FAILED to load customer-insights.js:", err.message);
   customerRouter = express.Router();
 }
 app.use('/api/customer-insights', customerRouter);
@@ -754,28 +754,28 @@ app.use('/api/settings', settingsRoutes);
 // ===== AI POWERHOUSE ROUTES - MOUNTED HERE =====
 // Initialize AI Powerhouse with Cloudflare Gateway
 const AI_POWERHOUSE_ENABLED = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
-console.log(`🔷 AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '✅ Enabled' : '⚠️ Disabled (Cloudflare credentials missing)'}`);
+console.log(`?? AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '? Enabled' : '?? Disabled (Cloudflare credentials missing)'}`);
 
 // Mount AI Powerhouse routes
 app.use('/api/powerhouse', authenticateToken, aiPowerhouseRoutes);
-console.log('✅ AI Powerhouse routes mounted at /api/powerhouse');
+console.log('? AI Powerhouse routes mounted at /api/powerhouse');
 
 // ===== NEW: AUTOMATION TEMPLATES ROUTES =====
 app.use('/api/automation', automationTemplatesRoutes);
-console.log('✅ Automation Templates routes mounted at /api/automation');
+console.log('? Automation Templates routes mounted at /api/automation');
 
 // ===== NEW: USER AUTOMATIONS ROUTES =====
 app.use('/api', userAutomationsRoutes);
-console.log('✅ User Automations routes mounted at /api/automations');
+console.log('? User Automations routes mounted at /api/automations');
 
 // ===== NEW: LEADS MANAGEMENT ROUTES =====
 app.use('/api', leadsRoutes);
-console.log('✅ Leads Management routes mounted at /api/leads');
+console.log('? Leads Management routes mounted at /api/leads');
 
 // ===== NEW: AI BUSINESS COACH ROUTES =====
 // Mount Business Coach routes (requires authentication)
 app.use('/api/coach', authenticateToken, coachRoutes);
-console.log('✅ AI Business Coach routes mounted at /api/coach');
+console.log('? AI Business Coach routes mounted at /api/coach');
 
 // ===== NEW: WORKFLOW ENGINE ROUTES (REAL-TIME AUTOMATION) =====
 if (workflowRoutes) {
@@ -783,24 +783,24 @@ if (workflowRoutes) {
   app.use('/api/workflows/:id/execute', rateLimitMiddleware);
   app.use('/api/workflows/execute', rateLimitMiddleware);
   app.use('/api', workflowRoutes);
-  console.log('✅ Workflow routes mounted at /api/workflows with rate limiting');
+  console.log('? Workflow routes mounted at /api/workflows with rate limiting');
 }
 
 if (webhookHandler) {
   app.use('/', webhookHandler);
-  console.log('✅ Webhook handler mounted at /webhook/*');
+  console.log('? Webhook handler mounted at /webhook/*');
 }
 
 // ===== NEW: WEBHOOK LISTENER (for registered webhooks) =====
 if (webhookListener) {
   app.use('/', webhookListener);
-  console.log('✅ Webhook listener mounted');
+  console.log('? Webhook listener mounted');
 }
 
 // ===== NEW: WORKFLOW TEMPLATES ROUTES =====
 if (workflowTemplatesRoutes) {
   app.use('/', workflowTemplatesRoutes);
-  console.log('✅ Workflow templates routes mounted at /api/workflow-templates');
+  console.log('? Workflow templates routes mounted at /api/workflow-templates');
 }
 
 // ================= ENTERPRISE FEATURE ENDPOINTS =================
@@ -953,7 +953,7 @@ app.get('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAc
 
 // ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
 app.post("/api/webhook-test", (req, res) => {
-  console.log("🔗 Webhook test received:", req.body);
+  console.log("?? Webhook test received:", req.body);
   res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
 });
 
@@ -961,15 +961,15 @@ app.post("/api/webhook-test", (req, res) => {
 if (workflowScheduler && workflowScheduler.initialize) {
   setTimeout(async () => {
     await workflowScheduler.initialize();
-    console.log('✅ Workflow scheduler initialized');
+    console.log('? Workflow scheduler initialized');
   }, 5000);
-  console.log('⏰ Workflow scheduler will start in 5 seconds');
+  console.log('? Workflow scheduler will start in 5 seconds');
 }
 
 // Initialize error handlers on startup
 setTimeout(async () => {
   await errorHandler.loadErrorHandlers();
-  console.log('✅ Error handlers loaded');
+  console.log('? Error handlers loaded');
 }, 6000);
 
 // ================================================
@@ -1219,7 +1219,7 @@ app.post('/api/business/profile', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const profile = req.body;
     
-    console.log(`📊 Business profile saved for user ${userId}:`, profile);
+    console.log(`?? Business profile saved for user ${userId}:`, profile);
     
     try {
         // Save profile to users table
@@ -1271,7 +1271,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('cart-recovery', profile);
             insights.push({
                 type: 'ecommerce',
-                title: '🛒 E-commerce Opportunity',
+                title: '?? E-commerce Opportunity',
                 description: `Based on your business type, you could recover 15% of abandoned carts with automated follow-up emails. This could save you ${roi.hours_saved_per_week} hours/week and add $${roi.revenue_impact_monthly}/month.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1284,7 +1284,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('lead-scoring', profile);
             insights.push({
                 type: 'operations',
-                title: '📊 Agency Efficiency',
+                title: '?? Agency Efficiency',
                 description: `Automate client reporting and save ${roi.hours_saved_per_week} hours per week per client with AI-powered reports.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1297,7 +1297,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('lead-scoring', profile);
             insights.push({
                 type: 'lead_generation',
-                title: '🎯 Lead Generation Potential',
+                title: '?? Lead Generation Potential',
                 description: `AI lead scoring can increase conversion by 45%. Based on your profile, this could generate ${roi.leads_generated_monthly} leads/month and save ${roi.hours_saved_per_week} hours/week.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1310,7 +1310,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('ai-social-media-scheduler', profile);
             insights.push({
                 type: 'content',
-                title: '✍️ Content Scaling',
+                title: '?? Content Scaling',
                 description: `AI content generation can 3x your output. Save ${roi.hours_saved_per_week} hours/week and generate ${roi.leads_generated_monthly} more leads.`,
                 priority: 'medium',
                 roi: roi.revenue_impact_monthly,
@@ -1323,7 +1323,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('auto-responder', profile);
             insights.push({
                 type: 'customer_support',
-                title: '💬 24/7 Support',
+                title: '?? 24/7 Support',
                 description: `AI auto-responder can handle 70% of common questions automatically. Save ${roi.hours_saved_per_week} hours/week on support.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1336,7 +1336,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('cart-recovery', profile);
             insights.push({
                 type: 'sales',
-                title: '💰 Sales Growth Opportunity',
+                title: '?? Sales Growth Opportunity',
                 description: `Automated cart recovery and follow-up sequences can boost sales by 15-25%. Potential revenue increase: $${roi.revenue_impact_monthly}/month.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1351,7 +1351,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const savedHours = Math.floor(currentHours * 0.7);
             insights.push({
                 type: 'operations',
-                title: '⏰ Time Savings Opportunity',
+                title: '? Time Savings Opportunity',
                 description: `You spend ~${currentHours} hours/week on manual tasks. Automations could save you ${savedHours} hours/week - that's ${Math.floor(savedHours / 8)} extra days per week!`,
                 priority: 'high',
                 roi: savedHours * 50,
@@ -1363,7 +1363,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.challenge === 'manual_data') {
             insights.push({
                 type: 'operations',
-                title: '📊 Data Entry Automation',
+                title: '?? Data Entry Automation',
                 description: `Manual data entry is a major time sink. Automate form submissions and CRM updates to save 8+ hours/week.`,
                 priority: 'high',
                 roi: 600,
@@ -1374,7 +1374,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.challenge === 'followups') {
             insights.push({
                 type: 'sales',
-                title: '📧 Follow-up Automation',
+                title: '?? Follow-up Automation',
                 description: `Automated follow-up sequences can increase response rates by 3x and save 5+ hours/week.`,
                 priority: 'high',
                 roi: 1500,
@@ -1387,7 +1387,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('cart-recovery', profile);
             insights.push({
                 type: 'ecommerce',
-                title: '🛒 E-commerce Revenue Opportunity',
+                title: '?? E-commerce Revenue Opportunity',
                 description: `You're losing 15-25% of potential sales from abandoned carts. Automated recovery could add $${roi.revenue_impact_monthly}/month.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1398,7 +1398,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.tools && profile.tools.includes('slack')) {
             insights.push({
                 type: 'operations',
-                title: '💬 Team Communication Boost',
+                title: '?? Team Communication Boost',
                 description: `Connect your automations to Slack for real-time team notifications on leads, sales, and support tickets.`,
                 priority: 'medium',
                 roi: 400,
@@ -1662,7 +1662,7 @@ const PLAN_LIMITS = {
 };
 
 // ================= ALL SQLITE MIGRATIONS REMOVED =================
-console.log("✅ Using Supabase for all database operations");
+console.log("? Using Supabase for all database operations");
 
 // ================= VERIFICATION MIDDLEWARE =================
 async function checkVerified(req, res, next) {
@@ -1710,7 +1710,7 @@ app.post("/api/auth/resend-verification", bodyParser.json(), async (req, res) =>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
         <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">✨ AI Smart Hub</h1>
+            <h1 style="color: white; margin: 0;">? AI Smart Hub</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
           </div>
           <div style="padding: 40px;">
@@ -1774,7 +1774,7 @@ app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
         <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
+            <h1 style="color: white; margin: 0;">? Welcome to AI Smart Hub</h1>
           </div>
           <div style="padding: 40px;">
             <h2 style="color: #333;">Verify Your Email</h2>
@@ -2099,7 +2099,7 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
        Current date: ${new Date().toLocaleDateString()}`;
 
     const aiRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
       {
         method: "POST",
         headers: {
@@ -2130,7 +2130,7 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
 
     res.json({ success: true, reply, session_id: activeSession });
   } catch (err) {
-    console.error("❌ AI Error:", err.message);
+    console.error("? AI Error:", err.message);
     res.status(500).json({ error: "AI server error" });
   }
 });
@@ -2287,7 +2287,7 @@ ${historyContext}`;
         const systemContext = buildSystemPrompt();
         
         const cfRes = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+          `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
           {
             method: "POST",
             headers: {
@@ -2328,7 +2328,7 @@ ${historyContext}`;
       const hasBookingIntent = bookingKeywords.test(message);
       
       const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
         {
           method: "POST",
           headers: {
@@ -2353,7 +2353,7 @@ ${historyContext}`;
         reply = cfData.result?.response || "I couldn't generate a response.";
         
         if (hasBookingIntent && smartSettings?.booking_url && smartSettings?.booking_active && !reply.includes(smartSettings.booking_url)) {
-          reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
+          reply += `\n\n?? You can book here: ${smartSettings.booking_url}`;
         }
       }
     }
@@ -2377,7 +2377,7 @@ ${historyContext}`;
       sentiment: 'neutral'
     });
   } catch (e) {
-    console.error("❌ Public Chat Error:", e.message);
+    console.error("? Public Chat Error:", e.message);
     res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
   }
 });
@@ -2463,7 +2463,7 @@ app.post("/api/public/leads", bodyParser.json(), async (req, res) => {
       
     res.json({ success: true, message: "Lead captured!" });
   } catch (err) {
-    console.error("❌ Lead Save Error:", err);
+    console.error("? Lead Save Error:", err);
     res.status(500).json({ error: "Database save failed" });
   }
 });
@@ -2777,7 +2777,7 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
     res.json({ success: true, message: "Tool deactivated successfully" });
 
   } catch (err) {
-    console.error("❌ Deactivation Error:", err.message);
+    console.error("? Deactivation Error:", err.message);
     res.status(500).json({ success: false, error: "Database error during deactivation" });
   }
 });
@@ -2905,7 +2905,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
       <head><meta charset="UTF-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">📬 New Contact Form Submission</h1>
+          <h1 style="color: white; margin: 0;">?? New Contact Form Submission</h1>
         </div>
         <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
           <p><strong>Name:</strong> ${name}</p>
@@ -2942,7 +2942,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
             <head><meta charset="UTF-8"></head>
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px;">
-                <h1 style="color: white; margin: 0;">✅ Thank You for Contacting AI Smart Hub</h1>
+                <h1 style="color: white; margin: 0;">? Thank You for Contacting AI Smart Hub</h1>
               </div>
               <div style="background: white; padding: 30px; margin-top: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
                 <p>We've received your message and will respond within 24 hours.</p>
@@ -2958,7 +2958,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
         });
       }
 
-      console.log(`✅ Contact form message sent from: ${email}`);
+      console.log(`? Contact form message sent from: ${email}`);
     }
 
     res.json({ success: true, message: "Message sent successfully" });
@@ -3009,7 +3009,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
           <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
             <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">✨ ${user.business_name || 'AI Smart Hub'}</h1>
+                <h1 style="color: white; margin: 0; font-size: 28px;">? ${user.business_name || 'AI Smart Hub'}</h1>
                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">Customer Update</p>
               </div>
               <div style="padding: 30px; background: white;">
@@ -3051,7 +3051,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
     const method = resend ? 'Resend' : 'Nodemailer';
     res.json({ 
       success: true, 
-      message: `✅ [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
+      message: `? [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
       stats: results
     });
 
@@ -3073,7 +3073,7 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
     const user = await getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    console.log(`📧 Sending test email to: ${user.email}`);
+    console.log(`?? Sending test email to: ${user.email}`);
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -3082,17 +3082,17 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
         <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <div style="background: #f8f9fa; padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">
-            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">🔔 TEST MODE</span>
+            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">?? TEST MODE</span>
           </div>
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">✨ ${user.business_name || 'AI Smart Hub'}</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">? ${user.business_name || 'AI Smart Hub'}</h1>
           </div>
           <div style="padding: 30px;">
             ${content.replace(/\n/g, '<br>')}
           </div>
           <div style="background: #fff3cd; padding: 20px; text-align: center; border-top: 2px solid #ffc107;">
             <p style="color: #856404; margin: 0; font-size: 14px;">
-              ⚠️ This was a test email from your AI Smart Hub dashboard. 
+              ?? This was a test email from your AI Smart Hub dashboard. 
               <strong>No customers received this message.</strong>
             </p>
           </div>
@@ -3109,7 +3109,7 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
     );
 
     if (result.success) {
-      res.json({ success: true, message: `✅ Test email sent via ${result.method}! Check your inbox.` });
+      res.json({ success: true, message: `? Test email sent via ${result.method}! Check your inbox.` });
     } else {
       throw new Error(result.error);
     }
@@ -3185,35 +3185,35 @@ app.get("/api/user/profile", auth, (req, res) => {
 
 // ================= START SERVER =================
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📋 Smart Hub API: /api/smart-hub/*`);
-  console.log(`📸 Image upload endpoint: /api/smart-hub/upload-proof`);
-  console.log(`📊 Tools metrics endpoint: /api/smart-hub/tools-metrics`);
-  console.log(`📋 Workflow API Endpoints:`);
+  console.log(`?? Server running on http://localhost:${PORT}`);
+  console.log(`?? Smart Hub API: /api/smart-hub/*`);
+  console.log(`?? Image upload endpoint: /api/smart-hub/upload-proof`);
+  console.log(`?? Tools metrics endpoint: /api/smart-hub/tools-metrics`);
+  console.log(`?? Workflow API Endpoints:`);
   console.log(`   - GET /api/workflows - List workflows`);
   console.log(`   - POST /api/workflows - Create workflow`);
   console.log(`   - POST /api/workflows/:id/execute - Execute workflow (rate limited)`);
   console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
   console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
-  console.log(`📋 Webhook Listener:`);
+  console.log(`?? Webhook Listener:`);
   console.log(`   - POST /api/webhooks/register - Register webhook`);
   console.log(`   - GET /api/webhooks - List webhooks`);
   console.log(`   - DELETE /api/webhooks/:path - Delete webhook`);
-  console.log(`📋 Workflow Templates:`);
+  console.log(`?? Workflow Templates:`);
   console.log(`   - GET /api/workflow-templates - List templates`);
   console.log(`   - POST /api/workflow-templates/:templateId/apply - Apply template`);
-  console.log(`📋 Enterprise Features:`);
+  console.log(`?? Enterprise Features:`);
   console.log(`   - GET /api/queue/stats - Queue statistics`);
   console.log(`   - GET /api/workflows/:id/versions - Workflow versions`);
   console.log(`   - POST /api/workflows/:id/versions/save - Save version`);
   console.log(`   - POST /api/workflows/:id/rollback/:version - Rollback`);
   console.log(`   - POST /api/workflows/:id/debug - Start debug session`);
   console.log(`   - POST /api/workflows/:id/error-handler - Set error handler`);
-  console.log(`📋 Platform Health:`);
+  console.log(`?? Platform Health:`);
   console.log(`   - GET /api/platform/health - Platform health status`);
   console.log(`   - GET /api/platform/queue - Queue status`);
   console.log(`   - GET /api/platform/logs - System logs (admin only)`);
   console.log(`   - GET /api/platform/metrics - System metrics`);
-  console.log(`⏰ Workflow Scheduler: Initialized with cron jobs`);
-  console.log(`🔄 Error handlers loaded and ready`);
+  console.log(`? Workflow Scheduler: Initialized with cron jobs`);
+  console.log(`?? Error handlers loaded and ready`);
 });
