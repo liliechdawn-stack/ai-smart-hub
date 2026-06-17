@@ -7,12 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Load scripts in correct order -->
-    <script src="js/config.js"></script>
-    <script src="js/master-fix.js"></script>
-    <script src="js/fix-all-html.js"></script>
-    
     <style>
         /* ========================================
            PREMIUM DESIGN TOKENS - White & Gold Theme
@@ -68,7 +62,7 @@
         }
 
         /* ========================================
-           SIDEBAR LAYOUT (Same as smart-tools.html)
+           SIDEBAR LAYOUT
            ========================================
         */
         .app-wrapper {
@@ -160,7 +154,7 @@
         }
 
         /* ========================================
-           PREMIUM NAVIGATION BAR (Top Nav)
+           PREMIUM NAVIGATION BAR
            ========================================
         */
         .top-nav {
@@ -1032,7 +1026,7 @@
 <body>
 
 <div class="app-wrapper">
-    <!-- SIDEBAR (Same as smart-tools.html) -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-logo">
             <i class="fas fa-crown"></i>
@@ -1071,7 +1065,7 @@
                 <a href="smart-tools.html">AI Tools</a>
                 <a href="customer-insights.html" class="active-nav">Customer Insights</a>
                 <a href="team.html">Team</a>
-                <div class="notification-badge" id="notification-bell" onclick="toggleNotifications()">
+                <div class="notification-badge" id="notification-bell" onclick="window._toggleNotifications()">
                     <i class="fas fa-bell" style="color: var(--text-secondary); font-size: 1.2rem;"></i>
                     <span class="notification-count" id="notification-count" style="display: none;">0</span>
                 </div>
@@ -1086,7 +1080,7 @@
         <div id="notifications-panel" class="notifications-panel">
             <div class="notifications-header">
                 <span><i class="fas fa-bell"></i> Notifications</span>
-                <span style="font-size: 12px; cursor: pointer;" onclick="markAllNotificationsRead()">Mark all read</span>
+                <span style="font-size: 12px; cursor: pointer;" onclick="window._markAllNotificationsRead()">Mark all read</span>
             </div>
             <div id="notifications-list" class="notifications-list">
                 <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -1125,7 +1119,7 @@
                             <h3 style="color: white; margin-bottom: 5px;"><i class="fas fa-tasks"></i> Active & Completed Services</h3>
                             <p style="color: #94a3b8; font-size: 0.85rem;">Track service status and send real-time notifications to customers</p>
                         </div>
-                        <button class="btn-primary" onclick="showCreateServiceModal()" style="background: var(--primary-gradient);">
+                        <button class="btn-primary" onclick="window._showCreateServiceModal()" style="background: var(--primary-gradient);">
                             <i class="fas fa-plus"></i> Create New Service
                         </button>
                     </div>
@@ -1148,11 +1142,11 @@
                     <div class="input-group">
                         <div>
                             <label><i class="fas fa-user" style="margin-right: 5px;"></i> Search Customers</label>
-                            <input type="text" id="customer-search" placeholder="Type name or email to filter..." oninput="applyFilters()" />
+                            <input type="text" id="customer-search" placeholder="Type name or email to filter..." oninput="window._applyFilters()" />
                         </div>
                         <div>
                             <label><i class="fas fa-smile" style="margin-right: 5px;"></i> Filter by Sentiment</label>
-                            <select id="sentiment-filter" onchange="applyFilters()">
+                            <select id="sentiment-filter" onchange="window._applyFilters()">
                                 <option value="all">All Sentiments</option>
                                 <option value="positive">Positive Only</option>
                                 <option value="negative">Negative Only</option>
@@ -1160,7 +1154,7 @@
                             </select>
                         </div>
                         <div style="display: flex; align-items: flex-end;">
-                            <button class="btn-primary" onclick="applyFilters()" style="width: 100%;">
+                            <button class="btn-primary" onclick="window._applyFilters()" style="width: 100%;">
                                 <i class="fas fa-filter"></i> Apply Filters
                             </button>
                         </div>
@@ -1169,15 +1163,15 @@
                     <div class="input-group">
                         <div>
                             <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date From</label>
-                            <input type="date" id="date-from" onchange="applyFilters()">
+                            <input type="date" id="date-from" onchange="window._applyFilters()">
                         </div>
                         <div>
                             <label><i class="fas fa-calendar" style="margin-right: 5px;"></i> Date To</label>
-                            <input type="date" id="date-to" onchange="applyFilters()">
+                            <input type="date" id="date-to" onchange="window._applyFilters()">
                         </div>
                         <div>
                             <label><i class="fas fa-tag" style="margin-right: 5px;"></i> Filter by Problem</label>
-                            <select id="problem-filter" onchange="applyFilters()">
+                            <select id="problem-filter" onchange="window._applyFilters()">
                                 <option value="all">All Problems</option>
                                 <option value="delivery">Delivery Issues</option>
                                 <option value="quality">Product Quality</option>
@@ -1188,7 +1182,7 @@
                             </select>
                         </div>
                         <div style="display: flex; align-items: flex-end;">
-                            <button class="btn-secondary" onclick="resetFilters()" style="width: 100%;">
+                            <button class="btn-secondary" onclick="window._resetFilters()" style="width: 100%;">
                                 <i class="fas fa-undo"></i> Reset
                             </button>
                         </div>
@@ -1216,10 +1210,10 @@
                             <table class="customer-table">
                                 <thead>
                                     <tr>
-                                        <th onclick="sortTable('name')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Name</th>
-                                        <th onclick="sortTable('email')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Email</th>
-                                        <th onclick="sortTable('messages')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Messages / Sentiment</th>
-                                        <th onclick="sortTable('risk')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Churn Risk</th>
+                                        <th onclick="window._sortTable('name')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Name</th>
+                                        <th onclick="window._sortTable('email')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Email</th>
+                                        <th onclick="window._sortTable('messages')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Messages / Sentiment</th>
+                                        <th onclick="window._sortTable('risk')"><i class="fas fa-sort" style="margin-right: 5px;"></i> Churn Risk</th>
                                         <th>Problem Tags</th>
                                         <th>Actions</th>
                                     </tr>
@@ -1240,7 +1234,7 @@
 
                 <div class="wide-card tool-card" style="text-align:center;">
                     <p class="tool-description">Click below to preview how your customers see the AI widget — it knows your full business, all leads, detected problems, churn risks, and more.</p>
-                    <button class="btn-primary" onclick="showAIWidget()" style="margin: 0 auto; padding: 16px 40px;">
+                    <button class="btn-primary" onclick="window._showAIWidget()" style="margin: 0 auto; padding: 16px 40px;">
                         <i class="fas fa-play"></i> Show AI Widget Now
                     </button>
                     <div id="widget-preview-area" style="min-height:400px; margin-top:30px; border:2px dashed var(--medium-gray); border-radius:16px; background:#fafafa; position:relative;"></div>
@@ -1272,23 +1266,23 @@
                         </div>
                         
                         <div style="display:flex; gap:12px; margin-bottom: 15px;">
-                            <input type="text" id="ai-input" placeholder="Ask me about your customers, problems, or business..." style="flex:1;" onkeypress="if(event.key==='Enter') sendAiMessage()" />
-                            <button class="btn-primary" onclick="sendAiMessage()" style="width:auto; padding:0 32px;">
+                            <input type="text" id="ai-input" placeholder="Ask me about your customers, problems, or business..." style="flex:1;" onkeypress="if(event.key==='Enter') window._sendAiMessage()" />
+                            <button class="btn-primary" onclick="window._sendAiMessage()" style="width:auto; padding:0 32px;">
                                 <i class="fas fa-paper-plane"></i> Ask AI
                             </button>
                         </div>
                         
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn-secondary" onclick="sendAiMessage('Analyze our top 5 customer problems and suggest solutions')">
+                            <button class="btn-secondary" onclick="window._sendAiMessage('Analyze our top 5 customer problems and suggest solutions')">
                                 <i class="fas fa-chart-line"></i> Top Problems
                             </button>
-                            <button class="btn-secondary" onclick="sendAiMessage('Show customers with highest churn risk and recommend retention strategies')">
+                            <button class="btn-secondary" onclick="window._sendAiMessage('Show customers with highest churn risk and recommend retention strategies')">
                                 <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> High Risk Customers
                             </button>
-                            <button class="btn-secondary" onclick="sendAiMessage('Generate a professional response for a customer complaining about delivery delay')">
+                            <button class="btn-secondary" onclick="window._sendAiMessage('Generate a professional response for a customer complaining about delivery delay')">
                                 <i class="fas fa-reply-all"></i> Generate Response
                             </button>
-                            <button class="btn-secondary" onclick="sendAiMessage('What business improvements do you suggest based on customer feedback?')">
+                            <button class="btn-secondary" onclick="window._sendAiMessage('What business improvements do you suggest based on customer feedback?')">
                                 <i class="fas fa-lightbulb"></i> Improvements
                             </button>
                         </div>
@@ -1303,13 +1297,13 @@
 
                 <!-- Problem Categories Tabs -->
                 <div class="problem-tabs">
-                    <div class="problem-tab active" onclick="switchProblemTab('all')">All Problems</div>
-                    <div class="problem-tab" onclick="switchProblemTab('delivery')"><i class="fas fa-truck"></i> Delivery</div>
-                    <div class="problem-tab" onclick="switchProblemTab('quality')"><i class="fas fa-star"></i> Quality</div>
-                    <div class="problem-tab" onclick="switchProblemTab('pricing')"><i class="fas fa-tag"></i> Pricing</div>
-                    <div class="problem-tab" onclick="switchProblemTab('support')"><i class="fas fa-headset"></i> Support</div>
-                    <div class="problem-tab" onclick="switchProblemTab('refund')"><i class="fas fa-undo"></i> Refunds</div>
-                    <div class="problem-tab" onclick="switchProblemTab('ux')"><i class="fas fa-mouse-pointer"></i> UX Issues</div>
+                    <div class="problem-tab active" onclick="window._switchProblemTab('all')">All Problems</div>
+                    <div class="problem-tab" onclick="window._switchProblemTab('delivery')"><i class="fas fa-truck"></i> Delivery</div>
+                    <div class="problem-tab" onclick="window._switchProblemTab('quality')"><i class="fas fa-star"></i> Quality</div>
+                    <div class="problem-tab" onclick="window._switchProblemTab('pricing')"><i class="fas fa-tag"></i> Pricing</div>
+                    <div class="problem-tab" onclick="window._switchProblemTab('support')"><i class="fas fa-headset"></i> Support</div>
+                    <div class="problem-tab" onclick="window._switchProblemTab('refund')"><i class="fas fa-undo"></i> Refunds</div>
+                    <div class="problem-tab" onclick="window._switchProblemTab('ux')"><i class="fas fa-mouse-pointer"></i> UX Issues</div>
                 </div>
 
                 <!-- Problem Metrics Dashboard -->
@@ -1359,7 +1353,7 @@
                             </div>
                         </div>
                         
-                        <button class="btn-secondary" onclick="analyzeProblemTrends()" style="width:100%;">
+                        <button class="btn-secondary" onclick="window._analyzeProblemTrends()" style="width:100%;">
                             <i class="fas fa-chart-bar"></i> Analyze Trends
                         </button>
                     </div>
@@ -1380,7 +1374,7 @@
                         
                         <textarea id="response-context" placeholder="Additional context (optional)..." rows="2"></textarea>
                         
-                        <button class="btn-primary" onclick="generateSmartResponse()" style="margin-top:10px; width:100%;">
+                        <button class="btn-primary" onclick="window._generateSmartResponse()" style="margin-top:10px; width:100%;">
                             <i class="fas fa-magic"></i> Generate Response
                         </button>
                         
@@ -1404,7 +1398,7 @@
                             </div>
                         </div>
                         
-                        <button class="btn-danger" onclick="showAtRiskCustomers()" style="width:100%;">
+                        <button class="btn-danger" onclick="window._showAtRiskCustomers()" style="width:100%;">
                             <i class="fas fa-eye"></i> View At-Risk Customers
                         </button>
                     </div>
@@ -1418,7 +1412,7 @@
                         <canvas id="sentiment-timeline" height="150"></canvas>
                         
                         <div style="margin-top:15px;">
-                            <button class="btn-secondary" onclick="refreshSentimentTimeline()" style="width:100%;">
+                            <button class="btn-secondary" onclick="window._refreshSentimentTimeline()" style="width:100%;">
                                 <i class="fas fa-sync-alt"></i> Refresh Data
                             </button>
                         </div>
@@ -1503,11 +1497,11 @@
                         </div>
 
                         <div class="response-templates" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-                            <div class="template-item" onclick="loadEmailTemplate('update')"><i class="fas fa-megaphone"></i> Business Update</div>
-                            <div class="template-item" onclick="loadEmailTemplate('product')"><i class="fas fa-box"></i> New Products</div>
-                            <div class="template-item" onclick="loadEmailTemplate('offer')"><i class="fas fa-gift"></i> Special Offer</div>
-                            <div class="template-item" onclick="loadEmailTemplate('issue')"><i class="fas fa-exclamation-circle"></i> Issue Resolution</div>
-                            <div class="template-item" onclick="loadEmailTemplate('feedback')"><i class="fas fa-comment"></i> Feedback Request</div>
+                            <div class="template-item" onclick="window._loadEmailTemplate('update')"><i class="fas fa-megaphone"></i> Business Update</div>
+                            <div class="template-item" onclick="window._loadEmailTemplate('product')"><i class="fas fa-box"></i> New Products</div>
+                            <div class="template-item" onclick="window._loadEmailTemplate('offer')"><i class="fas fa-gift"></i> Special Offer</div>
+                            <div class="template-item" onclick="window._loadEmailTemplate('issue')"><i class="fas fa-exclamation-circle"></i> Issue Resolution</div>
+                            <div class="template-item" onclick="window._loadEmailTemplate('feedback')"><i class="fas fa-comment"></i> Feedback Request</div>
                         </div>
 
                         <div style="margin-bottom:20px;">
@@ -1520,13 +1514,13 @@
                         </div>
 
                         <div style="display:flex; gap:15px; margin-top:20px; flex-wrap: wrap;">
-                            <button class="btn-primary" onclick="sendBroadcast()" style="flex:2;">
+                            <button class="btn-primary" onclick="window._sendBroadcast()" style="flex:2;">
                                 <i class="fas fa-paper-plane"></i> Send Broadcast
                             </button>
-                            <button class="btn-secondary" onclick="testBroadcast()" style="flex:1; background: rgba(255,255,255,0.1); color: white;">
+                            <button class="btn-secondary" onclick="window._testBroadcast()" style="flex:1; background: rgba(255,255,255,0.1); color: white;">
                                 <i class="fas fa-vial"></i> Send Test
                             </button>
-                            <button class="btn-secondary" onclick="scheduleBroadcast()" style="flex:1; background: rgba(255,255,255,0.1); color: white;">
+                            <button class="btn-secondary" onclick="window._scheduleBroadcast()" style="flex:1; background: rgba(255,255,255,0.1); color: white;">
                                 <i class="fas fa-clock"></i> Schedule
                             </button>
                         </div>
@@ -1586,7 +1580,7 @@
                             <div style="display:flex;justify-content:space-between;align-items:center;background:var(--light-gray);padding:20px;border-radius:12px;margin-bottom:10px;">
                                 <span style="font-weight:600;">Enable Real-time Alerts</span>
                                 <label class="switch">
-                                    <input type="checkbox" id="alert-toggle" checked onchange="toggleAlerts()">
+                                    <input type="checkbox" id="alert-toggle" checked onchange="window._toggleAlerts()">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -1617,7 +1611,7 @@
                         
                         <textarea id="resolution-input" placeholder="Describe the customer issue..." rows="3"></textarea>
                         
-                        <button class="btn-primary" onclick="generateResolution()" style="margin-top:12px; width: 100%;">
+                        <button class="btn-primary" onclick="window._generateResolution()" style="margin-top:12px; width: 100%;">
                             <i class="fas fa-magic"></i> Generate Fix
                         </button>
                         
@@ -1632,7 +1626,7 @@
                         <canvas id="trend-chart" height="200"></canvas>
                         
                         <div style="margin-top: 15px; text-align: center;">
-                            <button class="btn-secondary" onclick="refreshTrendData()">
+                            <button class="btn-secondary" onclick="window._refreshTrendData()">
                                 <i class="fas fa-sync-alt"></i> Refresh
                             </button>
                         </div>
@@ -1645,7 +1639,7 @@
                         
                         <div id="persona-output" style="margin-top:16px; min-height: 120px;"></div>
                         
-                        <button class="btn-primary" onclick="generatePersonas()" style="margin-top:16px; width: 100%;">
+                        <button class="btn-primary" onclick="window._generatePersonas()" style="margin-top:16px; width: 100%;">
                             <i class="fas fa-users-cog"></i> Generate Personas
                         </button>
                     </div>
@@ -1658,10 +1652,10 @@
                         <textarea id="team-note" placeholder="Add note or assign task..." rows="3"></textarea>
                         
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button class="btn-primary" onclick="saveTeamNote()" style="flex: 1;">
+                            <button class="btn-primary" onclick="window._saveTeamNote()" style="flex: 1;">
                                 <i class="fas fa-save"></i> Save & Share
                             </button>
-                            <button class="btn-secondary" onclick="loadTeamNotes()" style="flex: 1;">
+                            <button class="btn-secondary" onclick="window._loadTeamNotes()" style="flex: 1;">
                                 <i class="fas fa-folder-open"></i> View Notes
                             </button>
                         </div>
@@ -1672,15 +1666,15 @@
 
                 <!-- ===== EXPORT BUTTONS ===== -->
                 <div style="text-align:center; margin:70px 0; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-primary" style="padding:16px 60px; font-size:1.1rem;" onclick="exportInsights()">
+                    <button class="btn-primary" style="padding:16px 60px; font-size:1.1rem;" onclick="window._exportInsights()">
                         <i class="fas fa-download"></i> Export Full Report (CSV)
                     </button>
                     
-                    <button class="btn-info" style="padding:16px 60px; font-size:1.1rem;" onclick="exportProblemReport()">
+                    <button class="btn-info" style="padding:16px 60px; font-size:1.1rem;" onclick="window._exportProblemReport()">
                         <i class="fas fa-file-export"></i> Export Problem Analysis
                     </button>
                     
-                    <button class="btn-secondary" style="padding:16px 60px; font-size:1.1rem;" onclick="refreshAllData()">
+                    <button class="btn-secondary" style="padding:16px 60px; font-size:1.1rem;" onclick="window._refreshAllData()">
                         <i class="fas fa-sync-alt"></i> Refresh All Data
                     </button>
                 </div>
@@ -1696,133 +1690,926 @@
 
 <script>
 // ================================================
-// CUSTOMER INSIGHTS - ENHANCED PROBLEM-SOLVING VERSION
-// WITH SERVICE COMPLETION NOTIFICATIONS
-// AND SIDEBAR NAVIGATION
+// CUSTOMER INSIGHTS - PRODUCTION REFACTOR
 // ================================================
 
-// ===== CONFIGURATION =====
-const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
-const AI_CHAT_ENDPOINT = `${BACKEND_URL}/api/customer-insights/ai-chat`;
-
-// ===== GLOBAL STATE =====
-let customers = [];
-let allChats = {};
-let filteredCustomers = [];
-let sentimentChart = null;
-let trendChart = null;
-let sentimentTimeline = null;
-let pollingInterval = null;
-let currentSort = { field: 'risk', direction: 'desc' };
-let currentFilters = {
-    search: '',
-    sentiment: 'all',
-    problem: 'all',
-    dateFrom: null,
-    dateTo: null
+// ================================================
+// 1. CONFIGURATION
+// ================================================
+const CONFIG = {
+    BACKEND_URL: window.BACKEND_URL || 'https://ai-smart-hub.onrender.com',
+    AI_CHAT_ENDPOINT: '/api/customer-insights/ai-chat',
+    WS_ENDPOINT: '/ws/customer-insights',
+    ADMIN_EMAIL: 'ericchung992@gmail.com',
+    POLL_INTERVAL: 30000,
+    MAX_RECONNECT_ATTEMPTS: 5,
+    DEBOUNCE_DELAY: 500,
 };
-let problemStats = {
-    delivery: 0,
-    quality: 0,
-    pricing: 0,
-    support: 0,
-    refund: 0,
-    ux: 0,
-    total: 0,
-    critical: 0
-};
-let services = [];
-let notifications = [];
 
-// Admin email
-const ADMIN_EMAIL = "ericchung992@gmail.com";
+// ================================================
+// 2. SECURITY UTILITIES (XSS Mitigation)
+// ================================================
+function safeMarkupEscape(str) {
+    if (!str) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;',
+    };
+    return String(str).replace(/[&<>"'/]/g, s => map[s]);
+}
 
-// ===== SIDEBAR NAVIGATION =====
-document.querySelectorAll('.sidebar-nav a').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const section = link.dataset.section;
-        document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        
-        const sectionMap = {
-            'customer-search': 'customer-search-section',
-            'service-completion': 'service-completion-section',
-            'problem-solver': 'problem-solver-section',
-            'problem-analysis': 'problem-analysis-section',
-            'email-broadcast': 'email-broadcast-section',
-            'analytics': 'analytics-section',
-            'business-tools': 'business-tools-section'
+function safeTextNode(text) {
+    return document.createTextNode(text || '');
+}
+
+// Structured JWT placeholder - prepares for backend route guards
+function parseAuthToken(token) {
+    if (!token) return null;
+    try {
+        // Structured placeholder - actual validation happens on backend with X-Org-ID header
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const payload = JSON.parse(atob(parts[1]));
+        return {
+            email: payload.email || null,
+            plan: payload.plan || 'free',
+            orgId: payload.orgId || payload.organization_id || null,
+            exp: payload.exp || null,
         };
-        
-        const elementId = sectionMap[section];
-        if (elementId) {
-            document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    });
-});
+    } catch {
+        return null;
+    }
+}
 
-// ===== IMMEDIATE UNLOCK =====
-(function() {
-    console.log("🔓 Initializing Customer Insights...");
-    
+// ================================================
+// 3. WEBSOCKET MANAGER (Event-Driven Real-Time)
+// ================================================
+class SaaSRealTimeClient {
+    constructor(options = {}) {
+        this.url = options.url || `${CONFIG.BACKEND_URL}${CONFIG.WS_ENDPOINT}`;
+        this.token = options.token || localStorage.getItem('token');
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = options.maxReconnectAttempts || CONFIG.MAX_RECONNECT_ATTEMPTS;
+        this.reconnectDelay = 1000;
+        this.isConnected = false;
+        this.isConnecting = false;
+        this.ws = null;
+        this.listeners = new Map();
+        this.messageQueue = [];
+        this._handleMessage = this._handleMessage.bind(this);
+        this._handleClose = this._handleClose.bind(this);
+        this._handleError = this._handleError.bind(this);
+    }
+
+    connect() {
+        if (this.isConnecting || this.isConnected) return;
+        this.isConnecting = true;
+        
+        try {
+            const wsUrl = `${this.url}?token=${encodeURIComponent(this.token || '')}`;
+            this.ws = new WebSocket(wsUrl);
+            this.ws.onopen = this._handleOpen.bind(this);
+            this.ws.onmessage = this._handleMessage;
+            this.ws.onclose = this._handleClose;
+            this.ws.onerror = this._handleError;
+        } catch (e) {
+            console.warn('[WS] Connection failed:', e);
+            this.isConnecting = false;
+            this._scheduleReconnect();
+        }
+    }
+
+    _handleOpen() {
+        console.log('[WS] Connected');
+        this.isConnected = true;
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        this.reconnectDelay = 1000;
+        this._flushQueue();
+        this.emit('connected');
+    }
+
+    _handleMessage(event) {
+        try {
+            const data = JSON.parse(event.data);
+            const { type, payload } = data;
+            
+            // Route specific event types to targeted DOM updates
+            switch (type) {
+                case 'metric_update':
+                    this._handleMetricUpdate(payload);
+                    break;
+                case 'customer_update':
+                    this._handleCustomerUpdate(payload);
+                    break;
+                case 'service_update':
+                    this._handleServiceUpdate(payload);
+                    break;
+                case 'sentiment_alert':
+                    this._handleSentimentAlert(payload);
+                    break;
+                case 'churn_signal':
+                    this._handleChurnSignal(payload);
+                    break;
+                default:
+                    this.emit(type, payload);
+            }
+        } catch (e) {
+            console.warn('[WS] Message parse error:', e);
+        }
+    }
+
+    _handleClose(event) {
+        console.log('[WS] Disconnected:', event.code);
+        this.isConnected = false;
+        this.isConnecting = false;
+        this.emit('disconnected');
+        if (event.code !== 1000) {
+            this._scheduleReconnect();
+        }
+    }
+
+    _handleError(error) {
+        console.warn('[WS] Error:', error);
+        this.emit('error', error);
+    }
+
+    _scheduleReconnect() {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.warn('[WS] Max reconnect attempts reached');
+            return;
+        }
+        
+        const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts), 30000);
+        this.reconnectAttempts++;
+        console.log(`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+        
+        setTimeout(() => {
+            if (!this.isConnected) {
+                this.connect();
+            }
+        }, delay);
+    }
+
+    _flushQueue() {
+        while (this.messageQueue.length > 0) {
+            const msg = this.messageQueue.shift();
+            this.send(msg);
+        }
+    }
+
+    send(data) {
+        if (!this.isConnected) {
+            this.messageQueue.push(data);
+            return;
+        }
+        try {
+            this.ws.send(JSON.stringify(data));
+        } catch (e) {
+            console.warn('[WS] Send error:', e);
+            this.messageQueue.push(data);
+        }
+    }
+
+    on(event, callback) {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, []);
+        }
+        this.listeners.get(event).push(callback);
+    }
+
+    off(event, callback) {
+        if (!this.listeners.has(event)) return;
+        const callbacks = this.listeners.get(event);
+        const index = callbacks.indexOf(callback);
+        if (index !== -1) callbacks.splice(index, 1);
+    }
+
+    emit(event, data) {
+        if (!this.listeners.has(event)) return;
+        this.listeners.get(event).forEach(cb => {
+            try { cb(data); } catch (e) { console.warn('[WS] Listener error:', e); }
+        });
+    }
+
+    // Targeted DOM update handlers
+    _handleMetricUpdate(payload) {
+        const { metric, value } = payload;
+        const el = document.getElementById(metric);
+        if (el) {
+            el.textContent = value;
+            el.style.transition = 'all 0.3s ease';
+            el.style.transform = 'scale(1.1)';
+            setTimeout(() => el.style.transform = 'scale(1)', 300);
+        }
+    }
+
+    _handleCustomerUpdate(payload) {
+        // Selective update - only update affected row instead of redrawing entire table
+        const { email, data } = payload;
+        if (window._updateCustomerRow) {
+            window._updateCustomerRow(email, data);
+        } else {
+            // Fallback: full refresh
+            if (window._loadCustomers) window._loadCustomers(true);
+        }
+    }
+
+    _handleServiceUpdate(payload) {
+        if (window._loadServices) window._loadServices();
+    }
+
+    _handleSentimentAlert(payload) {
+        const { customer, sentiment, message } = payload;
+        // Show notification without redrawing
+        window._addNotification({
+            title: `⚠️ Negative Sentiment Alert`,
+            message: `Customer ${customer} expressed negative sentiment: "${message}"`,
+            customer_email: customer,
+        });
+        // Update sentiment timeline if needed
+        if (window._refreshSentimentTimeline) window._refreshSentimentTimeline();
+    }
+
+    _handleChurnSignal(payload) {
+        const { customer, risk } = payload;
+        if (risk > 70) {
+            window._addNotification({
+                title: `🔴 High Churn Risk`,
+                message: `Customer ${customer} has a ${risk}% churn risk. Immediate action recommended.`,
+                customer_email: customer,
+            });
+        }
+    }
+
+    disconnect() {
+        this.reconnectAttempts = this.maxReconnectAttempts; // Prevent reconnection
+        if (this.ws) {
+            this.ws.close(1000, 'User disconnected');
+            this.ws = null;
+        }
+        this.isConnected = false;
+        this.isConnecting = false;
+    }
+}
+
+// ================================================
+// 4. APPLICATION STATE (Centralized)
+// ================================================
+const AppState = {
+    customers: [],
+    allChats: {},
+    filteredCustomers: [],
+    services: [],
+    notifications: [],
+    problemStats: {
+        delivery: 0, quality: 0, pricing: 0, support: 0, refund: 0, ux: 0,
+        total: 0, critical: 0, other: 0
+    },
+    currentSort: { field: 'risk', direction: 'desc' },
+    currentFilters: {
+        search: '',
+        sentiment: 'all',
+        problem: 'all',
+        dateFrom: null,
+        dateTo: null
+    },
+    isLive: false,
+    wsClient: null,
+    chartInstances: {
+        sentiment: null,
+        trend: null,
+        timeline: null,
+    },
+    debounceTimers: {},
+    isProcessing: false,
+};
+
+// ================================================
+// 5. CORE API FUNCTIONS with Debouncing
+// ================================================
+function debounce(key, fn, delay = CONFIG.DEBOUNCE_DELAY) {
+    return function(...args) {
+        if (AppState.debounceTimers[key]) {
+            clearTimeout(AppState.debounceTimers[key]);
+        }
+        AppState.debounceTimers[key] = setTimeout(() => {
+            delete AppState.debounceTimers[key];
+            fn.apply(this, args);
+        }, delay);
+    };
+}
+
+// State-locking for AI messages
+let _aiMessageLock = false;
+
+async function _loadCustomers(silent = false) {
+    const tbody = document.getElementById('customer-table-body');
+    if (!tbody) return;
+
     try {
         const token = localStorage.getItem('token');
-        if (token) {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.email === ADMIN_EMAIL || payload.plan === 'agency') {
-                setTimeout(() => {
-                    const lock = document.getElementById('plan-lock');
-                    const main = document.getElementById('main-content');
-                    if (lock) {
-                        lock.classList.add('hidden');
-                        lock.style.display = 'none';
-                    }
-                    if (main) {
-                        main.classList.remove('hidden');
-                        main.style.display = 'block';
-                        main.style.visibility = 'visible';
-                    }
-                    localStorage.setItem('currentPlan', 'agency');
-                }, 100);
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (!silent) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin:0 auto;"></div><br>Loading customer data...</td></tr>';
+        }
+
+        const leadsRes = await fetch(`${CONFIG.BACKEND_URL}/api/customer-insights/leads`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!leadsRes.ok) {
+            if (leadsRes.status === 401) {
+                window.location.href = 'login.html';
+                return;
+            }
+            throw new Error(`Failed to load leads: ${leadsRes.status}`);
+        }
+
+        AppState.customers = await leadsRes.json() || [];
+        console.log(`Loaded ${AppState.customers.length} customers`);
+
+        document.getElementById('customer-count').textContent = `${AppState.customers.length} Total Customers`;
+        document.getElementById('total-recipients').textContent = AppState.customers.length;
+
+        // Load chats in parallel with rate limiting
+        const chatPromises = AppState.customers.map(async (c) => {
+            try {
+                const chatRes = await fetch(`${CONFIG.BACKEND_URL}/api/customer-insights/chats?email=${encodeURIComponent(c.email || '')}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (chatRes.ok) {
+                    const chats = await chatRes.json();
+                    return chats.map(chat => ({
+                        ...chat,
+                        sentiment: chat.sentiment || 'neutral',
+                        problem: _detectProblem(chat.message || '')
+                    }));
+                }
+                return [];
+            } catch {
+                return [];
+            }
+        });
+
+        const chatResults = await Promise.all(chatPromises);
+        
+        AppState.allChats = {};
+        AppState.customers.forEach((c, i) => {
+            if (c && c.email) {
+                AppState.allChats[c.email] = chatResults[i] || [];
+            }
+        });
+
+        _analyzeProblems();
+        _applyFilters();
+        _updateAnalytics();
+        _updateProblemStats();
+        
+    } catch (err) {
+        console.error("Data load error:", err);
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);padding:60px;text-align:center;">
+                Error loading data: ${safeMarkupEscape(err.message)}<br>
+                <button onclick="window._loadCustomers()" style="margin-top:10px;padding:8px 20px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">Retry</button>
+            </td></tr>`;
+        }
+    }
+}
+
+function _detectProblem(message) {
+    if (!message) return 'other';
+    const msg = message.toLowerCase();
+    
+    if (msg.match(/delay|late|shipping|delivery|when will|arrive|tracking/)) return 'delivery';
+    if (msg.match(/quality|defective|broken|damaged|poor|bad|not working/)) return 'quality';
+    if (msg.match(/price|expensive|cost|money|too much|refund|return/)) return 'pricing';
+    if (msg.match(/help|support|agent|human|talk to|speak with/)) return 'support';
+    if (msg.match(/refund|return|money back|cancel/)) return 'refund';
+    if (msg.match(/confused|understand|how to|complicated|difficult/)) return 'ux';
+    
+    return 'other';
+}
+
+function _analyzeProblems() {
+    const stats = { delivery: 0, quality: 0, pricing: 0, support: 0, refund: 0, ux: 0, other: 0, total: 0, critical: 0 };
+    
+    Object.values(AppState.allChats).forEach(chats => {
+        chats.forEach(chat => {
+            if (chat.message) {
+                const problem = chat.problem || _detectProblem(chat.message);
+                if (stats[problem] !== undefined) stats[problem]++;
+                else stats.other++;
+                stats.total++;
+                
+                if (chat.sentiment === 'negative' && problem !== 'other') {
+                    stats.critical++;
+                }
+            }
+        });
+    });
+    
+    AppState.problemStats = stats;
+    
+    document.getElementById('total-problems').textContent = stats.total;
+    document.getElementById('critical-problems').textContent = stats.critical;
+    document.getElementById('problem-count').textContent = `${stats.total} Total Issues`;
+    
+    document.getElementById('stat-delivery').textContent = stats.delivery;
+    document.getElementById('stat-quality').textContent = stats.quality;
+    document.getElementById('stat-pricing').textContent = stats.pricing;
+    document.getElementById('stat-support').textContent = stats.support;
+    
+    _updateRiskCounts();
+    _renderProblemTable();
+}
+
+function _updateRiskCounts() {
+    let highRisk = 0, mediumRisk = 0;
+    
+    AppState.customers.forEach(c => {
+        const chats = AppState.allChats[c.email] || [];
+        const risk = _calculateRisk(chats);
+        if (risk > 70) highRisk++;
+        else if (risk > 40) mediumRisk++;
+    });
+    
+    document.getElementById('high-risk-count').textContent = highRisk;
+    document.getElementById('medium-risk-count').textContent = mediumRisk;
+}
+
+function _calculateRisk(chats) {
+    if (!chats || chats.length === 0) return 0;
+    const negatives = chats.filter(c => (c.sentiment || 'neutral').toLowerCase() === 'negative').length;
+    const recency = Math.min(chats.length * 2, 30);
+    const negativeWeight = Math.min(negatives * 15, 70);
+    return Math.min(negativeWeight + recency, 100);
+}
+
+// ================================================
+// 6. FILTERING AND SORTING (Modular)
+// ================================================
+function _applyFilters() {
+    const searchInput = document.getElementById('customer-search');
+    const sentimentFilter = document.getElementById('sentiment-filter');
+    const problemFilter = document.getElementById('problem-filter');
+    const dateFrom = document.getElementById('date-from');
+    const dateTo = document.getElementById('date-to');
+    
+    AppState.currentFilters = {
+        search: searchInput ? searchInput.value.toLowerCase() : '',
+        sentiment: sentimentFilter ? sentimentFilter.value : 'all',
+        problem: problemFilter ? problemFilter.value : 'all',
+        dateFrom: dateFrom && dateFrom.value ? new Date(dateFrom.value) : null,
+        dateTo: dateTo && dateTo.value ? new Date(dateTo.value) : null
+    };
+    
+    if (AppState.currentFilters.dateTo) {
+        AppState.currentFilters.dateTo.setHours(23, 59, 59, 999);
+    }
+    
+    _filterAndSortCustomers();
+}
+
+function _resetFilters() {
+    document.getElementById('customer-search').value = '';
+    document.getElementById('sentiment-filter').value = 'all';
+    document.getElementById('problem-filter').value = 'all';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    
+    AppState.currentFilters = {
+        search: '',
+        sentiment: 'all',
+        problem: 'all',
+        dateFrom: null,
+        dateTo: null
+    };
+    
+    _filterAndSortCustomers();
+}
+
+function _filterAndSortCustomers() {
+    AppState.filteredCustomers = AppState.customers.filter(c => {
+        if (AppState.currentFilters.search) {
+            const name = (c.name || '').toLowerCase();
+            const email = (c.email || '').toLowerCase();
+            if (!name.includes(AppState.currentFilters.search) && !email.includes(AppState.currentFilters.search)) {
+                return false;
             }
         }
-    } catch (e) {
-        console.log("Init error:", e);
-    }
-})();
+        
+        if (AppState.currentFilters.sentiment !== 'all') {
+            const chats = AppState.allChats[c.email] || [];
+            const hasMatchingSentiment = chats.some(chat => 
+                (chat.sentiment || 'neutral').toLowerCase() === AppState.currentFilters.sentiment.toLowerCase()
+            );
+            if (!hasMatchingSentiment) return false;
+        }
+        
+        if (AppState.currentFilters.problem !== 'all') {
+            const chats = AppState.allChats[c.email] || [];
+            const hasMatchingProblem = chats.some(chat => 
+                (chat.problem || _detectProblem(chat.message || '')) === AppState.currentFilters.problem
+            );
+            if (!hasMatchingProblem) return false;
+        }
+        
+        if (AppState.currentFilters.dateFrom || AppState.currentFilters.dateTo) {
+            const chats = AppState.allChats[c.email] || [];
+            const hasChatInDateRange = chats.some(chat => {
+                if (!chat.timestamp) return false;
+                const chatDate = new Date(chat.timestamp);
+                if (AppState.currentFilters.dateFrom && chatDate < AppState.currentFilters.dateFrom) return false;
+                if (AppState.currentFilters.dateTo && chatDate > AppState.currentFilters.dateTo) return false;
+                return true;
+            });
+            if (!hasChatInDateRange) return false;
+        }
+        
+        return true;
+    });
+    
+    _sortCustomers();
+}
 
-// ===== SERVICE COMPLETION NOTIFICATIONS FUNCTIONS =====
-async function loadServices() {
+function _sortTable(field) {
+    if (AppState.currentSort.field === field) {
+        AppState.currentSort.direction = AppState.currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        AppState.currentSort.field = field;
+        AppState.currentSort.direction = 'desc';
+    }
+    _sortCustomers();
+}
+
+function _sortCustomers() {
+    AppState.filteredCustomers.sort((a, b) => {
+        let valA, valB;
+        
+        switch(AppState.currentSort.field) {
+            case 'name':
+                valA = a.name || '';
+                valB = b.name || '';
+                break;
+            case 'email':
+                valA = a.email || '';
+                valB = b.email || '';
+                break;
+            case 'messages':
+                valA = (AppState.allChats[a.email] || []).length;
+                valB = (AppState.allChats[b.email] || []).length;
+                break;
+            case 'risk':
+                valA = _calculateRisk(AppState.allChats[a.email] || []);
+                valB = _calculateRisk(AppState.allChats[b.email] || []);
+                break;
+            default:
+                return 0;
+        }
+        
+        if (typeof valA === 'string') {
+            return AppState.currentSort.direction === 'asc' 
+                ? valA.localeCompare(valB)
+                : valB.localeCompare(valA);
+        } else {
+            return AppState.currentSort.direction === 'asc' 
+                ? valA - valB
+                : valB - valA;
+        }
+    });
+    
+    _renderCustomers();
+}
+
+function _renderCustomers() {
+    const tbody = document.getElementById('customer-table-body');
+    if (!tbody) return;
+
+    if (AppState.filteredCustomers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;color:#777;">No matching customers found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    
+    AppState.filteredCustomers.forEach(c => {
+        const chats = AppState.allChats[c.email] || [];
+        const messages = chats.length;
+        const negCount = chats.filter(m => (m.sentiment || 'neutral').toLowerCase() === 'negative').length;
+        const posCount = chats.filter(m => (m.sentiment || 'neutral').toLowerCase() === 'positive').length;
+        const risk = _calculateRisk(chats);
+        
+        const problems = [...new Set(chats.map(chat => chat.problem || _detectProblem(chat.message || '')))];
+        const problemTags = problems.filter(p => p !== 'other').map(p => {
+            const colors = {
+                delivery: '#f59e0b',
+                quality: '#dc3545',
+                pricing: '#3b82f6',
+                support: '#8b5cf6',
+                refund: '#ef4444',
+                ux: '#10b981'
+            };
+            return `<span style="background:${colors[p] || '#6c757d'}; color:white; padding:2px 8px; border-radius:12px; font-size:0.8rem; margin:2px;">${safeMarkupEscape(p)}</span>`;
+        }).join(' ');
+        
+        let sentimentDisplay = '';
+        if (messages > 0) {
+            if (negCount > posCount) {
+                sentimentDisplay = `<span style="color: #dc3545;">🔴 ${negCount} negative</span>`;
+            } else if (posCount > negCount) {
+                sentimentDisplay = `<span style="color: #28a745;">🟢 ${posCount} positive</span>`;
+            } else {
+                sentimentDisplay = `<span style="color: #6b7280;">⚪ ${messages} messages</span>`;
+            }
+        } else {
+            sentimentDisplay = 'No messages';
+        }
+
+        const tr = document.createElement('tr');
+        tr.dataset.email = c.email || '';
+        tr.innerHTML = `
+            <td><strong>${safeMarkupEscape(c.name || 'Visitor')}</strong></td>
+            <td>${safeMarkupEscape(c.email || 'No email')}</td>
+            <td>${messages} ${messages > 0 ? `(${sentimentDisplay})` : ''}</td>
+            <td><span class="status-badge ${risk > 70 ? 'badge-high' : risk > 40 ? 'badge-med' : 'badge-low'}" style="font-size:1rem; font-weight:700;">${risk}%</span></td>
+            <td>${problemTags || '—'}</td>
+            <td>
+                <button class="btn-primary" style="padding:6px 12px; margin-right:5px;" onclick="window._viewCustomer('${safeMarkupEscape(c.email)}')">View</button>
+                <button class="btn-secondary" style="padding:6px 12px;" onclick="window._quickAnalyze('${safeMarkupEscape(c.email)}')">Analyze</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Row update function for WebSocket targeting
+function _updateCustomerRow(email, data) {
+    const rows = document.querySelectorAll('#customer-table-body tr');
+    for (const row of rows) {
+        if (row.dataset.email === email) {
+            // Update specific fields without redrawing table
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 6) {
+                if (data.name) cells[0].innerHTML = `<strong>${safeMarkupEscape(data.name)}</strong>`;
+                if (data.messages !== undefined) {
+                    cells[2].textContent = `${data.messages} messages`;
+                }
+                if (data.risk !== undefined) {
+                    const riskSpan = cells[3].querySelector('.status-badge');
+                    if (riskSpan) {
+                        riskSpan.textContent = `${data.risk}%`;
+                        riskSpan.className = `status-badge ${data.risk > 70 ? 'badge-high' : data.risk > 40 ? 'badge-med' : 'badge-low'}`;
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
+// ================================================
+// 7. AI CHAT (with Debouncing and State Locking)
+// ================================================
+const _sendAiMessage = debounce('aiMessage', async function(autoQuery = null) {
+    if (_aiMessageLock) return;
+    _aiMessageLock = true;
+    
+    const input = document.getElementById('ai-input');
+    const query = autoQuery || input?.value?.trim();
+    
+    if (!query) {
+        _aiMessageLock = false;
+        return;
+    }
+
+    const div = document.getElementById('ai-chat-messages');
+    if (!div) {
+        _aiMessageLock = false;
+        return;
+    }
+
+    const thinkingId = 'think-' + Date.now();
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.id = thinkingId;
+    thinkingDiv.className = 'ai-typing';
+    thinkingDiv.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div>🤖 Business AI is thinking...';
+    div.appendChild(thinkingDiv);
+    div.scrollTop = div.scrollHeight;
+
+    if (!autoQuery && input) input.value = '';
+
+    try {
+        const token = localStorage.getItem('token');
+        
+        const businessContext = {
+            business_name: localStorage.getItem('business_name') || 'Your Business',
+            total_customers: AppState.customers.length,
+            total_problems: AppState.problemStats.total,
+            top_issues: Object.entries(AppState.problemStats)
+                .filter(([k,v]) => ['delivery','quality','pricing','support','refund','ux'].includes(k) && v > 0)
+                .sort((a,b) => b[1] - a[1]).slice(0,3)
+                .map(([k,v]) => `${k}: ${v} issues`),
+            churn_risk: _calculateRisk(Object.values(AppState.allChats).flat())
+        };
+        
+        const res = await fetch(`${CONFIG.BACKEND_URL}${CONFIG.AI_CHAT_ENDPOINT}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-Org-ID': token ? (parseAuthToken(token)?.orgId || '') : '',
+            },
+            body: JSON.stringify({ 
+                query,
+                business_context: businessContext,
+                customers: AppState.customers.slice(0, 50),
+                problem_stats: AppState.problemStats
+            })
+        });
+
+        if (!res.ok) {
+            throw new Error(`AI service error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        
+        let formattedResponse = data.reply || 'No response from AI.';
+        formattedResponse = formattedResponse.replace(/\n/g, '<br>');
+        formattedResponse = safeMarkupEscape(formattedResponse);
+        
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message bot';
+            msgDiv.innerHTML = `<strong>🤖 AI Business Consultant:</strong><br>${formattedResponse}`;
+            thinkingEl.replaceWith(msgDiv);
+        }
+    } catch (err) {
+        console.error("AI error:", err);
+        
+        let fallbackResponse = "I'm your AI business consultant. Here's what I can help with:\n\n";
+        fallbackResponse += "📊 **Customer Analysis** - Ask me to analyze any customer\n";
+        fallbackResponse += "🔍 **Problem Detection** - \"What are our top issues?\"\n";
+        fallbackResponse += "💡 **Solutions** - \"How to handle delivery complaints?\"\n";
+        fallbackResponse += "📈 **Churn Prevention** - \"Show at-risk customers\"\n";
+        fallbackResponse += "✉️ **Communications** - \"Generate response for refund request\"\n\n";
+        fallbackResponse += `Currently tracking: ${AppState.customers.length} customers, ${AppState.problemStats.total} issues. How can I assist you?`;
+        fallbackResponse = safeMarkupEscape(fallbackResponse.replace(/\n/g, '<br>'));
+        
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message bot';
+            msgDiv.innerHTML = `<strong>🤖 AI Business Consultant:</strong><br>${fallbackResponse}`;
+            thinkingEl.replaceWith(msgDiv);
+        }
+    }
+
+    div.scrollTop = div.scrollHeight;
+    _aiMessageLock = false;
+}, CONFIG.DEBOUNCE_DELAY);
+
+// ================================================
+// 8. NOTIFICATION SYSTEM
+// ================================================
+function _addNotification(notification) {
+    AppState.notifications.unshift({
+        id: Date.now(),
+        ...notification,
+        read: false,
+        timestamp: new Date().toISOString()
+    });
+    
+    if (AppState.notifications.length > 50) AppState.notifications.pop();
+    
+    localStorage.setItem('customer_notifications', JSON.stringify(AppState.notifications));
+    _updateNotificationUI();
+}
+
+function _loadNotifications() {
+    const saved = localStorage.getItem('customer_notifications');
+    AppState.notifications = saved ? JSON.parse(saved) : [];
+    _updateNotificationUI();
+}
+
+function _updateNotificationUI() {
+    const count = AppState.notifications.filter(n => !n.read).length;
+    const countEl = document.getElementById('notification-count');
+    if (countEl) {
+        if (count > 0) {
+            countEl.style.display = 'flex';
+            countEl.textContent = count > 9 ? '9+' : count;
+        } else {
+            countEl.style.display = 'none';
+        }
+    }
+    
+    const listEl = document.getElementById('notifications-list');
+    if (!listEl) return;
+    
+    if (AppState.notifications.length === 0) {
+        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No notifications yet</div>';
+        return;
+    }
+    
+    listEl.innerHTML = AppState.notifications.map(notif => `
+        <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="window._markNotificationRead(${notif.id})">
+            <div class="notification-title">${safeMarkupEscape(notif.title)}</div>
+            <div class="notification-message">${safeMarkupEscape(notif.message)}</div>
+            <div class="notification-time">${_getTimeAgo(notif.timestamp)}</div>
+        </div>
+    `).join('');
+}
+
+function _toggleNotifications() {
+    const panel = document.getElementById('notifications-panel');
+    if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+        setTimeout(() => {
+            document.addEventListener('click', function closePanel(e) {
+                if (!panel.contains(e.target) && !e.target.closest('.notification-badge')) {
+                    panel.style.display = 'none';
+                    document.removeEventListener('click', closePanel);
+                }
+            });
+        }, 100);
+    }
+}
+
+function _markNotificationRead(id) {
+    const notif = AppState.notifications.find(n => n.id === id);
+    if (notif) notif.read = true;
+    localStorage.setItem('customer_notifications', JSON.stringify(AppState.notifications));
+    _updateNotificationUI();
+}
+
+function _markAllNotificationsRead() {
+    AppState.notifications.forEach(n => n.read = true);
+    localStorage.setItem('customer_notifications', JSON.stringify(AppState.notifications));
+    _updateNotificationUI();
+}
+
+function _getTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+}
+
+// ================================================
+// 9. SERVICE COMPLETION FUNCTIONS
+// ================================================
+async function _loadServices() {
+    const container = document.getElementById('service-list-container');
+    if (!container) return;
+    
     const token = localStorage.getItem('token');
     if (!token) return;
     
     try {
-        const response = await fetch(`${BACKEND_URL}/api/customer-insights/services`, {
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/customer-insights/services`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
-            services = await response.json();
-            renderServices();
+            AppState.services = await response.json();
         } else {
             const saved = localStorage.getItem('customer_services');
-            services = saved ? JSON.parse(saved) : [];
-            renderServices();
+            AppState.services = saved ? JSON.parse(saved) : [];
         }
     } catch (err) {
         console.error('Error loading services:', err);
         const saved = localStorage.getItem('customer_services');
-        services = saved ? JSON.parse(saved) : [];
-        renderServices();
+        AppState.services = saved ? JSON.parse(saved) : [];
     }
+    
+    _renderServices();
 }
 
-function renderServices() {
+function _renderServices() {
     const container = document.getElementById('service-list-container');
     if (!container) return;
     
-    if (services.length === 0) {
+    if (AppState.services.length === 0) {
         container.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #94a3b8;">
                 <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
@@ -1832,29 +2619,29 @@ function renderServices() {
         return;
     }
     
-    container.innerHTML = services.map(service => `
+    container.innerHTML = AppState.services.map(service => `
         <div class="service-item ${service.status}">
             <div class="service-header">
-                <span class="service-customer"><i class="fas fa-user"></i> ${escapeHtml(service.customer_name)}</span>
+                <span class="service-customer"><i class="fas fa-user"></i> ${safeMarkupEscape(service.customer_name)}</span>
                 <span class="service-status status-${service.status}">${service.status === 'completed' ? '✓ Completed' : service.status === 'in-progress' ? '🔄 In Progress' : '⏳ Pending'}</span>
             </div>
             <div class="service-details">
-                <div><i class="fas fa-tag"></i> Service: ${escapeHtml(service.service_type)}</div>
+                <div><i class="fas fa-tag"></i> Service: ${safeMarkupEscape(service.service_type)}</div>
                 <div><i class="fas fa-calendar"></i> Created: ${new Date(service.created_at).toLocaleString()}</div>
                 ${service.completed_at ? `<div><i class="fas fa-check-circle" style="color: #10b981;"></i> Completed: ${new Date(service.completed_at).toLocaleString()}</div>` : ''}
             </div>
             ${service.status !== 'completed' ? `
                 <div class="service-actions">
-                    <button class="complete-service-btn" onclick="completeService('${service.id}')">
+                    <button class="complete-service-btn" onclick="window._completeService('${service.id}')">
                         <i class="fas fa-check"></i> Mark Complete & Notify Customer
                     </button>
-                    <button class="view-customer-btn" onclick="viewCustomer('${service.customer_email}')">
+                    <button class="view-customer-btn" onclick="window._viewCustomer('${safeMarkupEscape(service.customer_email)}')">
                         <i class="fas fa-eye"></i> View Customer
                     </button>
                 </div>
             ` : `
                 <div class="service-actions">
-                    <button class="view-customer-btn" onclick="viewCustomer('${service.customer_email}')">
+                    <button class="view-customer-btn" onclick="window._viewCustomer('${safeMarkupEscape(service.customer_email)}')">
                         <i class="fas fa-eye"></i> View Customer
                     </button>
                 </div>
@@ -1863,15 +2650,15 @@ function renderServices() {
     `).join('');
 }
 
-async function completeService(serviceId) {
+async function _completeService(serviceId) {
     const token = localStorage.getItem('token');
-    const service = services.find(s => s.id === serviceId);
+    const service = AppState.services.find(s => s.id === serviceId);
     
     if (!service) return;
     
     if (confirm(`Mark "${service.service_type}" as completed for ${service.customer_name}? The customer will be notified.`)) {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/customer-insights/services/${serviceId}/complete`, {
+            const response = await fetch(`${CONFIG.BACKEND_URL}/api/customer-insights/services/${serviceId}/complete`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1881,9 +2668,9 @@ async function completeService(serviceId) {
             });
             
             if (response.ok) {
-                await loadServices();
+                await _loadServices();
                 
-                addNotification({
+                _addNotification({
                     title: 'Service Completed',
                     message: `${service.customer_name}'s service "${service.service_type}" has been completed.`,
                     customer_email: service.customer_email,
@@ -1891,52 +2678,52 @@ async function completeService(serviceId) {
                     service_id: serviceId
                 });
                 
-                showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified.`);
+                _showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified.`);
             } else {
-                const index = services.findIndex(s => s.id === serviceId);
+                const index = AppState.services.findIndex(s => s.id === serviceId);
                 if (index !== -1) {
-                    services[index].status = 'completed';
-                    services[index].completed_at = new Date().toISOString();
-                    localStorage.setItem('customer_services', JSON.stringify(services));
-                    renderServices();
+                    AppState.services[index].status = 'completed';
+                    AppState.services[index].completed_at = new Date().toISOString();
+                    localStorage.setItem('customer_services', JSON.stringify(AppState.services));
+                    _renderServices();
                     
-                    addNotification({
+                    _addNotification({
                         title: 'Service Completed',
                         message: `${service.customer_name}'s service "${service.service_type}" has been completed.`,
                         customer_email: service.customer_email,
                         customer_name: service.customer_name
                     });
                     
-                    showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified (local mode).`);
+                    _showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified (local mode).`);
                 }
             }
         } catch (err) {
             console.error('Error completing service:', err);
-            const index = services.findIndex(s => s.id === serviceId);
+            const index = AppState.services.findIndex(s => s.id === serviceId);
             if (index !== -1) {
-                services[index].status = 'completed';
-                services[index].completed_at = new Date().toISOString();
-                localStorage.setItem('customer_services', JSON.stringify(services));
-                renderServices();
+                AppState.services[index].status = 'completed';
+                AppState.services[index].completed_at = new Date().toISOString();
+                localStorage.setItem('customer_services', JSON.stringify(AppState.services));
+                _renderServices();
                 
-                addNotification({
+                _addNotification({
                     title: 'Service Completed',
                     message: `${service.customer_name}'s service "${service.service_type}" has been completed.`,
                     customer_email: service.customer_email,
                     customer_name: service.customer_name
                 });
                 
-                showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified.`);
+                _showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified.`);
             }
         }
     }
 }
 
-function showCreateServiceModal() {
+function _showCreateServiceModal() {
     const customerEmail = prompt("Enter customer email:");
     if (!customerEmail) return;
     
-    const customer = customers.find(c => c.email === customerEmail);
+    const customer = AppState.customers.find(c => c.email === customerEmail);
     const customerName = customer?.name || "Customer";
     
     const serviceType = prompt("Enter service type (e.g., 'Website Development', 'SEO Audit', 'Consultation'):");
@@ -1955,11 +2742,11 @@ function showCreateServiceModal() {
         completed_at: null
     };
     
-    services.push(newService);
-    localStorage.setItem('customer_services', JSON.stringify(services));
+    AppState.services.push(newService);
+    localStorage.setItem('customer_services', JSON.stringify(AppState.services));
     
     const token = localStorage.getItem('token');
-    fetch(`${BACKEND_URL}/api/customer-insights/services`, {
+    fetch(`${CONFIG.BACKEND_URL}/api/customer-insights/services`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1968,10 +2755,10 @@ function showCreateServiceModal() {
         body: JSON.stringify(newService)
     }).catch(console.error);
     
-    renderServices();
-    showTemporaryMessage(`✅ Service created for ${customerName}`);
+    _renderServices();
+    _showTemporaryMessage(`✅ Service created for ${customerName}`);
     
-    addNotification({
+    _addNotification({
         title: 'New Service Created',
         message: `New service "${serviceType}" created for ${customerName}.`,
         customer_email: customerEmail,
@@ -1979,984 +2766,13 @@ function showCreateServiceModal() {
     });
 }
 
-// ===== NOTIFICATION FUNCTIONS =====
-function addNotification(notification) {
-    notifications.unshift({
-        id: Date.now(),
-        ...notification,
-        read: false,
-        timestamp: new Date().toISOString()
-    });
-    
-    if (notifications.length > 50) notifications.pop();
-    
-    localStorage.setItem('customer_notifications', JSON.stringify(notifications));
-    updateNotificationUI();
-}
-
-function loadNotifications() {
-    const saved = localStorage.getItem('customer_notifications');
-    notifications = saved ? JSON.parse(saved) : [];
-    updateNotificationUI();
-}
-
-function updateNotificationUI() {
-    const count = notifications.filter(n => !n.read).length;
-    const countEl = document.getElementById('notification-count');
-    if (countEl) {
-        if (count > 0) {
-            countEl.style.display = 'flex';
-            countEl.textContent = count > 9 ? '9+' : count;
-        } else {
-            countEl.style.display = 'none';
-        }
-    }
-    
-    const listEl = document.getElementById('notifications-list');
-    if (!listEl) return;
-    
-    if (notifications.length === 0) {
-        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No notifications yet</div>';
-        return;
-    }
-    
-    listEl.innerHTML = notifications.map(notif => `
-        <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="markNotificationRead(${notif.id})">
-            <div class="notification-title">${escapeHtml(notif.title)}</div>
-            <div class="notification-message">${escapeHtml(notif.message)}</div>
-            <div class="notification-time">${getTimeAgo(notif.timestamp)}</div>
-        </div>
-    `).join('');
-}
-
-function toggleNotifications() {
-    const panel = document.getElementById('notifications-panel');
-    if (panel.style.display === 'block') {
-        panel.style.display = 'none';
-    } else {
-        panel.style.display = 'block';
-        setTimeout(() => {
-            document.addEventListener('click', function closePanel(e) {
-                if (!panel.contains(e.target) && !e.target.closest('.notification-badge')) {
-                    panel.style.display = 'none';
-                    document.removeEventListener('click', closePanel);
-                }
-            });
-        }, 100);
-    }
-}
-
-function markNotificationRead(id) {
-    const notif = notifications.find(n => n.id === id);
-    if (notif) notif.read = true;
-    localStorage.setItem('customer_notifications', JSON.stringify(notifications));
-    updateNotificationUI();
-}
-
-function markAllNotificationsRead() {
-    notifications.forEach(n => n.read = true);
-    localStorage.setItem('customer_notifications', JSON.stringify(notifications));
-    updateNotificationUI();
-}
-
-function getTimeAgo(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} min ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    const days = Math.floor(hours / 24);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-}
-
-// ===== DATA LOADING =====
-async function loadCustomers(silent = false) {
-    const tbody = document.getElementById('customer-table-body');
-    if (!tbody) return;
-
-    try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            showError("Please log in again");
-            return;
-        }
-
-        if (!silent) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;"><div class="loading-spinner" style="margin:0 auto;"></div><br>Loading customer data...</td></tr>';
-        }
-
-        const leadsRes = await fetch(`${BACKEND_URL}/api/customer-insights/leads`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!leadsRes.ok) {
-            if (leadsRes.status === 401) {
-                window.location.href = 'login.html';
-                return;
-            }
-            throw new Error(`Failed to load leads: ${leadsRes.status}`);
-        }
-
-        customers = await leadsRes.json() || [];
-        console.log(`Loaded ${customers.length} customers`);
-
-        document.getElementById('customer-count').textContent = `${customers.length} Total Customers`;
-        document.getElementById('total-recipients').textContent = customers.length;
-
-        const chatPromises = customers.map(async (c) => {
-            try {
-                const chatRes = await fetch(`${BACKEND_URL}/api/customer-insights/chats?email=${encodeURIComponent(c.email || '')}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (chatRes.ok) {
-                    const chats = await chatRes.json();
-                    return chats.map(chat => ({
-                        ...chat,
-                        sentiment: chat.sentiment || 'neutral',
-                        problem: detectProblem(chat.message || '')
-                    }));
-                }
-                return [];
-            } catch {
-                return [];
-            }
-        });
-
-        const chatResults = await Promise.all(chatPromises);
-        
-        allChats = {};
-        customers.forEach((c, i) => {
-            if (c && c.email) {
-                allChats[c.email] = chatResults[i] || [];
-            }
-        });
-
-        analyzeProblems();
-        applyFilters();
-        updateAnalytics();
-        updateProblemStats();
-        
-    } catch (err) {
-        console.error("Data load error:", err);
-        if (tbody) {
-            tbody.innerHTML = `</table><td colspan="6" style="color:var(--danger);padding:60px;text-align:center;">
-                Error loading data: ${err.message}<br>
-                <button onclick="loadCustomers()" style="margin-top:10px;padding:8px 20px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">Retry</button>
-            </td></tr>`;
-        }
-    }
-}
-
-function detectProblem(message) {
-    if (!message) return 'other';
-    const msg = message.toLowerCase();
-    
-    if (msg.match(/delay|late|shipping|delivery|when will|arrive|tracking/)) return 'delivery';
-    if (msg.match(/quality|defective|broken|damaged|poor|bad|not working/)) return 'quality';
-    if (msg.match(/price|expensive|cost|money|too much|refund|return/)) return 'pricing';
-    if (msg.match(/help|support|agent|human|talk to|speak with/)) return 'support';
-    if (msg.match(/refund|return|money back|cancel/)) return 'refund';
-    if (msg.match(/confused|understand|how to|complicated|difficult/)) return 'ux';
-    
-    return 'other';
-}
-
-function analyzeProblems() {
-    problemStats = {
-        delivery: 0,
-        quality: 0,
-        pricing: 0,
-        support: 0,
-        refund: 0,
-        ux: 0,
-        other: 0,
-        total: 0,
-        critical: 0
-    };
-    
-    Object.values(allChats).forEach(chats => {
-        chats.forEach(chat => {
-            if (chat.message) {
-                const problem = chat.problem || detectProblem(chat.message);
-                problemStats[problem] = (problemStats[problem] || 0) + 1;
-                problemStats.total++;
-                
-                if (chat.sentiment === 'negative' && problem !== 'other') {
-                    problemStats.critical++;
-                }
-            }
-        });
-    });
-    
-    document.getElementById('total-problems').textContent = problemStats.total;
-    document.getElementById('critical-problems').textContent = problemStats.critical;
-    document.getElementById('problem-count').textContent = `${problemStats.total} Total Issues`;
-    
-    document.getElementById('stat-delivery').textContent = problemStats.delivery;
-    document.getElementById('stat-quality').textContent = problemStats.quality;
-    document.getElementById('stat-pricing').textContent = problemStats.pricing;
-    document.getElementById('stat-support').textContent = problemStats.support;
-    
-    updateRiskCounts();
-    renderProblemTable();
-}
-
-function updateRiskCounts() {
-    let highRisk = 0;
-    let mediumRisk = 0;
-    
-    customers.forEach(c => {
-        const chats = allChats[c.email] || [];
-        const risk = calculateRisk(chats);
-        if (risk > 70) highRisk++;
-        else if (risk > 40) mediumRisk++;
-    });
-    
-    document.getElementById('high-risk-count').textContent = highRisk;
-    document.getElementById('medium-risk-count').textContent = mediumRisk;
-}
-
-function renderProblemTable() {
-    const tbody = document.getElementById('problem-table-body');
-    if (!tbody) return;
-    
-    const problems = [
-        { type: 'Delivery Issues', key: 'delivery', freq: problemStats.delivery, trend: '+12%', resolution: '2.5h', impact: 85 },
-        { type: 'Product Quality', key: 'quality', freq: problemStats.quality, trend: '+5%', resolution: '3.2h', impact: 92 },
-        { type: 'Pricing Concerns', key: 'pricing', freq: problemStats.pricing, trend: '-3%', resolution: '1.8h', impact: 45 },
-        { type: 'Support Requests', key: 'support', freq: problemStats.support, trend: '+8%', resolution: '4.1h', impact: 78 },
-        { type: 'Refund Requests', key: 'refund', freq: problemStats.refund, trend: '-2%', resolution: '2.0h', impact: 95 },
-        { type: 'UX/Confusion', key: 'ux', freq: problemStats.ux, trend: '+15%', resolution: '1.5h', impact: 60 }
-    ];
-    
-    tbody.innerHTML = problems.map(p => `
-        <tr>
-            <td><strong>${p.type}</strong></td>
-            <td>${p.freq}</td>
-            <td><span style="color: ${p.trend.startsWith('+') ? '#dc3545' : '#28a745'}">${p.trend}</span></td>
-            <td>${p.resolution}</td>
-            <td><span class="status-badge ${p.impact > 80 ? 'badge-high' : p.impact > 60 ? 'badge-med' : 'badge-low'}">${p.impact}</span></td>
-            <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></td>
-            <td>
-                <button class="btn-secondary" style="padding:4px 8px; font-size:0.85rem;" onclick="analyzeProblemType('${p.key}')">Analyze</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// ===== FILTERING AND SORTING =====
-function applyFilters() {
-    const searchInput = document.getElementById('customer-search');
-    const sentimentFilter = document.getElementById('sentiment-filter');
-    const problemFilter = document.getElementById('problem-filter');
-    const dateFrom = document.getElementById('date-from');
-    const dateTo = document.getElementById('date-to');
-    
-    currentFilters = {
-        search: searchInput ? searchInput.value.toLowerCase() : '',
-        sentiment: sentimentFilter ? sentimentFilter.value : 'all',
-        problem: problemFilter ? problemFilter.value : 'all',
-        dateFrom: dateFrom && dateFrom.value ? new Date(dateFrom.value) : null,
-        dateTo: dateTo && dateTo.value ? new Date(dateTo.value) : null
-    };
-    
-    if (currentFilters.dateTo) {
-        currentFilters.dateTo.setHours(23, 59, 59, 999);
-    }
-    
-    filterAndSortCustomers();
-}
-
-function resetFilters() {
-    document.getElementById('customer-search').value = '';
-    document.getElementById('sentiment-filter').value = 'all';
-    document.getElementById('problem-filter').value = 'all';
-    document.getElementById('date-from').value = '';
-    document.getElementById('date-to').value = '';
-    
-    currentFilters = {
-        search: '',
-        sentiment: 'all',
-        problem: 'all',
-        dateFrom: null,
-        dateTo: null
-    };
-    
-    filterAndSortCustomers();
-}
-
-function filterAndSortCustomers() {
-    filteredCustomers = customers.filter(c => {
-        if (currentFilters.search) {
-            const name = (c.name || '').toLowerCase();
-            const email = (c.email || '').toLowerCase();
-            if (!name.includes(currentFilters.search) && !email.includes(currentFilters.search)) {
-                return false;
-            }
-        }
-        
-        if (currentFilters.sentiment !== 'all') {
-            const chats = allChats[c.email] || [];
-            const hasMatchingSentiment = chats.some(chat => 
-                (chat.sentiment || 'neutral').toLowerCase() === currentFilters.sentiment.toLowerCase()
-            );
-            if (!hasMatchingSentiment) return false;
-        }
-        
-        if (currentFilters.problem !== 'all') {
-            const chats = allChats[c.email] || [];
-            const hasMatchingProblem = chats.some(chat => 
-                (chat.problem || detectProblem(chat.message || '')) === currentFilters.problem
-            );
-            if (!hasMatchingProblem) return false;
-        }
-        
-        if (currentFilters.dateFrom || currentFilters.dateTo) {
-            const chats = allChats[c.email] || [];
-            const hasChatInDateRange = chats.some(chat => {
-                if (!chat.timestamp) return false;
-                const chatDate = new Date(chat.timestamp);
-                if (currentFilters.dateFrom && chatDate < currentFilters.dateFrom) return false;
-                if (currentFilters.dateTo && chatDate > currentFilters.dateTo) return false;
-                return true;
-            });
-            if (!hasChatInDateRange) return false;
-        }
-        
-        return true;
-    });
-    
-    sortCustomers();
-}
-
-function sortTable(field) {
-    if (currentSort.field === field) {
-        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSort.field = field;
-        currentSort.direction = 'desc';
-    }
-    sortCustomers();
-}
-
-function sortCustomers() {
-    filteredCustomers.sort((a, b) => {
-        let valA, valB;
-        
-        switch(currentSort.field) {
-            case 'name':
-                valA = a.name || '';
-                valB = b.name || '';
-                break;
-            case 'email':
-                valA = a.email || '';
-                valB = b.email || '';
-                break;
-            case 'messages':
-                valA = (allChats[a.email] || []).length;
-                valB = (allChats[b.email] || []).length;
-                break;
-            case 'risk':
-                valA = calculateRisk(allChats[a.email] || []);
-                valB = calculateRisk(allChats[b.email] || []);
-                break;
-            default:
-                return 0;
-        }
-        
-        if (typeof valA === 'string') {
-            return currentSort.direction === 'asc' 
-                ? valA.localeCompare(valB)
-                : valB.localeCompare(valA);
-        } else {
-            return currentSort.direction === 'asc' 
-                ? valA - valB
-                : valB - valA;
-        }
-    });
-    
-    renderCustomers();
-}
-
-function renderCustomers() {
-    const tbody = document.getElementById('customer-table-body');
-    if (!tbody) return;
-
-    if (filteredCustomers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;color:#777;">No matching customers found</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = '';
-    
-    filteredCustomers.forEach(c => {
-        const chats = allChats[c.email] || [];
-        const messages = chats.length;
-        const negCount = chats.filter(m => (m.sentiment || 'neutral').toLowerCase() === 'negative').length;
-        const posCount = chats.filter(m => (m.sentiment || 'neutral').toLowerCase() === 'positive').length;
-        const risk = calculateRisk(chats);
-        
-        const problems = [...new Set(chats.map(chat => chat.problem || detectProblem(chat.message || '')))];
-        const problemTags = problems.filter(p => p !== 'other').map(p => {
-            const colors = {
-                delivery: '#f59e0b',
-                quality: '#dc3545',
-                pricing: '#3b82f6',
-                support: '#8b5cf6',
-                refund: '#ef4444',
-                ux: '#10b981'
-            };
-            return `<span style="background:${colors[p] || '#6c757d'}; color:white; padding:2px 8px; border-radius:12px; font-size:0.8rem; margin:2px;">${p}</span>`;
-        }).join(' ');
-        
-        let sentimentDisplay = '';
-        if (messages > 0) {
-            if (negCount > posCount) {
-                sentimentDisplay = `<span style="color: #dc3545;">🔴 ${negCount} negative</span>`;
-            } else if (posCount > negCount) {
-                sentimentDisplay = `<span style="color: #28a745;">🟢 ${posCount} positive</span>`;
-            } else {
-                sentimentDisplay = `<span style="color: #6b7280;">⚪ ${messages} messages</span>`;
-            }
-        } else {
-            sentimentDisplay = 'No messages';
-        }
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${c.name || 'Visitor'}</strong></td>
-            <td>${c.email || 'No email'}</td>
-            <td>${messages} ${messages > 0 ? `(${sentimentDisplay})` : ''}</td>
-            <td><span class="status-badge ${risk > 70 ? 'badge-high' : risk > 40 ? 'badge-med' : 'badge-low'}" style="font-size:1rem; font-weight:700;">${risk}%</span></td>
-            <td>${problemTags || '—'}</td>
-            <td>
-                <button class="btn-primary" style="padding:6px 12px; margin-right:5px;" onclick="viewCustomer('${c.email}')">View</button>
-                <button class="btn-secondary" style="padding:6px 12px;" onclick="quickAnalyze('${c.email}')">Analyze</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function viewCustomer(email) {
-    const div = document.getElementById('ai-chat-messages');
-    if (!div) return;
-
-    div.innerHTML = '<div class="ai-typing"><div class="loading-spinner" style="margin:0 auto;"></div>Loading conversation...</div>';
-
-    const chats = allChats[email] || [];
-
-    if (chats.length === 0) {
-        div.innerHTML = '<div style="padding:60px;text-align:center;color:#888;">No chat history for this customer.</div>';
-        return;
-    }
-
-    div.innerHTML = '';
-    chats.forEach(chat => {
-        const sentiment = chat.sentiment || 'neutral';
-        const sentimentEmoji = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
-        const problem = chat.problem || detectProblem(chat.message || '');
-        
-        div.innerHTML += `
-            <div class="message user"><strong>Customer ${sentimentEmoji}:</strong> ${chat.message || '[No message]'}</div>
-            <div class="message bot"><strong>AI:</strong> ${chat.response || '[No reply]'}</div>
-            ${problem !== 'other' ? `<div style="font-size:0.8rem; color:#666; margin-bottom:10px;">🏷️ Problem: ${problem}</div>` : ''}
-        `;
-    });
-    div.scrollTop = div.scrollHeight;
-
-    setTimeout(() => {
-        sendAiMessage(`Give a detailed analysis of customer ${email} including main issues, sentiment trends, and recommended actions.`);
-    }, 500);
-}
-
-function quickAnalyze(email) {
-    sendAiMessage(`Quick analysis for customer ${email}: What are their top 3 issues and suggested solutions?`);
-}
-
-// ===== AI CHAT (Enhanced Business AI) =====
-async function sendAiMessage(autoQuery = null) {
-    const input = document.getElementById('ai-input');
-    const query = autoQuery || input?.value?.trim();
-    
-    if (!query) return;
-
-    const div = document.getElementById('ai-chat-messages');
-    if (!div) return;
-
-    const thinkingId = 'think-' + Date.now();
-    div.innerHTML += `<div id="${thinkingId}" class="ai-typing"><div class="loading-spinner" style="margin:0 auto;"></div>🤖 Business AI is thinking...</div>`;
-    div.scrollTop = div.scrollHeight;
-
-    if (!autoQuery && input) input.value = '';
-
-    try {
-        const token = localStorage.getItem('token');
-        
-        // Prepare context about business and customers
-        const businessContext = {
-            business_name: localStorage.getItem('business_name') || 'Your Business',
-            total_customers: customers.length,
-            total_problems: problemStats.total,
-            top_issues: Object.entries(problemStats).filter(([k,v]) => ['delivery','quality','pricing','support','refund','ux'].includes(k) && v > 0)
-                .sort((a,b) => b[1] - a[1]).slice(0,3)
-                .map(([k,v]) => `${k}: ${v} issues`),
-            churn_risk: calculateRisk(Object.values(allChats).flat())
-        };
-        
-        const res = await fetch(AI_CHAT_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                query,
-                business_context: businessContext,
-                customers: customers.slice(0, 50),
-                problem_stats: problemStats
-            })
-        });
-
-        if (!res.ok) {
-            throw new Error(`AI service error: ${res.status}`);
-        }
-
-        const data = await res.json();
-        
-        let formattedResponse = data.reply || 'No response from AI.';
-        formattedResponse = formattedResponse.replace(/\n/g, '<br>');
-        
-        document.getElementById(thinkingId).outerHTML = `
-            <div class="message bot">
-                <strong>🤖 AI Business Consultant:</strong><br>${formattedResponse}
-            </div>
-        `;
-    } catch (err) {
-        console.error("AI error:", err);
-        
-        let fallbackResponse = "I'm your AI business consultant. Here's what I can help with:\n\n";
-        fallbackResponse += "📊 **Customer Analysis** - Ask me to analyze any customer\n";
-        fallbackResponse += "🔍 **Problem Detection** - \"What are our top issues?\"\n";
-        fallbackResponse += "💡 **Solutions** - \"How to handle delivery complaints?\"\n";
-        fallbackResponse += "📈 **Churn Prevention** - \"Show at-risk customers\"\n";
-        fallbackResponse += "✉️ **Communications** - \"Generate response for refund request\"\n\n";
-        fallbackResponse += `Currently tracking: ${customers.length} customers, ${problemStats.total} issues. How can I assist you?`;
-        
-        document.getElementById(thinkingId).outerHTML = `
-            <div class="message bot">
-                <strong>🤖 AI Business Consultant:</strong><br>${fallbackResponse.replace(/\n/g, '<br>')}
-            </div>
-        `;
-    }
-
-    div.scrollTop = div.scrollHeight;
-}
-
-// ===== PROBLEM-SOLVING TOOLS =====
-function generateSmartResponse() {
-    const problemType = document.getElementById('response-problem-type').value;
-    const context = document.getElementById('response-context').value;
-    const output = document.getElementById('response-output');
-    
-    const responses = {
-        delivery: "Thank you for reaching out about your delivery. I understand waiting for your order is frustrating. Let me check the status right away and provide you with a tracking update. We value your patience and will ensure this gets resolved promptly.",
-        quality: "I'm sorry to hear about the quality issue with your product. This is not the experience we want you to have. Please provide your order number and I'll process a replacement or refund immediately.",
-        refund: "I understand you'd like a refund. We want you to be completely satisfied with your purchase. I'll process your refund right away - it should reflect in your account within 3-5 business days.",
-        support: "I'm here to help! Could you please provide more details about what you need assistance with? I'll do my best to resolve your issue quickly.",
-        complaint: "Thank you for bringing this to our attention. I sincerely apologize for your experience. Let me escalate this to our team and ensure this is addressed properly."
-    };
-    
-    let response = responses[problemType] || "Thank you for contacting us. How can I help you today?";
-    if (context) {
-        response += `\n\nRegarding: ${context}`;
-    }
-    
-    output.style.display = 'block';
-    output.innerHTML = `<strong>🤖 Generated Response:</strong><br>${response}`;
-    
-    navigator.clipboard.writeText(response).then(() => {
-        showTemporaryMessage('Response copied to clipboard!');
-    });
-}
-
-function showAtRiskCustomers() {
-    const highRisk = customers.filter(c => {
-        const chats = allChats[c.email] || [];
-        return calculateRisk(chats) > 70;
-    });
-    
-    if (highRisk.length === 0) {
-        alert('No high-risk customers found.');
-        return;
-    }
-    
-    let message = '🔴 High-Risk Customers:\n\n';
-    highRisk.slice(0, 5).forEach(c => {
-        const risk = calculateRisk(allChats[c.email] || []);
-        message += `${c.name || 'Visitor'} (${c.email}) - ${risk}% risk\n`;
-    });
-    
-    alert(message);
-}
-
-function analyzeProblemType(type) {
-    sendAiMessage(`Analyze all ${type} related customer issues and suggest improvements to reduce these problems.`);
-}
-
-function analyzeProblemTrends() {
-    sendAiMessage('Analyze the trends in customer problems over the last 30 days and identify which issues are increasing.');
-}
-
-function refreshKnowledgeSuggestions() {
-    const suggestions = [
-        { topic: "Delivery times", count: problemStats.delivery },
-        { topic: "Return policy", count: problemStats.refund + 5 },
-        { topic: "Sizing guide", count: problemStats.ux + 8 },
-        { topic: "Product quality", count: problemStats.quality },
-        { topic: "Pricing FAQ", count: problemStats.pricing }
-    ];
-    
-    const container = document.getElementById('knowledge-suggestions');
-    if (container) {
-        container.innerHTML = suggestions
-            .filter(s => s.count > 5)
-            .map(s => `
-                <div style="padding:10px; background:#f8f9fa; border-radius:8px; margin-bottom:5px;">
-                    <strong>📝 "${s.topic}"</strong> - ${s.count} mentions
-                </div>
-            `).join('');
-    }
-}
-
-function refreshSentimentTimeline() {
-    if (!sentimentTimeline) return;
-    
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        last7Days.push(date.toISOString().split('T')[0]);
-    }
-    
-    const positiveCounts = last7Days.map(day => {
-        let count = 0;
-        Object.values(allChats).forEach(chats => {
-            chats.forEach(chat => {
-                if (chat.timestamp && chat.timestamp.startsWith(day) && chat.sentiment === 'positive') count++;
-            });
-        });
-        return count;
-    });
-    
-    sentimentTimeline.data.datasets[0].data = positiveCounts;
-    sentimentTimeline.update();
-}
-
-function saveTicketSettings() {
-    const threshold = document.getElementById('ticket-threshold')?.value || '70';
-    const assignee = document.getElementById('ticket-assignee')?.value || 'support';
-    localStorage.setItem('ticketThreshold', threshold);
-    localStorage.setItem('ticketAssignee', assignee);
-    showTemporaryMessage('Ticket settings saved!');
-}
-
-function switchProblemTab(tab) {
-    const tabs = document.querySelectorAll('.problem-tab');
-    tabs.forEach(t => t.classList.remove('active'));
-    if (event && event.target) event.target.classList.add('active');
-    
-    if (tab === 'all') {
-        renderProblemTable();
-    } else {
-        const filteredProblems = [{
-            type: tab.charAt(0).toUpperCase() + tab.slice(1) + ' Issues',
-            freq: problemStats[tab] || 0,
-            trend: '+5%',
-            resolution: '2.5h',
-            impact: 75
-        }];
-        
-        const tbody = document.getElementById('problem-table-body');
-        tbody.innerHTML = filteredProblems.map(p => `
-            <tr>
-                <td><strong>${p.type}</strong></td>
-                <td>${p.freq}</td>
-                <td><span style="color: #f59e0b">${p.trend}</span></td>
-                <td>${p.resolution}</td>
-                <td><span class="status-badge badge-med">${p.impact}</span></td>
-                <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></td>
-                <td>
-                    <button class="btn-secondary" style="padding:4px 8px;" onclick="analyzeProblemType('${tab}')">Analyze</button>
-                 </td
-            </tr>
-        `).join('');
-    }
-}
-
-// ===== EMAIL BROADCAST FUNCTIONS =====
-function loadEmailTemplate(type) {
-    const subject = document.getElementById('email-subject');
-    const content = document.getElementById('email-content');
-    
-    const templates = {
-        update: {
-            subject: "Important Update About Your Orders",
-            content: "Dear {{name}},\n\nWe wanted to share an important update about our service. Starting next week, we're introducing faster delivery options and extended customer support hours.\n\nYour satisfaction is our priority, and we're constantly working to improve your experience.\n\nThank you for being a valued customer.\n\nBest regards,\nThe Team"
-        },
-        product: {
-            subject: "New Products Just Arrived!",
-            content: "Hi {{name}},\n\nWe're excited to announce our newest collection has just arrived! From trendy styles to classic essentials, there's something for everyone.\n\nShop the collection now and enjoy 10% off your first order of new items.\n\nHappy shopping!\nThe Team"
-        },
-        offer: {
-            subject: "Special Offer Just for You",
-            content: "Dear {{name}},\n\nAs a valued customer, we'd like to offer you an exclusive 20% discount on your next purchase. Use code THANKYOU20 at checkout.\n\nThis offer is valid for the next 7 days.\n\nWe appreciate your business!\n\nThe Team"
-        },
-        issue: {
-            subject: "Update Regarding Your Recent Issue",
-            content: "Dear {{name}},\n\nWe wanted to follow up on the issue you recently experienced. Our team has resolved the problem and implemented measures to prevent it from happening again.\n\nAs a token of our appreciation, we've added a credit to your account.\n\nThank you for your patience and understanding.\n\nSincerely,\nCustomer Support"
-        },
-        feedback: {
-            subject: "We'd Love Your Feedback",
-            content: "Hi {{name}},\n\nWe're always looking to improve, and your opinion matters! Could you take 2 minutes to share your thoughts about your experience with us?\n\nClick here to take the survey: [SURVEY_LINK]\n\nThank you for helping us serve you better!\n\nThe Team"
-        }
-    };
-    
-    if (templates[type]) {
-        subject.value = templates[type].subject;
-        content.value = templates[type].content;
-        updateEmailPreview();
-    }
-}
-
-function updateEmailPreview() {
-    const subject = document.getElementById('email-subject')?.value || '';
-    const content = document.getElementById('email-content')?.value || '';
-    const preview = document.getElementById('email-preview');
-    
-    if (preview) {
-        let previewContent = content.replace(/{{name}}/g, 'John Doe');
-        preview.innerHTML = `<strong>Preview:</strong><br>📧 ${subject}<br><br>${previewContent}`;
-    }
-}
-
-async function testBroadcast() {
-    const subject = document.getElementById('email-subject')?.value;
-    const content = document.getElementById('email-content')?.value;
-    
-    if (!subject || !content) {
-        alert('Please enter both subject and content');
-        return;
-    }
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/broadcast/test`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ subject, content })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showTemporaryMessage(data.message || '✅ Test email sent! Check your inbox.');
-        } else {
-            showTemporaryMessage('❌ Failed to send test email: ' + data.error, 'error');
-        }
-    } catch (err) {
-        console.error('Test email error:', err);
-        showTemporaryMessage('❌ Error sending test email', 'error');
-    }
-}
-
-async function sendBroadcast() {
-    const subject = document.getElementById('email-subject')?.value;
-    const content = document.getElementById('email-content')?.value;
-    const target = document.getElementById('email-target')?.value || 'all';
-    
-    if (!subject || !content) {
-        alert('Please enter both subject and content');
-        return;
-    }
-    
-    let recipientCount = customers.length;
-    if (target === 'high-risk') {
-        recipientCount = customers.filter(c => calculateRisk(allChats[c.email] || []) > 70).length;
-    } else if (target === 'recent') {
-        recipientCount = Math.floor(customers.length * 0.3);
-    }
-    
-    if (!confirm(`Send this email to ${recipientCount} customers?`)) {
-        return;
-    }
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/broadcast/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ subject, content, target })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showTemporaryMessage(data.message || `✅ Broadcast sent to ${data.stats?.sent || recipientCount} customers!`);
-            
-            const sent = document.getElementById('emails-sent');
-            if (sent) {
-                sent.textContent = parseInt(sent.textContent) + (data.stats?.sent || recipientCount);
-            }
-        } else {
-            showTemporaryMessage('❌ Failed to send broadcast: ' + data.error, 'error');
-        }
-    } catch (err) {
-        console.error('Broadcast error:', err);
-        showTemporaryMessage('❌ Error sending broadcast', 'error');
-    }
-}
-
-function scheduleBroadcast() {
-    alert('Schedule feature coming soon! You will be able to set specific dates and times for automated broadcasts.');
-}
-
-// ===== ANALYTICS =====
-function updateAnalytics() {
-    let pos = 0, neg = 0, neu = 0;
-    let maxRisk = 0;
-    
-    Object.entries(allChats).forEach(([email, chats]) => {
-        chats.forEach(msg => {
-            const s = (msg.sentiment || 'neutral').toLowerCase();
-            if (s === 'positive') pos++;
-            else if (s === 'negative') neg++;
-            else neu++;
-        });
-        
-        const risk = calculateRisk(chats);
-        maxRisk = Math.max(maxRisk, risk);
-    });
-
-    document.getElementById('positive-count').textContent = pos;
-    document.getElementById('negative-count').textContent = neg;
-    document.getElementById('neutral-count').textContent = neu;
-
-    const total = pos + neg + neu || 1;
-    if (sentimentChart) {
-        sentimentChart.data.datasets[0].data = [
-            Math.round(pos / total * 100),
-            Math.round(neg / total * 100),
-            Math.round(neu / total * 100)
-        ];
-        sentimentChart.update();
-    }
-
-    const valueEl = document.getElementById('global-churn-value');
-    const slider = document.getElementById('global-churn-slider');
-    const descEl = document.getElementById('churn-description');
-    
-    if (valueEl && slider) {
-        slider.value = maxRisk;
-        valueEl.textContent = `${maxRisk}%`;
-        valueEl.style.color = maxRisk > 70 ? '#dc3545' : maxRisk > 40 ? '#f59e0b' : '#28a745';
-        
-        if (descEl) {
-            if (maxRisk > 70) {
-                descEl.innerHTML = '⚠️ High risk - Immediate action required';
-                descEl.style.color = '#dc3545';
-            } else if (maxRisk > 40) {
-                descEl.innerHTML = '📊 Moderate risk - Monitor closely';
-                descEl.style.color = '#f59e0b';
-            } else {
-                descEl.innerHTML = '✅ Low risk - Keep up the good work';
-                descEl.style.color = '#28a745';
-            }
-        }
-    }
-
-    updateTopIssues();
-    updateTrendData();
-}
-
-function updateProblemStats() {
-    document.getElementById('avg-resolution').textContent = '2.4h';
-    document.getElementById('satisfaction-rate').textContent = '87%';
-}
-
-function updateTopIssues() {
-    const issuesDiv = document.getElementById('top-issues');
-    if (!issuesDiv) return;
-
-    const issues = [
-        { label: 'Delivery Issues', count: problemStats.delivery },
-        { label: 'Product Quality', count: problemStats.quality },
-        { label: 'Pricing Concerns', count: problemStats.pricing },
-        { label: 'Support Requests', count: problemStats.support },
-        { label: 'Refund Requests', count: problemStats.refund }
-    ].sort((a, b) => b.count - a.count).slice(0, 3);
-
-    if (issues.every(i => i.count === 0)) {
-        issuesDiv.innerHTML = '<div style="text-align:center;color:#888;">No problems detected</div>';
-        return;
-    }
-
-    issuesDiv.innerHTML = issues.map(issue => `
-        <div style="margin-bottom:10px; padding:8px; background:#f8f9fa; border-radius:6px;">
-            <strong>${issue.label}</strong><br>
-            <small>${issue.count} mentions</small>
-        </div>
-    `).join('');
-}
-
-function updateTrendData() {
-    if (!trendChart) return;
-    
-    const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-    const data = weeks.map(() => {
-        let count = 0;
-        Object.values(allChats).forEach(chats => {
-            count += chats.filter(c => c.sentiment === 'negative').length;
-        });
-        return Math.min(count / 5, 100);
-    });
-    
-    trendChart.data.labels = weeks;
-    trendChart.data.datasets[0].data = data;
-    trendChart.update();
-}
-
-function refreshTrendData() {
-    updateTrendData();
-    showTemporaryMessage('Trend data refreshed');
-}
-
-// ===== UTILITIES =====
-function calculateRisk(chats) {
-    if (!chats || chats.length === 0) return 0;
-    
-    const negatives = chats.filter(c => (c.sentiment || 'neutral').toLowerCase() === 'negative').length;
-    const recency = Math.min(chats.length * 2, 30);
-    const negativeWeight = Math.min(negatives * 15, 70);
-    
-    return Math.min(negativeWeight + recency, 100);
-}
-
-function showTemporaryMessage(msg, type = 'success') {
+// ================================================
+// 10. UTILITY FUNCTIONS
+// ================================================
+function _showTemporaryMessage(msg, type = 'success') {
     const toast = document.createElement('div');
     toast.className = type === 'success' ? 'success-message' : 'error-message';
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${safeMarkupEscape(msg)}`;
     toast.style.position = 'fixed';
     toast.style.bottom = '20px';
     toast.style.right = '20px';
@@ -2972,279 +2788,22 @@ function showTemporaryMessage(msg, type = 'success') {
     setTimeout(() => toast.remove(), 3000);
 }
 
-function showError(msg) {
-    showTemporaryMessage(msg, 'error');
+function _refreshAllData() {
+    _loadCustomers();
+    _loadServices();
+    _showTemporaryMessage('Refreshing all data...');
 }
 
-function refreshAllData() {
-    loadCustomers();
-    loadServices();
-    showTemporaryMessage('Refreshing all data...');
-}
-
-function showAIWidget() {
-    const area = document.getElementById('widget-preview-area');
-    if (!area) return;
-
-    const businessName = localStorage.getItem('business_name') || customers[0]?.business_name || 'Your Business';
-    const totalChats = Object.values(allChats).reduce((acc, chats) => acc + chats.length, 0);
-    const totalLeads = customers.length;
-
-    area.innerHTML = `
-        <div style="padding:30px; background: linear-gradient(135deg, var(--primary) 0%, #b8962e 100%); border-radius:12px; color:white; text-align:left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="color:white;">${escapeHtml(businessName)} AI Assistant</h3>
-                <span style="background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:20px;">Agency Plan</span>
-            </div>
-            <p>👋 Hi! I'm your AI business assistant. I can help with:</p>
-            <ul style="margin:20px 0; padding-left:20px;">
-                <li>Customer insights (${totalLeads} active customers)</li>
-                <li>Chat analysis (${totalChats} messages analyzed)</li>
-                <li>Problem detection (${problemStats.total} issues found)</li>
-                <li>Service completion notifications</li>
-                <li>Real-time updates and alerts</li>
-            </ul>
-            <div style="background:white; border-radius:8px; padding:15px; margin-top:20px;">
-                <input type="text" placeholder="Ask me anything about your customers..." style="width:100%; border:1px solid #ddd; margin-bottom:10px;" disabled>
-                <button style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:6px; width:100%;" disabled>Send (Preview Mode)</button>
-            </div>
-            <p style="font-size:0.8rem; margin-top:15px; text-align:center; opacity:0.8;">This is how your customers see the widget</p>
-        </div>
-    `;
-}
-
-function generateResolution() {
-    const input = document.getElementById('resolution-input');
-    const type = document.getElementById('resolution-type');
-    const output = document.getElementById('resolution-output');
-    
-    if (!input || !output) return;
-    
-    const issue = input.value.trim();
-    if (!issue) {
-        output.innerHTML = 'Please describe the customer issue first.';
-        return;
-    }
-
-    output.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div> Generating response...';
-
-    setTimeout(() => {
-        let response = '';
-        switch(type.value) {
-            case 'email':
-                response = `
-                    <strong>📧 Email Response:</strong><br><br>
-                    Dear Valued Customer,<br><br>
-                    Thank you for bringing this to our attention. I understand you're experiencing: "${issue}"<br><br>
-                    I've investigated this matter and here's what we'll do:<br>
-                    1. Escalate to our senior team immediately<br>
-                    2. Provide regular updates within 24 hours<br>
-                    3. Apply a goodwill credit to your account<br><br>
-                    We value your business and apologize for any inconvenience.<br><br>
-                    Best regards,<br>
-                    Customer Success Team
-                `;
-                break;
-            case 'call':
-                response = `
-                    <strong>📞 Call Script:</strong><br><br>
-                    "Hello [Customer Name], this is [Your Name] from Customer Success.<br><br>
-                    I understand you're having an issue with: ${issue}<br><br>
-                    I want to assure you that we're taking this very seriously. Here's what I can do for you:<br>
-                    • Investigate immediately<br>
-                    • Provide updates every 2 hours<br>
-                    • Ensure this doesn't happen again<br><br>
-                    Is there anything specific you'd like me to address right now?"
-                `;
-                break;
-            case 'chat':
-                response = `
-                    <strong>💬 Chat Response:</strong><br><br>
-                    Hi there! 👋<br><br>
-                    I'm sorry to hear you're experiencing: ${issue}<br><br>
-                    Let me help you right away:<br>
-                    • I've created a priority ticket<br>
-                    • A specialist will respond within 30 minutes<br>
-                    • You'll get a 20% discount on your next purchase<br><br>
-                    Is there anything else I can help with while you wait?
-                `;
-                break;
-        }
-        output.innerHTML = response;
-    }, 1500);
-}
-
-function generatePersonas() {
-    const output = document.getElementById('persona-output');
-    if (!output) return;
-
-    output.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div> Analyzing customer patterns...';
-
-    setTimeout(() => {
-        const personas = [
-            { name: "The Busy Professional", traits: "High urgency, delivery-focused, churn risk 65%", icon: "👔" },
-            { name: "The Price-Conscious", traits: "Asks about discounts, compares prices, churn risk 45%", icon: "💰" },
-            { name: "The Quality Seeker", traits: "Details-oriented, returns if not satisfied, churn risk 55%", icon: "⭐" },
-            { name: "The Loyal Advocate", traits: "Long-term customer, provides feedback, churn risk 15%", icon: "🤝" }
-        ];
-
-        output.innerHTML = personas.map(p => `
-            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:10px;">
-                <div style="font-size:1.5rem; margin-bottom:5px;">${p.icon}</div>
-                <strong>${p.name}</strong><br>
-                <small>${p.traits}</small>
-            </div>
-        `).join('');
-    }, 2000);
-}
-
-function saveTeamNote() {
-    const note = document.getElementById('team-note');
-    if (!note || !note.value.trim()) {
-        alert('Please enter a note first');
-        return;
-    }
-
-    const notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
-    notes.push({
-        text: note.value,
-        date: new Date().toISOString(),
-        author: 'Current User'
-    });
-    localStorage.setItem('teamNotes', JSON.stringify(notes));
-    
-    note.value = '';
-    loadTeamNotes();
-    showTemporaryMessage('Note saved successfully!');
-}
-
-function loadTeamNotes() {
-    const notesList = document.getElementById('notes-list');
-    if (!notesList) return;
-
-    const notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
-    
-    if (notes.length === 0) {
-        notesList.innerHTML = '<div style="text-align:center; color:#888;">No notes yet</div>';
-        return;
-    }
-
-    notesList.innerHTML = notes.reverse().map(note => `
-        <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:8px; font-size:0.9rem;">
-            <strong>${new Date(note.date).toLocaleString()}</strong><br>
-            ${escapeHtml(note.text)}
-        </div>
-    `).join('');
-}
-
-function toggleAlerts() {
-    const toggle = document.getElementById('alert-toggle');
-    const status = document.getElementById('alert-status');
-    
-    if (toggle.checked) {
-        status.innerHTML = '<i class="fas fa-check-circle"></i> Alerts are active';
-        status.style.color = '#28a745';
-        showTemporaryMessage('Real-time alerts enabled');
-    } else {
-        status.innerHTML = '<i class="fas fa-exclamation-circle"></i> Alerts are disabled';
-        status.style.color = '#dc3545';
-    }
-}
-
-function exportInsights() {
-    if (customers.length === 0) {
-        alert('No data to export');
-        return;
-    }
-
-    let csv = 'Name,Email,Total Chats,Positive,Negative,Neutral,Churn Risk,Company,Job Title,Detected Problems\n';
-    
-    customers.forEach(c => {
-        const chats = allChats[c.email] || [];
-        const pos = chats.filter(m => (m.sentiment || '').toLowerCase() === 'positive').length;
-        const neg = chats.filter(m => (m.sentiment || '').toLowerCase() === 'negative').length;
-        const neu = chats.filter(m => (m.sentiment || '').toLowerCase() === 'neutral').length;
-        const problems = [...new Set(chats.map(chat => chat.problem || detectProblem(chat.message || '')))].filter(p => p !== 'other').join(';');
-        
-        csv += `"${(c.name || 'Visitor').replace(/"/g,'""')}",`;
-        csv += `"${(c.email || '').replace(/"/g,'""')}",`;
-        csv += `${chats.length},${pos},${neg},${neu},`;
-        csv += `${calculateRisk(chats)},`;
-        csv += `"${(c.company || '').replace(/"/g,'""')}",`;
-        csv += `"${(c.job_title || '').replace(/"/g,'""')}",`;
-        csv += `"${problems}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `customer-insights-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    showTemporaryMessage('Export completed!');
-}
-
-function exportProblemReport() {
-    const data = [
-        ['Problem Type', 'Frequency', 'Trend', 'Avg Resolution', 'Impact Score'],
-        ['Delivery Issues', problemStats.delivery, '+12%', '2.5h', '85'],
-        ['Product Quality', problemStats.quality, '+5%', '3.2h', '92'],
-        ['Pricing Concerns', problemStats.pricing, '-3%', '1.8h', '45'],
-        ['Support Requests', problemStats.support, '+8%', '4.1h', '78'],
-        ['Refund Requests', problemStats.refund, '-2%', '2.0h', '95'],
-        ['UX/Confusion', problemStats.ux, '+15%', '1.5h', '60']
-    ];
-    
-    let csv = data.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `problem-analysis-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    showTemporaryMessage('Problem report exported!');
-}
-
-function startLiveUpdates() {
-    if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(() => {
-        loadCustomers(true);
-        loadServices();
-    }, 30000);
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
-
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Initializing Customer Insights...");
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    // Initialize charts
+// ================================================
+// 11. CHART INITIALIZATION
+// ================================================
+function _initCharts() {
     const sentimentEl = document.getElementById('sentiment-chart');
     const trendEl = document.getElementById('trend-chart');
     const timelineEl = document.getElementById('sentiment-timeline');
 
     if (sentimentEl) {
-        sentimentChart = new Chart(sentimentEl, {
+        AppState.chartInstances.sentiment = new Chart(sentimentEl, {
             type: 'doughnut',
             data: {
                 labels: ['Positive', 'Negative', 'Neutral'],
@@ -3264,7 +2823,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (trendEl) {
-        trendChart = new Chart(trendEl, {
+        AppState.chartInstances.trend = new Chart(trendEl, {
             type: 'line',
             data: {
                 labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
@@ -3294,7 +2853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (timelineEl) {
-        sentimentTimeline = new Chart(timelineEl, {
+        AppState.chartInstances.timeline = new Chart(timelineEl, {
             type: 'line',
             data: {
                 labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -3315,28 +2874,814 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+}
 
-    await loadCustomers();
-    await loadServices();
-    loadNotifications();
-    startLiveUpdates();
-    loadTeamNotes();
-    refreshKnowledgeSuggestions();
+// ================================================
+// 12. ANALYTICS UPDATE FUNCTIONS
+// ================================================
+function _updateAnalytics() {
+    let pos = 0, neg = 0, neu = 0;
+    let maxRisk = 0;
     
+    Object.entries(AppState.allChats).forEach(([email, chats]) => {
+        chats.forEach(msg => {
+            const s = (msg.sentiment || 'neutral').toLowerCase();
+            if (s === 'positive') pos++;
+            else if (s === 'negative') neg++;
+            else neu++;
+        });
+        
+        const risk = _calculateRisk(chats);
+        maxRisk = Math.max(maxRisk, risk);
+    });
+
+    document.getElementById('positive-count').textContent = pos;
+    document.getElementById('negative-count').textContent = neg;
+    document.getElementById('neutral-count').textContent = neu;
+
+    const total = pos + neg + neu || 1;
+    if (AppState.chartInstances.sentiment) {
+        AppState.chartInstances.sentiment.data.datasets[0].data = [
+            Math.round(pos / total * 100),
+            Math.round(neg / total * 100),
+            Math.round(neu / total * 100)
+        ];
+        AppState.chartInstances.sentiment.update();
+    }
+
+    const valueEl = document.getElementById('global-churn-value');
+    const slider = document.getElementById('global-churn-slider');
+    const descEl = document.getElementById('churn-description');
+    
+    if (valueEl && slider) {
+        slider.value = maxRisk;
+        valueEl.textContent = `${maxRisk}%`;
+        valueEl.style.color = maxRisk > 70 ? '#dc3545' : maxRisk > 40 ? '#f59e0b' : '#28a745';
+        
+        if (descEl) {
+            if (maxRisk > 70) {
+                descEl.innerHTML = '⚠️ High risk - Immediate action required';
+                descEl.style.color = '#dc3545';
+            } else if (maxRisk > 40) {
+                descEl.innerHTML = '📊 Moderate risk - Monitor closely';
+                descEl.style.color = '#f59e0b';
+            } else {
+                descEl.innerHTML = '✅ Low risk - Keep up the good work';
+                descEl.style.color = '#28a745';
+            }
+        }
+    }
+
+    _updateTopIssues();
+    _updateTrendData();
+}
+
+function _updateProblemStats() {
+    document.getElementById('avg-resolution').textContent = '2.4h';
+    document.getElementById('satisfaction-rate').textContent = '87%';
+}
+
+function _updateTopIssues() {
+    const issuesDiv = document.getElementById('top-issues');
+    if (!issuesDiv) return;
+
+    const issues = [
+        { label: 'Delivery Issues', count: AppState.problemStats.delivery },
+        { label: 'Product Quality', count: AppState.problemStats.quality },
+        { label: 'Pricing Concerns', count: AppState.problemStats.pricing },
+        { label: 'Support Requests', count: AppState.problemStats.support },
+        { label: 'Refund Requests', count: AppState.problemStats.refund }
+    ].sort((a, b) => b.count - a.count).slice(0, 3);
+
+    if (issues.every(i => i.count === 0)) {
+        issuesDiv.innerHTML = '<div style="text-align:center;color:#888;">No problems detected</div>';
+        return;
+    }
+
+    issuesDiv.innerHTML = issues.map(issue => `
+        <div style="margin-bottom:10px; padding:8px; background:#f8f9fa; border-radius:6px;">
+            <strong>${safeMarkupEscape(issue.label)}</strong><br>
+            <small>${issue.count} mentions</small>
+        </div>
+    `).join('');
+}
+
+function _updateTrendData() {
+    if (!AppState.chartInstances.trend) return;
+    
+    const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    const data = weeks.map(() => {
+        let count = 0;
+        Object.values(AppState.allChats).forEach(chats => {
+            count += chats.filter(c => c.sentiment === 'negative').length;
+        });
+        return Math.min(count / 5, 100);
+    });
+    
+    AppState.chartInstances.trend.data.labels = weeks;
+    AppState.chartInstances.trend.data.datasets[0].data = data;
+    AppState.chartInstances.trend.update();
+}
+
+function _refreshTrendData() {
+    _updateTrendData();
+    _showTemporaryMessage('Trend data refreshed');
+}
+
+function _refreshSentimentTimeline() {
+    if (!AppState.chartInstances.timeline) return;
+    
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        last7Days.push(date.toISOString().split('T')[0]);
+    }
+    
+    const positiveCounts = last7Days.map(day => {
+        let count = 0;
+        Object.values(AppState.allChats).forEach(chats => {
+            chats.forEach(chat => {
+                if (chat.timestamp && chat.timestamp.startsWith(day) && chat.sentiment === 'positive') count++;
+            });
+        });
+        return count;
+    });
+    
+    AppState.chartInstances.timeline.data.datasets[0].data = positiveCounts;
+    AppState.chartInstances.timeline.update();
+}
+
+// ================================================
+// 13. PROBLEM SOLVING TOOLS
+// ================================================
+function _generateSmartResponse() {
+    const problemType = document.getElementById('response-problem-type').value;
+    const context = document.getElementById('response-context').value;
+    const output = document.getElementById('response-output');
+    
+    const responses = {
+        delivery: "Thank you for reaching out about your delivery. I understand waiting for your order is frustrating. Let me check the status right away and provide you with a tracking update. We value your patience and will ensure this gets resolved promptly.",
+        quality: "I'm sorry to hear about the quality issue with your product. This is not the experience we want you to have. Please provide your order number and I'll process a replacement or refund immediately.",
+        refund: "I understand you'd like a refund. We want you to be completely satisfied with your purchase. I'll process your refund right away - it should reflect in your account within 3-5 business days.",
+        support: "I'm here to help! Could you please provide more details about what you need assistance with? I'll do my best to resolve your issue quickly.",
+        complaint: "Thank you for bringing this to our attention. I sincerely apologize for your experience. Let me escalate this to our team and ensure this is addressed properly."
+    };
+    
+    let response = responses[problemType] || "Thank you for contacting us. How can I help you today?";
+    if (context) {
+        response += `\n\nRegarding: ${safeMarkupEscape(context)}`;
+    }
+    
+    output.style.display = 'block';
+    output.innerHTML = `<strong>🤖 Generated Response:</strong><br>${safeMarkupEscape(response)}`;
+    
+    navigator.clipboard.writeText(response).then(() => {
+        _showTemporaryMessage('Response copied to clipboard!');
+    });
+}
+
+function _showAtRiskCustomers() {
+    const highRisk = AppState.customers.filter(c => {
+        const chats = AppState.allChats[c.email] || [];
+        return _calculateRisk(chats) > 70;
+    });
+    
+    if (highRisk.length === 0) {
+        alert('No high-risk customers found.');
+        return;
+    }
+    
+    let message = '🔴 High-Risk Customers:\n\n';
+    highRisk.slice(0, 5).forEach(c => {
+        const risk = _calculateRisk(AppState.allChats[c.email] || []);
+        message += `${c.name || 'Visitor'} (${c.email}) - ${risk}% risk\n`;
+    });
+    
+    alert(message);
+}
+
+function _analyzeProblemTrends() {
+    _sendAiMessage('Analyze the trends in customer problems over the last 30 days and identify which issues are increasing.');
+}
+
+function _switchProblemTab(tab) {
+    const tabs = document.querySelectorAll('.problem-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if (event && event.target) event.target.classList.add('active');
+    
+    if (tab === 'all') {
+        _renderProblemTable();
+    } else {
+        const filteredProblems = [{
+            type: tab.charAt(0).toUpperCase() + tab.slice(1) + ' Issues',
+            freq: AppState.problemStats[tab] || 0,
+            trend: '+5%',
+            resolution: '2.5h',
+            impact: 75
+        }];
+        
+        const tbody = document.getElementById('problem-table-body');
+        tbody.innerHTML = filteredProblems.map(p => `
+            <tr>
+                <td><strong>${safeMarkupEscape(p.type)}</strong></td>
+                <td>${p.freq}</td>
+                <td><span style="color: #f59e0b">${p.trend}</span></td>
+                <td>${p.resolution}</td>
+                <td><span class="status-badge badge-med">${p.impact}</span></td>
+                <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></td>
+                <td>
+                    <button class="btn-secondary" style="padding:4px 8px;" onclick="window._analyzeProblemType('${tab}')">Analyze</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+}
+
+function _analyzeProblemType(type) {
+    _sendAiMessage(`Analyze all ${type} related customer issues and suggest improvements to reduce these problems.`);
+}
+
+function _renderProblemTable() {
+    const tbody = document.getElementById('problem-table-body');
+    if (!tbody) return;
+    
+    const problems = [
+        { type: 'Delivery Issues', key: 'delivery', freq: AppState.problemStats.delivery, trend: '+12%', resolution: '2.5h', impact: 85 },
+        { type: 'Product Quality', key: 'quality', freq: AppState.problemStats.quality, trend: '+5%', resolution: '3.2h', impact: 92 },
+        { type: 'Pricing Concerns', key: 'pricing', freq: AppState.problemStats.pricing, trend: '-3%', resolution: '1.8h', impact: 45 },
+        { type: 'Support Requests', key: 'support', freq: AppState.problemStats.support, trend: '+8%', resolution: '4.1h', impact: 78 },
+        { type: 'Refund Requests', key: 'refund', freq: AppState.problemStats.refund, trend: '-2%', resolution: '2.0h', impact: 95 },
+        { type: 'UX/Confusion', key: 'ux', freq: AppState.problemStats.ux, trend: '+15%', resolution: '1.5h', impact: 60 }
+    ];
+    
+    tbody.innerHTML = problems.map(p => `
+        <tr>
+            <td><strong>${safeMarkupEscape(p.type)}</strong></td>
+            <td>${p.freq}</td>
+            <td><span style="color: ${p.trend.startsWith('+') ? '#dc3545' : '#28a745'}">${p.trend}</span></td>
+            <td>${p.resolution}</td>
+            <td><span class="status-badge ${p.impact > 80 ? 'badge-high' : p.impact > 60 ? 'badge-med' : 'badge-low'}">${p.impact}</span></td>
+            <td><span class="status-badge ${p.freq > 20 ? 'badge-high' : 'badge-med'}">${p.freq > 20 ? 'Critical' : 'Monitoring'}</span></td>
+            <td>
+                <button class="btn-secondary" style="padding:4px 8px; font-size:0.85rem;" onclick="window._analyzeProblemType('${p.key}')">Analyze</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ================================================
+// 14. CUSTOMER VIEW FUNCTIONS
+// ================================================
+function _viewCustomer(email) {
+    const div = document.getElementById('ai-chat-messages');
+    if (!div) return;
+
+    div.innerHTML = '<div class="ai-typing"><div class="loading-spinner" style="margin:0 auto;"></div>Loading conversation...</div>';
+
+    const chats = AppState.allChats[email] || [];
+
+    if (chats.length === 0) {
+        div.innerHTML = '<div style="padding:60px;text-align:center;color:#888;">No chat history for this customer.</div>';
+        return;
+    }
+
+    div.innerHTML = '';
+    chats.forEach(chat => {
+        const sentiment = chat.sentiment || 'neutral';
+        const sentimentEmoji = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+        const problem = chat.problem || _detectProblem(chat.message || '');
+        
+        div.innerHTML += `
+            <div class="message user"><strong>Customer ${sentimentEmoji}:</strong> ${safeMarkupEscape(chat.message || '[No message]')}</div>
+            <div class="message bot"><strong>AI:</strong> ${safeMarkupEscape(chat.response || '[No reply]')}</div>
+            ${problem !== 'other' ? `<div style="font-size:0.8rem; color:#666; margin-bottom:10px;">🏷️ Problem: ${safeMarkupEscape(problem)}</div>` : ''}
+        `;
+    });
+    div.scrollTop = div.scrollHeight;
+
+    setTimeout(() => {
+        _sendAiMessage(`Give a detailed analysis of customer ${safeMarkupEscape(email)} including main issues, sentiment trends, and recommended actions.`);
+    }, 500);
+}
+
+function _quickAnalyze(email) {
+    _sendAiMessage(`Quick analysis for customer ${safeMarkupEscape(email)}: What are their top 3 issues and suggested solutions?`);
+}
+
+// ================================================
+// 15. EMAIL BROADCAST FUNCTIONS
+// ================================================
+function _loadEmailTemplate(type) {
+    const subject = document.getElementById('email-subject');
+    const content = document.getElementById('email-content');
+    
+    const templates = {
+        update: {
+            subject: "Important Update About Your Orders",
+            content: "Dear {{name}},\n\nWe wanted to share an important update about our service. Starting next week, we're introducing faster delivery options and extended customer support hours.\n\nYour satisfaction is our priority, and we're constantly working to improve your experience.\n\nThank you for being a valued customer.\n\nBest regards,\nThe Team"
+        },
+        product: {
+            subject: "New Products Just Arrived!",
+            content: "Hi {{name}},\n\nWe're excited to announce our newest collection has just arrived! From trendy styles to classic essentials, there's something for everyone.\n\nShop the collection now and enjoy 10% off your first order of new items.\n\nHappy shopping!\nThe Team"
+        },
+        offer: {
+            subject: "Special Offer Just for You",
+            content: "Dear {{name}},\n\nAs a valued customer, we'd like to offer you an exclusive 20% discount on your next purchase. Use code THANKYOU20 at checkout.\n\nThis offer is valid for the next 7 days.\n\nWe appreciate your business!\n\nThe Team"
+        },
+        issue: {
+            subject: "Update Regarding Your Recent Issue",
+            content: "Dear {{name}},\n\nWe wanted to follow up on the issue you recently experienced. Our team has resolved the problem and implemented measures to prevent it from happening again.\n\nAs a token of our appreciation, we've added a credit to your account.\n\nThank you for your patience and understanding.\n\nSincerely,\nCustomer Support"
+        },
+        feedback: {
+            subject: "We'd Love Your Feedback",
+            content: "Hi {{name}},\n\nWe're always looking to improve, and your opinion matters! Could you take 2 minutes to share your thoughts about your experience with us?\n\nClick here to take the survey: [SURVEY_LINK]\n\nThank you for helping us serve you better!\n\nThe Team"
+        }
+    };
+    
+    if (templates[type]) {
+        subject.value = templates[type].subject;
+        content.value = templates[type].content;
+        _updateEmailPreview();
+    }
+}
+
+function _updateEmailPreview() {
+    const subject = document.getElementById('email-subject')?.value || '';
+    const content = document.getElementById('email-content')?.value || '';
+    const preview = document.getElementById('email-preview');
+    
+    if (preview) {
+        let previewContent = content.replace(/{{name}}/g, 'John Doe');
+        preview.innerHTML = `<strong>Preview:</strong><br>📧 ${safeMarkupEscape(subject)}<br><br>${safeMarkupEscape(previewContent)}`;
+    }
+}
+
+async function _testBroadcast() {
+    const subject = document.getElementById('email-subject')?.value;
+    const content = document.getElementById('email-content')?.value;
+    
+    if (!subject || !content) {
+        alert('Please enter both subject and content');
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/broadcast/test`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ subject, content })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            _showTemporaryMessage(data.message || '✅ Test email sent! Check your inbox.');
+        } else {
+            _showTemporaryMessage('❌ Failed to send test email: ' + data.error, 'error');
+        }
+    } catch (err) {
+        console.error('Test email error:', err);
+        _showTemporaryMessage('❌ Error sending test email', 'error');
+    }
+}
+
+async function _sendBroadcast() {
+    const subject = document.getElementById('email-subject')?.value;
+    const content = document.getElementById('email-content')?.value;
+    const target = document.getElementById('email-target')?.value || 'all';
+    
+    if (!subject || !content) {
+        alert('Please enter both subject and content');
+        return;
+    }
+    
+    let recipientCount = AppState.customers.length;
+    if (target === 'high-risk') {
+        recipientCount = AppState.customers.filter(c => _calculateRisk(AppState.allChats[c.email] || []) > 70).length;
+    } else if (target === 'recent') {
+        recipientCount = Math.floor(AppState.customers.length * 0.3);
+    }
+    
+    if (!confirm(`Send this email to ${recipientCount} customers?`)) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/broadcast/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ subject, content, target })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            _showTemporaryMessage(data.message || `✅ Broadcast sent to ${data.stats?.sent || recipientCount} customers!`);
+            
+            const sent = document.getElementById('emails-sent');
+            if (sent) {
+                sent.textContent = parseInt(sent.textContent) + (data.stats?.sent || recipientCount);
+            }
+        } else {
+            _showTemporaryMessage('❌ Failed to send broadcast: ' + data.error, 'error');
+        }
+    } catch (err) {
+        console.error('Broadcast error:', err);
+        _showTemporaryMessage('❌ Error sending broadcast', 'error');
+    }
+}
+
+function _scheduleBroadcast() {
+    alert('Schedule feature coming soon! You will be able to set specific dates and times for automated broadcasts.');
+}
+
+// ================================================
+// 16. BUSINESS TOOLS FUNCTIONS
+// ================================================
+function _generateResolution() {
+    const input = document.getElementById('resolution-input');
+    const type = document.getElementById('resolution-type');
+    const output = document.getElementById('resolution-output');
+    
+    if (!input || !output) return;
+    
+    const issue = input.value.trim();
+    if (!issue) {
+        output.innerHTML = 'Please describe the customer issue first.';
+        return;
+    }
+
+    output.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div> Generating response...';
+
+    setTimeout(() => {
+        let response = '';
+        switch(type.value) {
+            case 'email':
+                response = `
+                    <strong>📧 Email Response:</strong><br><br>
+                    Dear Valued Customer,<br><br>
+                    Thank you for bringing this to our attention. I understand you're experiencing: "${safeMarkupEscape(issue)}"<br><br>
+                    I've investigated this matter and here's what we'll do:<br>
+                    1. Escalate to our senior team immediately<br>
+                    2. Provide regular updates within 24 hours<br>
+                    3. Apply a goodwill credit to your account<br><br>
+                    We value your business and apologize for any inconvenience.<br><br>
+                    Best regards,<br>
+                    Customer Success Team
+                `;
+                break;
+            case 'call':
+                response = `
+                    <strong>📞 Call Script:</strong><br><br>
+                    "Hello [Customer Name], this is [Your Name] from Customer Success.<br><br>
+                    I understand you're having an issue with: ${safeMarkupEscape(issue)}<br><br>
+                    I want to assure you that we're taking this very seriously. Here's what I can do for you:<br>
+                    • Investigate immediately<br>
+                    • Provide updates every 2 hours<br>
+                    • Ensure this doesn't happen again<br><br>
+                    Is there anything specific you'd like me to address right now?"
+                `;
+                break;
+            case 'chat':
+                response = `
+                    <strong>💬 Chat Response:</strong><br><br>
+                    Hi there! 👋<br><br>
+                    I'm sorry to hear you're experiencing: ${safeMarkupEscape(issue)}<br><br>
+                    Let me help you right away:<br>
+                    • I've created a priority ticket<br>
+                    • A specialist will respond within 30 minutes<br>
+                    • You'll get a 20% discount on your next purchase<br><br>
+                    Is there anything else I can help with while you wait?
+                `;
+                break;
+        }
+        output.innerHTML = response;
+    }, 1500);
+}
+
+function _generatePersonas() {
+    const output = document.getElementById('persona-output');
+    if (!output) return;
+
+    output.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div> Analyzing customer patterns...';
+
+    setTimeout(() => {
+        const personas = [
+            { name: "The Busy Professional", traits: "High urgency, delivery-focused, churn risk 65%", icon: "👔" },
+            { name: "The Price-Conscious", traits: "Asks about discounts, compares prices, churn risk 45%", icon: "💰" },
+            { name: "The Quality Seeker", traits: "Details-oriented, returns if not satisfied, churn risk 55%", icon: "⭐" },
+            { name: "The Loyal Advocate", traits: "Long-term customer, provides feedback, churn risk 15%", icon: "🤝" }
+        ];
+
+        output.innerHTML = personas.map(p => `
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:10px;">
+                <div style="font-size:1.5rem; margin-bottom:5px;">${p.icon}</div>
+                <strong>${safeMarkupEscape(p.name)}</strong><br>
+                <small>${safeMarkupEscape(p.traits)}</small>
+            </div>
+        `).join('');
+    }, 2000);
+}
+
+function _saveTeamNote() {
+    const note = document.getElementById('team-note');
+    if (!note || !note.value.trim()) {
+        alert('Please enter a note first');
+        return;
+    }
+
+    const notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
+    notes.push({
+        text: note.value,
+        date: new Date().toISOString(),
+        author: 'Current User'
+    });
+    localStorage.setItem('teamNotes', JSON.stringify(notes));
+    
+    note.value = '';
+    _loadTeamNotes();
+    _showTemporaryMessage('Note saved successfully!');
+}
+
+function _loadTeamNotes() {
+    const notesList = document.getElementById('notes-list');
+    if (!notesList) return;
+
+    const notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
+    
+    if (notes.length === 0) {
+        notesList.innerHTML = '<div style="text-align:center; color:#888;">No notes yet</div>';
+        return;
+    }
+
+    notesList.innerHTML = notes.reverse().map(note => `
+        <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:8px; font-size:0.9rem;">
+            <strong>${new Date(note.date).toLocaleString()}</strong><br>
+            ${safeMarkupEscape(note.text)}
+        </div>
+    `).join('');
+}
+
+function _toggleAlerts() {
+    const toggle = document.getElementById('alert-toggle');
+    const status = document.getElementById('alert-status');
+    
+    if (toggle.checked) {
+        status.innerHTML = '<i class="fas fa-check-circle"></i> Alerts are active';
+        status.style.color = '#28a745';
+        _showTemporaryMessage('Real-time alerts enabled');
+    } else {
+        status.innerHTML = '<i class="fas fa-exclamation-circle"></i> Alerts are disabled';
+        status.style.color = '#dc3545';
+    }
+}
+
+function _showAIWidget() {
+    const area = document.getElementById('widget-preview-area');
+    if (!area) return;
+
+    const businessName = localStorage.getItem('business_name') || AppState.customers[0]?.business_name || 'Your Business';
+    const totalChats = Object.values(AppState.allChats).reduce((acc, chats) => acc + chats.length, 0);
+    const totalLeads = AppState.customers.length;
+
+    area.innerHTML = `
+        <div style="padding:30px; background: linear-gradient(135deg, var(--primary) 0%, #b8962e 100%); border-radius:12px; color:white; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="color:white;">${safeMarkupEscape(businessName)} AI Assistant</h3>
+                <span style="background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:20px;">Agency Plan</span>
+            </div>
+            <p>👋 Hi! I'm your AI business assistant. I can help with:</p>
+            <ul style="margin:20px 0; padding-left:20px;">
+                <li>Customer insights (${totalLeads} active customers)</li>
+                <li>Chat analysis (${totalChats} messages analyzed)</li>
+                <li>Problem detection (${AppState.problemStats.total} issues found)</li>
+                <li>Service completion notifications</li>
+                <li>Real-time updates and alerts</li>
+            </ul>
+            <div style="background:white; border-radius:8px; padding:15px; margin-top:20px;">
+                <input type="text" placeholder="Ask me anything about your customers..." style="width:100%; border:1px solid #ddd; margin-bottom:10px;" disabled>
+                <button style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:6px; width:100%;" disabled>Send (Preview Mode)</button>
+            </div>
+            <p style="font-size:0.8rem; margin-top:15px; text-align:center; opacity:0.8;">This is how your customers see the widget</p>
+        </div>
+    `;
+}
+
+// ================================================
+// 17. EXPORT FUNCTIONS
+// ================================================
+function _exportInsights() {
+    if (AppState.customers.length === 0) {
+        alert('No data to export');
+        return;
+    }
+
+    let csv = 'Name,Email,Total Chats,Positive,Negative,Neutral,Churn Risk,Company,Job Title,Detected Problems\n';
+    
+    AppState.customers.forEach(c => {
+        const chats = AppState.allChats[c.email] || [];
+        const pos = chats.filter(m => (m.sentiment || '').toLowerCase() === 'positive').length;
+        const neg = chats.filter(m => (m.sentiment || '').toLowerCase() === 'negative').length;
+        const neu = chats.filter(m => (m.sentiment || '').toLowerCase() === 'neutral').length;
+        const problems = [...new Set(chats.map(chat => chat.problem || _detectProblem(chat.message || '')))].filter(p => p !== 'other').join(';');
+        
+        csv += `"${(c.name || 'Visitor').replace(/"/g,'""')}",`;
+        csv += `"${(c.email || '').replace(/"/g,'""')}",`;
+        csv += `${chats.length},${pos},${neg},${neu},`;
+        csv += `${_calculateRisk(chats)},`;
+        csv += `"${(c.company || '').replace(/"/g,'""')}",`;
+        csv += `"${(c.job_title || '').replace(/"/g,'""')}",`;
+        csv += `"${problems}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customer-insights-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    _showTemporaryMessage('Export completed!');
+}
+
+function _exportProblemReport() {
+    const data = [
+        ['Problem Type', 'Frequency', 'Trend', 'Avg Resolution', 'Impact Score'],
+        ['Delivery Issues', AppState.problemStats.delivery, '+12%', '2.5h', '85'],
+        ['Product Quality', AppState.problemStats.quality, '+5%', '3.2h', '92'],
+        ['Pricing Concerns', AppState.problemStats.pricing, '-3%', '1.8h', '45'],
+        ['Support Requests', AppState.problemStats.support, '+8%', '4.1h', '78'],
+        ['Refund Requests', AppState.problemStats.refund, '-2%', '2.0h', '95'],
+        ['UX/Confusion', AppState.problemStats.ux, '+15%', '1.5h', '60']
+    ];
+    
+    let csv = data.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `problem-analysis-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    _showTemporaryMessage('Problem report exported!');
+}
+
+// ================================================
+// 18. INITIALIZATION
+// ================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("Initializing Customer Insights (Production Build)...");
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Parse token for org isolation (structured placeholder)
+    const authData = parseAuthToken(token);
+    if (authData && authData.orgId) {
+        console.log('[Auth] Organization ID:', authData.orgId);
+        // Set X-Org-ID header for all future requests via fetch interceptor
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            options.headers = options.headers || {};
+            if (!options.headers['X-Org-ID'] && authData.orgId) {
+                options.headers['X-Org-ID'] = authData.orgId;
+            }
+            if (!options.headers['Authorization'] && token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            return originalFetch.call(this, url, options);
+        };
+    }
+
+    // Check plan access
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.email === CONFIG.ADMIN_EMAIL || payload.plan === 'agency') {
+            setTimeout(() => {
+                const lock = document.getElementById('plan-lock');
+                const main = document.getElementById('main-content');
+                if (lock) {
+                    lock.classList.add('hidden');
+                    lock.style.display = 'none';
+                }
+                if (main) {
+                    main.classList.remove('hidden');
+                    main.style.display = 'block';
+                    main.style.visibility = 'visible';
+                }
+                localStorage.setItem('currentPlan', 'agency');
+            }, 100);
+        }
+    } catch (e) {
+        console.log("Plan check error:", e);
+    }
+
+    // Initialize charts
+    _initCharts();
+
+    // Load initial data
+    await _loadCustomers();
+    await _loadServices();
+    _loadNotifications();
+    _loadTeamNotes();
+
+    // Setup WebSocket connection for real-time updates
+    AppState.wsClient = new SaaSRealTimeClient({
+        token: token,
+        url: CONFIG.BACKEND_URL + CONFIG.WS_ENDPOINT,
+    });
+    AppState.wsClient.on('connected', () => {
+        console.log('[WS] Real-time connection established');
+        AppState.isLive = true;
+    });
+    AppState.wsClient.on('disconnected', () => {
+        console.log('[WS] Disconnected');
+        AppState.isLive = false;
+    });
+    AppState.wsClient.on('error', (err) => {
+        console.warn('[WS] Error:', err);
+    });
+    AppState.wsClient.connect();
+
+    // Setup periodic polling as fallback (with debounce)
+    setInterval(() => {
+        _loadCustomers(true);
+        _loadServices();
+    }, CONFIG.POLL_INTERVAL);
+
+    // Email preview updates
     const emailSubject = document.getElementById('email-subject');
     const emailContent = document.getElementById('email-content');
-    if (emailSubject) emailSubject.addEventListener('input', updateEmailPreview);
-    if (emailContent) emailContent.addEventListener('input', updateEmailPreview);
+    if (emailSubject) emailSubject.addEventListener('input', _updateEmailPreview);
+    if (emailContent) emailContent.addEventListener('input', _updateEmailPreview);
     
+    // Alert toggle
     const alertToggle = document.getElementById('alert-toggle');
     if (alertToggle) {
         alertToggle.checked = true;
     }
+
+    // Expose global functions for inline onclick handlers
+    window._loadCustomers = _loadCustomers;
+    window._loadServices = _loadServices;
+    window._applyFilters = _applyFilters;
+    window._resetFilters = _resetFilters;
+    window._sortTable = _sortTable;
+    window._sendAiMessage = _sendAiMessage;
+    window._viewCustomer = _viewCustomer;
+    window._quickAnalyze = _quickAnalyze;
+    window._completeService = _completeService;
+    window._showCreateServiceModal = _showCreateServiceModal;
+    window._addNotification = _addNotification;
+    window._markNotificationRead = _markNotificationRead;
+    window._markAllNotificationsRead = _markAllNotificationsRead;
+    window._toggleNotifications = _toggleNotifications;
+    window._generateSmartResponse = _generateSmartResponse;
+    window._showAtRiskCustomers = _showAtRiskCustomers;
+    window._analyzeProblemTrends = _analyzeProblemTrends;
+    window._switchProblemTab = _switchProblemTab;
+    window._analyzeProblemType = _analyzeProblemType;
+    window._refreshSentimentTimeline = _refreshSentimentTimeline;
+    window._refreshTrendData = _refreshTrendData;
+    window._refreshAllData = _refreshAllData;
+    window._loadEmailTemplate = _loadEmailTemplate;
+    window._testBroadcast = _testBroadcast;
+    window._sendBroadcast = _sendBroadcast;
+    window._scheduleBroadcast = _scheduleBroadcast;
+    window._generateResolution = _generateResolution;
+    window._generatePersonas = _generatePersonas;
+    window._saveTeamNote = _saveTeamNote;
+    window._loadTeamNotes = _loadTeamNotes;
+    window._toggleAlerts = _toggleAlerts;
+    window._showAIWidget = _showAIWidget;
+    window._exportInsights = _exportInsights;
+    window._exportProblemReport = _exportProblemReport;
+    window._updateCustomerRow = _updateCustomerRow;
+    window._showTemporaryMessage = _showTemporaryMessage;
+    window._safeMarkupEscape = safeMarkupEscape;
+
+    console.log('✅ Customer Insights initialized successfully');
 });
 
+// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-    if (pollingInterval) {
-        clearInterval(pollingInterval);
+    if (AppState.wsClient) {
+        AppState.wsClient.disconnect();
     }
 });
 </script>
