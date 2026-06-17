@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -1091,7 +1091,7 @@
 
         <div class="hero">
             <h1>Customer Insights & Problem Solver</h1>
-            <p>Real-time visibility into customer issues — powered by Cloudflare AI with fast summaries, fixes, churn prediction, and instant alerts.</p>
+            <p>Real-time visibility into customer issues â€” powered by Cloudflare AI with fast summaries, fixes, churn prediction, and instant alerts.</p>
         </div>
 
         <div class="container">
@@ -1204,7 +1204,7 @@
                                 <span id="problem-count" style="background: var(--info); color: white; padding: 5px 20px; border-radius: 30px; font-weight: 600;"></span>
                             </div>
                         </div>
-                        <p class="tool-description">Real-time overview — sorted by highest churn risk first. Click column headers to sort.</p>
+                        <p class="tool-description">Real-time overview â€” sorted by highest churn risk first. Click column headers to sort.</p>
                         
                         <div class="data-table-container">
                             <table class="customer-table">
@@ -1233,7 +1233,7 @@
                 </div>
 
                 <div class="wide-card tool-card" style="text-align:center;">
-                    <p class="tool-description">Click below to preview how your customers see the AI widget — it knows your full business, all leads, detected problems, churn risks, and more.</p>
+                    <p class="tool-description">Click below to preview how your customers see the AI widget â€” it knows your full business, all leads, detected problems, churn risks, and more.</p>
                     <button class="btn-primary" onclick="window._showAIWidget()" style="margin: 0 auto; padding: 16px 40px;">
                         <i class="fas fa-play"></i> Show AI Widget Now
                     </button>
@@ -1253,14 +1253,14 @@
                         
                         <div class="ai-chat" id="ai-chat-messages">
                             <div class="message bot">
-                                <strong>🤖 AI Business Consultant:</strong><br>
+                                <strong>ðŸ¤– AI Business Consultant:</strong><br>
                                 Hello! I'm your AI business consultant. I specialize in customer insights, problem resolution, and business intelligence. Here's what I can help you with:<br><br>
-                                📊 <strong>Customer Intelligence</strong> - Analyze individual customers or segments<br>
-                                🔍 <strong>Problem Detection</strong> - Identify recurring issues and root causes<br>
-                                💡 <strong>Solution Generation</strong> - Get personalized fixes for customer problems<br>
-                                📈 <strong>Churn Prediction</strong> - Identify at-risk customers before they leave<br>
-                                ✉️ <strong>Communication</strong> - Generate response templates and email drafts<br>
-                                🎯 <strong>Business Insights</strong> - Get actionable recommendations<br><br>
+                                ðŸ“Š <strong>Customer Intelligence</strong> - Analyze individual customers or segments<br>
+                                ðŸ” <strong>Problem Detection</strong> - Identify recurring issues and root causes<br>
+                                ðŸ’¡ <strong>Solution Generation</strong> - Get personalized fixes for customer problems<br>
+                                ðŸ“ˆ <strong>Churn Prediction</strong> - Identify at-risk customers before they leave<br>
+                                âœ‰ï¸ <strong>Communication</strong> - Generate response templates and email drafts<br>
+                                ðŸŽ¯ <strong>Business Insights</strong> - Get actionable recommendations<br><br>
                                 Try asking me: "Analyze our top customer issues" or "What should I do about delivery complaints?"
                             </div>
                         </div>
@@ -1365,11 +1365,11 @@
                         <p class="tool-description">Generates personalized, empathetic responses based on problem type and customer history.</p>
                         
                         <select id="response-problem-type" style="margin-bottom:10px;">
-                            <option value="delivery">🚚 Delivery Delay</option>
-                            <option value="quality">⭐ Product Quality</option>
-                            <option value="refund">↩️ Refund Request</option>
-                            <option value="support">🎧 Technical Support</option>
-                            <option value="complaint">💬 General Complaint</option>
+                            <option value="delivery">ðŸšš Delivery Delay</option>
+                            <option value="quality">â­ Product Quality</option>
+                            <option value="refund">â†©ï¸ Refund Request</option>
+                            <option value="support">ðŸŽ§ Technical Support</option>
+                            <option value="complaint">ðŸ’¬ General Complaint</option>
                         </select>
                         
                         <textarea id="response-context" placeholder="Additional context (optional)..." rows="2"></textarea>
@@ -1542,9 +1542,9 @@
                         <canvas id="sentiment-chart" height="260"></canvas>
                         
                         <div style="margin-top: 20px; display: flex; justify-content: space-around;">
-                            <div><span style="color: #28a745;">●</span> Positive: <span id="positive-count">0</span></div>
-                            <div><span style="color: #dc3545;">●</span> Negative: <span id="negative-count">0</span></div>
-                            <div><span style="color: #6b7280;">●</span> Neutral: <span id="neutral-count">0</span></div>
+                            <div><span style="color: #28a745;">â—</span> Positive: <span id="positive-count">0</span></div>
+                            <div><span style="color: #dc3545;">â—</span> Negative: <span id="negative-count">0</span></div>
+                            <div><span style="color: #6b7280;">â—</span> Neutral: <span id="neutral-count">0</span></div>
                         </div>
                     </div>
 
@@ -1683,7 +1683,7 @@
         </div>
 
         <footer>
-            <p>© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Powered by Cloudflare AI</span></p>
+            <p>Â© 2026 AI Smart Business Hub | <span style="color: var(--primary);">Powered by Cloudflare AI</span></p>
         </footer>
     </div>
 </div>
@@ -1927,7 +1927,7 @@ class SaaSRealTimeClient {
         const { customer, sentiment, message } = payload;
         // Show notification without redrawing
         window._addNotification({
-            title: `⚠️ Negative Sentiment Alert`,
+            title: `âš ï¸ Negative Sentiment Alert`,
             message: `Customer ${customer} expressed negative sentiment: "${message}"`,
             customer_email: customer,
         });
@@ -1939,7 +1939,7 @@ class SaaSRealTimeClient {
         const { customer, risk } = payload;
         if (risk > 70) {
             window._addNotification({
-                title: `🔴 High Churn Risk`,
+                title: `ðŸ”´ High Churn Risk`,
                 message: `Customer ${customer} has a ${risk}% churn risk. Immediate action recommended.`,
                 customer_email: customer,
             });
@@ -2325,11 +2325,11 @@ function _renderCustomers() {
         let sentimentDisplay = '';
         if (messages > 0) {
             if (negCount > posCount) {
-                sentimentDisplay = `<span style="color: #dc3545;">🔴 ${negCount} negative</span>`;
+                sentimentDisplay = `<span style="color: #dc3545;">ðŸ”´ ${negCount} negative</span>`;
             } else if (posCount > negCount) {
-                sentimentDisplay = `<span style="color: #28a745;">🟢 ${posCount} positive</span>`;
+                sentimentDisplay = `<span style="color: #28a745;">ðŸŸ¢ ${posCount} positive</span>`;
             } else {
-                sentimentDisplay = `<span style="color: #6b7280;">⚪ ${messages} messages</span>`;
+                sentimentDisplay = `<span style="color: #6b7280;">âšª ${messages} messages</span>`;
             }
         } else {
             sentimentDisplay = 'No messages';
@@ -2342,7 +2342,7 @@ function _renderCustomers() {
             <td>${safeMarkupEscape(c.email || 'No email')}</td>
             <td>${messages} ${messages > 0 ? `(${sentimentDisplay})` : ''}</td>
             <td><span class="status-badge ${risk > 70 ? 'badge-high' : risk > 40 ? 'badge-med' : 'badge-low'}" style="font-size:1rem; font-weight:700;">${risk}%</span></td>
-            <td>${problemTags || '—'}</td>
+            <td>${problemTags || 'â€”'}</td>
             <td>
                 <button class="btn-primary" style="padding:6px 12px; margin-right:5px;" onclick="window._viewCustomer('${safeMarkupEscape(c.email)}')">View</button>
                 <button class="btn-secondary" style="padding:6px 12px;" onclick="window._quickAnalyze('${safeMarkupEscape(c.email)}')">Analyze</button>
@@ -2402,7 +2402,7 @@ const _sendAiMessage = debounce('aiMessage', async function(autoQuery = null) {
     const thinkingDiv = document.createElement('div');
     thinkingDiv.id = thinkingId;
     thinkingDiv.className = 'ai-typing';
-    thinkingDiv.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div>🤖 Business AI is thinking...';
+    thinkingDiv.innerHTML = '<div class="loading-spinner" style="margin:0 auto;"></div>ðŸ¤– Business AI is thinking...';
     div.appendChild(thinkingDiv);
     div.scrollTop = div.scrollHeight;
 
@@ -2451,18 +2451,18 @@ const _sendAiMessage = debounce('aiMessage', async function(autoQuery = null) {
         if (thinkingEl) {
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message bot';
-            msgDiv.innerHTML = `<strong>🤖 AI Business Consultant:</strong><br>${formattedResponse}`;
+            msgDiv.innerHTML = `<strong>ðŸ¤– AI Business Consultant:</strong><br>${formattedResponse}`;
             thinkingEl.replaceWith(msgDiv);
         }
     } catch (err) {
         console.error("AI error:", err);
         
         let fallbackResponse = "I'm your AI business consultant. Here's what I can help with:\n\n";
-        fallbackResponse += "📊 **Customer Analysis** - Ask me to analyze any customer\n";
-        fallbackResponse += "🔍 **Problem Detection** - \"What are our top issues?\"\n";
-        fallbackResponse += "💡 **Solutions** - \"How to handle delivery complaints?\"\n";
-        fallbackResponse += "📈 **Churn Prevention** - \"Show at-risk customers\"\n";
-        fallbackResponse += "✉️ **Communications** - \"Generate response for refund request\"\n\n";
+        fallbackResponse += "ðŸ“Š **Customer Analysis** - Ask me to analyze any customer\n";
+        fallbackResponse += "ðŸ” **Problem Detection** - \"What are our top issues?\"\n";
+        fallbackResponse += "ðŸ’¡ **Solutions** - \"How to handle delivery complaints?\"\n";
+        fallbackResponse += "ðŸ“ˆ **Churn Prevention** - \"Show at-risk customers\"\n";
+        fallbackResponse += "âœ‰ï¸ **Communications** - \"Generate response for refund request\"\n\n";
         fallbackResponse += `Currently tracking: ${AppState.customers.length} customers, ${AppState.problemStats.total} issues. How can I assist you?`;
         fallbackResponse = safeMarkupEscape(fallbackResponse.replace(/\n/g, '<br>'));
         
@@ -2470,7 +2470,7 @@ const _sendAiMessage = debounce('aiMessage', async function(autoQuery = null) {
         if (thinkingEl) {
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message bot';
-            msgDiv.innerHTML = `<strong>🤖 AI Business Consultant:</strong><br>${fallbackResponse}`;
+            msgDiv.innerHTML = `<strong>ðŸ¤– AI Business Consultant:</strong><br>${fallbackResponse}`;
             thinkingEl.replaceWith(msgDiv);
         }
     }
@@ -2623,7 +2623,7 @@ function _renderServices() {
         <div class="service-item ${service.status}">
             <div class="service-header">
                 <span class="service-customer"><i class="fas fa-user"></i> ${safeMarkupEscape(service.customer_name)}</span>
-                <span class="service-status status-${service.status}">${service.status === 'completed' ? '✓ Completed' : service.status === 'in-progress' ? '🔄 In Progress' : '⏳ Pending'}</span>
+                <span class="service-status status-${service.status}">${service.status === 'completed' ? 'âœ“ Completed' : service.status === 'in-progress' ? 'ðŸ”„ In Progress' : 'â³ Pending'}</span>
             </div>
             <div class="service-details">
                 <div><i class="fas fa-tag"></i> Service: ${safeMarkupEscape(service.service_type)}</div>
@@ -2678,7 +2678,7 @@ async function _completeService(serviceId) {
                     service_id: serviceId
                 });
                 
-                _showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified.`);
+                _showTemporaryMessage(`âœ… Service completed! ${service.customer_name} has been notified.`);
             } else {
                 const index = AppState.services.findIndex(s => s.id === serviceId);
                 if (index !== -1) {
@@ -2694,7 +2694,7 @@ async function _completeService(serviceId) {
                         customer_name: service.customer_name
                     });
                     
-                    _showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified (local mode).`);
+                    _showTemporaryMessage(`âœ… Service completed! ${service.customer_name} has been notified (local mode).`);
                 }
             }
         } catch (err) {
@@ -2713,7 +2713,7 @@ async function _completeService(serviceId) {
                     customer_name: service.customer_name
                 });
                 
-                _showTemporaryMessage(`✅ Service completed! ${service.customer_name} has been notified.`);
+                _showTemporaryMessage(`âœ… Service completed! ${service.customer_name} has been notified.`);
             }
         }
     }
@@ -2756,7 +2756,7 @@ function _showCreateServiceModal() {
     }).catch(console.error);
     
     _renderServices();
-    _showTemporaryMessage(`✅ Service created for ${customerName}`);
+    _showTemporaryMessage(`âœ… Service created for ${customerName}`);
     
     _addNotification({
         title: 'New Service Created',
@@ -2920,13 +2920,13 @@ function _updateAnalytics() {
         
         if (descEl) {
             if (maxRisk > 70) {
-                descEl.innerHTML = '⚠️ High risk - Immediate action required';
+                descEl.innerHTML = 'âš ï¸ High risk - Immediate action required';
                 descEl.style.color = '#dc3545';
             } else if (maxRisk > 40) {
-                descEl.innerHTML = '📊 Moderate risk - Monitor closely';
+                descEl.innerHTML = 'ðŸ“Š Moderate risk - Monitor closely';
                 descEl.style.color = '#f59e0b';
             } else {
-                descEl.innerHTML = '✅ Low risk - Keep up the good work';
+                descEl.innerHTML = 'âœ… Low risk - Keep up the good work';
                 descEl.style.color = '#28a745';
             }
         }
@@ -3034,7 +3034,7 @@ function _generateSmartResponse() {
     }
     
     output.style.display = 'block';
-    output.innerHTML = `<strong>🤖 Generated Response:</strong><br>${safeMarkupEscape(response)}`;
+    output.innerHTML = `<strong>ðŸ¤– Generated Response:</strong><br>${safeMarkupEscape(response)}`;
     
     navigator.clipboard.writeText(response).then(() => {
         _showTemporaryMessage('Response copied to clipboard!');
@@ -3052,7 +3052,7 @@ function _showAtRiskCustomers() {
         return;
     }
     
-    let message = '🔴 High-Risk Customers:\n\n';
+    let message = 'ðŸ”´ High-Risk Customers:\n\n';
     highRisk.slice(0, 5).forEach(c => {
         const risk = _calculateRisk(AppState.allChats[c.email] || []);
         message += `${c.name || 'Visitor'} (${c.email}) - ${risk}% risk\n`;
@@ -3149,13 +3149,13 @@ function _viewCustomer(email) {
     div.innerHTML = '';
     chats.forEach(chat => {
         const sentiment = chat.sentiment || 'neutral';
-        const sentimentEmoji = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+        const sentimentEmoji = sentiment === 'positive' ? 'ðŸ˜Š' : sentiment === 'negative' ? 'ðŸ˜ž' : 'ðŸ˜';
         const problem = chat.problem || _detectProblem(chat.message || '');
         
         div.innerHTML += `
             <div class="message user"><strong>Customer ${sentimentEmoji}:</strong> ${safeMarkupEscape(chat.message || '[No message]')}</div>
             <div class="message bot"><strong>AI:</strong> ${safeMarkupEscape(chat.response || '[No reply]')}</div>
-            ${problem !== 'other' ? `<div style="font-size:0.8rem; color:#666; margin-bottom:10px;">🏷️ Problem: ${safeMarkupEscape(problem)}</div>` : ''}
+            ${problem !== 'other' ? `<div style="font-size:0.8rem; color:#666; margin-bottom:10px;">ðŸ·ï¸ Problem: ${safeMarkupEscape(problem)}</div>` : ''}
         `;
     });
     div.scrollTop = div.scrollHeight;
@@ -3213,7 +3213,7 @@ function _updateEmailPreview() {
     
     if (preview) {
         let previewContent = content.replace(/{{name}}/g, 'John Doe');
-        preview.innerHTML = `<strong>Preview:</strong><br>📧 ${safeMarkupEscape(subject)}<br><br>${safeMarkupEscape(previewContent)}`;
+        preview.innerHTML = `<strong>Preview:</strong><br>ðŸ“§ ${safeMarkupEscape(subject)}<br><br>${safeMarkupEscape(previewContent)}`;
     }
 }
 
@@ -3240,13 +3240,13 @@ async function _testBroadcast() {
         const data = await response.json();
         
         if (response.ok) {
-            _showTemporaryMessage(data.message || '✅ Test email sent! Check your inbox.');
+            _showTemporaryMessage(data.message || 'âœ… Test email sent! Check your inbox.');
         } else {
-            _showTemporaryMessage('❌ Failed to send test email: ' + data.error, 'error');
+            _showTemporaryMessage('âŒ Failed to send test email: ' + data.error, 'error');
         }
     } catch (err) {
         console.error('Test email error:', err);
-        _showTemporaryMessage('❌ Error sending test email', 'error');
+        _showTemporaryMessage('âŒ Error sending test email', 'error');
     }
 }
 
@@ -3285,18 +3285,18 @@ async function _sendBroadcast() {
         const data = await response.json();
         
         if (response.ok) {
-            _showTemporaryMessage(data.message || `✅ Broadcast sent to ${data.stats?.sent || recipientCount} customers!`);
+            _showTemporaryMessage(data.message || `âœ… Broadcast sent to ${data.stats?.sent || recipientCount} customers!`);
             
             const sent = document.getElementById('emails-sent');
             if (sent) {
                 sent.textContent = parseInt(sent.textContent) + (data.stats?.sent || recipientCount);
             }
         } else {
-            _showTemporaryMessage('❌ Failed to send broadcast: ' + data.error, 'error');
+            _showTemporaryMessage('âŒ Failed to send broadcast: ' + data.error, 'error');
         }
     } catch (err) {
         console.error('Broadcast error:', err);
-        _showTemporaryMessage('❌ Error sending broadcast', 'error');
+        _showTemporaryMessage('âŒ Error sending broadcast', 'error');
     }
 }
 
@@ -3327,7 +3327,7 @@ function _generateResolution() {
         switch(type.value) {
             case 'email':
                 response = `
-                    <strong>📧 Email Response:</strong><br><br>
+                    <strong>ðŸ“§ Email Response:</strong><br><br>
                     Dear Valued Customer,<br><br>
                     Thank you for bringing this to our attention. I understand you're experiencing: "${safeMarkupEscape(issue)}"<br><br>
                     I've investigated this matter and here's what we'll do:<br>
@@ -3341,25 +3341,25 @@ function _generateResolution() {
                 break;
             case 'call':
                 response = `
-                    <strong>📞 Call Script:</strong><br><br>
+                    <strong>ðŸ“ž Call Script:</strong><br><br>
                     "Hello [Customer Name], this is [Your Name] from Customer Success.<br><br>
                     I understand you're having an issue with: ${safeMarkupEscape(issue)}<br><br>
                     I want to assure you that we're taking this very seriously. Here's what I can do for you:<br>
-                    • Investigate immediately<br>
-                    • Provide updates every 2 hours<br>
-                    • Ensure this doesn't happen again<br><br>
+                    â€¢ Investigate immediately<br>
+                    â€¢ Provide updates every 2 hours<br>
+                    â€¢ Ensure this doesn't happen again<br><br>
                     Is there anything specific you'd like me to address right now?"
                 `;
                 break;
             case 'chat':
                 response = `
-                    <strong>💬 Chat Response:</strong><br><br>
-                    Hi there! 👋<br><br>
+                    <strong>ðŸ’¬ Chat Response:</strong><br><br>
+                    Hi there! ðŸ‘‹<br><br>
                     I'm sorry to hear you're experiencing: ${safeMarkupEscape(issue)}<br><br>
                     Let me help you right away:<br>
-                    • I've created a priority ticket<br>
-                    • A specialist will respond within 30 minutes<br>
-                    • You'll get a 20% discount on your next purchase<br><br>
+                    â€¢ I've created a priority ticket<br>
+                    â€¢ A specialist will respond within 30 minutes<br>
+                    â€¢ You'll get a 20% discount on your next purchase<br><br>
                     Is there anything else I can help with while you wait?
                 `;
                 break;
@@ -3376,10 +3376,10 @@ function _generatePersonas() {
 
     setTimeout(() => {
         const personas = [
-            { name: "The Busy Professional", traits: "High urgency, delivery-focused, churn risk 65%", icon: "👔" },
-            { name: "The Price-Conscious", traits: "Asks about discounts, compares prices, churn risk 45%", icon: "💰" },
-            { name: "The Quality Seeker", traits: "Details-oriented, returns if not satisfied, churn risk 55%", icon: "⭐" },
-            { name: "The Loyal Advocate", traits: "Long-term customer, provides feedback, churn risk 15%", icon: "🤝" }
+            { name: "The Busy Professional", traits: "High urgency, delivery-focused, churn risk 65%", icon: "ðŸ‘”" },
+            { name: "The Price-Conscious", traits: "Asks about discounts, compares prices, churn risk 45%", icon: "ðŸ’°" },
+            { name: "The Quality Seeker", traits: "Details-oriented, returns if not satisfied, churn risk 55%", icon: "â­" },
+            { name: "The Loyal Advocate", traits: "Long-term customer, provides feedback, churn risk 15%", icon: "ðŸ¤" }
         ];
 
         output.innerHTML = personas.map(p => `
@@ -3459,7 +3459,7 @@ function _showAIWidget() {
                 <h3 style="color:white;">${safeMarkupEscape(businessName)} AI Assistant</h3>
                 <span style="background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:20px;">Agency Plan</span>
             </div>
-            <p>👋 Hi! I'm your AI business assistant. I can help with:</p>
+            <p>ðŸ‘‹ Hi! I'm your AI business assistant. I can help with:</p>
             <ul style="margin:20px 0; padding-left:20px;">
                 <li>Customer insights (${totalLeads} active customers)</li>
                 <li>Chat analysis (${totalChats} messages analyzed)</li>
@@ -3675,7 +3675,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._showTemporaryMessage = _showTemporaryMessage;
     window._safeMarkupEscape = safeMarkupEscape;
 
-    console.log('✅ Customer Insights initialized successfully');
+    console.log('âœ… Customer Insights initialized successfully');
 });
 
 // Cleanup on page unload
@@ -3685,5 +3685,5 @@ window.addEventListener('beforeunload', () => {
     }
 });
 </script>
-</body>
+<script src="ai-patch.js"></script></body>
 </html>
