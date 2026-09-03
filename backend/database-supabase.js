@@ -1,547 +1,242 @@
 // backend/database-supabase.js
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid');
-const crypto = require('crypto');
 
-// ===============================
-// CONFIGURATION
-// ===============================
-
+// Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ SUPABASE_URL and SUPABASE_KEY must be set in .env');
   process.exit(1);
 }
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
-  console.error('❌ ENCRYPTION_KEY must be set in .env (64 hex characters for AES-256)');
-  process.exit(1);
-}
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ===============================
-// SUPABASE CLIENT FACTORIES
-// ===============================
-
-/**
- * Admin client with service_role key - USE ONLY FOR SYSTEM OPERATIONS
- * This bypasses RLS - use with extreme caution!
- */
-const adminSupabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
-
-console.log('✅ Admin Supabase client initialized (service_role)');
-
-/**
- * Create a user-scoped Supabase client using JWT
- * This ensures RLS policies are enforced for the authenticated user
- */
-function getUserSupabaseClient(userJwt) {
-  if (!userJwt) {
-    throw new Error('User JWT is required for authenticated client');
-  }
-  
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    global: {
-      headers: {
-        Authorization: `Bearer ${userJwt}`
-      }
-    }
-  });
-}
-
-/**
- * Create a Supabase client with a specific access token (for webhooks, etc.)
- */
-function getClientWithToken(accessToken) {
-  if (!accessToken) {
-    throw new Error('Access token is required');
-  }
-  
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    global: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
-  });
-}
-
-// ===============================
-// PAGINATION CONSTANTS
-// ===============================
-
-const DEFAULT_PAGE_LIMIT = 50;
-const MAX_PAGE_LIMIT = 100;
-
-// ===============================
-// CRYPTOGRAPHIC HELPERS
-// ===============================
-
-function encryptSensitiveData(text) {
-  if (!text) return null;
-  try {
-    const keyBuffer = Buffer.from(ENCRYPTION_KEY, 'hex');
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
-    
-    let encrypted = cipher.update(text, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
-    const authTag = cipher.getAuthTag();
-    
-    const combined = Buffer.concat([
-      iv,
-      authTag,
-      Buffer.from(encrypted, 'base64')
-    ]);
-    
-    return combined.toString('base64');
-  } catch (error) {
-    console.error('Encryption error:', error.message);
-    return null;
-  }
-}
-
-function decryptSensitiveData(encryptedData) {
-  if (!encryptedData) return null;
-  try {
-    const combined = Buffer.from(encryptedData, 'base64');
-    const iv = combined.subarray(0, 16);
-    const authTag = combined.subarray(16, 32);
-    const encrypted = combined.subarray(32);
-    
-    const keyBuffer = Buffer.from(ENCRYPTION_KEY, 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted.toString('base64'), 'base64', 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return decrypted;
-  } catch (error) {
-    console.error('Decryption error:', error.message);
-    return null;
-  }
-}
-
-/**
- * Generate a secure API key with prefix
- */
-function generateApiKey() {
-  const rawKey = `ak_${crypto.randomBytes(24).toString('base64url')}`;
-  return rawKey;
-}
-
-/**
- * Hash an API key for deterministic lookup
- */
-function hashApiKey(rawKey) {
-  return crypto.createHash('sha256').update(rawKey).digest('hex');
-}
+console.log('✅ Supabase client initialized');
 
 // ===============================
 // HELPER FUNCTIONS
 // ===============================
 
-function normalizeEmail(email) {
-  return email?.toLowerCase().trim() || '';
-}
-
-function sanitizeString(str) {
-  return str?.trim() || '';
+/**
+ * Handle Supabase errors consistently
+ */
+function handleError(error, operation) {
+  console.error(`❌ Database error in ${operation}:`, error);
+  throw new Error(`Database operation failed: ${operation}`);
 }
 
 /**
- * Sanitize error context by removing sensitive data
+ * Get single row or null
  */
-function sanitizeErrorContext(context) {
-  if (!context) return {};
+function getSingle(result) {
+  if (result.error) throw result.error;
+  return result.data?.[0] || null;
+}
+
+/**
+ * Get all rows
+ */
+function getAll(result) {
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
+// ===============================
+// TABLE INITIALIZATION FUNCTIONS
+// ===============================
+
+/**
+ * Ensure all required tables exist
+ */
+async function initializeTables() {
+  console.log('🔧 Initializing database tables...');
   
-  const sensitiveKeys = ['password', 'token', 'apiKey', 'api_key', 'secret', 'key', 'auth', 'authorization', 'jwt'];
-  const sanitized = {};
+  // Check if users table has business_profile column
+  const { error: columnCheckError } = await supabase
+    .from('users')
+    .select('business_profile')
+    .limit(1);
   
-  for (const [key, value] of Object.entries(context)) {
-    if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
-      sanitized[key] = sanitizeErrorContext(value);
-    } else {
-      sanitized[key] = value;
+  if (columnCheckError && columnCheckError.message.includes('column "business_profile" does not exist')) {
+    console.log('📝 Adding business_profile column to users table...');
+    const { error: alterError } = await supabase.rpc('add_business_profile_column', {});
+    if (alterError && alterError.message.includes('function')) {
+      console.log('⚠️ Could not add column automatically. Please run SQL manually.');
+      console.log('SQL: ALTER TABLE users ADD COLUMN business_profile JSONB DEFAULT \'{}\';');
     }
   }
   
-  return sanitized;
+  // Create weekly_reports table
+  await ensureWeeklyReportsTable();
+  
+  // Create health_scans table
+  await ensureHealthScansTable();
+  
+  // Create ai_recommendations table
+  await ensureAiRecommendationsTable();
+  
+  console.log('✅ Database tables initialized');
 }
 
 /**
- * Handle Supabase errors with sanitized logging
+ * Ensure weekly_reports table exists
  */
-function handleError(error, operation, context = {}) {
-  const sanitizedContext = sanitizeErrorContext(context);
-  const errorDetails = {
-    operation,
-    context: sanitizedContext,
-    code: error.code || 'unknown',
-    message: error.message || 'Unknown error',
-    details: error.details || null,
-    hint: error.hint || null
-  };
-  
-  console.error(`❌ Database error in ${operation}:`, {
-    ...errorDetails,
-    stack: error.stack?.split('\n').slice(0, 3).join('\n')
-  });
-  
-  const err = new Error(`Database operation failed: ${operation}`);
-  err.originalError = error;
-  err.code = error.code;
-  err.details = errorDetails;
-  throw err;
-}
-
-/**
- * Validate organization access (uses admin client for membership check)
- */
-async function validateOrganizationAccess(userId, organizationId) {
-  if (!organizationId) return true;
-  
-  const { data, error } = await adminSupabase
-    .from('organization_members')
-    .select('role')
-    .eq('user_id', userId)
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-  
-  if (error) throw error;
-  if (!data) throw new Error('User does not have access to this organization');
-  
-  return data.role;
-}
-
-/**
- * Get paginated results with metadata
- * Uses count estimate for large tables to prevent performance bottlenecks
- */
-async function getPaginatedResults(query, page = 1, limit = DEFAULT_PAGE_LIMIT, useEstimatedCount = false) {
-  const safeLimit = Math.min(limit, MAX_PAGE_LIMIT);
-  const offset = (Math.max(page, 1) - 1) * safeLimit;
-  
-  let countQuery = query;
-  
-  // Use estimated count for large tables if requested
-  if (useEstimatedCount) {
-    // For large tables, we can skip exact count to improve performance
-    // The frontend can use the 'hasMore' flag instead
-    const { data, error } = await query
-      .range(offset, offset + safeLimit - 1)
-      .select('*');
+async function ensureWeeklyReportsTable() {
+  try {
+    const { error: checkError } = await supabase
+      .from('weekly_reports')
+      .select('id')
+      .limit(1);
     
-    if (error) throw error;
-    
-    // Check if there are more records beyond this page
-    let hasMore = false;
-    if (data && data.length === safeLimit) {
-      // Check if there's at least one more record
-      const { data: nextData, error: nextError } = await query
-        .range(offset + safeLimit, offset + safeLimit)
-        .select('id')
-        .limit(1);
-      
-      if (!nextError && nextData && nextData.length > 0) {
-        hasMore = true;
+    if (checkError && checkError.code === '42P01') {
+      console.log('📝 Creating weekly_reports table...');
+      // Create table using SQL via REST API
+      const { error: createError } = await supabase.rpc('create_weekly_reports_table', {});
+      if (createError && createError.message.includes('function')) {
+        console.log('⚠️ Please create weekly_reports table manually with SQL:');
+        console.log(`
+          CREATE TABLE IF NOT EXISTS weekly_reports (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            week_start DATE NOT NULL,
+            report_data JSONB NOT NULL,
+            sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_weekly_reports_user_id ON weekly_reports(user_id);
+          CREATE INDEX IF NOT EXISTS idx_weekly_reports_week_start ON weekly_reports(week_start);
+        `);
       }
     }
-    
-    return {
-      data: data || [],
-      pagination: {
-        page: Math.max(page, 1),
-        limit: safeLimit,
-        hasMore,
-        total: null // Not provided for performance
-      }
-    };
-  }
-  
-  // Standard exact count for smaller tables
-  const { data, error, count } = await query
-    .range(offset, offset + safeLimit - 1)
-    .select('*', { count: 'exact' });
-  
-  if (error) throw error;
-  
-  return {
-    data: data || [],
-    pagination: {
-      page: Math.max(page, 1),
-      limit: safeLimit,
-      total: count || 0,
-      totalPages: Math.ceil((count || 0) / safeLimit)
-    }
-  };
-}
-
-// ===============================
-// ORGANIZATION / TENANT FUNCTIONS
-// ===============================
-
-async function createOrganization(userId, name, slug, plan = 'free') {
-  try {
-    const orgId = uuidv4();
-    const now = new Date().toISOString();
-    
-    const { data: org, error: orgError } = await adminSupabase
-      .from('organizations')
-      .insert({
-        id: orgId,
-        name: sanitizeString(name),
-        slug: sanitizeString(slug),
-        plan,
-        created_by: userId,
-        created_at: now,
-        updated_at: now
-      })
-      .select()
-      .single();
-    
-    if (orgError) throw orgError;
-    
-    const { error: memberError } = await adminSupabase
-      .from('organization_members')
-      .insert({
-        organization_id: orgId,
-        user_id: userId,
-        role: 'owner',
-        created_at: now
-      });
-    
-    if (memberError) throw memberError;
-    
-    await initializeOrganizationSettings(orgId);
-    
-    return org;
   } catch (error) {
-    handleError(error, 'createOrganization', { userId, name, slug });
+    console.error('Error ensuring weekly_reports table:', error.message);
   }
 }
-
-async function initializeOrganizationSettings(organizationId) {
-  try {
-    await adminSupabase
-      .from('organization_settings')
-      .insert({
-        organization_id: organizationId,
-        widget_color: '#d4af37',
-        welcome_message: 'How can I help you today?',
-        ai_tone: 'professional'
-      });
-    
-    await adminSupabase
-      .from('governance_settings')
-      .insert({ organization_id: organizationId });
-    
-    await adminSupabase
-      .from('notification_settings')
-      .insert({ organization_id: organizationId });
-  } catch (error) {
-    console.error('Error initializing organization settings:', error.message);
-  }
-}
-
-async function getOrganizationBySlug(slug) {
-  try {
-    const { data, error } = await adminSupabase
-      .from('organizations')
-      .select('*')
-      .eq('slug', sanitizeString(slug))
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    handleError(error, 'getOrganizationBySlug', { slug });
-  }
-}
-
-async function getOrganizationById(organizationId) {
-  try {
-    const { data, error } = await adminSupabase
-      .from('organizations')
-      .select('*')
-      .eq('id', organizationId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    handleError(error, 'getOrganizationById', { organizationId });
-  }
-}
-
-async function getUserOrganizations(userId) {
-  try {
-    const { data, error } = await adminSupabase
-      .from('organization_members')
-      .select('organization_id, role, organizations(*)')
-      .eq('user_id', userId);
-    
-    if (error) throw error;
-    
-    return (data || []).map(member => ({
-      ...member.organizations,
-      role: member.role
-    }));
-  } catch (error) {
-    handleError(error, 'getUserOrganizations', { userId });
-  }
-}
-
-async function addOrganizationMember(organizationId, userId, role = 'member') {
-  try {
-    const { data, error } = await adminSupabase
-      .from('organization_members')
-      .insert({
-        organization_id: organizationId,
-        user_id: userId,
-        role: sanitizeString(role)
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    handleError(error, 'addOrganizationMember', { organizationId, userId, role });
-  }
-}
-
-async function removeOrganizationMember(organizationId, userId) {
-  try {
-    const { data: owners } = await adminSupabase
-      .from('organization_members')
-      .select('user_id')
-      .eq('organization_id', organizationId)
-      .eq('role', 'owner');
-    
-    if (owners && owners.length === 1 && owners[0].user_id === userId) {
-      throw new Error('Cannot remove the last owner of the organization');
-    }
-    
-    const { error } = await adminSupabase
-      .from('organization_members')
-      .delete()
-      .eq('organization_id', organizationId)
-      .eq('user_id', userId);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    handleError(error, 'removeOrganizationMember', { organizationId, userId });
-  }
-}
-
-async function updateOrganizationMemberRole(organizationId, userId, role) {
-  try {
-    const { error } = await adminSupabase
-      .from('organization_members')
-      .update({ role: sanitizeString(role) })
-      .eq('organization_id', organizationId)
-      .eq('user_id', userId);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    handleError(error, 'updateOrganizationMemberRole', { organizationId, userId, role });
-  }
-}
-
-// ===============================
-// USERS (with Organization Context)
-// ===============================
 
 /**
- * Creates a user using Supabase Auth with atomic transaction
- * Note: This should ideally be replaced with a Postgres trigger
- * that automatically creates the user profile on auth signup
+ * Ensure health_scans table exists
  */
-async function createUser(email, password, organizationId, businessName, vToken) {
-  const cleanEmail = normalizeEmail(email);
-  
+async function ensureHealthScansTable() {
   try {
-    const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
-      email: cleanEmail,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        organization_id: organizationId,
-        business_name: businessName,
-        verification_token: vToken
+    const { error: checkError } = await supabase
+      .from('health_scans')
+      .select('id')
+      .limit(1);
+    
+    if (checkError && checkError.code === '42P01') {
+      console.log('📝 Creating health_scans table...');
+      const { error: createError } = await supabase.rpc('create_health_scans_table', {});
+      if (createError && createError.message.includes('function')) {
+        console.log('⚠️ Please create health_scans table manually with SQL:');
+        console.log(`
+          CREATE TABLE IF NOT EXISTS health_scans (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            scan_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            findings JSONB NOT NULL,
+            recommendations JSONB NOT NULL,
+            stats JSONB,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_health_scans_user_id ON health_scans(user_id);
+          CREATE INDEX IF NOT EXISTS idx_health_scans_scan_date ON health_scans(scan_date);
+        `);
       }
-    });
+    }
+  } catch (error) {
+    console.error('Error ensuring health_scans table:', error.message);
+  }
+}
 
-    if (authError) throw authError;
+/**
+ * Ensure ai_recommendations table exists
+ */
+async function ensureAiRecommendationsTable() {
+  try {
+    const { error: checkError } = await supabase
+      .from('ai_recommendations')
+      .select('id')
+      .limit(1);
+    
+    if (checkError && checkError.code === '42P01') {
+      console.log('📝 Creating ai_recommendations table...');
+      const { error: createError } = await supabase.rpc('create_ai_recommendations_table', {});
+      if (createError && createError.message.includes('function')) {
+        console.log('⚠️ Please create ai_recommendations table manually with SQL:');
+        console.log(`
+          CREATE TABLE IF NOT EXISTS ai_recommendations (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            automation_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            confidence_score INTEGER DEFAULT 85,
+            roi INTEGER DEFAULT 500,
+            hours_saved INTEGER DEFAULT 5,
+            leads_generated INTEGER DEFAULT 20,
+            status TEXT DEFAULT 'pending',
+            deployed_at TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_ai_recommendations_user_id ON ai_recommendations(user_id);
+          CREATE INDEX IF NOT EXISTS idx_ai_recommendations_status ON ai_recommendations(status);
+        `);
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring ai_recommendations table:', error.message);
+  }
+}
 
-    const userId = authUser.user.id;
+// ===============================
+// USERS / BUSINESSES
+// ===============================
 
-    const { data: user, error: userError } = await adminSupabase
+async function createUser(email, password, business_id, business_name, vToken) {
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    
+    // Insert user with business_profile default
+    const { data: user, error: userError } = await supabase
       .from('users')
       .insert({
-        id: userId,
         email: cleanEmail,
-        business_name: sanitizeString(businessName),
+        password,
+        business_id,
+        business_name,
         verification_token: vToken,
-        is_verified: 1,
-        business_profile: {},
-        plan: 'free',
-        subscription_status: 'inactive'
+        business_profile: {}  // Initialize empty business profile
       })
       .select()
       .single();
 
-    if (userError) {
-      await adminSupabase.auth.admin.deleteUser(userId);
-      throw userError;
-    }
+    if (userError) throw userError;
 
-    const { error: memberError } = await adminSupabase
-      .from('organization_members')
-      .insert({
-        organization_id: organizationId,
-        user_id: userId,
-        role: 'member',
-        created_at: new Date().toISOString()
-      });
+    // Initialize smart hub settings
+    const { error: settingsError } = await supabase
+      .from('smart_hub_settings')
+      .insert({ user_id: user.id });
 
-    if (memberError) {
-      await adminSupabase.auth.admin.deleteUser(userId);
-      await adminSupabase.from('users').delete().eq('id', userId);
-      throw memberError;
-    }
+    if (settingsError) throw settingsError;
 
-    return userId;
+    // Initialize governance settings
+    const { error: govError } = await supabase
+      .from('governance_settings')
+      .insert({ user_id: user.id });
+
+    if (govError && !govError.message.includes('duplicate')) throw govError;
+
+    return user.id;
   } catch (error) {
-    handleError(error, 'createUser', { email: cleanEmail, organizationId });
+    handleError(error, 'createUser');
   }
 }
 
 async function verifyUser(token) {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('users')
       .update({ 
         is_verified: 1, 
@@ -553,14 +248,14 @@ async function verifyUser(token) {
     if (error) throw error;
     return data && data.length > 0;
   } catch (error) {
-    handleError(error, 'verifyUser', { token });
+    handleError(error, 'verifyUser');
   }
 }
 
 async function getUserByEmail(email) {
   try {
-    const cleanEmail = normalizeEmail(email);
-    const { data, error } = await adminSupabase
+    const cleanEmail = email.toLowerCase().trim();
+    const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', cleanEmail)
@@ -569,13 +264,13 @@ async function getUserByEmail(email) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserByEmail', { email });
+    handleError(error, 'getUserByEmail');
   }
 }
 
 async function getUserByBusinessId(business_id) {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('business_id', business_id)
@@ -584,55 +279,35 @@ async function getUserByBusinessId(business_id) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserByBusinessId', { business_id });
+    handleError(error, 'getUserByBusinessId');
   }
 }
 
-async function getUserById(userId) {
+async function getUserById(id) {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', userId)
+      .eq('id', id)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserById', { userId });
-  }
-}
-
-async function getOrganizationUsers(organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
-  try {
-    const result = await getPaginatedResults(
-      adminSupabase
-        .from('organization_members')
-        .select('user_id, role, users(*)')
-        .eq('organization_id', organizationId),
-      page,
-      limit
-    );
-    
-    return {
-      ...result,
-      data: result.data.map(member => ({
-        ...member.users,
-        role: member.role
-      }))
-    };
-  } catch (error) {
-    handleError(error, 'getOrganizationUsers', { organizationId, page, limit });
+    handleError(error, 'getUserById');
   }
 }
 
 // ===============================
-// BUSINESS PROFILE FUNCTIONS
+// BUSINESS PROFILE FUNCTIONS (AI Business Coach)
 // ===============================
 
+/**
+ * Get user's business profile
+ */
 async function getBusinessProfile(userId) {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('users')
       .select('business_profile, business_name, plan')
       .eq('id', userId)
@@ -653,13 +328,16 @@ async function getBusinessProfile(userId) {
       plan: data?.plan
     };
   } catch (error) {
-    handleError(error, 'getBusinessProfile', { userId });
+    handleError(error, 'getBusinessProfile');
   }
 }
 
+/**
+ * Update user's business profile
+ */
 async function updateBusinessProfile(userId, profileData) {
   try {
-    const { error } = await adminSupabase
+    const { error } = await supabase
       .from('users')
       .update({ 
         business_profile: profileData,
@@ -670,7 +348,7 @@ async function updateBusinessProfile(userId, profileData) {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    handleError(error, 'updateBusinessProfile', { userId });
+    handleError(error, 'updateBusinessProfile');
   }
 }
 
@@ -678,21 +356,18 @@ async function updateBusinessProfile(userId, profileData) {
 // WEEKLY REPORTS FUNCTIONS
 // ===============================
 
-async function saveWeeklyReport(userJwt, organizationId, reportData) {
+/**
+ * Save weekly report
+ */
+async function saveWeeklyReport(userId, reportData) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('weekly_reports')
       .insert({
-        organization_id: organizationId,
-        report_type: reportData.report_type || 'business_summary',
-        week_start: reportData.week_start || reportData.week,
-        week_end: reportData.week_end || new Date(new Date(reportData.week_start || reportData.week).getTime() + 6 * 24 * 60 * 60 * 1000),
-        data: reportData.data || reportData.report_data || {},
-        summary: reportData.summary || '',
-        insights: reportData.insights || {},
-        recommendations: reportData.recommendations || {}
+        user_id: userId,
+        week_start: reportData.week,
+        report_data: reportData,
+        sent_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -700,46 +375,54 @@ async function saveWeeklyReport(userJwt, organizationId, reportData) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveWeeklyReport', { organizationId });
+    handleError(error, 'saveWeeklyReport');
   }
 }
 
-async function getWeeklyReports(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+/**
+ * Get weekly reports for user
+ */
+async function getWeeklyReports(userId, limit = 12) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const result = await getPaginatedResults(
-      supabase
-        .from('weekly_reports')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('week_start', { ascending: false }),
-      page,
-      limit
-    );
-    
-    return result;
-  } catch (error) {
-    handleError(error, 'getWeeklyReports', { organizationId, page, limit });
-  }
-}
-
-async function getLatestWeeklyReport(userJwt, organizationId) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('weekly_reports')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', userId)
+      .order('week_start', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    
+    return (data || []).map(r => ({
+      ...r,
+      report_data: typeof r.report_data === 'string' ? JSON.parse(r.report_data) : r.report_data
+    }));
+  } catch (error) {
+    handleError(error, 'getWeeklyReports');
+  }
+}
+
+/**
+ * Get latest weekly report
+ */
+async function getLatestWeeklyReport(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('weekly_reports')
+      .select('*')
+      .eq('user_id', userId)
       .order('week_start', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (error) throw error;
+    
+    if (data) {
+      data.report_data = typeof data.report_data === 'string' ? JSON.parse(data.report_data) : data.report_data;
+    }
     return data;
   } catch (error) {
-    handleError(error, 'getLatestWeeklyReport', { organizationId });
+    handleError(error, 'getLatestWeeklyReport');
   }
 }
 
@@ -747,20 +430,19 @@ async function getLatestWeeklyReport(userJwt, organizationId) {
 // HEALTH SCANS FUNCTIONS
 // ===============================
 
-async function saveHealthScan(userJwt, organizationId, scanData) {
+/**
+ * Save health scan
+ */
+async function saveHealthScan(userId, scanData) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('health_scans')
       .insert({
-        organization_id: organizationId,
-        scan_type: scanData.scan_type || 'full_system',
-        status: scanData.status || 'completed',
-        result: scanData.result || scanData.findings || {},
-        issues_found: scanData.issues_found || 0,
-        issues_resolved: scanData.issues_resolved || 0,
-        score: scanData.score || 100
+        user_id: userId,
+        scan_date: scanData.scan_date,
+        findings: JSON.stringify(scanData.findings),
+        recommendations: JSON.stringify(scanData.recommendations),
+        stats: scanData.stats
       })
       .select()
       .single();
@@ -768,46 +450,58 @@ async function saveHealthScan(userJwt, organizationId, scanData) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveHealthScan', { organizationId });
+    handleError(error, 'saveHealthScan');
   }
 }
 
-async function getHealthScans(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+/**
+ * Get health scans for user
+ */
+async function getHealthScans(userId, limit = 10) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const result = await getPaginatedResults(
-      supabase
-        .from('health_scans')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false }),
-      page,
-      limit
-    );
-    
-    return result;
-  } catch (error) {
-    handleError(error, 'getHealthScans', { organizationId, page, limit });
-  }
-}
-
-async function getLatestHealthScan(userJwt, organizationId) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('health_scans')
       .select('*')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false })
+      .eq('user_id', userId)
+      .order('scan_date', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    
+    return (data || []).map(s => ({
+      ...s,
+      findings: typeof s.findings === 'string' ? JSON.parse(s.findings) : s.findings,
+      recommendations: typeof s.recommendations === 'string' ? JSON.parse(s.recommendations) : s.recommendations,
+      stats: typeof s.stats === 'string' ? JSON.parse(s.stats) : s.stats
+    }));
+  } catch (error) {
+    handleError(error, 'getHealthScans');
+  }
+}
+
+/**
+ * Get latest health scan
+ */
+async function getLatestHealthScan(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('health_scans')
+      .select('*')
+      .eq('user_id', userId)
+      .order('scan_date', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (error) throw error;
+    
+    if (data) {
+      data.findings = typeof data.findings === 'string' ? JSON.parse(data.findings) : data.findings;
+      data.recommendations = typeof data.recommendations === 'string' ? JSON.parse(data.recommendations) : data.recommendations;
+      data.stats = typeof data.stats === 'string' ? JSON.parse(data.stats) : data.stats;
+    }
     return data;
   } catch (error) {
-    handleError(error, 'getLatestHealthScan', { organizationId });
+    handleError(error, 'getLatestHealthScan');
   }
 }
 
@@ -815,23 +509,22 @@ async function getLatestHealthScan(userJwt, organizationId) {
 // AI RECOMMENDATIONS FUNCTIONS
 // ===============================
 
-async function saveAiRecommendation(userJwt, userId, organizationId, recommendation) {
+/**
+ * Save AI recommendation
+ */
+async function saveAiRecommendation(userId, recommendation) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { data, error } = await supabase
       .from('ai_recommendations')
       .insert({
-        organization_id: organizationId,
         user_id: userId,
         automation_id: recommendation.automationId || recommendation.templateId,
-        title: sanitizeString(recommendation.title),
-        reason: sanitizeString(recommendation.reason),
+        title: recommendation.title,
+        reason: recommendation.reason,
         confidence_score: recommendation.confidence_score || 85,
-        roi_hours_saved: recommendation.roi_hours_saved || 5,
-        roi_revenue_impact: recommendation.roi_revenue_impact || 500,
-        roi_leads_generated: recommendation.roi_leads_generated || 20,
+        roi: recommendation.roi || 500,
+        hours_saved: recommendation.hours_saved || 5,
+        leads_generated: recommendation.leads_generated || 20,
         status: 'pending'
       })
       .select()
@@ -840,18 +533,19 @@ async function saveAiRecommendation(userJwt, userId, organizationId, recommendat
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveAiRecommendation', { userId, organizationId });
+    handleError(error, 'saveAiRecommendation');
   }
 }
 
-async function getPendingRecommendations(userJwt, organizationId, limit = 10) {
+/**
+ * Get pending AI recommendations
+ */
+async function getPendingRecommendations(userId, limit = 10) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('ai_recommendations')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -859,15 +553,15 @@ async function getPendingRecommendations(userJwt, organizationId, limit = 10) {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getPendingRecommendations', { organizationId, limit });
+    handleError(error, 'getPendingRecommendations');
   }
 }
 
-async function updateRecommendationStatus(userJwt, recId, userId, organizationId, status) {
+/**
+ * Update recommendation status
+ */
+async function updateRecommendationStatus(recId, userId, status) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('ai_recommendations')
       .update({ 
@@ -875,12 +569,12 @@ async function updateRecommendationStatus(userJwt, recId, userId, organizationId
         deployed_at: status === 'accepted' ? new Date().toISOString() : null
       })
       .eq('id', recId)
-      .eq('organization_id', organizationId);
+      .eq('user_id', userId);
 
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    handleError(error, 'updateRecommendationStatus', { recId, userId, organizationId, status });
+    handleError(error, 'updateRecommendationStatus');
   }
 }
 
@@ -888,85 +582,79 @@ async function updateRecommendationStatus(userJwt, recId, userId, organizationId
 // SAAS CUSTOMIZATION
 // ===============================
 
-async function updateWidgetSettings(userJwt, userId, organizationId, color, welcomeMsg, tone) {
+async function updateWidgetSettings(user_id, color, welcomeMsg, tone) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
-      .from('organization_settings')
+      .from('users')
       .update({
         widget_color: color,
-        welcome_message: sanitizeString(welcomeMsg),
-        ai_tone: sanitizeString(tone)
+        welcome_message: welcomeMsg,
+        ai_tone: tone
       })
-      .eq('organization_id', organizationId);
+      .eq('id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateWidgetSettings', { userId, organizationId });
+    handleError(error, 'updateWidgetSettings');
   }
 }
 
-async function updateSmartSettings(userJwt, userId, organizationId, toolType, data) {
+async function updateSmartSettings(user_id, toolType, data) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     // Ensure entry exists
     await supabase
       .from('smart_hub_settings')
-      .upsert({ organization_id: organizationId }, { onConflict: 'organization_id' });
+      .upsert({ user_id }, { onConflict: 'user_id' });
 
     let updateData = {};
 
     switch(toolType) {
       case 'brain':
         updateData = {
-          ai_instructions: sanitizeString(data.instructions),
+          ai_instructions: data.instructions,
           ai_temp: data.temp,
-          ai_lang: sanitizeString(data.lang),
+          ai_lang: data.lang,
           brain_active: 1
         };
         break;
       case 'booking':
         updateData = {
-          booking_url: sanitizeString(data.url),
+          booking_url: data.url,
           booking_active: 1
         };
         break;
       case 'sentiment':
         updateData = {
           sentiment_enabled: data.enabled ? 1 : 0,
-          alert_email: normalizeEmail(data.email),
+          alert_email: data.email,
           sentiment_active: 1
         };
         break;
       case 'handover':
         updateData = {
-          handover_trigger: sanitizeString(data.trigger),
+          handover_trigger: data.trigger,
           handover_active: 1
         };
         break;
       case 'webhook':
         updateData = {
-          webhook_url: sanitizeString(data.url),
+          webhook_url: data.url,
           webhook_active: 1
         };
         break;
       case 'apollo':
         updateData = {
           apollo_active: data.active ? 1 : 0,
-          apollo_key: data.apiKey ? encryptSensitiveData(data.apiKey) : null,
+          apollo_key: data.apiKey || null,
           auto_sync: data.autoSync ? 1 : 0
         };
         break;
       case 'vision':
         updateData = {
           vision_active: data.active ? 1 : 0,
-          vision_sensitivity: sanitizeString(data.sensitivity || 'high'),
-          vision_area: sanitizeString(data.area || 'all')
+          vision_sensitivity: data.sensitivity || 'high',
+          vision_area: data.area || 'all'
         };
         break;
       case 'followup':
@@ -980,52 +668,46 @@ async function updateSmartSettings(userJwt, userId, organizationId, toolType, da
         };
         break;
       default:
-        throw new Error(`Invalid toolType: ${toolType} provided to updateSmartSettings`);
+        throw new Error("Invalid toolType provided to updateSmartSettings");
     }
 
     const { error } = await supabase
       .from('smart_hub_settings')
       .update(updateData)
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateSmartSettings', { userId, organizationId, toolType });
+    handleError(error, 'updateSmartSettings');
   }
 }
 
-async function getSmartSettings(userJwt, organizationId) {
+async function getSmartSettings(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
+    // Get user booking_url and smart settings
+    const { data: user, error: userError } = await supabase
+      .from('users')
       .select('booking_url')
-      .eq('id', organizationId)
-      .maybeSingle();
+      .eq('id', user_id)
+      .single();
 
-    if (orgError && orgError.code !== 'PGRST116') throw orgError;
+    if (userError && userError.code !== 'PGRST116') throw userError;
 
     const { data: settings, error: settingsError } = await supabase
       .from('smart_hub_settings')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .maybeSingle();
 
     if (settingsError) throw settingsError;
 
-    // Decrypt Apollo key if present
-    if (settings?.apollo_key) {
-      settings.apollo_key = decryptSensitiveData(settings.apollo_key);
-    }
-
     return {
       ...(settings || {}),
-      booking_url: org?.booking_url || settings?.booking_url || ''
+      booking_url: user?.booking_url || settings?.booking_url || ''
     };
   } catch (error) {
-    handleError(error, 'getSmartSettings', { organizationId });
+    handleError(error, 'getSmartSettings');
   }
 }
 
@@ -1033,42 +715,37 @@ async function getSmartSettings(userJwt, organizationId) {
 // BUSINESS IDENTITY FUNCTIONS
 // ===============================
 
-async function saveBusinessIdentity(userJwt, userId, organizationId, business_type, business_description) {
+async function saveBusinessIdentity(user_id, business_type, business_description) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('business_identity')
       .upsert({
-        organization_id: organizationId,
-        business_type: sanitizeString(business_type),
-        business_description: sanitizeString(business_description)
+        user_id,
+        business_type,
+        business_description
       }, {
-        onConflict: 'organization_id'
+        onConflict: 'user_id'
       });
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'saveBusinessIdentity', { userId, organizationId });
+    handleError(error, 'saveBusinessIdentity');
   }
 }
 
-async function getBusinessIdentity(userJwt, organizationId) {
+async function getBusinessIdentity(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('business_identity')
       .select('business_type, business_description, created_at, updated_at')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .maybeSingle();
 
     if (error) throw error;
     return data || { business_type: '', business_description: '' };
   } catch (error) {
-    handleError(error, 'getBusinessIdentity', { organizationId });
+    handleError(error, 'getBusinessIdentity');
   }
 }
 
@@ -1076,36 +753,31 @@ async function getBusinessIdentity(userJwt, organizationId) {
 // TOOL STATE FUNCTIONS
 // ===============================
 
-async function saveToolState(userJwt, userId, organizationId, toolType, isActive) {
+async function saveToolState(user_id, toolType, isActive) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('tool_states')
       .upsert({
-        organization_id: organizationId,
-        tool_type: sanitizeString(toolType),
+        user_id,
+        tool_type: toolType,
         is_active: isActive ? 1 : 0
       }, {
-        onConflict: 'organization_id, tool_type'
+        onConflict: 'user_id, tool_type'
       });
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'saveToolState', { userId, organizationId, toolType });
+    handleError(error, 'saveToolState');
   }
 }
 
-async function getToolStates(userJwt, organizationId) {
+async function getToolStates(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('tool_states')
       .select('tool_type, is_active')
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     
@@ -1115,25 +787,22 @@ async function getToolStates(userJwt, organizationId) {
     });
     return states;
   } catch (error) {
-    handleError(error, 'getToolStates', { organizationId });
+    handleError(error, 'getToolStates');
   }
 }
 
-async function deleteToolState(userJwt, userId, organizationId, toolType) {
+async function deleteToolState(user_id, toolType) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('tool_states')
       .delete()
-      .eq('organization_id', organizationId)
-      .eq('tool_type', sanitizeString(toolType));
+      .eq('user_id', user_id)
+      .eq('tool_type', toolType);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteToolState', { userId, organizationId, toolType });
+    handleError(error, 'deleteToolState');
   }
 }
 
@@ -1141,18 +810,14 @@ async function deleteToolState(userJwt, userId, organizationId, toolType) {
 // SUPPORT & ABOUT FUNCTIONS
 // ===============================
 
-async function saveSupportTicket(userJwt, userId, organizationId, subject, message) {
+async function saveSupportTicket(user_id, subject, message) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { data, error } = await supabase
       .from('support_tickets')
       .insert({
-        organization_id: organizationId,
-        user_id: userId,
-        subject: sanitizeString(subject),
-        message: sanitizeString(message)
+        user_id,
+        subject,
+        message
       })
       .select()
       .single();
@@ -1160,24 +825,21 @@ async function saveSupportTicket(userJwt, userId, organizationId, subject, messa
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'saveSupportTicket', { userId, organizationId });
+    handleError(error, 'saveSupportTicket');
   }
 }
 
-async function updateBusinessAbout(userJwt, userId, organizationId, aboutText) {
+async function updateBusinessAbout(user_id, aboutText) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
-      .from('organization_settings')
-      .update({ about_business: sanitizeString(aboutText) })
-      .eq('organization_id', organizationId);
+      .from('users')
+      .update({ about_business: aboutText })
+      .eq('id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateBusinessAbout', { userId, organizationId });
+    handleError(error, 'updateBusinessAbout');
   }
 }
 
@@ -1185,18 +847,14 @@ async function updateBusinessAbout(userJwt, userId, organizationId, aboutText) {
 // KNOWLEDGE BASE
 // ===============================
 
-async function addKnowledge(userJwt, userId, organizationId, content, type = 'text') {
+async function addKnowledge(user_id, content, type = 'text') {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { data, error } = await supabase
       .from('knowledge_base')
       .insert({
-        organization_id: organizationId,
-        created_by: userId,
-        content: sanitizeString(content),
-        source_type: sanitizeString(type)
+        user_id,
+        content,
+        source_type: type
       })
       .select()
       .single();
@@ -1204,45 +862,37 @@ async function addKnowledge(userJwt, userId, organizationId, content, type = 'te
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'addKnowledge', { userId, organizationId });
+    handleError(error, 'addKnowledge');
   }
 }
 
-async function getKnowledgeByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+async function getKnowledgeByUser(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const result = await getPaginatedResults(
-      supabase
-        .from('knowledge_base')
-        .select('id, content, source_type, created_at')
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false }),
-      page,
-      limit
-    );
-    
-    return result;
+    const { data, error } = await supabase
+      .from('knowledge_base')
+      .select('id, content, source_type, created_at')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
-    handleError(error, 'getKnowledgeByOrganization', { organizationId, page, limit });
+    handleError(error, 'getKnowledgeByUser');
   }
 }
 
-async function deleteKnowledge(userJwt, userId, organizationId, knowledgeId) {
+async function deleteKnowledge(knowledge_id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('knowledge_base')
       .delete()
-      .eq('id', knowledgeId)
-      .eq('organization_id', organizationId);
+      .eq('id', knowledge_id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteKnowledge', { userId, organizationId, knowledgeId });
+    handleError(error, 'deleteKnowledge');
   }
 }
 
@@ -1250,206 +900,126 @@ async function deleteKnowledge(userJwt, userId, organizationId, knowledgeId) {
 // WIDGET KEY
 // ===============================
 
-async function setWidgetKey(userJwt, organizationId, widgetKey) {
+async function setWidgetKey(user_id, widget_key) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { error } = await supabase
-      .from('organization_settings')
-      .update({ widget_key: sanitizeString(widgetKey) })
-      .eq('organization_id', organizationId);
+      .from('users')
+      .update({ widget_key })
+      .eq('id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'setWidgetKey', { organizationId });
+    handleError(error, 'setWidgetKey');
   }
 }
 
-async function getWidgetKey(userJwt, organizationId) {
+async function getWidgetKey(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
-      .from('organization_settings')
+      .from('users')
       .select('widget_key')
-      .eq('organization_id', organizationId)
+      .eq('id', user_id)
       .maybeSingle();
 
     if (error) throw error;
     return data ? data.widget_key : null;
   } catch (error) {
-    handleError(error, 'getWidgetKey', { organizationId });
+    handleError(error, 'getWidgetKey');
   }
 }
 
 // ===============================
-// MONETIZATION & SUBSCRIPTION MANAGEMENT
+// PLAN & USAGE
 // ===============================
 
-async function getOrganizationSubscription(userJwt, organizationId) {
+async function updatePlan(user_id, plan) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, plan_expires')
-      .eq('id', organizationId)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data || { plan: 'free', subscription_status: 'inactive' };
-  } catch (error) {
-    handleError(error, 'getOrganizationSubscription', { organizationId });
-  }
-}
-
-async function updateSubscriptionStatus(userJwt, organizationId, subscriptionData) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const updates = {
-      plan: sanitizeString(subscriptionData.plan),
-      subscription_status: sanitizeString(subscriptionData.status || 'active'),
-      updated_at: new Date().toISOString()
-    };
-    
-    if (subscriptionData.stripe_customer_id) {
-      updates.stripe_customer_id = subscriptionData.stripe_customer_id;
-    }
-    if (subscriptionData.stripe_subscription_id) {
-      updates.stripe_subscription_id = subscriptionData.stripe_subscription_id;
-    }
-    if (subscriptionData.plan_expires) {
-      updates.plan_expires = subscriptionData.plan_expires;
-    }
-    
     const { error } = await supabase
-      .from('organizations')
-      .update(updates)
-      .eq('id', organizationId);
+      .from('users')
+      .update({
+        plan,
+        messages_used: 0,
+        leads_used: 0,
+        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      })
+      .eq('id', user_id);
 
     if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    handleError(error, 'updateSubscriptionStatus', { organizationId });
-  }
-}
-
-async function checkPlanLimits(userJwt, organizationId, metric) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('plan, messages_used, leads_used')
-      .eq('id', organizationId)
-      .maybeSingle();
-
-    if (error) throw error;
-    
-    const planLimits = {
-      free: { messages: 100, leads: 50 },
-      basic: { messages: 500, leads: 200 },
-      pro: { messages: 3000, leads: 1000 },
-      agency: { messages: 10000, leads: 5000 }
-    };
-    
-    const plan = data?.plan || 'free';
-    const limits = planLimits[plan] || planLimits.free;
-    
-    let currentUsage = 0;
-    let limit = 0;
-    
-    if (metric === 'messages') {
-      currentUsage = data?.messages_used || 0;
-      limit = limits.messages;
-    } else if (metric === 'leads') {
-      currentUsage = data?.leads_used || 0;
-      limit = limits.leads;
-    } else {
-      throw new Error(`Unknown metric: ${metric}`);
-    }
-    
-    return {
-      plan,
-      current: currentUsage,
-      limit,
-      isExceeded: currentUsage >= limit,
-      remaining: Math.max(0, limit - currentUsage)
-    };
-  } catch (error) {
-    handleError(error, 'checkPlanLimits', { organizationId, metric });
-  }
-}
-
-/**
- * Atomic increment for messages_used - PURE RPC ONLY, NO FALLBACK
- * Race condition safe - relies on PostgreSQL atomic update
- */
-async function incrementMessagesUsed(userJwt, organizationId) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { error: rpcError } = await supabase.rpc('increment_messages_used', {
-      org_id_param: organizationId
-    });
-    
-    if (rpcError) {
-      // No fallback - RPC must exist. Log error and re-throw.
-      console.error('❌ increment_messages_used RPC failed:', rpcError);
-      throw new Error('Atomic increment operation failed - RPC not available');
-    }
-    
     return true;
   } catch (error) {
-    handleError(error, 'incrementMessagesUsed', { organizationId });
+    handleError(error, 'updatePlan');
   }
 }
 
-/**
- * Atomic increment for leads_used - PURE RPC ONLY, NO FALLBACK
- * Race condition safe - relies on PostgreSQL atomic update
- */
-async function incrementLeadsUsed(userJwt, organizationId) {
+async function incrementMessagesUsed(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { error: rpcError } = await supabase.rpc('increment_leads_used', {
-      org_id_param: organizationId
+    const { error } = await supabase.rpc('increment_messages_used', {
+      user_id_param: user_id
     });
-    
-    if (rpcError) {
-      console.error('❌ increment_leads_used RPC failed:', rpcError);
-      throw new Error('Atomic increment operation failed - RPC not available');
+
+    if (error) {
+      // Fallback if RPC doesn't exist
+      const { data: user } = await supabase
+        .from('users')
+        .select('messages_used')
+        .eq('id', user_id)
+        .single();
+
+      await supabase
+        .from('users')
+        .update({ messages_used: (user.messages_used || 0) + 1 })
+        .eq('id', user_id);
     }
-    
+
     return true;
   } catch (error) {
-    handleError(error, 'incrementLeadsUsed', { organizationId });
+    handleError(error, 'incrementMessagesUsed');
+  }
+}
+
+async function incrementLeadsUsed(user_id) {
+  try {
+    const { error } = await supabase.rpc('increment_leads_used', {
+      user_id_param: user_id
+    });
+
+    if (error) {
+      // Fallback if RPC doesn't exist
+      const { data: user } = await supabase
+        .from('users')
+        .select('leads_used')
+        .eq('id', user_id)
+        .single();
+
+      await supabase
+        .from('users')
+        .update({ leads_used: (user.leads_used || 0) + 1 })
+        .eq('id', user_id);
+    }
+
+    return true;
+  } catch (error) {
+    handleError(error, 'incrementLeadsUsed');
   }
 }
 
 // ===============================
-// LEADS (Organization-scoped)
+// LEADS
 // ===============================
 
-async function saveLead(userJwt, userId, organizationId, name, email, phone, company = '', job_title = '', message = "") {
+async function saveLead(user_id, name, email, phone, company = '', job_title = '', message = "") {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { data, error } = await supabase
       .from('leads')
       .insert({
-        organization_id: organizationId,
-        created_by: userId,
-        name: sanitizeString(name),
-        email: normalizeEmail(email),
-        phone: sanitizeString(phone),
-        company: sanitizeString(company),
-        job_title: sanitizeString(job_title),
-        message: sanitizeString(message)
+        user_id,
+        name,
+        email,
+        phone,
+        company,
+        job_title,
+        message
       })
       .select()
       .single();
@@ -1457,178 +1027,353 @@ async function saveLead(userJwt, userId, organizationId, name, email, phone, com
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'saveLead', { userId, organizationId, email });
+    handleError(error, 'saveLead');
   }
 }
 
-async function getLeadsByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT, filters = {}) {
+async function getLeadsByUser(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    let query = supabase
-      .from('leads')
-      .select('*')
-      .eq('organization_id', organizationId);
-    
-    if (filters.status) {
-      query = query.eq('status', sanitizeString(filters.status));
-    }
-    if (filters.email) {
-      query = query.eq('email', normalizeEmail(filters.email));
-    }
-    if (filters.name) {
-      query = query.ilike('name', `%${sanitizeString(filters.name)}%`);
-    }
-    
-    query = query.order('created_at', { ascending: false });
-    
-    const result = await getPaginatedResults(query, page, limit);
-    return result;
-  } catch (error) {
-    handleError(error, 'getLeadsByOrganization', { organizationId, page, limit });
-  }
-}
-
-async function getLeadById(userJwt, leadId, organizationId) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('leads')
       .select('*')
-      .eq('id', leadId)
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getLeadsByUser');
+  }
+}
+
+async function getLeadByEmail(user_id, email) {
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('user_id', user_id)
+      .eq('email', email.toLowerCase().trim())
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getLeadById', { leadId, organizationId });
+    handleError(error, 'getLeadByEmail');
   }
 }
 
-async function updateLeadStatus(userJwt, leadId, organizationId, status, notes = null) {
+async function updateLeadStatus(lead_id, user_id, status, notes = null) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const updateData = { 
-      status: sanitizeString(status), 
-      updated_at: new Date().toISOString() 
-    };
-    if (notes) updateData.notes = sanitizeString(notes);
+    const updateData = { status, updated_at: new Date().toISOString() };
+    if (notes) updateData.notes = notes;
     
     const { error } = await supabase
       .from('leads')
       .update(updateData)
-      .eq('id', leadId)
-      .eq('organization_id', organizationId);
+      .eq('id', lead_id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateLeadStatus', { leadId, organizationId, status });
+    handleError(error, 'updateLeadStatus');
   }
 }
 
-async function deleteLead(userJwt, leadId, organizationId) {
+async function getLeadScore(lead_id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
+    const { data, error } = await supabase
+      .from('lead_scores')
+      .select('score, scored_at')
+      .eq('lead_id', lead_id)
+      .eq('user_id', user_id)
+      .order('scored_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'getLeadScore');
+  }
+}
+
+async function saveLeadScore(lead_id, user_id, score, criteria = {}) {
+  try {
     const { error } = await supabase
-      .from('leads')
-      .delete()
-      .eq('id', leadId)
-      .eq('organization_id', organizationId);
+      .from('lead_scores')
+      .insert({
+        lead_id,
+        user_id,
+        score,
+        criteria,
+        scored_at: new Date().toISOString()
+      });
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteLead', { leadId, organizationId });
+    handleError(error, 'saveLeadScore');
   }
 }
 
 // ===============================
-// CHATS (Organization-scoped)
+// CHATS
 // ===============================
 
-async function saveChat(userJwt, userId, organizationId, sessionId, clientName, message, response, sentiment = 'neutral') {
+async function saveChat(id, user_id, session_id, client_name, message, response, sentiment = 'neutral') {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
-    const id = uuidv4();
     const { error } = await supabase
       .from('chats')
       .insert({
         id,
-        organization_id: organizationId,
-        user_id: userId,
-        session_id: sanitizeString(sessionId),
-        client_name: sanitizeString(clientName),
-        message: sanitizeString(message),
-        response: sanitizeString(response),
-        sentiment: sanitizeString(sentiment)
+        user_id,
+        session_id,
+        client_name,
+        message,
+        response,
+        sentiment
       });
 
     if (error) throw error;
     return id;
   } catch (error) {
-    handleError(error, 'saveChat', { userId, organizationId, sessionId });
+    handleError(error, 'saveChat');
   }
 }
 
-async function getChatsByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT, filters = {}) {
+async function getChatsByUser(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    let query = supabase
-      .from('chats')
-      .select('*')
-      .eq('organization_id', organizationId);
-    
-    if (filters.client_name) {
-      query = query.ilike('client_name', `%${sanitizeString(filters.client_name)}%`);
-    }
-    if (filters.session_id) {
-      query = query.eq('session_id', sanitizeString(filters.session_id));
-    }
-    
-    query = query.order('created_at', { ascending: false });
-    
-    const result = await getPaginatedResults(query, page, limit);
-    return result;
-  } catch (error) {
-    handleError(error, 'getChatsByOrganization', { organizationId, page, limit });
-  }
-}
-
-async function getChatsBySession(userJwt, sessionId, organizationId) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('chats')
       .select('*')
-      .eq('session_id', sanitizeString(sessionId))
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getChatsByUser');
+  }
+}
+
+async function getChatsBySession(session_id, user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('session_id', session_id)
+      .eq('user_id', user_id)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getChatsBySession', { sessionId, organizationId });
+    handleError(error, 'getChatsBySession');
   }
 }
 
 // ===============================
-// AUTOMATIONS (Organization-scoped)
+// NOTIFICATION SETTINGS
 // ===============================
 
-async function createAutomation(userJwt, userId, organizationId, name, triggerType, actionType, description = '', triggerConfig = {}, actionConfig = {}) {
+async function getNotificationSettings(userId) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
+    const { data, error } = await supabase
+      .from('notification_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
     
+    return data || {
+      user_id: userId,
+      email_notifications: 1,
+      slack_webhook: null,
+      discord_webhook: null,
+      notify_on_success: 1,
+      notify_on_failure: 1,
+      notify_on_daily_summary: 1
+    };
+  } catch (error) {
+    handleError(error, 'getNotificationSettings');
+  }
+}
+
+async function saveNotificationSettings(userId, settings) {
+  try {
+    const { error } = await supabase
+      .from('notification_settings')
+      .upsert({
+        user_id: userId,
+        email_notifications: settings.email_notifications ? 1 : 0,
+        slack_webhook: settings.slack_webhook || null,
+        discord_webhook: settings.discord_webhook || null,
+        notify_on_success: settings.notify_on_success ? 1 : 0,
+        notify_on_failure: settings.notify_on_failure ? 1 : 0,
+        notify_on_daily_summary: settings.notify_on_daily_summary ? 1 : 0
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleError(error, 'saveNotificationSettings');
+  }
+}
+
+// ===============================
+// API KEYS
+// ===============================
+
+async function createApiKey(userId, name, platform) {
+  try {
+    const id = uuidv4();
+    const apiKey = `ak_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('api_keys')
+      .insert({
+        id,
+        user_id: userId,
+        name,
+        platform,
+        api_key: apiKey,
+        created_at: now
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      api_key: data.api_key,
+      name: data.name,
+      platform: data.platform,
+      created_at: data.created_at
+    };
+  } catch (error) {
+    handleError(error, 'createApiKey');
+  }
+}
+
+async function getApiKeys(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('id, name, platform, api_key, last_used, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getApiKeys');
+  }
+}
+
+async function deleteApiKey(keyId, userId) {
+  try {
+    const { error } = await supabase
+      .from('api_keys')
+      .delete()
+      .eq('id', keyId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleError(error, 'deleteApiKey');
+  }
+}
+
+async function updateApiKeyLastUsed(keyId) {
+  try {
+    const { error } = await supabase
+      .from('api_keys')
+      .update({ last_used: new Date().toISOString() })
+      .eq('id', keyId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleError(error, 'updateApiKeyLastUsed');
+  }
+}
+
+async function validateApiKey(apiKey) {
+  try {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('*')
+      .eq('api_key', apiKey)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'validateApiKey');
+  }
+}
+
+// ===============================
+// ADMIN INITIALIZATION
+// ===============================
+
+async function createAdminIfNotExists(email, hashedPassword) {
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    
+    // Check if admin exists
+    const existing = await getUserByEmail(cleanEmail);
+    if (existing) return existing;
+
+    const business_id = "admin_business";
+    
+    // Create admin user
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .insert({
+        email: cleanEmail,
+        password: hashedPassword,
+        business_id,
+        business_name: "Admin Business",
+        plan: 'agency',
+        is_verified: 1,
+        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        business_profile: {}
+      })
+      .select()
+      .single();
+
+    if (userError) throw userError;
+
+    // Initialize smart hub settings
+    await supabase
+      .from('smart_hub_settings')
+      .insert({ user_id: user.id });
+
+    // Initialize governance settings
+    await supabase
+      .from('governance_settings')
+      .insert({ user_id: user.id });
+
+    return { id: user.id, email: cleanEmail };
+  } catch (error) {
+    handleError(error, 'createAdminIfNotExists');
+  }
+}
+
+// ===============================
+// AI AUTOMATIONS
+// ===============================
+
+async function createAutomation(user_id, name, trigger_type, action_type, description = '', trigger_config = {}, action_config = {}) {
+  try {
     const id = 'auto_' + uuidv4().substring(0, 8);
     const now = new Date().toISOString();
 
@@ -1636,14 +1381,13 @@ async function createAutomation(userJwt, userId, organizationId, name, triggerTy
       .from('automations')
       .insert({
         id,
-        organization_id: organizationId,
-        created_by: userId,
-        name: sanitizeString(name),
-        description: sanitizeString(description),
-        trigger_type: sanitizeString(triggerType),
-        trigger_config: triggerConfig,
-        action_type: sanitizeString(actionType),
-        action_config: actionConfig,
+        user_id,
+        name,
+        description,
+        trigger_type,
+        trigger_config,
+        action_type,
+        action_config,
         created_at: now,
         updated_at: now
       })
@@ -1653,117 +1397,102 @@ async function createAutomation(userJwt, userId, organizationId, name, triggerTy
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'createAutomation', { userId, organizationId, name });
+    handleError(error, 'createAutomation');
   }
 }
 
-async function getAutomationsByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT, filters = {}) {
+async function getAutomationsByUser(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    let query = supabase
-      .from('automations')
-      .select('*')
-      .eq('organization_id', organizationId);
-    
-    if (filters.status) {
-      query = query.eq('status', sanitizeString(filters.status));
-    }
-    if (filters.trigger_type) {
-      query = query.eq('trigger_type', sanitizeString(filters.trigger_type));
-    }
-    
-    query = query.order('created_at', { ascending: false });
-    
-    const result = await getPaginatedResults(query, page, limit);
-    return result;
-  } catch (error) {
-    handleError(error, 'getAutomationsByOrganization', { organizationId, page, limit });
-  }
-}
-
-async function getAutomationById(userJwt, automationId, organizationId) {
-  try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('automations')
       .select('*')
-      .eq('id', automationId)
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    handleError(error, 'getAutomationsByUser');
+  }
+}
+
+async function getAutomationById(id, user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('automations')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user_id)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getAutomationById', { automationId, organizationId });
+    handleError(error, 'getAutomationById');
   }
 }
 
-async function updateAutomation(userJwt, automationId, organizationId, updates) {
+async function updateAutomation(id, user_id, updates) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
+    const updateData = { ...updates, updated_at: new Date().toISOString() };
     
-    const updateData = { 
-      ...updates, 
-      updated_at: new Date().toISOString() 
-    };
-    
-    if (updateData.name) updateData.name = sanitizeString(updateData.name);
-    if (updateData.description) updateData.description = sanitizeString(updateData.description);
-    if (updateData.trigger_type) updateData.trigger_type = sanitizeString(updateData.trigger_type);
-    if (updateData.action_type) updateData.action_type = sanitizeString(updateData.action_type);
+    // Handle JSON fields
+    if (updateData.trigger_config && typeof updateData.trigger_config === 'object') {
+      updateData.trigger_config = updateData.trigger_config;
+    }
+    if (updateData.action_config && typeof updateData.action_config === 'object') {
+      updateData.action_config = updateData.action_config;
+    }
 
     const { error } = await supabase
       .from('automations')
       .update(updateData)
-      .eq('id', automationId)
-      .eq('organization_id', organizationId);
+      .eq('id', id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateAutomation', { automationId, organizationId });
+    handleError(error, 'updateAutomation');
   }
 }
 
-async function deleteAutomation(userJwt, automationId, organizationId) {
+async function deleteAutomation(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { error } = await supabase
       .from('automations')
       .delete()
-      .eq('id', automationId)
-      .eq('organization_id', organizationId);
+      .eq('id', id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteAutomation', { automationId, organizationId });
+    handleError(error, 'deleteAutomation');
   }
 }
 
-/**
- * Atomic increment for automation triggers - PURE RPC ONLY
- */
-async function incrementAutomationTriggers(userJwt, automationId, organizationId) {
+async function incrementAutomationTriggers(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { error } = await supabase.rpc('increment_automation_triggers', {
-      automation_id_param: automationId,
-      organization_id_param: organizationId
-    });
+    const { data: auto } = await supabase
+      .from('automations')
+      .select('trigger_count')
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .single();
 
-    if (error) {
-      console.error('❌ increment_automation_triggers RPC failed:', error);
-      throw new Error('Atomic increment operation failed - RPC not available');
-    }
+    await supabase
+      .from('automations')
+      .update({
+        trigger_count: (auto?.trigger_count || 0) + 1,
+        last_run: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('user_id', user_id);
 
     return true;
   } catch (error) {
-    handleError(error, 'incrementAutomationTriggers', { automationId, organizationId });
+    handleError(error, 'incrementAutomationTriggers');
   }
 }
 
@@ -1771,41 +1500,35 @@ async function incrementAutomationTriggers(userJwt, automationId, organizationId
 // AUTOMATION RUNS
 // ===============================
 
-async function createAutomationRun(userJwt, id, automationId, userId, organizationId) {
+async function createAutomationRun(id, automation_id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('automation_runs')
       .insert({
         id,
-        automation_id: automationId,
-        organization_id: organizationId,
-        user_id: userId,
+        automation_id,
+        user_id,
         started_at: now
       });
 
     if (error) throw error;
     return id;
   } catch (error) {
-    handleError(error, 'createAutomationRun', { id, automationId, userId, organizationId });
+    handleError(error, 'createAutomationRun');
   }
 }
 
-async function completeAutomationRun(userJwt, id, status, result, duration, error = null) {
+async function completeAutomationRun(id, status, result, duration, error = null) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const now = new Date().toISOString();
     const { error: updateError } = await supabase
       .from('automation_runs')
       .update({
-        status: sanitizeString(status),
+        status,
         result,
         duration,
-        error: error ? sanitizeString(error) : null,
+        error,
         completed_at: now
       })
       .eq('id', id);
@@ -1813,26 +1536,24 @@ async function completeAutomationRun(userJwt, id, status, result, duration, erro
     if (updateError) throw updateError;
     return true;
   } catch (error) {
-    handleError(error, 'completeAutomationRun', { id, status });
+    handleError(error, 'completeAutomationRun');
   }
 }
 
-async function getAutomationRuns(userJwt, automationId, organizationId, limit = 50) {
+async function getAutomationRuns(automation_id, user_id, limit = 50) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('automation_runs')
       .select('*')
-      .eq('automation_id', automationId)
-      .eq('organization_id', organizationId)
+      .eq('automation_id', automation_id)
+      .eq('user_id', user_id)
       .order('started_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getAutomationRuns', { automationId, organizationId, limit });
+    handleError(error, 'getAutomationRuns');
   }
 }
 
@@ -1840,10 +1561,8 @@ async function getAutomationRuns(userJwt, automationId, organizationId, limit = 
 // AUTOMATION TEMPLATES
 // ===============================
 
-async function getAutomationTemplates(userJwt, category = null, industry = null, featured = false, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+async function getAutomationTemplates(category = null, industry = null, featured = false) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     let query = supabase
       .from('automation_templates')
       .select('*')
@@ -1851,57 +1570,51 @@ async function getAutomationTemplates(userJwt, category = null, industry = null,
       .order('usage_count', { ascending: false });
 
     if (category && category !== 'all') {
-      query = query.eq('category', sanitizeString(category));
+      query = query.eq('category', category);
     }
     
     if (industry && industry !== 'all') {
-      query = query.contains('industry', [sanitizeString(industry)]);
+      query = query.contains('industry', [industry]);
     }
     
     if (featured) {
       query = query.eq('is_featured', true);
     }
 
-    const result = await getPaginatedResults(query, page, limit);
-    return result;
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   } catch (error) {
-    handleError(error, 'getAutomationTemplates', { category, industry, featured, page, limit });
+    handleError(error, 'getAutomationTemplates');
   }
 }
 
-async function getAutomationTemplateBySlug(userJwt, slug) {
+async function getAutomationTemplateBySlug(slug) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('automation_templates')
       .select('*')
-      .eq('slug', sanitizeString(slug))
+      .eq('slug', slug)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getAutomationTemplateBySlug', { slug });
+    handleError(error, 'getAutomationTemplateBySlug');
   }
 }
 
-async function incrementTemplateUsage(userJwt, templateId) {
+async function incrementTemplateUsage(templateId) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { error } = await supabase.rpc('increment_template_usage', {
-      template_id_param: templateId
-    });
+    const { error } = await supabase
+      .from('automation_templates')
+      .update({ usage_count: supabase.raw('usage_count + 1') })
+      .eq('id', templateId);
 
-    if (error) {
-      console.error('❌ increment_template_usage RPC failed:', error);
-      throw new Error('Atomic increment operation failed - RPC not available');
-    }
-
+    if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'incrementTemplateUsage', { templateId });
+    handleError(error, 'incrementTemplateUsage');
   }
 }
 
@@ -1909,11 +1622,8 @@ async function incrementTemplateUsage(userJwt, templateId) {
 // USER AUTOMATIONS (Advanced)
 // ===============================
 
-async function createUserAutomation(userJwt, userId, organizationId, templateId, name, description, triggerType, triggerConfig, actions, status = 'draft') {
+async function createUserAutomation(user_id, template_id, name, description, trigger_type, trigger_config, actions, status = 'draft') {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const id = uuidv4();
     const now = new Date().toISOString();
 
@@ -1921,15 +1631,14 @@ async function createUserAutomation(userJwt, userId, organizationId, templateId,
       .from('user_automations')
       .insert({
         id,
-        organization_id: organizationId,
-        created_by: userId,
-        template_id: templateId,
-        name: sanitizeString(name),
-        description: sanitizeString(description),
-        status: sanitizeString(status),
-        trigger_type: sanitizeString(triggerType),
-        trigger_config: triggerConfig,
-        actions: actions,
+        user_id,
+        template_id,
+        name,
+        description,
+        status,
+        trigger_type,
+        trigger_config,
+        actions,
         created_at: now,
         updated_at: now
       })
@@ -1939,94 +1648,80 @@ async function createUserAutomation(userJwt, userId, organizationId, templateId,
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'createUserAutomation', { userId, organizationId, name });
+    handleError(error, 'createUserAutomation');
   }
 }
 
-async function getUserAutomations(userJwt, organizationId, status = null, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+async function getUserAutomations(user_id, status = null) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     let query = supabase
       .from('user_automations')
       .select('*, template:automation_templates(name, icon, color, category)')
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false });
 
     if (status && status !== 'all') {
-      query = query.eq('status', sanitizeString(status));
+      query = query.eq('status', status);
     }
 
-    query = query.order('created_at', { ascending: false });
-    
-    const result = await getPaginatedResults(query, page, limit);
-    return result;
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   } catch (error) {
-    handleError(error, 'getUserAutomations', { organizationId, status, page, limit });
+    handleError(error, 'getUserAutomations');
   }
 }
 
-async function getUserAutomationById(userJwt, automationId, organizationId) {
+async function getUserAutomationById(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('user_automations')
       .select('*, template:automation_templates(*)')
-      .eq('id', automationId)
-      .eq('organization_id', organizationId)
+      .eq('id', id)
+      .eq('user_id', user_id)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserAutomationById', { automationId, organizationId });
+    handleError(error, 'getUserAutomationById');
   }
 }
 
-async function updateUserAutomation(userJwt, automationId, organizationId, updates) {
+async function updateUserAutomation(id, user_id, updates) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const sanitizedUpdates = { ...updates };
-    if (sanitizedUpdates.name) sanitizedUpdates.name = sanitizeString(sanitizedUpdates.name);
-    if (sanitizedUpdates.description) sanitizedUpdates.description = sanitizeString(sanitizedUpdates.description);
-    if (sanitizedUpdates.status) sanitizedUpdates.status = sanitizeString(sanitizedUpdates.status);
-    if (sanitizedUpdates.trigger_type) sanitizedUpdates.trigger_type = sanitizeString(sanitizedUpdates.trigger_type);
-    
-    sanitizedUpdates.updated_at = new Date().toISOString();
-
     const { error } = await supabase
       .from('user_automations')
-      .update(sanitizedUpdates)
-      .eq('id', automationId)
-      .eq('organization_id', organizationId);
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateUserAutomation', { automationId, organizationId });
+    handleError(error, 'updateUserAutomation');
   }
 }
 
-async function deleteUserAutomation(userJwt, automationId, organizationId) {
+async function deleteUserAutomation(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
+    // Delete runs first
     await supabase
       .from('automation_runs')
       .delete()
-      .eq('automation_id', automationId);
+      .eq('automation_id', id);
 
+    // Delete automation
     const { error } = await supabase
       .from('user_automations')
       .delete()
-      .eq('id', automationId)
-      .eq('organization_id', organizationId);
+      .eq('id', id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteUserAutomation', { automationId, organizationId });
+    handleError(error, 'deleteUserAutomation');
   }
 }
 
@@ -2034,21 +1729,17 @@ async function deleteUserAutomation(userJwt, automationId, organizationId) {
 // LEAD SOURCES
 // ===============================
 
-async function createLeadSource(userJwt, userId, organizationId, name, type, automation_id = null, config = {}) {
+async function createLeadSource(user_id, name, type, automation_id = null, config = {}) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const id = uuidv4();
     const { data, error } = await supabase
       .from('lead_sources')
       .insert({
         id,
-        organization_id: organizationId,
-        created_by: userId,
+        user_id,
         automation_id,
-        name: sanitizeString(name),
-        type: sanitizeString(type),
+        name,
+        type,
         config
       })
       .select()
@@ -2057,44 +1748,38 @@ async function createLeadSource(userJwt, userId, organizationId, name, type, aut
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'createLeadSource', { userId, organizationId, name });
+    handleError(error, 'createLeadSource');
   }
 }
 
-async function getLeadSources(userJwt, organizationId) {
+async function getLeadSources(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('lead_sources')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getLeadSources', { organizationId });
+    handleError(error, 'getLeadSources');
   }
 }
 
-async function updateLeadSourceStats(userJwt, sourceId, organizationId, leadsGenerated) {
+async function updateLeadSourceStats(source_id, leads_generated) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const { error } = await supabase.rpc('increment_lead_source_count', {
-      source_id_param: sourceId,
-      increment_value: leadsGenerated
-    });
+    const { error } = await supabase
+      .from('lead_sources')
+      .update({
+        leads_count: supabase.raw('leads_count + ' + leads_generated)
+      })
+      .eq('id', source_id);
 
-    if (error) {
-      console.error('❌ increment_lead_source_count RPC failed:', error);
-      throw new Error('Atomic increment operation failed - RPC not available');
-    }
-
+    if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateLeadSourceStats', { sourceId, organizationId, leadsGenerated });
+    handleError(error, 'updateLeadSourceStats');
   }
 }
 
@@ -2102,29 +1787,28 @@ async function updateLeadSourceStats(userJwt, sourceId, organizationId, leadsGen
 // CONNECTED ACCOUNTS
 // ===============================
 
-async function saveConnectedAccount(userJwt, userId, organizationId, platform, account_name, api_key_encrypted, account_info = {}, gateway_url = null, connection_type = 'direct') {
+async function saveConnectedAccount(user_id, platform, account_name, api_key_encrypted, account_info = {}, gateway_url = null, connection_type = 'direct') {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const now = new Date().toISOString();
 
+    // Check if exists
     const { data: existing } = await supabase
       .from('connected_accounts')
       .select('id')
-      .eq('organization_id', organizationId)
-      .eq('platform', sanitizeString(platform))
-      .eq('account_name', sanitizeString(account_name))
+      .eq('user_id', user_id)
+      .eq('platform', platform)
+      .eq('account_name', account_name)
       .maybeSingle();
 
     if (existing) {
+      // Update existing
       const { error } = await supabase
         .from('connected_accounts')
         .update({
           api_key_encrypted,
           account_info,
-          gateway_url: sanitizeString(gateway_url),
-          connection_type: sanitizeString(connection_type),
+          gateway_url,
+          connection_type,
           status: 'active',
           last_sync: now,
           updated_at: now
@@ -2134,17 +1818,17 @@ async function saveConnectedAccount(userJwt, userId, organizationId, platform, a
       if (error) throw error;
       return existing.id;
     } else {
+      // Insert new
       const { data, error } = await supabase
         .from('connected_accounts')
         .insert({
-          organization_id: organizationId,
-          created_by: userId,
-          platform: sanitizeString(platform),
-          account_name: sanitizeString(account_name),
+          user_id,
+          platform,
+          account_name,
           api_key_encrypted,
           account_info,
-          gateway_url: sanitizeString(gateway_url),
-          connection_type: sanitizeString(connection_type),
+          gateway_url,
+          connection_type,
           last_sync: now,
           created_at: now,
           updated_at: now
@@ -2156,18 +1840,16 @@ async function saveConnectedAccount(userJwt, userId, organizationId, platform, a
       return data.id;
     }
   } catch (error) {
-    handleError(error, 'saveConnectedAccount', { userId, organizationId, platform });
+    handleError(error, 'saveConnectedAccount');
   }
 }
 
-async function getConnectedAccounts(userJwt, organizationId) {
+async function getConnectedAccounts(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('connected_accounts')
       .select('id, platform, account_name, account_info, status, last_sync, created_at')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -2177,33 +1859,27 @@ async function getConnectedAccounts(userJwt, organizationId) {
       account_info: row.account_info || null
     }));
   } catch (error) {
-    handleError(error, 'getConnectedAccounts', { organizationId });
+    handleError(error, 'getConnectedAccounts');
   }
 }
 
-async function deleteConnectedAccount(userJwt, userId, organizationId, id) {
+async function deleteConnectedAccount(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('connected_accounts')
       .delete()
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteConnectedAccount', { userId, organizationId, id });
+    handleError(error, 'deleteConnectedAccount');
   }
 }
 
-async function updateAccountLastSync(userJwt, userId, organizationId, id) {
+async function updateAccountLastSync(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('connected_accounts')
@@ -2212,12 +1888,12 @@ async function updateAccountLastSync(userJwt, userId, organizationId, id) {
         updated_at: now
       })
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateAccountLastSync', { userId, organizationId, id });
+    handleError(error, 'updateAccountLastSync');
   }
 }
 
@@ -2225,10 +1901,8 @@ async function updateAccountLastSync(userJwt, userId, organizationId, id) {
 // ACTIVITY LOG
 // ===============================
 
-async function logActivity(userJwt, userId, organizationId, action, details, type = 'info', icon = null) {
+async function logActivity(user_id, action, details, type = 'info', icon = null) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const icons = {
       'info': 'fa-info-circle',
       'success': 'fa-check-circle',
@@ -2250,11 +1924,10 @@ async function logActivity(userJwt, userId, organizationId, action, details, typ
     const { error } = await supabase
       .from('activity_log')
       .insert({
-        user_id: userId,
-        organization_id: organizationId,
-        action: sanitizeString(action),
-        details: sanitizeString(details),
-        type: sanitizeString(type),
+        user_id,
+        action,
+        details,
+        type,
         icon: finalIcon,
         timestamp: new Date().toISOString()
       });
@@ -2262,27 +1935,23 @@ async function logActivity(userJwt, userId, organizationId, action, details, typ
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'logActivity', { userId, organizationId, action });
+    handleError(error, 'logActivity');
   }
 }
 
-async function getRecentActivity(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+async function getRecentActivity(user_id, limit = 10) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
-    const result = await getPaginatedResults(
-      supabase
-        .from('activity_log')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('timestamp', { ascending: false }),
-      page,
-      limit
-    );
-    
-    return result;
+    const { data, error } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', user_id)
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
-    handleError(error, 'getRecentActivity', { organizationId, page, limit });
+    handleError(error, 'getRecentActivity');
   }
 }
 
@@ -2290,22 +1959,21 @@ async function getRecentActivity(userJwt, organizationId, page = 1, limit = DEFA
 // GOVERNANCE SETTINGS
 // ===============================
 
-async function getGovernanceSettings(userJwt, organizationId) {
+async function getGovernanceSettings(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     let { data, error } = await supabase
       .from('governance_settings')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .maybeSingle();
 
     if (error) throw error;
 
     if (!data) {
+      // Create default settings
       const { data: newData, error: insertError } = await supabase
         .from('governance_settings')
-        .insert({ organization_id: organizationId })
+        .insert({ user_id })
         .select()
         .single();
 
@@ -2315,29 +1983,28 @@ async function getGovernanceSettings(userJwt, organizationId) {
 
     return data || {};
   } catch (error) {
-    handleError(error, 'getGovernanceSettings', { organizationId });
+    handleError(error, 'getGovernanceSettings');
   }
 }
 
-async function updateGovernanceSettings(userJwt, organizationId, settings) {
+async function updateGovernanceSettings(user_id, settings) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
+    // Ensure record exists
     await supabase
       .from('governance_settings')
-      .upsert({ organization_id: organizationId }, { onConflict: 'organization_id' });
+      .upsert({ user_id }, { onConflict: 'user_id' });
 
     const updateData = { ...settings, updated_at: new Date().toISOString() };
 
     const { error } = await supabase
       .from('governance_settings')
       .update(updateData)
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateGovernanceSettings', { organizationId });
+    handleError(error, 'updateGovernanceSettings');
   }
 }
 
@@ -2345,20 +2012,16 @@ async function updateGovernanceSettings(userJwt, organizationId, settings) {
 // ALERTS
 // ===============================
 
-async function createAlert(userJwt, userId, organizationId, type, severity, title, description) {
+async function createAlert(user_id, type, severity, title, description) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { data, error } = await supabase
       .from('alerts')
       .insert({
-        organization_id: organizationId,
-        user_id: userId,
-        type: sanitizeString(type),
-        severity: sanitizeString(severity),
-        title: sanitizeString(title),
-        description: sanitizeString(description),
+        user_id,
+        type,
+        severity,
+        title,
+        description,
         created_at: new Date().toISOString()
       })
       .select()
@@ -2367,46 +2030,41 @@ async function createAlert(userJwt, userId, organizationId, type, severity, titl
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'createAlert', { userId, organizationId, type });
+    handleError(error, 'createAlert');
   }
 }
 
-async function getActiveAlerts(userJwt, organizationId) {
+async function getActiveAlerts(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('alerts')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .eq('resolved', 0)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getActiveAlerts', { organizationId });
+    handleError(error, 'getActiveAlerts');
   }
 }
 
-async function resolveAlert(userJwt, userId, organizationId, alertId) {
+async function resolveAlert(alert_id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('alerts')
       .update({
         resolved: 1,
         resolved_at: new Date().toISOString()
       })
-      .eq('id', alertId)
-      .eq('organization_id', organizationId);
+      .eq('id', alert_id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'resolveAlert', { userId, organizationId, alertId });
+    handleError(error, 'resolveAlert');
   }
 }
 
@@ -2414,17 +2072,14 @@ async function resolveAlert(userJwt, userId, organizationId, alertId) {
 // USAGE LOGS
 // ===============================
 
-async function logUsage(userJwt, userId, organizationId, provider, model, cost, tokens) {
+async function logUsage(user_id, provider, model, cost, tokens) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { error } = await supabase
       .from('usage_logs')
       .insert({
-        organization_id: organizationId,
-        user_id: userId,
-        provider: sanitizeString(provider),
-        model: sanitizeString(model),
+        user_id,
+        provider,
+        model,
         cost,
         tokens,
         timestamp: new Date().toISOString()
@@ -2432,37 +2087,32 @@ async function logUsage(userJwt, userId, organizationId, provider, model, cost, 
 
     if (error) throw error;
 
-    const { error: rpcError } = await supabase.rpc('increment_used_amount', {
-      organization_id_param: organizationId,
+    // Update governance used_amount
+    await supabase.rpc('increment_used_amount', {
+      user_id_param: user_id,
       cost_param: cost
     });
 
-    if (rpcError) {
-      console.error('❌ increment_used_amount RPC failed:', rpcError);
-      throw new Error('Atomic increment operation failed - RPC not available');
-    }
-
     return true;
   } catch (error) {
-    handleError(error, 'logUsage', { userId, organizationId, provider });
+    handleError(error, 'logUsage');
   }
 }
 
-async function getUsageStats(userJwt, organizationId, days = 30) {
+async function getUsageStats(user_id, days = 30) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     const { data, error } = await supabase
       .from('usage_logs')
       .select('provider, cost, tokens, created_at')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .gte('timestamp', cutoffDate.toISOString());
 
     if (error) throw error;
 
+    // Aggregate by provider
     const stats = {};
     (data || []).forEach(log => {
       if (!stats[log.provider]) {
@@ -2480,7 +2130,7 @@ async function getUsageStats(userJwt, organizationId, days = 30) {
 
     return Object.values(stats);
   } catch (error) {
-    handleError(error, 'getUsageStats', { organizationId, days });
+    handleError(error, 'getUsageStats');
   }
 }
 
@@ -2488,11 +2138,8 @@ async function getUsageStats(userJwt, organizationId, days = 30) {
 // MOBILE INSTANCES
 // ===============================
 
-async function spawnMobileInstance(userJwt, userId, organizationId) {
+async function spawnMobileInstance(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const id = 'inst_' + uuidv4().substring(0, 8);
     const now = new Date().toISOString();
 
@@ -2500,8 +2147,7 @@ async function spawnMobileInstance(userJwt, userId, organizationId) {
       .from('mobile_instances')
       .insert({
         id,
-        organization_id: organizationId,
-        user_id: userId,
+        user_id,
         created_at: now,
         last_active: now
       })
@@ -2511,43 +2157,38 @@ async function spawnMobileInstance(userJwt, userId, organizationId) {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'spawnMobileInstance', { userId, organizationId });
+    handleError(error, 'spawnMobileInstance');
   }
 }
 
-async function getMobileInstances(userJwt, organizationId) {
+async function getMobileInstances(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('mobile_instances')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getMobileInstances', { organizationId });
+    handleError(error, 'getMobileInstances');
   }
 }
 
-async function terminateMobileInstance(userJwt, userId, organizationId, id) {
+async function terminateMobileInstance(id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('mobile_instances')
       .update({ status: 'terminated' })
       .eq('id', id)
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'terminateMobileInstance', { userId, organizationId, id });
+    handleError(error, 'terminateMobileInstance');
   }
 }
 
@@ -2555,58 +2196,50 @@ async function terminateMobileInstance(userJwt, userId, organizationId, id) {
 // BROADCASTS
 // ===============================
 
-async function saveBroadcast(userJwt, userId, organizationId, id, subject, recipients, sent_count, failed_count, status = 'sent') {
+async function saveBroadcast(id, user_id, subject, recipients, sent_count, failed_count, status = 'sent') {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('broadcasts')
       .insert({
         id,
-        organization_id: organizationId,
-        user_id: userId,
-        subject: sanitizeString(subject),
+        user_id,
+        subject,
         recipients,
         sent_count,
         failed_count,
-        status: sanitizeString(status),
+        status,
         created_at: new Date().toISOString()
       });
 
     if (error) throw error;
     return id;
   } catch (error) {
-    handleError(error, 'saveBroadcast', { userId, organizationId, id });
+    handleError(error, 'saveBroadcast');
   }
 }
 
-async function getBroadcastsByUser(userJwt, organizationId) {
+async function getBroadcastsByUser(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('broadcasts')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('user_id', user_id)
       .order('created_at', { ascending: false })
       .limit(10);
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getBroadcastsByUser', { organizationId });
+    handleError(error, 'getBroadcastsByUser');
   }
 }
 
-async function getBroadcastStats(userJwt, organizationId) {
+async function getBroadcastStats(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('broadcasts')
       .select('recipients, sent_count, failed_count')
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
 
@@ -2625,7 +2258,7 @@ async function getBroadcastStats(userJwt, organizationId) {
 
     return stats;
   } catch (error) {
-    handleError(error, 'getBroadcastStats', { organizationId });
+    handleError(error, 'getBroadcastStats');
   }
 }
 
@@ -2635,7 +2268,7 @@ async function getBroadcastStats(userJwt, organizationId) {
 
 async function getIncidents(limit = 5) {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('incidents')
       .select('*')
       .order('date', { ascending: false })
@@ -2644,19 +2277,19 @@ async function getIncidents(limit = 5) {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getIncidents', { limit });
+    handleError(error, 'getIncidents');
   }
 }
 
 async function addIncident(date, title, description, status = 'resolved') {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('incidents')
       .insert({
         date,
-        title: sanitizeString(title),
-        description: sanitizeString(description),
-        status: sanitizeString(status)
+        title,
+        description,
+        status
       })
       .select()
       .single();
@@ -2664,7 +2297,7 @@ async function addIncident(date, title, description, status = 'resolved') {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'addIncident', { title });
+    handleError(error, 'addIncident');
   }
 }
 
@@ -2674,23 +2307,23 @@ async function addIncident(date, title, description, status = 'resolved') {
 
 async function addSubscriber(email) {
   try {
-    const { error } = await adminSupabase
+    const { error } = await supabase
       .from('status_subscribers')
       .upsert(
-        { email: normalizeEmail(email) },
+        { email: email.toLowerCase().trim() },
         { onConflict: 'email', ignore: true }
       );
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'addSubscriber', { email });
+    handleError(error, 'addSubscriber');
   }
 }
 
 async function getSubscribers() {
   try {
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('status_subscribers')
       .select('email')
       .order('created_at', { ascending: false });
@@ -2704,15 +2337,15 @@ async function getSubscribers() {
 
 async function removeSubscriber(email) {
   try {
-    const { error } = await adminSupabase
+    const { error } = await supabase
       .from('status_subscribers')
       .delete()
-      .eq('email', normalizeEmail(email));
+      .eq('email', email.toLowerCase().trim());
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'removeSubscriber', { email });
+    handleError(error, 'removeSubscriber');
   }
 }
 
@@ -2720,20 +2353,16 @@ async function removeSubscriber(email) {
 // GENERATED MEDIA
 // ===============================
 
-async function saveGeneratedMedia(userJwt, userId, organizationId, media_type, file_url, metadata = {}) {
+async function saveGeneratedMedia(user_id, media_type, file_url, metadata = {}) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const id = uuidv4();
     const { data, error } = await supabase
       .from('generated_media')
       .insert({
         id,
-        organization_id: organizationId,
-        created_by: userId,
-        media_type: sanitizeString(media_type),
-        file_url: sanitizeString(file_url),
+        user_id,
+        media_type,
+        file_url,
         metadata,
         created_at: new Date().toISOString()
       })
@@ -2743,57 +2372,52 @@ async function saveGeneratedMedia(userJwt, userId, organizationId, media_type, f
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveGeneratedMedia', { userId, organizationId, media_type });
+    handleError(error, 'saveGeneratedMedia');
   }
 }
 
-async function getGeneratedMedia(userJwt, organizationId, media_type = null, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+async function getGeneratedMedia(user_id, media_type = null, limit = 50, offset = 0) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     let query = supabase
       .from('generated_media')
       .select('*', { count: 'exact' })
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (media_type && media_type !== 'all') {
-      query = query.eq('media_type', sanitizeString(media_type));
+      query = query.eq('media_type', media_type);
     }
 
-    const result = await getPaginatedResults(query, page, limit, true);
-    return result;
+    const { data, error, count } = await query;
+    if (error) throw error;
+    return { media: data || [], total: count || 0 };
   } catch (error) {
-    handleError(error, 'getGeneratedMedia', { organizationId, media_type, page, limit });
+    handleError(error, 'getGeneratedMedia');
   }
 }
 
-async function deleteGeneratedMedia(userJwt, userId, organizationId, mediaId) {
+async function deleteGeneratedMedia(media_id, user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    await validateOrganizationAccess(userId, organizationId);
-    
     const { error } = await supabase
       .from('generated_media')
       .delete()
-      .eq('id', mediaId)
-      .eq('organization_id', organizationId);
+      .eq('id', media_id)
+      .eq('user_id', user_id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteGeneratedMedia', { userId, organizationId, mediaId });
+    handleError(error, 'deleteGeneratedMedia');
   }
 }
 
-async function getMediaStats(userJwt, organizationId) {
+async function getMediaStats(user_id) {
   try {
-    const supabase = getUserSupabaseClient(userJwt);
-    
     const { data, error } = await supabase
       .from('generated_media')
       .select('media_type')
-      .eq('organization_id', organizationId);
+      .eq('user_id', user_id);
 
     if (error) throw error;
     
@@ -2807,115 +2431,25 @@ async function getMediaStats(userJwt, organizationId) {
     
     return stats;
   } catch (error) {
-    handleError(error, 'getMediaStats', { organizationId });
+    handleError(error, 'getMediaStats');
   }
 }
 
 // ===============================
-// ADMIN INITIALIZATION (System only)
+// INITIALIZE ON LOAD
 // ===============================
-
-async function createAdminIfNotExists(email, hashedPassword) {
-  try {
-    const cleanEmail = normalizeEmail(email);
-    
-    const existing = await getUserByEmail(cleanEmail);
-    if (existing) return existing;
-
-    const orgId = uuidv4();
-    
-    const { data: org, error: orgError } = await adminSupabase
-      .from('organizations')
-      .insert({
-        id: orgId,
-        name: "Admin Organization",
-        slug: "admin-org",
-        plan: 'agency',
-        created_by: '00000000-0000-0000-0000-000000000000',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (orgError) throw orgError;
-    
-    const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
-      email: cleanEmail,
-      password: hashedPassword,
-      email_confirm: true,
-      user_metadata: {
-        organization_id: orgId,
-        business_name: "Admin Business",
-        is_admin: true
-      }
-    });
-
-    if (authError) throw authError;
-
-    const userId = authUser.user.id;
-
-    const { data: user, error: userError } = await adminSupabase
-      .from('users')
-      .insert({
-        id: userId,
-        email: cleanEmail,
-        business_name: "Admin Business",
-        plan: 'agency',
-        is_verified: 1,
-        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        business_profile: {},
-        subscription_status: 'active'
-      })
-      .select()
-      .single();
-
-    if (userError) {
-      await adminSupabase.auth.admin.deleteUser(userId);
-      throw userError;
-    }
-
-    await adminSupabase
-      .from('organization_members')
-      .insert({
-        organization_id: orgId,
-        user_id: userId,
-        role: 'owner',
-        created_at: new Date().toISOString()
-      });
-
-    await initializeOrganizationSettings(orgId);
-
-    return { id: userId, email: cleanEmail, organizationId: orgId };
-  } catch (error) {
-    handleError(error, 'createAdminIfNotExists', { email });
-  }
-}
+initializeTables().catch(console.error);
 
 // ===============================
 // EXPORTS
 // ===============================
 
 module.exports = {
-  // Core
-  adminSupabase,
-  getUserSupabaseClient,
-  getClientWithToken,
+  // Core database functions
+  supabase,
   
-  // Pagination constants
-  DEFAULT_PAGE_LIMIT,
-  MAX_PAGE_LIMIT,
-  
-  // Organization / Tenant
-  createOrganization,
-  getOrganizationBySlug,
-  getOrganizationById,
-  getUserOrganizations,
-  addOrganizationMember,
-  removeOrganizationMember,
-  updateOrganizationMemberRole,
-  getOrganizationUsers,
-  validateOrganizationAccess,
+  // Table initialization
+  initializeTables,
   
   // Users
   createUser,
@@ -2924,7 +2458,7 @@ module.exports = {
   getUserByBusinessId,
   getUserById,
   
-  // Business Profile
+  // Business Profile (AI Business Coach)
   getBusinessProfile,
   updateBusinessProfile,
   
@@ -2963,37 +2497,48 @@ module.exports = {
   
   // Knowledge Base
   addKnowledge,
-  getKnowledgeByOrganization,
+  getKnowledgeByUser,
   deleteKnowledge,
   
   // Widget
   setWidgetKey,
   getWidgetKey,
   
-  // Monetization
-  getOrganizationSubscription,
-  updateSubscriptionStatus,
-  checkPlanLimits,
-  
-  // Plan & Usage (Pure RPC - Race Condition Safe)
+  // Plan & Usage
+  updatePlan,
   incrementMessagesUsed,
   incrementLeadsUsed,
   
   // Leads
   saveLead,
-  getLeadsByOrganization,
-  getLeadById,
+  getLeadsByUser,
+  getLeadByEmail,
   updateLeadStatus,
-  deleteLead,
+  getLeadScore,
+  saveLeadScore,
   
   // Chats
   saveChat,
-  getChatsByOrganization,
+  getChatsByUser,
   getChatsBySession,
   
-  // Automations
+  // Notification Settings
+  getNotificationSettings,
+  saveNotificationSettings,
+  
+  // API Keys
+  createApiKey,
+  getApiKeys,
+  deleteApiKey,
+  updateApiKeyLastUsed,
+  validateApiKey,
+  
+  // Admin
+  createAdminIfNotExists,
+  
+  // Automations (Basic)
   createAutomation,
-  getAutomationsByOrganization,
+  getAutomationsByUser,
   getAutomationById,
   updateAutomation,
   deleteAutomation,
@@ -3009,7 +2554,7 @@ module.exports = {
   getAutomationTemplateBySlug,
   incrementTemplateUsage,
   
-  // User Automations
+  // User Automations (Advanced)
   createUserAutomation,
   getUserAutomations,
   getUserAutomationById,
@@ -3067,8 +2612,5 @@ module.exports = {
   saveGeneratedMedia,
   getGeneratedMedia,
   deleteGeneratedMedia,
-  getMediaStats,
-  
-  // Admin
-  createAdminIfNotExists
+  getMediaStats
 };
