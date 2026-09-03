@@ -584,6 +584,44 @@ CREATE TABLE IF NOT EXISTS roi_stats (
 );
 
 -- ============================================
+-- MISSING TABLES: WEEKLY REPORTS & HEALTH SCANS
+-- ============================================
+
+-- 8. WEEKLY REPORTS TABLE
+CREATE TABLE IF NOT EXISTS weekly_reports (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  report_type TEXT NOT NULL,
+  week_start DATE NOT NULL,
+  week_end DATE NOT NULL,
+  data JSONB NOT NULL DEFAULT '{}',
+  summary TEXT,
+  insights JSONB DEFAULT '{}',
+  recommendations JSONB DEFAULT '{}',
+  generated_at TIMESTAMPTZ DEFAULT NOW(),
+  delivered_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, week_start, report_type)
+);
+
+-- 9. HEALTH SCANS TABLE
+CREATE TABLE IF NOT EXISTS health_scans (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scan_type TEXT NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed')),
+  result JSONB DEFAULT '{}',
+  issues_found INTEGER DEFAULT 0,
+  issues_resolved INTEGER DEFAULT 0,
+  score INTEGER DEFAULT 0,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
 -- CREATE ADDITIONAL INDEXES FOR PERFORMANCE
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -625,6 +663,13 @@ CREATE INDEX IF NOT EXISTS idx_business_insights_insight_type ON business_insigh
 CREATE INDEX IF NOT EXISTS idx_roi_stats_user_id ON roi_stats(user_id);
 CREATE INDEX IF NOT EXISTS idx_roi_stats_date ON roi_stats(date);
 
+-- WEEKLY REPORTS & HEALTH SCANS INDEXES
+CREATE INDEX IF NOT EXISTS idx_weekly_reports_user_id ON weekly_reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_weekly_reports_week_start ON weekly_reports(week_start);
+CREATE INDEX IF NOT EXISTS idx_weekly_reports_report_type ON weekly_reports(report_type);
+CREATE INDEX IF NOT EXISTS idx_health_scans_user_id ON health_scans(user_id);
+CREATE INDEX IF NOT EXISTS idx_health_scans_status ON health_scans(status);
+
 -- ============================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================
@@ -635,49 +680,202 @@ ALTER TABLE generated_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_recommendations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE business_insights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roi_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE weekly_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE health_scans ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- RLS POLICIES - FIXED TYPE CAST ERRORS
+-- Using JWT claim parsing instead of direct UUID cast
+-- ============================================
+
+-- Helper function to get user_id from JWT claims
+-- This safely extracts the integer user_id from the auth token
+CREATE OR REPLACE FUNCTION get_user_id_from_jwt()
+RETURNS INTEGER AS $$
+DECLARE
+  claims_json JSON;
+  user_id_int INTEGER;
+BEGIN
+  -- Get the JWT claims from the request
+  claims_json := NULLIF(current_setting('request.jwt.claims', true), '')::JSON;
+  
+  -- Extract user_id as integer (assumes it's stored in the JWT)
+  -- If not present, return NULL
+  user_id_int := (claims_json ->> 'user_id')::INTEGER;
+  
+  RETURN user_id_int;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- Templates are readable by all authenticated users
 CREATE POLICY "Templates are viewable by all authenticated users" 
   ON automation_templates FOR SELECT USING (auth.role() = 'authenticated');
 
+-- ============================================
+-- USER AUTOMATIONS POLICIES
+-- ============================================
+
 -- Users can only see their own automations
 CREATE POLICY "Users can view their own automations" 
-  ON user_automations FOR SELECT USING (auth.uid()::integer = user_id);
+  ON user_automations FOR SELECT 
+  USING (user_automations.user_id = get_user_id_from_jwt());
 
 CREATE POLICY "Users can insert their own automations" 
-  ON user_automations FOR INSERT WITH CHECK (auth.uid()::integer = user_id);
+  ON user_automations FOR INSERT 
+  WITH CHECK (user_automations.user_id = get_user_id_from_jwt());
 
 CREATE POLICY "Users can update their own automations" 
-  ON user_automations FOR UPDATE USING (auth.uid()::integer = user_id);
+  ON user_automations FOR UPDATE 
+  USING (user_automations.user_id = get_user_id_from_jwt());
 
 CREATE POLICY "Users can delete their own automations" 
-  ON user_automations FOR DELETE USING (auth.uid()::integer = user_id);
+  ON user_automations FOR DELETE 
+  USING (user_automations.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- LEAD SOURCES POLICIES
+-- ============================================
 
 -- Users can only see their own lead sources
 CREATE POLICY "Users can view their own lead sources" 
-  ON lead_sources FOR SELECT USING (auth.uid()::integer = user_id);
+  ON lead_sources FOR SELECT 
+  USING (lead_sources.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can insert their own lead sources" 
+  ON lead_sources FOR INSERT 
+  WITH CHECK (lead_sources.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can update their own lead sources" 
+  ON lead_sources FOR UPDATE 
+  USING (lead_sources.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own lead sources" 
+  ON lead_sources FOR DELETE 
+  USING (lead_sources.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- GENERATED MEDIA POLICIES
+-- ============================================
 
 -- Users can only see their own generated media
 CREATE POLICY "Users can view their own generated media" 
-  ON generated_media FOR SELECT USING (auth.uid()::integer = user_id);
+  ON generated_media FOR SELECT 
+  USING (generated_media.user_id = get_user_id_from_jwt());
 
--- AI Recommendations policies
+CREATE POLICY "Users can insert their own generated media" 
+  ON generated_media FOR INSERT 
+  WITH CHECK (generated_media.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can update their own generated media" 
+  ON generated_media FOR UPDATE 
+  USING (generated_media.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own generated media" 
+  ON generated_media FOR DELETE 
+  USING (generated_media.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- AI RECOMMENDATIONS POLICIES
+-- ============================================
+
 CREATE POLICY "Users can view their own recommendations" 
-  ON ai_recommendations FOR SELECT USING (auth.uid()::integer = user_id);
+  ON ai_recommendations FOR SELECT 
+  USING (ai_recommendations.user_id = get_user_id_from_jwt());
 
 CREATE POLICY "Users can insert their own recommendations" 
-  ON ai_recommendations FOR INSERT WITH CHECK (auth.uid()::integer = user_id);
+  ON ai_recommendations FOR INSERT 
+  WITH CHECK (ai_recommendations.user_id = get_user_id_from_jwt());
 
--- Business Insights policies
+CREATE POLICY "Users can update their own recommendations" 
+  ON ai_recommendations FOR UPDATE 
+  USING (ai_recommendations.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own recommendations" 
+  ON ai_recommendations FOR DELETE 
+  USING (ai_recommendations.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- BUSINESS INSIGHTS POLICIES
+-- ============================================
+
 CREATE POLICY "Users can view their own insights" 
-  ON business_insights FOR SELECT USING (auth.uid()::integer = user_id);
+  ON business_insights FOR SELECT 
+  USING (business_insights.user_id = get_user_id_from_jwt());
 
--- ROI Stats policies
+CREATE POLICY "Users can insert their own insights" 
+  ON business_insights FOR INSERT 
+  WITH CHECK (business_insights.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can update their own insights" 
+  ON business_insights FOR UPDATE 
+  USING (business_insights.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own insights" 
+  ON business_insights FOR DELETE 
+  USING (business_insights.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- ROI STATS POLICIES
+-- ============================================
+
 CREATE POLICY "Users can view their own ROI stats" 
-  ON roi_stats FOR SELECT USING (auth.uid()::integer = user_id);
+  ON roi_stats FOR SELECT 
+  USING (roi_stats.user_id = get_user_id_from_jwt());
 
 CREATE POLICY "Users can insert their own ROI stats" 
-  ON roi_stats FOR INSERT WITH CHECK (auth.uid()::integer = user_id);
+  ON roi_stats FOR INSERT 
+  WITH CHECK (roi_stats.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can update their own ROI stats" 
+  ON roi_stats FOR UPDATE 
+  USING (roi_stats.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own ROI stats" 
+  ON roi_stats FOR DELETE 
+  USING (roi_stats.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- WEEKLY REPORTS POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view their own weekly reports" 
+  ON weekly_reports FOR SELECT 
+  USING (weekly_reports.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can insert their own weekly reports" 
+  ON weekly_reports FOR INSERT 
+  WITH CHECK (weekly_reports.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can update their own weekly reports" 
+  ON weekly_reports FOR UPDATE 
+  USING (weekly_reports.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own weekly reports" 
+  ON weekly_reports FOR DELETE 
+  USING (weekly_reports.user_id = get_user_id_from_jwt());
+
+-- ============================================
+-- HEALTH SCANS POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view their own health scans" 
+  ON health_scans FOR SELECT 
+  USING (health_scans.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can insert their own health scans" 
+  ON health_scans FOR INSERT 
+  WITH CHECK (health_scans.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can update their own health scans" 
+  ON health_scans FOR UPDATE 
+  USING (health_scans.user_id = get_user_id_from_jwt());
+
+CREATE POLICY "Users can delete their own health scans" 
+  ON health_scans FOR DELETE 
+  USING (health_scans.user_id = get_user_id_from_jwt());
 
 -- ============================================
 -- INSERT SAMPLE INCIDENTS
@@ -705,3 +903,30 @@ SELECT
   'Resend API had intermittent issues. All emails delivered.', 
   'resolved'
 WHERE NOT EXISTS (SELECT 1 FROM incidents WHERE title = 'Email Delivery Delay');
+
+-- ============================================
+-- INSERT SAMPLE WEEKLY REPORTS (for testing)
+-- ============================================
+INSERT INTO weekly_reports (user_id, report_type, week_start, week_end, data, summary)
+SELECT 
+  1,
+  'business_summary',
+  DATE_TRUNC('week', CURRENT_DATE)::DATE,
+  DATE_TRUNC('week', CURRENT_DATE)::DATE + INTERVAL '6 days',
+  '{"leads": 45, "chats": 120, "automations": 5}'::JSONB,
+  'This week showed strong growth with 45 new leads and 120 chat interactions.'
+WHERE EXISTS (SELECT 1 FROM users WHERE id = 1)
+  AND NOT EXISTS (SELECT 1 FROM weekly_reports WHERE user_id = 1 AND week_start = DATE_TRUNC('week', CURRENT_DATE)::DATE);
+
+-- ============================================
+-- INSERT SAMPLE HEALTH SCANS (for testing)
+-- ============================================
+INSERT INTO health_scans (user_id, scan_type, status, result, score)
+SELECT 
+  1,
+  'full_system',
+  'completed',
+  '{"checks": {"database": "healthy", "api": "healthy", "ai": "healthy"}, "issues": []}'::JSONB,
+  100
+WHERE EXISTS (SELECT 1 FROM users WHERE id = 1)
+  AND NOT EXISTS (SELECT 1 FROM health_scans WHERE user_id = 1 AND scan_type = 'full_system');
