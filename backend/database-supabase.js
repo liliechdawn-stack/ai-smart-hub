@@ -1,242 +1,547 @@
 // backend/database-supabase.js
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
-// Initialize Supabase client
+// ===============================
+// CONFIGURATION
+// ===============================
+
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ SUPABASE_URL and SUPABASE_KEY must be set in .env');
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
+  console.error('❌ ENCRYPTION_KEY must be set in .env (64 hex characters for AES-256)');
+  process.exit(1);
+}
 
-console.log('✅ Supabase client initialized');
+// ===============================
+// SUPABASE CLIENT FACTORIES
+// ===============================
+
+/**
+ * Admin client with service_role key - USE ONLY FOR SYSTEM OPERATIONS
+ * This bypasses RLS - use with extreme caution!
+ */
+const adminSupabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
+console.log('✅ Admin Supabase client initialized (service_role)');
+
+/**
+ * Create a user-scoped Supabase client using JWT
+ * This ensures RLS policies are enforced for the authenticated user
+ */
+function getUserSupabaseClient(userJwt) {
+  if (!userJwt) {
+    throw new Error('User JWT is required for authenticated client');
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${userJwt}`
+      }
+    }
+  });
+}
+
+/**
+ * Create a Supabase client with a specific access token (for webhooks, etc.)
+ */
+function getClientWithToken(accessToken) {
+  if (!accessToken) {
+    throw new Error('Access token is required');
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  });
+}
+
+// ===============================
+// PAGINATION CONSTANTS
+// ===============================
+
+const DEFAULT_PAGE_LIMIT = 50;
+const MAX_PAGE_LIMIT = 100;
+
+// ===============================
+// CRYPTOGRAPHIC HELPERS
+// ===============================
+
+function encryptSensitiveData(text) {
+  if (!text) return null;
+  try {
+    const keyBuffer = Buffer.from(ENCRYPTION_KEY, 'hex');
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
+    
+    let encrypted = cipher.update(text, 'utf8', 'base64');
+    encrypted += cipher.final('base64');
+    const authTag = cipher.getAuthTag();
+    
+    const combined = Buffer.concat([
+      iv,
+      authTag,
+      Buffer.from(encrypted, 'base64')
+    ]);
+    
+    return combined.toString('base64');
+  } catch (error) {
+    console.error('Encryption error:', error.message);
+    return null;
+  }
+}
+
+function decryptSensitiveData(encryptedData) {
+  if (!encryptedData) return null;
+  try {
+    const combined = Buffer.from(encryptedData, 'base64');
+    const iv = combined.subarray(0, 16);
+    const authTag = combined.subarray(16, 32);
+    const encrypted = combined.subarray(32);
+    
+    const keyBuffer = Buffer.from(ENCRYPTION_KEY, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, iv);
+    decipher.setAuthTag(authTag);
+    
+    let decrypted = decipher.update(encrypted.toString('base64'), 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  } catch (error) {
+    console.error('Decryption error:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Generate a secure API key with prefix
+ */
+function generateApiKey() {
+  const rawKey = `ak_${crypto.randomBytes(24).toString('base64url')}`;
+  return rawKey;
+}
+
+/**
+ * Hash an API key for deterministic lookup
+ */
+function hashApiKey(rawKey) {
+  return crypto.createHash('sha256').update(rawKey).digest('hex');
+}
 
 // ===============================
 // HELPER FUNCTIONS
 // ===============================
 
-/**
- * Handle Supabase errors consistently
- */
-function handleError(error, operation) {
-  console.error(`❌ Database error in ${operation}:`, error);
-  throw new Error(`Database operation failed: ${operation}`);
+function normalizeEmail(email) {
+  return email?.toLowerCase().trim() || '';
+}
+
+function sanitizeString(str) {
+  return str?.trim() || '';
 }
 
 /**
- * Get single row or null
+ * Sanitize error context by removing sensitive data
  */
-function getSingle(result) {
-  if (result.error) throw result.error;
-  return result.data?.[0] || null;
-}
-
-/**
- * Get all rows
- */
-function getAll(result) {
-  if (result.error) throw result.error;
-  return result.data || [];
-}
-
-// ===============================
-// TABLE INITIALIZATION FUNCTIONS
-// ===============================
-
-/**
- * Ensure all required tables exist
- */
-async function initializeTables() {
-  console.log('🔧 Initializing database tables...');
+function sanitizeErrorContext(context) {
+  if (!context) return {};
   
-  // Check if users table has business_profile column
-  const { error: columnCheckError } = await supabase
-    .from('users')
-    .select('business_profile')
-    .limit(1);
+  const sensitiveKeys = ['password', 'token', 'apiKey', 'api_key', 'secret', 'key', 'auth', 'authorization', 'jwt'];
+  const sanitized = {};
   
-  if (columnCheckError && columnCheckError.message.includes('column "business_profile" does not exist')) {
-    console.log('📝 Adding business_profile column to users table...');
-    const { error: alterError } = await supabase.rpc('add_business_profile_column', {});
-    if (alterError && alterError.message.includes('function')) {
-      console.log('⚠️ Could not add column automatically. Please run SQL manually.');
-      console.log('SQL: ALTER TABLE users ADD COLUMN business_profile JSONB DEFAULT \'{}\';');
+  for (const [key, value] of Object.entries(context)) {
+    if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitizeErrorContext(value);
+    } else {
+      sanitized[key] = value;
     }
   }
   
-  // Create weekly_reports table
-  await ensureWeeklyReportsTable();
-  
-  // Create health_scans table
-  await ensureHealthScansTable();
-  
-  // Create ai_recommendations table
-  await ensureAiRecommendationsTable();
-  
-  console.log('✅ Database tables initialized');
+  return sanitized;
 }
 
 /**
- * Ensure weekly_reports table exists
+ * Handle Supabase errors with sanitized logging
  */
-async function ensureWeeklyReportsTable() {
-  try {
-    const { error: checkError } = await supabase
-      .from('weekly_reports')
-      .select('id')
-      .limit(1);
+function handleError(error, operation, context = {}) {
+  const sanitizedContext = sanitizeErrorContext(context);
+  const errorDetails = {
+    operation,
+    context: sanitizedContext,
+    code: error.code || 'unknown',
+    message: error.message || 'Unknown error',
+    details: error.details || null,
+    hint: error.hint || null
+  };
+  
+  console.error(`❌ Database error in ${operation}:`, {
+    ...errorDetails,
+    stack: error.stack?.split('\n').slice(0, 3).join('\n')
+  });
+  
+  const err = new Error(`Database operation failed: ${operation}`);
+  err.originalError = error;
+  err.code = error.code;
+  err.details = errorDetails;
+  throw err;
+}
+
+/**
+ * Validate organization access (uses admin client for membership check)
+ */
+async function validateOrganizationAccess(userId, organizationId) {
+  if (!organizationId) return true;
+  
+  const { data, error } = await adminSupabase
+    .from('organization_members')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  
+  if (error) throw error;
+  if (!data) throw new Error('User does not have access to this organization');
+  
+  return data.role;
+}
+
+/**
+ * Get paginated results with metadata
+ * Uses count estimate for large tables to prevent performance bottlenecks
+ */
+async function getPaginatedResults(query, page = 1, limit = DEFAULT_PAGE_LIMIT, useEstimatedCount = false) {
+  const safeLimit = Math.min(limit, MAX_PAGE_LIMIT);
+  const offset = (Math.max(page, 1) - 1) * safeLimit;
+  
+  let countQuery = query;
+  
+  // Use estimated count for large tables if requested
+  if (useEstimatedCount) {
+    // For large tables, we can skip exact count to improve performance
+    // The frontend can use the 'hasMore' flag instead
+    const { data, error } = await query
+      .range(offset, offset + safeLimit - 1)
+      .select('*');
     
-    if (checkError && checkError.code === '42P01') {
-      console.log('📝 Creating weekly_reports table...');
-      // Create table using SQL via REST API
-      const { error: createError } = await supabase.rpc('create_weekly_reports_table', {});
-      if (createError && createError.message.includes('function')) {
-        console.log('⚠️ Please create weekly_reports table manually with SQL:');
-        console.log(`
-          CREATE TABLE IF NOT EXISTS weekly_reports (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            week_start DATE NOT NULL,
-            report_data JSONB NOT NULL,
-            sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-          CREATE INDEX IF NOT EXISTS idx_weekly_reports_user_id ON weekly_reports(user_id);
-          CREATE INDEX IF NOT EXISTS idx_weekly_reports_week_start ON weekly_reports(week_start);
-        `);
+    if (error) throw error;
+    
+    // Check if there are more records beyond this page
+    let hasMore = false;
+    if (data && data.length === safeLimit) {
+      // Check if there's at least one more record
+      const { data: nextData, error: nextError } = await query
+        .range(offset + safeLimit, offset + safeLimit)
+        .select('id')
+        .limit(1);
+      
+      if (!nextError && nextData && nextData.length > 0) {
+        hasMore = true;
       }
     }
+    
+    return {
+      data: data || [],
+      pagination: {
+        page: Math.max(page, 1),
+        limit: safeLimit,
+        hasMore,
+        total: null // Not provided for performance
+      }
+    };
+  }
+  
+  // Standard exact count for smaller tables
+  const { data, error, count } = await query
+    .range(offset, offset + safeLimit - 1)
+    .select('*', { count: 'exact' });
+  
+  if (error) throw error;
+  
+  return {
+    data: data || [],
+    pagination: {
+      page: Math.max(page, 1),
+      limit: safeLimit,
+      total: count || 0,
+      totalPages: Math.ceil((count || 0) / safeLimit)
+    }
+  };
+}
+
+// ===============================
+// ORGANIZATION / TENANT FUNCTIONS
+// ===============================
+
+async function createOrganization(userId, name, slug, plan = 'free') {
+  try {
+    const orgId = uuidv4();
+    const now = new Date().toISOString();
+    
+    const { data: org, error: orgError } = await adminSupabase
+      .from('organizations')
+      .insert({
+        id: orgId,
+        name: sanitizeString(name),
+        slug: sanitizeString(slug),
+        plan,
+        created_by: userId,
+        created_at: now,
+        updated_at: now
+      })
+      .select()
+      .single();
+    
+    if (orgError) throw orgError;
+    
+    const { error: memberError } = await adminSupabase
+      .from('organization_members')
+      .insert({
+        organization_id: orgId,
+        user_id: userId,
+        role: 'owner',
+        created_at: now
+      });
+    
+    if (memberError) throw memberError;
+    
+    await initializeOrganizationSettings(orgId);
+    
+    return org;
   } catch (error) {
-    console.error('Error ensuring weekly_reports table:', error.message);
+    handleError(error, 'createOrganization', { userId, name, slug });
   }
 }
 
-/**
- * Ensure health_scans table exists
- */
-async function ensureHealthScansTable() {
+async function initializeOrganizationSettings(organizationId) {
   try {
-    const { error: checkError } = await supabase
-      .from('health_scans')
-      .select('id')
-      .limit(1);
+    await adminSupabase
+      .from('organization_settings')
+      .insert({
+        organization_id: organizationId,
+        widget_color: '#d4af37',
+        welcome_message: 'How can I help you today?',
+        ai_tone: 'professional'
+      });
     
-    if (checkError && checkError.code === '42P01') {
-      console.log('📝 Creating health_scans table...');
-      const { error: createError } = await supabase.rpc('create_health_scans_table', {});
-      if (createError && createError.message.includes('function')) {
-        console.log('⚠️ Please create health_scans table manually with SQL:');
-        console.log(`
-          CREATE TABLE IF NOT EXISTS health_scans (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            scan_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            findings JSONB NOT NULL,
-            recommendations JSONB NOT NULL,
-            stats JSONB,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-          CREATE INDEX IF NOT EXISTS idx_health_scans_user_id ON health_scans(user_id);
-          CREATE INDEX IF NOT EXISTS idx_health_scans_scan_date ON health_scans(scan_date);
-        `);
-      }
-    }
+    await adminSupabase
+      .from('governance_settings')
+      .insert({ organization_id: organizationId });
+    
+    await adminSupabase
+      .from('notification_settings')
+      .insert({ organization_id: organizationId });
   } catch (error) {
-    console.error('Error ensuring health_scans table:', error.message);
+    console.error('Error initializing organization settings:', error.message);
   }
 }
 
-/**
- * Ensure ai_recommendations table exists
- */
-async function ensureAiRecommendationsTable() {
+async function getOrganizationBySlug(slug) {
   try {
-    const { error: checkError } = await supabase
-      .from('ai_recommendations')
-      .select('id')
-      .limit(1);
+    const { data, error } = await adminSupabase
+      .from('organizations')
+      .select('*')
+      .eq('slug', sanitizeString(slug))
+      .maybeSingle();
     
-    if (checkError && checkError.code === '42P01') {
-      console.log('📝 Creating ai_recommendations table...');
-      const { error: createError } = await supabase.rpc('create_ai_recommendations_table', {});
-      if (createError && createError.message.includes('function')) {
-        console.log('⚠️ Please create ai_recommendations table manually with SQL:');
-        console.log(`
-          CREATE TABLE IF NOT EXISTS ai_recommendations (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            automation_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            reason TEXT NOT NULL,
-            confidence_score INTEGER DEFAULT 85,
-            roi INTEGER DEFAULT 500,
-            hours_saved INTEGER DEFAULT 5,
-            leads_generated INTEGER DEFAULT 20,
-            status TEXT DEFAULT 'pending',
-            deployed_at TIMESTAMP WITH TIME ZONE,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-          CREATE INDEX IF NOT EXISTS idx_ai_recommendations_user_id ON ai_recommendations(user_id);
-          CREATE INDEX IF NOT EXISTS idx_ai_recommendations_status ON ai_recommendations(status);
-        `);
-      }
-    }
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error('Error ensuring ai_recommendations table:', error.message);
+    handleError(error, 'getOrganizationBySlug', { slug });
+  }
+}
+
+async function getOrganizationById(organizationId) {
+  try {
+    const { data, error } = await adminSupabase
+      .from('organizations')
+      .select('*')
+      .eq('id', organizationId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'getOrganizationById', { organizationId });
+  }
+}
+
+async function getUserOrganizations(userId) {
+  try {
+    const { data, error } = await adminSupabase
+      .from('organization_members')
+      .select('organization_id, role, organizations(*)')
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    
+    return (data || []).map(member => ({
+      ...member.organizations,
+      role: member.role
+    }));
+  } catch (error) {
+    handleError(error, 'getUserOrganizations', { userId });
+  }
+}
+
+async function addOrganizationMember(organizationId, userId, role = 'member') {
+  try {
+    const { data, error } = await adminSupabase
+      .from('organization_members')
+      .insert({
+        organization_id: organizationId,
+        user_id: userId,
+        role: sanitizeString(role)
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'addOrganizationMember', { organizationId, userId, role });
+  }
+}
+
+async function removeOrganizationMember(organizationId, userId) {
+  try {
+    const { data: owners } = await adminSupabase
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', organizationId)
+      .eq('role', 'owner');
+    
+    if (owners && owners.length === 1 && owners[0].user_id === userId) {
+      throw new Error('Cannot remove the last owner of the organization');
+    }
+    
+    const { error } = await adminSupabase
+      .from('organization_members')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'removeOrganizationMember', { organizationId, userId });
+  }
+}
+
+async function updateOrganizationMemberRole(organizationId, userId, role) {
+  try {
+    const { error } = await adminSupabase
+      .from('organization_members')
+      .update({ role: sanitizeString(role) })
+      .eq('organization_id', organizationId)
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    handleError(error, 'updateOrganizationMemberRole', { organizationId, userId, role });
   }
 }
 
 // ===============================
-// USERS / BUSINESSES
+// USERS (with Organization Context)
 // ===============================
 
-async function createUser(email, password, business_id, business_name, vToken) {
+/**
+ * Creates a user using Supabase Auth with atomic transaction
+ * Note: This should ideally be replaced with a Postgres trigger
+ * that automatically creates the user profile on auth signup
+ */
+async function createUser(email, password, organizationId, businessName, vToken) {
+  const cleanEmail = normalizeEmail(email);
+  
   try {
-    const cleanEmail = email.toLowerCase().trim();
-    
-    // Insert user with business_profile default
-    const { data: user, error: userError } = await supabase
+    const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
+      email: cleanEmail,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        organization_id: organizationId,
+        business_name: businessName,
+        verification_token: vToken
+      }
+    });
+
+    if (authError) throw authError;
+
+    const userId = authUser.user.id;
+
+    const { data: user, error: userError } = await adminSupabase
       .from('users')
       .insert({
+        id: userId,
         email: cleanEmail,
-        password,
-        business_id,
-        business_name,
+        business_name: sanitizeString(businessName),
         verification_token: vToken,
-        business_profile: {}  // Initialize empty business profile
+        is_verified: 1,
+        business_profile: {},
+        plan: 'free',
+        subscription_status: 'inactive'
       })
       .select()
       .single();
 
-    if (userError) throw userError;
+    if (userError) {
+      await adminSupabase.auth.admin.deleteUser(userId);
+      throw userError;
+    }
 
-    // Initialize smart hub settings
-    const { error: settingsError } = await supabase
-      .from('smart_hub_settings')
-      .insert({ user_id: user.id });
+    const { error: memberError } = await adminSupabase
+      .from('organization_members')
+      .insert({
+        organization_id: organizationId,
+        user_id: userId,
+        role: 'member',
+        created_at: new Date().toISOString()
+      });
 
-    if (settingsError) throw settingsError;
+    if (memberError) {
+      await adminSupabase.auth.admin.deleteUser(userId);
+      await adminSupabase.from('users').delete().eq('id', userId);
+      throw memberError;
+    }
 
-    // Initialize governance settings
-    const { error: govError } = await supabase
-      .from('governance_settings')
-      .insert({ user_id: user.id });
-
-    if (govError && !govError.message.includes('duplicate')) throw govError;
-
-    return user.id;
+    return userId;
   } catch (error) {
-    handleError(error, 'createUser');
+    handleError(error, 'createUser', { email: cleanEmail, organizationId });
   }
 }
 
 async function verifyUser(token) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('users')
       .update({ 
         is_verified: 1, 
@@ -248,14 +553,14 @@ async function verifyUser(token) {
     if (error) throw error;
     return data && data.length > 0;
   } catch (error) {
-    handleError(error, 'verifyUser');
+    handleError(error, 'verifyUser', { token });
   }
 }
 
 async function getUserByEmail(email) {
   try {
-    const cleanEmail = email.toLowerCase().trim();
-    const { data, error } = await supabase
+    const cleanEmail = normalizeEmail(email);
+    const { data, error } = await adminSupabase
       .from('users')
       .select('*')
       .eq('email', cleanEmail)
@@ -264,13 +569,13 @@ async function getUserByEmail(email) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserByEmail');
+    handleError(error, 'getUserByEmail', { email });
   }
 }
 
 async function getUserByBusinessId(business_id) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('users')
       .select('*')
       .eq('business_id', business_id)
@@ -279,35 +584,55 @@ async function getUserByBusinessId(business_id) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserByBusinessId');
+    handleError(error, 'getUserByBusinessId', { business_id });
   }
 }
 
-async function getUserById(id) {
+async function getUserById(userId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('users')
       .select('*')
-      .eq('id', id)
+      .eq('id', userId)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserById');
+    handleError(error, 'getUserById', { userId });
+  }
+}
+
+async function getOrganizationUsers(organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
+  try {
+    const result = await getPaginatedResults(
+      adminSupabase
+        .from('organization_members')
+        .select('user_id, role, users(*)')
+        .eq('organization_id', organizationId),
+      page,
+      limit
+    );
+    
+    return {
+      ...result,
+      data: result.data.map(member => ({
+        ...member.users,
+        role: member.role
+      }))
+    };
+  } catch (error) {
+    handleError(error, 'getOrganizationUsers', { organizationId, page, limit });
   }
 }
 
 // ===============================
-// BUSINESS PROFILE FUNCTIONS (AI Business Coach)
+// BUSINESS PROFILE FUNCTIONS
 // ===============================
 
-/**
- * Get user's business profile
- */
 async function getBusinessProfile(userId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('users')
       .select('business_profile, business_name, plan')
       .eq('id', userId)
@@ -328,16 +653,13 @@ async function getBusinessProfile(userId) {
       plan: data?.plan
     };
   } catch (error) {
-    handleError(error, 'getBusinessProfile');
+    handleError(error, 'getBusinessProfile', { userId });
   }
 }
 
-/**
- * Update user's business profile
- */
 async function updateBusinessProfile(userId, profileData) {
   try {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('users')
       .update({ 
         business_profile: profileData,
@@ -348,7 +670,7 @@ async function updateBusinessProfile(userId, profileData) {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    handleError(error, 'updateBusinessProfile');
+    handleError(error, 'updateBusinessProfile', { userId });
   }
 }
 
@@ -356,18 +678,21 @@ async function updateBusinessProfile(userId, profileData) {
 // WEEKLY REPORTS FUNCTIONS
 // ===============================
 
-/**
- * Save weekly report
- */
-async function saveWeeklyReport(userId, reportData) {
+async function saveWeeklyReport(userJwt, organizationId, reportData) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('weekly_reports')
       .insert({
-        user_id: userId,
-        week_start: reportData.week,
-        report_data: reportData,
-        sent_at: new Date().toISOString()
+        organization_id: organizationId,
+        report_type: reportData.report_type || 'business_summary',
+        week_start: reportData.week_start || reportData.week,
+        week_end: reportData.week_end || new Date(new Date(reportData.week_start || reportData.week).getTime() + 6 * 24 * 60 * 60 * 1000),
+        data: reportData.data || reportData.report_data || {},
+        summary: reportData.summary || '',
+        insights: reportData.insights || {},
+        recommendations: reportData.recommendations || {}
       })
       .select()
       .single();
@@ -375,54 +700,46 @@ async function saveWeeklyReport(userId, reportData) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveWeeklyReport');
+    handleError(error, 'saveWeeklyReport', { organizationId });
   }
 }
 
-/**
- * Get weekly reports for user
- */
-async function getWeeklyReports(userId, limit = 12) {
+async function getWeeklyReports(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
-    const { data, error } = await supabase
-      .from('weekly_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .order('week_start', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
+    const supabase = getUserSupabaseClient(userJwt);
     
-    return (data || []).map(r => ({
-      ...r,
-      report_data: typeof r.report_data === 'string' ? JSON.parse(r.report_data) : r.report_data
-    }));
+    const result = await getPaginatedResults(
+      supabase
+        .from('weekly_reports')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('week_start', { ascending: false }),
+      page,
+      limit
+    );
+    
+    return result;
   } catch (error) {
-    handleError(error, 'getWeeklyReports');
+    handleError(error, 'getWeeklyReports', { organizationId, page, limit });
   }
 }
 
-/**
- * Get latest weekly report
- */
-async function getLatestWeeklyReport(userId) {
+async function getLatestWeeklyReport(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('weekly_reports')
       .select('*')
-      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
       .order('week_start', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (error) throw error;
-    
-    if (data) {
-      data.report_data = typeof data.report_data === 'string' ? JSON.parse(data.report_data) : data.report_data;
-    }
     return data;
   } catch (error) {
-    handleError(error, 'getLatestWeeklyReport');
+    handleError(error, 'getLatestWeeklyReport', { organizationId });
   }
 }
 
@@ -430,19 +747,20 @@ async function getLatestWeeklyReport(userId) {
 // HEALTH SCANS FUNCTIONS
 // ===============================
 
-/**
- * Save health scan
- */
-async function saveHealthScan(userId, scanData) {
+async function saveHealthScan(userJwt, organizationId, scanData) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('health_scans')
       .insert({
-        user_id: userId,
-        scan_date: scanData.scan_date,
-        findings: JSON.stringify(scanData.findings),
-        recommendations: JSON.stringify(scanData.recommendations),
-        stats: scanData.stats
+        organization_id: organizationId,
+        scan_type: scanData.scan_type || 'full_system',
+        status: scanData.status || 'completed',
+        result: scanData.result || scanData.findings || {},
+        issues_found: scanData.issues_found || 0,
+        issues_resolved: scanData.issues_resolved || 0,
+        score: scanData.score || 100
       })
       .select()
       .single();
@@ -450,58 +768,46 @@ async function saveHealthScan(userId, scanData) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveHealthScan');
+    handleError(error, 'saveHealthScan', { organizationId });
   }
 }
 
-/**
- * Get health scans for user
- */
-async function getHealthScans(userId, limit = 10) {
+async function getHealthScans(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
-    const { data, error } = await supabase
-      .from('health_scans')
-      .select('*')
-      .eq('user_id', userId)
-      .order('scan_date', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
+    const supabase = getUserSupabaseClient(userJwt);
     
-    return (data || []).map(s => ({
-      ...s,
-      findings: typeof s.findings === 'string' ? JSON.parse(s.findings) : s.findings,
-      recommendations: typeof s.recommendations === 'string' ? JSON.parse(s.recommendations) : s.recommendations,
-      stats: typeof s.stats === 'string' ? JSON.parse(s.stats) : s.stats
-    }));
+    const result = await getPaginatedResults(
+      supabase
+        .from('health_scans')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false }),
+      page,
+      limit
+    );
+    
+    return result;
   } catch (error) {
-    handleError(error, 'getHealthScans');
+    handleError(error, 'getHealthScans', { organizationId, page, limit });
   }
 }
 
-/**
- * Get latest health scan
- */
-async function getLatestHealthScan(userId) {
+async function getLatestHealthScan(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('health_scans')
       .select('*')
-      .eq('user_id', userId)
-      .order('scan_date', { ascending: false })
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (error) throw error;
-    
-    if (data) {
-      data.findings = typeof data.findings === 'string' ? JSON.parse(data.findings) : data.findings;
-      data.recommendations = typeof data.recommendations === 'string' ? JSON.parse(data.recommendations) : data.recommendations;
-      data.stats = typeof data.stats === 'string' ? JSON.parse(data.stats) : data.stats;
-    }
     return data;
   } catch (error) {
-    handleError(error, 'getLatestHealthScan');
+    handleError(error, 'getLatestHealthScan', { organizationId });
   }
 }
 
@@ -509,22 +815,23 @@ async function getLatestHealthScan(userId) {
 // AI RECOMMENDATIONS FUNCTIONS
 // ===============================
 
-/**
- * Save AI recommendation
- */
-async function saveAiRecommendation(userId, recommendation) {
+async function saveAiRecommendation(userJwt, userId, organizationId, recommendation) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { data, error } = await supabase
       .from('ai_recommendations')
       .insert({
+        organization_id: organizationId,
         user_id: userId,
         automation_id: recommendation.automationId || recommendation.templateId,
-        title: recommendation.title,
-        reason: recommendation.reason,
+        title: sanitizeString(recommendation.title),
+        reason: sanitizeString(recommendation.reason),
         confidence_score: recommendation.confidence_score || 85,
-        roi: recommendation.roi || 500,
-        hours_saved: recommendation.hours_saved || 5,
-        leads_generated: recommendation.leads_generated || 20,
+        roi_hours_saved: recommendation.roi_hours_saved || 5,
+        roi_revenue_impact: recommendation.roi_revenue_impact || 500,
+        roi_leads_generated: recommendation.roi_leads_generated || 20,
         status: 'pending'
       })
       .select()
@@ -533,19 +840,18 @@ async function saveAiRecommendation(userId, recommendation) {
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveAiRecommendation');
+    handleError(error, 'saveAiRecommendation', { userId, organizationId });
   }
 }
 
-/**
- * Get pending AI recommendations
- */
-async function getPendingRecommendations(userId, limit = 10) {
+async function getPendingRecommendations(userJwt, organizationId, limit = 10) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('ai_recommendations')
       .select('*')
-      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -553,15 +859,15 @@ async function getPendingRecommendations(userId, limit = 10) {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getPendingRecommendations');
+    handleError(error, 'getPendingRecommendations', { organizationId, limit });
   }
 }
 
-/**
- * Update recommendation status
- */
-async function updateRecommendationStatus(recId, userId, status) {
+async function updateRecommendationStatus(userJwt, recId, userId, organizationId, status) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('ai_recommendations')
       .update({ 
@@ -569,12 +875,12 @@ async function updateRecommendationStatus(recId, userId, status) {
         deployed_at: status === 'accepted' ? new Date().toISOString() : null
       })
       .eq('id', recId)
-      .eq('user_id', userId);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    handleError(error, 'updateRecommendationStatus');
+    handleError(error, 'updateRecommendationStatus', { recId, userId, organizationId, status });
   }
 }
 
@@ -582,79 +888,85 @@ async function updateRecommendationStatus(recId, userId, status) {
 // SAAS CUSTOMIZATION
 // ===============================
 
-async function updateWidgetSettings(user_id, color, welcomeMsg, tone) {
+async function updateWidgetSettings(userJwt, userId, organizationId, color, welcomeMsg, tone) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
-      .from('users')
+      .from('organization_settings')
       .update({
         widget_color: color,
-        welcome_message: welcomeMsg,
-        ai_tone: tone
+        welcome_message: sanitizeString(welcomeMsg),
+        ai_tone: sanitizeString(tone)
       })
-      .eq('id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateWidgetSettings');
+    handleError(error, 'updateWidgetSettings', { userId, organizationId });
   }
 }
 
-async function updateSmartSettings(user_id, toolType, data) {
+async function updateSmartSettings(userJwt, userId, organizationId, toolType, data) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     // Ensure entry exists
     await supabase
       .from('smart_hub_settings')
-      .upsert({ user_id }, { onConflict: 'user_id' });
+      .upsert({ organization_id: organizationId }, { onConflict: 'organization_id' });
 
     let updateData = {};
 
     switch(toolType) {
       case 'brain':
         updateData = {
-          ai_instructions: data.instructions,
+          ai_instructions: sanitizeString(data.instructions),
           ai_temp: data.temp,
-          ai_lang: data.lang,
+          ai_lang: sanitizeString(data.lang),
           brain_active: 1
         };
         break;
       case 'booking':
         updateData = {
-          booking_url: data.url,
+          booking_url: sanitizeString(data.url),
           booking_active: 1
         };
         break;
       case 'sentiment':
         updateData = {
           sentiment_enabled: data.enabled ? 1 : 0,
-          alert_email: data.email,
+          alert_email: normalizeEmail(data.email),
           sentiment_active: 1
         };
         break;
       case 'handover':
         updateData = {
-          handover_trigger: data.trigger,
+          handover_trigger: sanitizeString(data.trigger),
           handover_active: 1
         };
         break;
       case 'webhook':
         updateData = {
-          webhook_url: data.url,
+          webhook_url: sanitizeString(data.url),
           webhook_active: 1
         };
         break;
       case 'apollo':
         updateData = {
           apollo_active: data.active ? 1 : 0,
-          apollo_key: data.apiKey || null,
+          apollo_key: data.apiKey ? encryptSensitiveData(data.apiKey) : null,
           auto_sync: data.autoSync ? 1 : 0
         };
         break;
       case 'vision':
         updateData = {
           vision_active: data.active ? 1 : 0,
-          vision_sensitivity: data.sensitivity || 'high',
-          vision_area: data.area || 'all'
+          vision_sensitivity: sanitizeString(data.sensitivity || 'high'),
+          vision_area: sanitizeString(data.area || 'all')
         };
         break;
       case 'followup':
@@ -668,46 +980,52 @@ async function updateSmartSettings(user_id, toolType, data) {
         };
         break;
       default:
-        throw new Error("Invalid toolType provided to updateSmartSettings");
+        throw new Error(`Invalid toolType: ${toolType} provided to updateSmartSettings`);
     }
 
     const { error } = await supabase
       .from('smart_hub_settings')
       .update(updateData)
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateSmartSettings');
+    handleError(error, 'updateSmartSettings', { userId, organizationId, toolType });
   }
 }
 
-async function getSmartSettings(user_id) {
+async function getSmartSettings(userJwt, organizationId) {
   try {
-    // Get user booking_url and smart settings
-    const { data: user, error: userError } = await supabase
-      .from('users')
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
       .select('booking_url')
-      .eq('id', user_id)
-      .single();
+      .eq('id', organizationId)
+      .maybeSingle();
 
-    if (userError && userError.code !== 'PGRST116') throw userError;
+    if (orgError && orgError.code !== 'PGRST116') throw orgError;
 
     const { data: settings, error: settingsError } = await supabase
       .from('smart_hub_settings')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (settingsError) throw settingsError;
 
+    // Decrypt Apollo key if present
+    if (settings?.apollo_key) {
+      settings.apollo_key = decryptSensitiveData(settings.apollo_key);
+    }
+
     return {
       ...(settings || {}),
-      booking_url: user?.booking_url || settings?.booking_url || ''
+      booking_url: org?.booking_url || settings?.booking_url || ''
     };
   } catch (error) {
-    handleError(error, 'getSmartSettings');
+    handleError(error, 'getSmartSettings', { organizationId });
   }
 }
 
@@ -715,37 +1033,42 @@ async function getSmartSettings(user_id) {
 // BUSINESS IDENTITY FUNCTIONS
 // ===============================
 
-async function saveBusinessIdentity(user_id, business_type, business_description) {
+async function saveBusinessIdentity(userJwt, userId, organizationId, business_type, business_description) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('business_identity')
       .upsert({
-        user_id,
-        business_type,
-        business_description
+        organization_id: organizationId,
+        business_type: sanitizeString(business_type),
+        business_description: sanitizeString(business_description)
       }, {
-        onConflict: 'user_id'
+        onConflict: 'organization_id'
       });
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'saveBusinessIdentity');
+    handleError(error, 'saveBusinessIdentity', { userId, organizationId });
   }
 }
 
-async function getBusinessIdentity(user_id) {
+async function getBusinessIdentity(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('business_identity')
       .select('business_type, business_description, created_at, updated_at')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (error) throw error;
     return data || { business_type: '', business_description: '' };
   } catch (error) {
-    handleError(error, 'getBusinessIdentity');
+    handleError(error, 'getBusinessIdentity', { organizationId });
   }
 }
 
@@ -753,31 +1076,36 @@ async function getBusinessIdentity(user_id) {
 // TOOL STATE FUNCTIONS
 // ===============================
 
-async function saveToolState(user_id, toolType, isActive) {
+async function saveToolState(userJwt, userId, organizationId, toolType, isActive) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('tool_states')
       .upsert({
-        user_id,
-        tool_type: toolType,
+        organization_id: organizationId,
+        tool_type: sanitizeString(toolType),
         is_active: isActive ? 1 : 0
       }, {
-        onConflict: 'user_id, tool_type'
+        onConflict: 'organization_id, tool_type'
       });
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'saveToolState');
+    handleError(error, 'saveToolState', { userId, organizationId, toolType });
   }
 }
 
-async function getToolStates(user_id) {
+async function getToolStates(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('tool_states')
       .select('tool_type, is_active')
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     
@@ -787,22 +1115,25 @@ async function getToolStates(user_id) {
     });
     return states;
   } catch (error) {
-    handleError(error, 'getToolStates');
+    handleError(error, 'getToolStates', { organizationId });
   }
 }
 
-async function deleteToolState(user_id, toolType) {
+async function deleteToolState(userJwt, userId, organizationId, toolType) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('tool_states')
       .delete()
-      .eq('user_id', user_id)
-      .eq('tool_type', toolType);
+      .eq('organization_id', organizationId)
+      .eq('tool_type', sanitizeString(toolType));
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteToolState');
+    handleError(error, 'deleteToolState', { userId, organizationId, toolType });
   }
 }
 
@@ -810,14 +1141,18 @@ async function deleteToolState(user_id, toolType) {
 // SUPPORT & ABOUT FUNCTIONS
 // ===============================
 
-async function saveSupportTicket(user_id, subject, message) {
+async function saveSupportTicket(userJwt, userId, organizationId, subject, message) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { data, error } = await supabase
       .from('support_tickets')
       .insert({
-        user_id,
-        subject,
-        message
+        organization_id: organizationId,
+        user_id: userId,
+        subject: sanitizeString(subject),
+        message: sanitizeString(message)
       })
       .select()
       .single();
@@ -825,21 +1160,24 @@ async function saveSupportTicket(user_id, subject, message) {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'saveSupportTicket');
+    handleError(error, 'saveSupportTicket', { userId, organizationId });
   }
 }
 
-async function updateBusinessAbout(user_id, aboutText) {
+async function updateBusinessAbout(userJwt, userId, organizationId, aboutText) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
-      .from('users')
-      .update({ about_business: aboutText })
-      .eq('id', user_id);
+      .from('organization_settings')
+      .update({ about_business: sanitizeString(aboutText) })
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateBusinessAbout');
+    handleError(error, 'updateBusinessAbout', { userId, organizationId });
   }
 }
 
@@ -847,14 +1185,18 @@ async function updateBusinessAbout(user_id, aboutText) {
 // KNOWLEDGE BASE
 // ===============================
 
-async function addKnowledge(user_id, content, type = 'text') {
+async function addKnowledge(userJwt, userId, organizationId, content, type = 'text') {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { data, error } = await supabase
       .from('knowledge_base')
       .insert({
-        user_id,
-        content,
-        source_type: type
+        organization_id: organizationId,
+        created_by: userId,
+        content: sanitizeString(content),
+        source_type: sanitizeString(type)
       })
       .select()
       .single();
@@ -862,37 +1204,45 @@ async function addKnowledge(user_id, content, type = 'text') {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'addKnowledge');
+    handleError(error, 'addKnowledge', { userId, organizationId });
   }
 }
 
-async function getKnowledgeByUser(user_id) {
+async function getKnowledgeByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
-    const { data, error } = await supabase
-      .from('knowledge_base')
-      .select('id, content, source_type, created_at')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const result = await getPaginatedResults(
+      supabase
+        .from('knowledge_base')
+        .select('id, content, source_type, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false }),
+      page,
+      limit
+    );
+    
+    return result;
   } catch (error) {
-    handleError(error, 'getKnowledgeByUser');
+    handleError(error, 'getKnowledgeByOrganization', { organizationId, page, limit });
   }
 }
 
-async function deleteKnowledge(knowledge_id, user_id) {
+async function deleteKnowledge(userJwt, userId, organizationId, knowledgeId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('knowledge_base')
       .delete()
-      .eq('id', knowledge_id)
-      .eq('user_id', user_id);
+      .eq('id', knowledgeId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteKnowledge');
+    handleError(error, 'deleteKnowledge', { userId, organizationId, knowledgeId });
   }
 }
 
@@ -900,126 +1250,206 @@ async function deleteKnowledge(knowledge_id, user_id) {
 // WIDGET KEY
 // ===============================
 
-async function setWidgetKey(user_id, widget_key) {
+async function setWidgetKey(userJwt, organizationId, widgetKey) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { error } = await supabase
-      .from('users')
-      .update({ widget_key })
-      .eq('id', user_id);
+      .from('organization_settings')
+      .update({ widget_key: sanitizeString(widgetKey) })
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'setWidgetKey');
+    handleError(error, 'setWidgetKey', { organizationId });
   }
 }
 
-async function getWidgetKey(user_id) {
+async function getWidgetKey(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
-      .from('users')
+      .from('organization_settings')
       .select('widget_key')
-      .eq('id', user_id)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (error) throw error;
     return data ? data.widget_key : null;
   } catch (error) {
-    handleError(error, 'getWidgetKey');
+    handleError(error, 'getWidgetKey', { organizationId });
   }
 }
 
 // ===============================
-// PLAN & USAGE
+// MONETIZATION & SUBSCRIPTION MANAGEMENT
 // ===============================
 
-async function updatePlan(user_id, plan) {
+async function getOrganizationSubscription(userJwt, organizationId) {
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({
-        plan,
-        messages_used: 0,
-        leads_used: 0,
-        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      })
-      .eq('id', user_id);
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, plan_expires')
+      .eq('id', organizationId)
+      .maybeSingle();
 
     if (error) throw error;
-    return true;
+    return data || { plan: 'free', subscription_status: 'inactive' };
   } catch (error) {
-    handleError(error, 'updatePlan');
+    handleError(error, 'getOrganizationSubscription', { organizationId });
   }
 }
 
-async function incrementMessagesUsed(user_id) {
+async function updateSubscriptionStatus(userJwt, organizationId, subscriptionData) {
   try {
-    const { error } = await supabase.rpc('increment_messages_used', {
-      user_id_param: user_id
-    });
-
-    if (error) {
-      // Fallback if RPC doesn't exist
-      const { data: user } = await supabase
-        .from('users')
-        .select('messages_used')
-        .eq('id', user_id)
-        .single();
-
-      await supabase
-        .from('users')
-        .update({ messages_used: (user.messages_used || 0) + 1 })
-        .eq('id', user_id);
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const updates = {
+      plan: sanitizeString(subscriptionData.plan),
+      subscription_status: sanitizeString(subscriptionData.status || 'active'),
+      updated_at: new Date().toISOString()
+    };
+    
+    if (subscriptionData.stripe_customer_id) {
+      updates.stripe_customer_id = subscriptionData.stripe_customer_id;
     }
+    if (subscriptionData.stripe_subscription_id) {
+      updates.stripe_subscription_id = subscriptionData.stripe_subscription_id;
+    }
+    if (subscriptionData.plan_expires) {
+      updates.plan_expires = subscriptionData.plan_expires;
+    }
+    
+    const { error } = await supabase
+      .from('organizations')
+      .update(updates)
+      .eq('id', organizationId);
 
-    return true;
+    if (error) throw error;
+    return { success: true };
   } catch (error) {
-    handleError(error, 'incrementMessagesUsed');
+    handleError(error, 'updateSubscriptionStatus', { organizationId });
   }
 }
 
-async function incrementLeadsUsed(user_id) {
+async function checkPlanLimits(userJwt, organizationId, metric) {
   try {
-    const { error } = await supabase.rpc('increment_leads_used', {
-      user_id_param: user_id
-    });
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('plan, messages_used, leads_used')
+      .eq('id', organizationId)
+      .maybeSingle();
 
-    if (error) {
-      // Fallback if RPC doesn't exist
-      const { data: user } = await supabase
-        .from('users')
-        .select('leads_used')
-        .eq('id', user_id)
-        .single();
-
-      await supabase
-        .from('users')
-        .update({ leads_used: (user.leads_used || 0) + 1 })
-        .eq('id', user_id);
+    if (error) throw error;
+    
+    const planLimits = {
+      free: { messages: 100, leads: 50 },
+      basic: { messages: 500, leads: 200 },
+      pro: { messages: 3000, leads: 1000 },
+      agency: { messages: 10000, leads: 5000 }
+    };
+    
+    const plan = data?.plan || 'free';
+    const limits = planLimits[plan] || planLimits.free;
+    
+    let currentUsage = 0;
+    let limit = 0;
+    
+    if (metric === 'messages') {
+      currentUsage = data?.messages_used || 0;
+      limit = limits.messages;
+    } else if (metric === 'leads') {
+      currentUsage = data?.leads_used || 0;
+      limit = limits.leads;
+    } else {
+      throw new Error(`Unknown metric: ${metric}`);
     }
+    
+    return {
+      plan,
+      current: currentUsage,
+      limit,
+      isExceeded: currentUsage >= limit,
+      remaining: Math.max(0, limit - currentUsage)
+    };
+  } catch (error) {
+    handleError(error, 'checkPlanLimits', { organizationId, metric });
+  }
+}
 
+/**
+ * Atomic increment for messages_used - PURE RPC ONLY, NO FALLBACK
+ * Race condition safe - relies on PostgreSQL atomic update
+ */
+async function incrementMessagesUsed(userJwt, organizationId) {
+  try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { error: rpcError } = await supabase.rpc('increment_messages_used', {
+      org_id_param: organizationId
+    });
+    
+    if (rpcError) {
+      // No fallback - RPC must exist. Log error and re-throw.
+      console.error('❌ increment_messages_used RPC failed:', rpcError);
+      throw new Error('Atomic increment operation failed - RPC not available');
+    }
+    
     return true;
   } catch (error) {
-    handleError(error, 'incrementLeadsUsed');
+    handleError(error, 'incrementMessagesUsed', { organizationId });
+  }
+}
+
+/**
+ * Atomic increment for leads_used - PURE RPC ONLY, NO FALLBACK
+ * Race condition safe - relies on PostgreSQL atomic update
+ */
+async function incrementLeadsUsed(userJwt, organizationId) {
+  try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { error: rpcError } = await supabase.rpc('increment_leads_used', {
+      org_id_param: organizationId
+    });
+    
+    if (rpcError) {
+      console.error('❌ increment_leads_used RPC failed:', rpcError);
+      throw new Error('Atomic increment operation failed - RPC not available');
+    }
+    
+    return true;
+  } catch (error) {
+    handleError(error, 'incrementLeadsUsed', { organizationId });
   }
 }
 
 // ===============================
-// LEADS
+// LEADS (Organization-scoped)
 // ===============================
 
-async function saveLead(user_id, name, email, phone, company = '', job_title = '', message = "") {
+async function saveLead(userJwt, userId, organizationId, name, email, phone, company = '', job_title = '', message = "") {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { data, error } = await supabase
       .from('leads')
       .insert({
-        user_id,
-        name,
-        email,
-        phone,
-        company,
-        job_title,
-        message
+        organization_id: organizationId,
+        created_by: userId,
+        name: sanitizeString(name),
+        email: normalizeEmail(email),
+        phone: sanitizeString(phone),
+        company: sanitizeString(company),
+        job_title: sanitizeString(job_title),
+        message: sanitizeString(message)
       })
       .select()
       .single();
@@ -1027,353 +1457,178 @@ async function saveLead(user_id, name, email, phone, company = '', job_title = '
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'saveLead');
+    handleError(error, 'saveLead', { userId, organizationId, email });
   }
 }
 
-async function getLeadsByUser(user_id) {
+async function getLeadsByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT, filters = {}) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    let query = supabase
+      .from('leads')
+      .select('*')
+      .eq('organization_id', organizationId);
+    
+    if (filters.status) {
+      query = query.eq('status', sanitizeString(filters.status));
+    }
+    if (filters.email) {
+      query = query.eq('email', normalizeEmail(filters.email));
+    }
+    if (filters.name) {
+      query = query.ilike('name', `%${sanitizeString(filters.name)}%`);
+    }
+    
+    query = query.order('created_at', { ascending: false });
+    
+    const result = await getPaginatedResults(query, page, limit);
+    return result;
+  } catch (error) {
+    handleError(error, 'getLeadsByOrganization', { organizationId, page, limit });
+  }
+}
+
+async function getLeadById(userJwt, leadId, organizationId) {
+  try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('leads')
       .select('*')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    handleError(error, 'getLeadsByUser');
-  }
-}
-
-async function getLeadByEmail(user_id, email) {
-  try {
-    const { data, error } = await supabase
-      .from('leads')
-      .select('id')
-      .eq('user_id', user_id)
-      .eq('email', email.toLowerCase().trim())
+      .eq('id', leadId)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getLeadByEmail');
+    handleError(error, 'getLeadById', { leadId, organizationId });
   }
 }
 
-async function updateLeadStatus(lead_id, user_id, status, notes = null) {
+async function updateLeadStatus(userJwt, leadId, organizationId, status, notes = null) {
   try {
-    const updateData = { status, updated_at: new Date().toISOString() };
-    if (notes) updateData.notes = notes;
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const updateData = { 
+      status: sanitizeString(status), 
+      updated_at: new Date().toISOString() 
+    };
+    if (notes) updateData.notes = sanitizeString(notes);
     
     const { error } = await supabase
       .from('leads')
       .update(updateData)
-      .eq('id', lead_id)
-      .eq('user_id', user_id);
+      .eq('id', leadId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateLeadStatus');
+    handleError(error, 'updateLeadStatus', { leadId, organizationId, status });
   }
 }
 
-async function getLeadScore(lead_id, user_id) {
+async function deleteLead(userJwt, leadId, organizationId) {
   try {
-    const { data, error } = await supabase
-      .from('lead_scores')
-      .select('score, scored_at')
-      .eq('lead_id', lead_id)
-      .eq('user_id', user_id)
-      .order('scored_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    handleError(error, 'getLeadScore');
-  }
-}
-
-async function saveLeadScore(lead_id, user_id, score, criteria = {}) {
-  try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { error } = await supabase
-      .from('lead_scores')
-      .insert({
-        lead_id,
-        user_id,
-        score,
-        criteria,
-        scored_at: new Date().toISOString()
-      });
+      .from('leads')
+      .delete()
+      .eq('id', leadId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'saveLeadScore');
+    handleError(error, 'deleteLead', { leadId, organizationId });
   }
 }
 
 // ===============================
-// CHATS
+// CHATS (Organization-scoped)
 // ===============================
 
-async function saveChat(id, user_id, session_id, client_name, message, response, sentiment = 'neutral') {
+async function saveChat(userJwt, userId, organizationId, sessionId, clientName, message, response, sentiment = 'neutral') {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
+    const id = uuidv4();
     const { error } = await supabase
       .from('chats')
       .insert({
         id,
-        user_id,
-        session_id,
-        client_name,
-        message,
-        response,
-        sentiment
+        organization_id: organizationId,
+        user_id: userId,
+        session_id: sanitizeString(sessionId),
+        client_name: sanitizeString(clientName),
+        message: sanitizeString(message),
+        response: sanitizeString(response),
+        sentiment: sanitizeString(sentiment)
       });
 
     if (error) throw error;
     return id;
   } catch (error) {
-    handleError(error, 'saveChat');
+    handleError(error, 'saveChat', { userId, organizationId, sessionId });
   }
 }
 
-async function getChatsByUser(user_id) {
+async function getChatsByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT, filters = {}) {
   try {
-    const { data, error } = await supabase
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    let query = supabase
       .from('chats')
       .select('*')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
+      .eq('organization_id', organizationId);
+    
+    if (filters.client_name) {
+      query = query.ilike('client_name', `%${sanitizeString(filters.client_name)}%`);
+    }
+    if (filters.session_id) {
+      query = query.eq('session_id', sanitizeString(filters.session_id));
+    }
+    
+    query = query.order('created_at', { ascending: false });
+    
+    const result = await getPaginatedResults(query, page, limit);
+    return result;
   } catch (error) {
-    handleError(error, 'getChatsByUser');
+    handleError(error, 'getChatsByOrganization', { organizationId, page, limit });
   }
 }
 
-async function getChatsBySession(session_id, user_id) {
+async function getChatsBySession(userJwt, sessionId, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('chats')
       .select('*')
-      .eq('session_id', session_id)
-      .eq('user_id', user_id)
+      .eq('session_id', sanitizeString(sessionId))
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getChatsBySession');
+    handleError(error, 'getChatsBySession', { sessionId, organizationId });
   }
 }
 
 // ===============================
-// NOTIFICATION SETTINGS
+// AUTOMATIONS (Organization-scoped)
 // ===============================
 
-async function getNotificationSettings(userId) {
+async function createAutomation(userJwt, userId, organizationId, name, triggerType, actionType, description = '', triggerConfig = {}, actionConfig = {}) {
   try {
-    const { data, error } = await supabase
-      .from('notification_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) throw error;
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
     
-    return data || {
-      user_id: userId,
-      email_notifications: 1,
-      slack_webhook: null,
-      discord_webhook: null,
-      notify_on_success: 1,
-      notify_on_failure: 1,
-      notify_on_daily_summary: 1
-    };
-  } catch (error) {
-    handleError(error, 'getNotificationSettings');
-  }
-}
-
-async function saveNotificationSettings(userId, settings) {
-  try {
-    const { error } = await supabase
-      .from('notification_settings')
-      .upsert({
-        user_id: userId,
-        email_notifications: settings.email_notifications ? 1 : 0,
-        slack_webhook: settings.slack_webhook || null,
-        discord_webhook: settings.discord_webhook || null,
-        notify_on_success: settings.notify_on_success ? 1 : 0,
-        notify_on_failure: settings.notify_on_failure ? 1 : 0,
-        notify_on_daily_summary: settings.notify_on_daily_summary ? 1 : 0
-      }, {
-        onConflict: 'user_id'
-      });
-
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    handleError(error, 'saveNotificationSettings');
-  }
-}
-
-// ===============================
-// API KEYS
-// ===============================
-
-async function createApiKey(userId, name, platform) {
-  try {
-    const id = uuidv4();
-    const apiKey = `ak_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-    const now = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from('api_keys')
-      .insert({
-        id,
-        user_id: userId,
-        name,
-        platform,
-        api_key: apiKey,
-        created_at: now
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      api_key: data.api_key,
-      name: data.name,
-      platform: data.platform,
-      created_at: data.created_at
-    };
-  } catch (error) {
-    handleError(error, 'createApiKey');
-  }
-}
-
-async function getApiKeys(userId) {
-  try {
-    const { data, error } = await supabase
-      .from('api_keys')
-      .select('id, name, platform, api_key, last_used, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    handleError(error, 'getApiKeys');
-  }
-}
-
-async function deleteApiKey(keyId, userId) {
-  try {
-    const { error } = await supabase
-      .from('api_keys')
-      .delete()
-      .eq('id', keyId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    handleError(error, 'deleteApiKey');
-  }
-}
-
-async function updateApiKeyLastUsed(keyId) {
-  try {
-    const { error } = await supabase
-      .from('api_keys')
-      .update({ last_used: new Date().toISOString() })
-      .eq('id', keyId);
-
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    handleError(error, 'updateApiKeyLastUsed');
-  }
-}
-
-async function validateApiKey(apiKey) {
-  try {
-    const { data, error } = await supabase
-      .from('api_keys')
-      .select('*')
-      .eq('api_key', apiKey)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    handleError(error, 'validateApiKey');
-  }
-}
-
-// ===============================
-// ADMIN INITIALIZATION
-// ===============================
-
-async function createAdminIfNotExists(email, hashedPassword) {
-  try {
-    const cleanEmail = email.toLowerCase().trim();
-    
-    // Check if admin exists
-    const existing = await getUserByEmail(cleanEmail);
-    if (existing) return existing;
-
-    const business_id = "admin_business";
-    
-    // Create admin user
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .insert({
-        email: cleanEmail,
-        password: hashedPassword,
-        business_id,
-        business_name: "Admin Business",
-        plan: 'agency',
-        is_verified: 1,
-        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        business_profile: {}
-      })
-      .select()
-      .single();
-
-    if (userError) throw userError;
-
-    // Initialize smart hub settings
-    await supabase
-      .from('smart_hub_settings')
-      .insert({ user_id: user.id });
-
-    // Initialize governance settings
-    await supabase
-      .from('governance_settings')
-      .insert({ user_id: user.id });
-
-    return { id: user.id, email: cleanEmail };
-  } catch (error) {
-    handleError(error, 'createAdminIfNotExists');
-  }
-}
-
-// ===============================
-// AI AUTOMATIONS
-// ===============================
-
-async function createAutomation(user_id, name, trigger_type, action_type, description = '', trigger_config = {}, action_config = {}) {
-  try {
     const id = 'auto_' + uuidv4().substring(0, 8);
     const now = new Date().toISOString();
 
@@ -1381,13 +1636,14 @@ async function createAutomation(user_id, name, trigger_type, action_type, descri
       .from('automations')
       .insert({
         id,
-        user_id,
-        name,
-        description,
-        trigger_type,
-        trigger_config,
-        action_type,
-        action_config,
+        organization_id: organizationId,
+        created_by: userId,
+        name: sanitizeString(name),
+        description: sanitizeString(description),
+        trigger_type: sanitizeString(triggerType),
+        trigger_config: triggerConfig,
+        action_type: sanitizeString(actionType),
+        action_config: actionConfig,
         created_at: now,
         updated_at: now
       })
@@ -1397,102 +1653,117 @@ async function createAutomation(user_id, name, trigger_type, action_type, descri
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'createAutomation');
+    handleError(error, 'createAutomation', { userId, organizationId, name });
   }
 }
 
-async function getAutomationsByUser(user_id) {
+async function getAutomationsByOrganization(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT, filters = {}) {
   try {
-    const { data, error } = await supabase
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    let query = supabase
       .from('automations')
       .select('*')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
+      .eq('organization_id', organizationId);
+    
+    if (filters.status) {
+      query = query.eq('status', sanitizeString(filters.status));
+    }
+    if (filters.trigger_type) {
+      query = query.eq('trigger_type', sanitizeString(filters.trigger_type));
+    }
+    
+    query = query.order('created_at', { ascending: false });
+    
+    const result = await getPaginatedResults(query, page, limit);
+    return result;
   } catch (error) {
-    handleError(error, 'getAutomationsByUser');
+    handleError(error, 'getAutomationsByOrganization', { organizationId, page, limit });
   }
 }
 
-async function getAutomationById(id, user_id) {
+async function getAutomationById(userJwt, automationId, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('automations')
       .select('*')
-      .eq('id', id)
-      .eq('user_id', user_id)
+      .eq('id', automationId)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getAutomationById');
+    handleError(error, 'getAutomationById', { automationId, organizationId });
   }
 }
 
-async function updateAutomation(id, user_id, updates) {
+async function updateAutomation(userJwt, automationId, organizationId, updates) {
   try {
-    const updateData = { ...updates, updated_at: new Date().toISOString() };
+    const supabase = getUserSupabaseClient(userJwt);
     
-    // Handle JSON fields
-    if (updateData.trigger_config && typeof updateData.trigger_config === 'object') {
-      updateData.trigger_config = updateData.trigger_config;
-    }
-    if (updateData.action_config && typeof updateData.action_config === 'object') {
-      updateData.action_config = updateData.action_config;
-    }
+    const updateData = { 
+      ...updates, 
+      updated_at: new Date().toISOString() 
+    };
+    
+    if (updateData.name) updateData.name = sanitizeString(updateData.name);
+    if (updateData.description) updateData.description = sanitizeString(updateData.description);
+    if (updateData.trigger_type) updateData.trigger_type = sanitizeString(updateData.trigger_type);
+    if (updateData.action_type) updateData.action_type = sanitizeString(updateData.action_type);
 
     const { error } = await supabase
       .from('automations')
       .update(updateData)
-      .eq('id', id)
-      .eq('user_id', user_id);
+      .eq('id', automationId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateAutomation');
+    handleError(error, 'updateAutomation', { automationId, organizationId });
   }
 }
 
-async function deleteAutomation(id, user_id) {
+async function deleteAutomation(userJwt, automationId, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { error } = await supabase
       .from('automations')
       .delete()
-      .eq('id', id)
-      .eq('user_id', user_id);
+      .eq('id', automationId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteAutomation');
+    handleError(error, 'deleteAutomation', { automationId, organizationId });
   }
 }
 
-async function incrementAutomationTriggers(id, user_id) {
+/**
+ * Atomic increment for automation triggers - PURE RPC ONLY
+ */
+async function incrementAutomationTriggers(userJwt, automationId, organizationId) {
   try {
-    const { data: auto } = await supabase
-      .from('automations')
-      .select('trigger_count')
-      .eq('id', id)
-      .eq('user_id', user_id)
-      .single();
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { error } = await supabase.rpc('increment_automation_triggers', {
+      automation_id_param: automationId,
+      organization_id_param: organizationId
+    });
 
-    await supabase
-      .from('automations')
-      .update({
-        trigger_count: (auto?.trigger_count || 0) + 1,
-        last_run: new Date().toISOString()
-      })
-      .eq('id', id)
-      .eq('user_id', user_id);
+    if (error) {
+      console.error('❌ increment_automation_triggers RPC failed:', error);
+      throw new Error('Atomic increment operation failed - RPC not available');
+    }
 
     return true;
   } catch (error) {
-    handleError(error, 'incrementAutomationTriggers');
+    handleError(error, 'incrementAutomationTriggers', { automationId, organizationId });
   }
 }
 
@@ -1500,35 +1771,41 @@ async function incrementAutomationTriggers(id, user_id) {
 // AUTOMATION RUNS
 // ===============================
 
-async function createAutomationRun(id, automation_id, user_id) {
+async function createAutomationRun(userJwt, id, automationId, userId, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('automation_runs')
       .insert({
         id,
-        automation_id,
-        user_id,
+        automation_id: automationId,
+        organization_id: organizationId,
+        user_id: userId,
         started_at: now
       });
 
     if (error) throw error;
     return id;
   } catch (error) {
-    handleError(error, 'createAutomationRun');
+    handleError(error, 'createAutomationRun', { id, automationId, userId, organizationId });
   }
 }
 
-async function completeAutomationRun(id, status, result, duration, error = null) {
+async function completeAutomationRun(userJwt, id, status, result, duration, error = null) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const now = new Date().toISOString();
     const { error: updateError } = await supabase
       .from('automation_runs')
       .update({
-        status,
+        status: sanitizeString(status),
         result,
         duration,
-        error,
+        error: error ? sanitizeString(error) : null,
         completed_at: now
       })
       .eq('id', id);
@@ -1536,24 +1813,26 @@ async function completeAutomationRun(id, status, result, duration, error = null)
     if (updateError) throw updateError;
     return true;
   } catch (error) {
-    handleError(error, 'completeAutomationRun');
+    handleError(error, 'completeAutomationRun', { id, status });
   }
 }
 
-async function getAutomationRuns(automation_id, user_id, limit = 50) {
+async function getAutomationRuns(userJwt, automationId, organizationId, limit = 50) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('automation_runs')
       .select('*')
-      .eq('automation_id', automation_id)
-      .eq('user_id', user_id)
+      .eq('automation_id', automationId)
+      .eq('organization_id', organizationId)
       .order('started_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getAutomationRuns');
+    handleError(error, 'getAutomationRuns', { automationId, organizationId, limit });
   }
 }
 
@@ -1561,8 +1840,10 @@ async function getAutomationRuns(automation_id, user_id, limit = 50) {
 // AUTOMATION TEMPLATES
 // ===============================
 
-async function getAutomationTemplates(category = null, industry = null, featured = false) {
+async function getAutomationTemplates(userJwt, category = null, industry = null, featured = false, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     let query = supabase
       .from('automation_templates')
       .select('*')
@@ -1570,51 +1851,57 @@ async function getAutomationTemplates(category = null, industry = null, featured
       .order('usage_count', { ascending: false });
 
     if (category && category !== 'all') {
-      query = query.eq('category', category);
+      query = query.eq('category', sanitizeString(category));
     }
     
     if (industry && industry !== 'all') {
-      query = query.contains('industry', [industry]);
+      query = query.contains('industry', [sanitizeString(industry)]);
     }
     
     if (featured) {
       query = query.eq('is_featured', true);
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
+    const result = await getPaginatedResults(query, page, limit);
+    return result;
   } catch (error) {
-    handleError(error, 'getAutomationTemplates');
+    handleError(error, 'getAutomationTemplates', { category, industry, featured, page, limit });
   }
 }
 
-async function getAutomationTemplateBySlug(slug) {
+async function getAutomationTemplateBySlug(userJwt, slug) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('automation_templates')
       .select('*')
-      .eq('slug', slug)
+      .eq('slug', sanitizeString(slug))
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getAutomationTemplateBySlug');
+    handleError(error, 'getAutomationTemplateBySlug', { slug });
   }
 }
 
-async function incrementTemplateUsage(templateId) {
+async function incrementTemplateUsage(userJwt, templateId) {
   try {
-    const { error } = await supabase
-      .from('automation_templates')
-      .update({ usage_count: supabase.raw('usage_count + 1') })
-      .eq('id', templateId);
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { error } = await supabase.rpc('increment_template_usage', {
+      template_id_param: templateId
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ increment_template_usage RPC failed:', error);
+      throw new Error('Atomic increment operation failed - RPC not available');
+    }
+
     return true;
   } catch (error) {
-    handleError(error, 'incrementTemplateUsage');
+    handleError(error, 'incrementTemplateUsage', { templateId });
   }
 }
 
@@ -1622,8 +1909,11 @@ async function incrementTemplateUsage(templateId) {
 // USER AUTOMATIONS (Advanced)
 // ===============================
 
-async function createUserAutomation(user_id, template_id, name, description, trigger_type, trigger_config, actions, status = 'draft') {
+async function createUserAutomation(userJwt, userId, organizationId, templateId, name, description, triggerType, triggerConfig, actions, status = 'draft') {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const id = uuidv4();
     const now = new Date().toISOString();
 
@@ -1631,14 +1921,15 @@ async function createUserAutomation(user_id, template_id, name, description, tri
       .from('user_automations')
       .insert({
         id,
-        user_id,
-        template_id,
-        name,
-        description,
-        status,
-        trigger_type,
-        trigger_config,
-        actions,
+        organization_id: organizationId,
+        created_by: userId,
+        template_id: templateId,
+        name: sanitizeString(name),
+        description: sanitizeString(description),
+        status: sanitizeString(status),
+        trigger_type: sanitizeString(triggerType),
+        trigger_config: triggerConfig,
+        actions: actions,
         created_at: now,
         updated_at: now
       })
@@ -1648,80 +1939,94 @@ async function createUserAutomation(user_id, template_id, name, description, tri
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'createUserAutomation');
+    handleError(error, 'createUserAutomation', { userId, organizationId, name });
   }
 }
 
-async function getUserAutomations(user_id, status = null) {
+async function getUserAutomations(userJwt, organizationId, status = null, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     let query = supabase
       .from('user_automations')
       .select('*, template:automation_templates(name, icon, color, category)')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false });
+      .eq('organization_id', organizationId);
 
     if (status && status !== 'all') {
-      query = query.eq('status', status);
+      query = query.eq('status', sanitizeString(status));
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
+    query = query.order('created_at', { ascending: false });
+    
+    const result = await getPaginatedResults(query, page, limit);
+    return result;
   } catch (error) {
-    handleError(error, 'getUserAutomations');
+    handleError(error, 'getUserAutomations', { organizationId, status, page, limit });
   }
 }
 
-async function getUserAutomationById(id, user_id) {
+async function getUserAutomationById(userJwt, automationId, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('user_automations')
       .select('*, template:automation_templates(*)')
-      .eq('id', id)
-      .eq('user_id', user_id)
+      .eq('id', automationId)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'getUserAutomationById');
+    handleError(error, 'getUserAutomationById', { automationId, organizationId });
   }
 }
 
-async function updateUserAutomation(id, user_id, updates) {
+async function updateUserAutomation(userJwt, automationId, organizationId, updates) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const sanitizedUpdates = { ...updates };
+    if (sanitizedUpdates.name) sanitizedUpdates.name = sanitizeString(sanitizedUpdates.name);
+    if (sanitizedUpdates.description) sanitizedUpdates.description = sanitizeString(sanitizedUpdates.description);
+    if (sanitizedUpdates.status) sanitizedUpdates.status = sanitizeString(sanitizedUpdates.status);
+    if (sanitizedUpdates.trigger_type) sanitizedUpdates.trigger_type = sanitizeString(sanitizedUpdates.trigger_type);
+    
+    sanitizedUpdates.updated_at = new Date().toISOString();
+
     const { error } = await supabase
       .from('user_automations')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('user_id', user_id);
+      .update(sanitizedUpdates)
+      .eq('id', automationId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateUserAutomation');
+    handleError(error, 'updateUserAutomation', { automationId, organizationId });
   }
 }
 
-async function deleteUserAutomation(id, user_id) {
+async function deleteUserAutomation(userJwt, automationId, organizationId) {
   try {
-    // Delete runs first
+    const supabase = getUserSupabaseClient(userJwt);
+    
     await supabase
       .from('automation_runs')
       .delete()
-      .eq('automation_id', id);
+      .eq('automation_id', automationId);
 
-    // Delete automation
     const { error } = await supabase
       .from('user_automations')
       .delete()
-      .eq('id', id)
-      .eq('user_id', user_id);
+      .eq('id', automationId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteUserAutomation');
+    handleError(error, 'deleteUserAutomation', { automationId, organizationId });
   }
 }
 
@@ -1729,17 +2034,21 @@ async function deleteUserAutomation(id, user_id) {
 // LEAD SOURCES
 // ===============================
 
-async function createLeadSource(user_id, name, type, automation_id = null, config = {}) {
+async function createLeadSource(userJwt, userId, organizationId, name, type, automation_id = null, config = {}) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const id = uuidv4();
     const { data, error } = await supabase
       .from('lead_sources')
       .insert({
         id,
-        user_id,
+        organization_id: organizationId,
+        created_by: userId,
         automation_id,
-        name,
-        type,
+        name: sanitizeString(name),
+        type: sanitizeString(type),
         config
       })
       .select()
@@ -1748,38 +2057,44 @@ async function createLeadSource(user_id, name, type, automation_id = null, confi
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'createLeadSource');
+    handleError(error, 'createLeadSource', { userId, organizationId, name });
   }
 }
 
-async function getLeadSources(user_id) {
+async function getLeadSources(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('lead_sources')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getLeadSources');
+    handleError(error, 'getLeadSources', { organizationId });
   }
 }
 
-async function updateLeadSourceStats(source_id, leads_generated) {
+async function updateLeadSourceStats(userJwt, sourceId, organizationId, leadsGenerated) {
   try {
-    const { error } = await supabase
-      .from('lead_sources')
-      .update({
-        leads_count: supabase.raw('leads_count + ' + leads_generated)
-      })
-      .eq('id', source_id);
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const { error } = await supabase.rpc('increment_lead_source_count', {
+      source_id_param: sourceId,
+      increment_value: leadsGenerated
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ increment_lead_source_count RPC failed:', error);
+      throw new Error('Atomic increment operation failed - RPC not available');
+    }
+
     return true;
   } catch (error) {
-    handleError(error, 'updateLeadSourceStats');
+    handleError(error, 'updateLeadSourceStats', { sourceId, organizationId, leadsGenerated });
   }
 }
 
@@ -1787,28 +2102,29 @@ async function updateLeadSourceStats(source_id, leads_generated) {
 // CONNECTED ACCOUNTS
 // ===============================
 
-async function saveConnectedAccount(user_id, platform, account_name, api_key_encrypted, account_info = {}, gateway_url = null, connection_type = 'direct') {
+async function saveConnectedAccount(userJwt, userId, organizationId, platform, account_name, api_key_encrypted, account_info = {}, gateway_url = null, connection_type = 'direct') {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const now = new Date().toISOString();
 
-    // Check if exists
     const { data: existing } = await supabase
       .from('connected_accounts')
       .select('id')
-      .eq('user_id', user_id)
-      .eq('platform', platform)
-      .eq('account_name', account_name)
+      .eq('organization_id', organizationId)
+      .eq('platform', sanitizeString(platform))
+      .eq('account_name', sanitizeString(account_name))
       .maybeSingle();
 
     if (existing) {
-      // Update existing
       const { error } = await supabase
         .from('connected_accounts')
         .update({
           api_key_encrypted,
           account_info,
-          gateway_url,
-          connection_type,
+          gateway_url: sanitizeString(gateway_url),
+          connection_type: sanitizeString(connection_type),
           status: 'active',
           last_sync: now,
           updated_at: now
@@ -1818,17 +2134,17 @@ async function saveConnectedAccount(user_id, platform, account_name, api_key_enc
       if (error) throw error;
       return existing.id;
     } else {
-      // Insert new
       const { data, error } = await supabase
         .from('connected_accounts')
         .insert({
-          user_id,
-          platform,
-          account_name,
+          organization_id: organizationId,
+          created_by: userId,
+          platform: sanitizeString(platform),
+          account_name: sanitizeString(account_name),
           api_key_encrypted,
           account_info,
-          gateway_url,
-          connection_type,
+          gateway_url: sanitizeString(gateway_url),
+          connection_type: sanitizeString(connection_type),
           last_sync: now,
           created_at: now,
           updated_at: now
@@ -1840,16 +2156,18 @@ async function saveConnectedAccount(user_id, platform, account_name, api_key_enc
       return data.id;
     }
   } catch (error) {
-    handleError(error, 'saveConnectedAccount');
+    handleError(error, 'saveConnectedAccount', { userId, organizationId, platform });
   }
 }
 
-async function getConnectedAccounts(user_id) {
+async function getConnectedAccounts(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('connected_accounts')
       .select('id, platform, account_name, account_info, status, last_sync, created_at')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -1859,27 +2177,33 @@ async function getConnectedAccounts(user_id) {
       account_info: row.account_info || null
     }));
   } catch (error) {
-    handleError(error, 'getConnectedAccounts');
+    handleError(error, 'getConnectedAccounts', { organizationId });
   }
 }
 
-async function deleteConnectedAccount(id, user_id) {
+async function deleteConnectedAccount(userJwt, userId, organizationId, id) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('connected_accounts')
       .delete()
       .eq('id', id)
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteConnectedAccount');
+    handleError(error, 'deleteConnectedAccount', { userId, organizationId, id });
   }
 }
 
-async function updateAccountLastSync(id, user_id) {
+async function updateAccountLastSync(userJwt, userId, organizationId, id) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('connected_accounts')
@@ -1888,12 +2212,12 @@ async function updateAccountLastSync(id, user_id) {
         updated_at: now
       })
       .eq('id', id)
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateAccountLastSync');
+    handleError(error, 'updateAccountLastSync', { userId, organizationId, id });
   }
 }
 
@@ -1901,8 +2225,10 @@ async function updateAccountLastSync(id, user_id) {
 // ACTIVITY LOG
 // ===============================
 
-async function logActivity(user_id, action, details, type = 'info', icon = null) {
+async function logActivity(userJwt, userId, organizationId, action, details, type = 'info', icon = null) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const icons = {
       'info': 'fa-info-circle',
       'success': 'fa-check-circle',
@@ -1924,10 +2250,11 @@ async function logActivity(user_id, action, details, type = 'info', icon = null)
     const { error } = await supabase
       .from('activity_log')
       .insert({
-        user_id,
-        action,
-        details,
-        type,
+        user_id: userId,
+        organization_id: organizationId,
+        action: sanitizeString(action),
+        details: sanitizeString(details),
+        type: sanitizeString(type),
         icon: finalIcon,
         timestamp: new Date().toISOString()
       });
@@ -1935,23 +2262,27 @@ async function logActivity(user_id, action, details, type = 'info', icon = null)
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'logActivity');
+    handleError(error, 'logActivity', { userId, organizationId, action });
   }
 }
 
-async function getRecentActivity(user_id, limit = 10) {
+async function getRecentActivity(userJwt, organizationId, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
-    const { data, error } = await supabase
-      .from('activity_log')
-      .select('*')
-      .eq('user_id', user_id)
-      .order('timestamp', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data || [];
+    const supabase = getUserSupabaseClient(userJwt);
+    
+    const result = await getPaginatedResults(
+      supabase
+        .from('activity_log')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('timestamp', { ascending: false }),
+      page,
+      limit
+    );
+    
+    return result;
   } catch (error) {
-    handleError(error, 'getRecentActivity');
+    handleError(error, 'getRecentActivity', { organizationId, page, limit });
   }
 }
 
@@ -1959,21 +2290,22 @@ async function getRecentActivity(user_id, limit = 10) {
 // GOVERNANCE SETTINGS
 // ===============================
 
-async function getGovernanceSettings(user_id) {
+async function getGovernanceSettings(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     let { data, error } = await supabase
       .from('governance_settings')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .maybeSingle();
 
     if (error) throw error;
 
     if (!data) {
-      // Create default settings
       const { data: newData, error: insertError } = await supabase
         .from('governance_settings')
-        .insert({ user_id })
+        .insert({ organization_id: organizationId })
         .select()
         .single();
 
@@ -1983,28 +2315,29 @@ async function getGovernanceSettings(user_id) {
 
     return data || {};
   } catch (error) {
-    handleError(error, 'getGovernanceSettings');
+    handleError(error, 'getGovernanceSettings', { organizationId });
   }
 }
 
-async function updateGovernanceSettings(user_id, settings) {
+async function updateGovernanceSettings(userJwt, organizationId, settings) {
   try {
-    // Ensure record exists
+    const supabase = getUserSupabaseClient(userJwt);
+    
     await supabase
       .from('governance_settings')
-      .upsert({ user_id }, { onConflict: 'user_id' });
+      .upsert({ organization_id: organizationId }, { onConflict: 'organization_id' });
 
     const updateData = { ...settings, updated_at: new Date().toISOString() };
 
     const { error } = await supabase
       .from('governance_settings')
       .update(updateData)
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'updateGovernanceSettings');
+    handleError(error, 'updateGovernanceSettings', { organizationId });
   }
 }
 
@@ -2012,16 +2345,20 @@ async function updateGovernanceSettings(user_id, settings) {
 // ALERTS
 // ===============================
 
-async function createAlert(user_id, type, severity, title, description) {
+async function createAlert(userJwt, userId, organizationId, type, severity, title, description) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { data, error } = await supabase
       .from('alerts')
       .insert({
-        user_id,
-        type,
-        severity,
-        title,
-        description,
+        organization_id: organizationId,
+        user_id: userId,
+        type: sanitizeString(type),
+        severity: sanitizeString(severity),
+        title: sanitizeString(title),
+        description: sanitizeString(description),
         created_at: new Date().toISOString()
       })
       .select()
@@ -2030,41 +2367,46 @@ async function createAlert(user_id, type, severity, title, description) {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'createAlert');
+    handleError(error, 'createAlert', { userId, organizationId, type });
   }
 }
 
-async function getActiveAlerts(user_id) {
+async function getActiveAlerts(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('alerts')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .eq('resolved', 0)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getActiveAlerts');
+    handleError(error, 'getActiveAlerts', { organizationId });
   }
 }
 
-async function resolveAlert(alert_id, user_id) {
+async function resolveAlert(userJwt, userId, organizationId, alertId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('alerts')
       .update({
         resolved: 1,
         resolved_at: new Date().toISOString()
       })
-      .eq('id', alert_id)
-      .eq('user_id', user_id);
+      .eq('id', alertId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'resolveAlert');
+    handleError(error, 'resolveAlert', { userId, organizationId, alertId });
   }
 }
 
@@ -2072,14 +2414,17 @@ async function resolveAlert(alert_id, user_id) {
 // USAGE LOGS
 // ===============================
 
-async function logUsage(user_id, provider, model, cost, tokens) {
+async function logUsage(userJwt, userId, organizationId, provider, model, cost, tokens) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { error } = await supabase
       .from('usage_logs')
       .insert({
-        user_id,
-        provider,
-        model,
+        organization_id: organizationId,
+        user_id: userId,
+        provider: sanitizeString(provider),
+        model: sanitizeString(model),
         cost,
         tokens,
         timestamp: new Date().toISOString()
@@ -2087,32 +2432,37 @@ async function logUsage(user_id, provider, model, cost, tokens) {
 
     if (error) throw error;
 
-    // Update governance used_amount
-    await supabase.rpc('increment_used_amount', {
-      user_id_param: user_id,
+    const { error: rpcError } = await supabase.rpc('increment_used_amount', {
+      organization_id_param: organizationId,
       cost_param: cost
     });
 
+    if (rpcError) {
+      console.error('❌ increment_used_amount RPC failed:', rpcError);
+      throw new Error('Atomic increment operation failed - RPC not available');
+    }
+
     return true;
   } catch (error) {
-    handleError(error, 'logUsage');
+    handleError(error, 'logUsage', { userId, organizationId, provider });
   }
 }
 
-async function getUsageStats(user_id, days = 30) {
+async function getUsageStats(userJwt, organizationId, days = 30) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     const { data, error } = await supabase
       .from('usage_logs')
       .select('provider, cost, tokens, created_at')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .gte('timestamp', cutoffDate.toISOString());
 
     if (error) throw error;
 
-    // Aggregate by provider
     const stats = {};
     (data || []).forEach(log => {
       if (!stats[log.provider]) {
@@ -2130,7 +2480,7 @@ async function getUsageStats(user_id, days = 30) {
 
     return Object.values(stats);
   } catch (error) {
-    handleError(error, 'getUsageStats');
+    handleError(error, 'getUsageStats', { organizationId, days });
   }
 }
 
@@ -2138,8 +2488,11 @@ async function getUsageStats(user_id, days = 30) {
 // MOBILE INSTANCES
 // ===============================
 
-async function spawnMobileInstance(user_id) {
+async function spawnMobileInstance(userJwt, userId, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const id = 'inst_' + uuidv4().substring(0, 8);
     const now = new Date().toISOString();
 
@@ -2147,7 +2500,8 @@ async function spawnMobileInstance(user_id) {
       .from('mobile_instances')
       .insert({
         id,
-        user_id,
+        organization_id: organizationId,
+        user_id: userId,
         created_at: now,
         last_active: now
       })
@@ -2157,38 +2511,43 @@ async function spawnMobileInstance(user_id) {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'spawnMobileInstance');
+    handleError(error, 'spawnMobileInstance', { userId, organizationId });
   }
 }
 
-async function getMobileInstances(user_id) {
+async function getMobileInstances(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('mobile_instances')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getMobileInstances');
+    handleError(error, 'getMobileInstances', { organizationId });
   }
 }
 
-async function terminateMobileInstance(id, user_id) {
+async function terminateMobileInstance(userJwt, userId, organizationId, id) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('mobile_instances')
       .update({ status: 'terminated' })
       .eq('id', id)
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'terminateMobileInstance');
+    handleError(error, 'terminateMobileInstance', { userId, organizationId, id });
   }
 }
 
@@ -2196,50 +2555,58 @@ async function terminateMobileInstance(id, user_id) {
 // BROADCASTS
 // ===============================
 
-async function saveBroadcast(id, user_id, subject, recipients, sent_count, failed_count, status = 'sent') {
+async function saveBroadcast(userJwt, userId, organizationId, id, subject, recipients, sent_count, failed_count, status = 'sent') {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('broadcasts')
       .insert({
         id,
-        user_id,
-        subject,
+        organization_id: organizationId,
+        user_id: userId,
+        subject: sanitizeString(subject),
         recipients,
         sent_count,
         failed_count,
-        status,
+        status: sanitizeString(status),
         created_at: new Date().toISOString()
       });
 
     if (error) throw error;
     return id;
   } catch (error) {
-    handleError(error, 'saveBroadcast');
+    handleError(error, 'saveBroadcast', { userId, organizationId, id });
   }
 }
 
-async function getBroadcastsByUser(user_id) {
+async function getBroadcastsByUser(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('broadcasts')
       .select('*')
-      .eq('user_id', user_id)
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
       .limit(10);
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getBroadcastsByUser');
+    handleError(error, 'getBroadcastsByUser', { organizationId });
   }
 }
 
-async function getBroadcastStats(user_id) {
+async function getBroadcastStats(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('broadcasts')
       .select('recipients, sent_count, failed_count')
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
 
@@ -2258,7 +2625,7 @@ async function getBroadcastStats(user_id) {
 
     return stats;
   } catch (error) {
-    handleError(error, 'getBroadcastStats');
+    handleError(error, 'getBroadcastStats', { organizationId });
   }
 }
 
@@ -2268,7 +2635,7 @@ async function getBroadcastStats(user_id) {
 
 async function getIncidents(limit = 5) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('incidents')
       .select('*')
       .order('date', { ascending: false })
@@ -2277,19 +2644,19 @@ async function getIncidents(limit = 5) {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    handleError(error, 'getIncidents');
+    handleError(error, 'getIncidents', { limit });
   }
 }
 
 async function addIncident(date, title, description, status = 'resolved') {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('incidents')
       .insert({
         date,
-        title,
-        description,
-        status
+        title: sanitizeString(title),
+        description: sanitizeString(description),
+        status: sanitizeString(status)
       })
       .select()
       .single();
@@ -2297,7 +2664,7 @@ async function addIncident(date, title, description, status = 'resolved') {
     if (error) throw error;
     return data.id;
   } catch (error) {
-    handleError(error, 'addIncident');
+    handleError(error, 'addIncident', { title });
   }
 }
 
@@ -2307,23 +2674,23 @@ async function addIncident(date, title, description, status = 'resolved') {
 
 async function addSubscriber(email) {
   try {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('status_subscribers')
       .upsert(
-        { email: email.toLowerCase().trim() },
+        { email: normalizeEmail(email) },
         { onConflict: 'email', ignore: true }
       );
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'addSubscriber');
+    handleError(error, 'addSubscriber', { email });
   }
 }
 
 async function getSubscribers() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('status_subscribers')
       .select('email')
       .order('created_at', { ascending: false });
@@ -2337,15 +2704,15 @@ async function getSubscribers() {
 
 async function removeSubscriber(email) {
   try {
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('status_subscribers')
       .delete()
-      .eq('email', email.toLowerCase().trim());
+      .eq('email', normalizeEmail(email));
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'removeSubscriber');
+    handleError(error, 'removeSubscriber', { email });
   }
 }
 
@@ -2353,16 +2720,20 @@ async function removeSubscriber(email) {
 // GENERATED MEDIA
 // ===============================
 
-async function saveGeneratedMedia(user_id, media_type, file_url, metadata = {}) {
+async function saveGeneratedMedia(userJwt, userId, organizationId, media_type, file_url, metadata = {}) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const id = uuidv4();
     const { data, error } = await supabase
       .from('generated_media')
       .insert({
         id,
-        user_id,
-        media_type,
-        file_url,
+        organization_id: organizationId,
+        created_by: userId,
+        media_type: sanitizeString(media_type),
+        file_url: sanitizeString(file_url),
         metadata,
         created_at: new Date().toISOString()
       })
@@ -2372,52 +2743,57 @@ async function saveGeneratedMedia(user_id, media_type, file_url, metadata = {}) 
     if (error) throw error;
     return data;
   } catch (error) {
-    handleError(error, 'saveGeneratedMedia');
+    handleError(error, 'saveGeneratedMedia', { userId, organizationId, media_type });
   }
 }
 
-async function getGeneratedMedia(user_id, media_type = null, limit = 50, offset = 0) {
+async function getGeneratedMedia(userJwt, organizationId, media_type = null, page = 1, limit = DEFAULT_PAGE_LIMIT) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     let query = supabase
       .from('generated_media')
       .select('*', { count: 'exact' })
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
 
     if (media_type && media_type !== 'all') {
-      query = query.eq('media_type', media_type);
+      query = query.eq('media_type', sanitizeString(media_type));
     }
 
-    const { data, error, count } = await query;
-    if (error) throw error;
-    return { media: data || [], total: count || 0 };
+    const result = await getPaginatedResults(query, page, limit, true);
+    return result;
   } catch (error) {
-    handleError(error, 'getGeneratedMedia');
+    handleError(error, 'getGeneratedMedia', { organizationId, media_type, page, limit });
   }
 }
 
-async function deleteGeneratedMedia(media_id, user_id) {
+async function deleteGeneratedMedia(userJwt, userId, organizationId, mediaId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    await validateOrganizationAccess(userId, organizationId);
+    
     const { error } = await supabase
       .from('generated_media')
       .delete()
-      .eq('id', media_id)
-      .eq('user_id', user_id);
+      .eq('id', mediaId)
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    handleError(error, 'deleteGeneratedMedia');
+    handleError(error, 'deleteGeneratedMedia', { userId, organizationId, mediaId });
   }
 }
 
-async function getMediaStats(user_id) {
+async function getMediaStats(userJwt, organizationId) {
   try {
+    const supabase = getUserSupabaseClient(userJwt);
+    
     const { data, error } = await supabase
       .from('generated_media')
       .select('media_type')
-      .eq('user_id', user_id);
+      .eq('organization_id', organizationId);
 
     if (error) throw error;
     
@@ -2431,25 +2807,115 @@ async function getMediaStats(user_id) {
     
     return stats;
   } catch (error) {
-    handleError(error, 'getMediaStats');
+    handleError(error, 'getMediaStats', { organizationId });
   }
 }
 
 // ===============================
-// INITIALIZE ON LOAD
+// ADMIN INITIALIZATION (System only)
 // ===============================
-initializeTables().catch(console.error);
+
+async function createAdminIfNotExists(email, hashedPassword) {
+  try {
+    const cleanEmail = normalizeEmail(email);
+    
+    const existing = await getUserByEmail(cleanEmail);
+    if (existing) return existing;
+
+    const orgId = uuidv4();
+    
+    const { data: org, error: orgError } = await adminSupabase
+      .from('organizations')
+      .insert({
+        id: orgId,
+        name: "Admin Organization",
+        slug: "admin-org",
+        plan: 'agency',
+        created_by: '00000000-0000-0000-0000-000000000000',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (orgError) throw orgError;
+    
+    const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
+      email: cleanEmail,
+      password: hashedPassword,
+      email_confirm: true,
+      user_metadata: {
+        organization_id: orgId,
+        business_name: "Admin Business",
+        is_admin: true
+      }
+    });
+
+    if (authError) throw authError;
+
+    const userId = authUser.user.id;
+
+    const { data: user, error: userError } = await adminSupabase
+      .from('users')
+      .insert({
+        id: userId,
+        email: cleanEmail,
+        business_name: "Admin Business",
+        plan: 'agency',
+        is_verified: 1,
+        plan_expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        business_profile: {},
+        subscription_status: 'active'
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      await adminSupabase.auth.admin.deleteUser(userId);
+      throw userError;
+    }
+
+    await adminSupabase
+      .from('organization_members')
+      .insert({
+        organization_id: orgId,
+        user_id: userId,
+        role: 'owner',
+        created_at: new Date().toISOString()
+      });
+
+    await initializeOrganizationSettings(orgId);
+
+    return { id: userId, email: cleanEmail, organizationId: orgId };
+  } catch (error) {
+    handleError(error, 'createAdminIfNotExists', { email });
+  }
+}
 
 // ===============================
 // EXPORTS
 // ===============================
 
 module.exports = {
-  // Core database functions
-  supabase,
+  // Core
+  adminSupabase,
+  getUserSupabaseClient,
+  getClientWithToken,
   
-  // Table initialization
-  initializeTables,
+  // Pagination constants
+  DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
+  
+  // Organization / Tenant
+  createOrganization,
+  getOrganizationBySlug,
+  getOrganizationById,
+  getUserOrganizations,
+  addOrganizationMember,
+  removeOrganizationMember,
+  updateOrganizationMemberRole,
+  getOrganizationUsers,
+  validateOrganizationAccess,
   
   // Users
   createUser,
@@ -2458,7 +2924,7 @@ module.exports = {
   getUserByBusinessId,
   getUserById,
   
-  // Business Profile (AI Business Coach)
+  // Business Profile
   getBusinessProfile,
   updateBusinessProfile,
   
@@ -2497,48 +2963,37 @@ module.exports = {
   
   // Knowledge Base
   addKnowledge,
-  getKnowledgeByUser,
+  getKnowledgeByOrganization,
   deleteKnowledge,
   
   // Widget
   setWidgetKey,
   getWidgetKey,
   
-  // Plan & Usage
-  updatePlan,
+  // Monetization
+  getOrganizationSubscription,
+  updateSubscriptionStatus,
+  checkPlanLimits,
+  
+  // Plan & Usage (Pure RPC - Race Condition Safe)
   incrementMessagesUsed,
   incrementLeadsUsed,
   
   // Leads
   saveLead,
-  getLeadsByUser,
-  getLeadByEmail,
+  getLeadsByOrganization,
+  getLeadById,
   updateLeadStatus,
-  getLeadScore,
-  saveLeadScore,
+  deleteLead,
   
   // Chats
   saveChat,
-  getChatsByUser,
+  getChatsByOrganization,
   getChatsBySession,
   
-  // Notification Settings
-  getNotificationSettings,
-  saveNotificationSettings,
-  
-  // API Keys
-  createApiKey,
-  getApiKeys,
-  deleteApiKey,
-  updateApiKeyLastUsed,
-  validateApiKey,
-  
-  // Admin
-  createAdminIfNotExists,
-  
-  // Automations (Basic)
+  // Automations
   createAutomation,
-  getAutomationsByUser,
+  getAutomationsByOrganization,
   getAutomationById,
   updateAutomation,
   deleteAutomation,
@@ -2554,7 +3009,7 @@ module.exports = {
   getAutomationTemplateBySlug,
   incrementTemplateUsage,
   
-  // User Automations (Advanced)
+  // User Automations
   createUserAutomation,
   getUserAutomations,
   getUserAutomationById,
@@ -2612,5 +3067,8 @@ module.exports = {
   saveGeneratedMedia,
   getGeneratedMedia,
   deleteGeneratedMedia,
-  getMediaStats
+  getMediaStats,
+  
+  // Admin
+  createAdminIfNotExists
 };
