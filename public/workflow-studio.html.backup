@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -341,7 +341,7 @@
         }
 
         .btn-primary:hover {
-            
+            transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
 
@@ -375,15 +375,12 @@
             background: #dc2626;
         }
 
-            
-                canvas-container:active {
-            cursor: grabbing;
-        }
-        .canvas-container.active {
-            display: block;
-        }
-        workflow-node:hover {
-            box-shadow: 0 8px 24px rgba(212,175,55,0.3);
+        .canvas-container {
+            flex: 1;
+            background: radial-gradient(circle at 50% 50%, #0a0a0f, #050508);
+            position: relative;
+            overflow: auto;
+            display: none;
         }
 
         .canvas-container.active {
@@ -498,7 +495,7 @@
 
         .history-panel {
             flex: 1;
-            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px); background-size: 28px 28px; background-color: #0a0a0f;
+            background: radial-gradient(circle at 50% 50%, #0a0a0f, #050508);
             overflow-y: auto;
             padding: 20px;
             display: none;
@@ -609,7 +606,7 @@
 
         .gallery-panel {
             flex: 1;
-            background-image: radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 1px); background-size: 28px 28px; background-color: #0a0a0f;
+            background: radial-gradient(circle at 50% 50%, #0a0a0f, #050508);
             overflow-y: auto;
             padding: 20px;
             display: none;
@@ -666,7 +663,20 @@
             color: #888;
         }
 
-        workflow-node.selected {
+        .workflow-node {
+            position: absolute;
+            min-width: 260px;
+            background: rgba(30, 30, 46, 0.95);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 16px;
+            cursor: move;
+            user-select: none;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .workflow-node.selected {
             border-color: #d4af37;
             box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
         }
@@ -1520,294 +1530,6 @@
                 right: 20px;
             }
         }
-
-/* ============================================
-   N8N-STYLE NODE DESIGN - CLEAN VERSION
-   ============================================ */
-
-/* Canvas - Clean grid background */
-.canvas-container {
-    flex: 1;
-    background-image: radial-gradient(circle at 1px 1px, rgba(212,175,55,0.06) 1px, transparent 1px);
-    background-size: 20px 20px;
-    background-color: #0a0a0f;
-    position: relative;
-    overflow: auto;
-    display: none;
-    cursor: grab;
-}
-
-.canvas-container:active {
-    cursor: grabbing;
-}
-
-.canvas-container.active {
-    display: block;
-}
-
-#workflowCanvas {
-    position: relative;
-    min-height: 100%;
-    min-width: 100%;
-    padding: 40px;
-}
-
-/* N8N-STYLE NODE */
-.workflow-node {
-    position: absolute;
-    min-width: 200px;
-    max-width: 260px;
-    background: #1a1a2e;
-    border: 2px solid #2a2a3e;
-    border-radius: 10px;
-    cursor: move;
-    user-select: none;
-    transition: all 0.2s ease;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.workflow-node:hover {
-    border-color: #4a4a5e;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-}
-
-.workflow-node.selected {
-    border-color: #d4af37;
-    box-shadow: 0 0 0 2px rgba(212,175,55,0.3), 0 4px 16px rgba(0,0,0,0.4);
-}
-
-/* Node Header */
-.workflow-node .node-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-bottom: 1px solid #2a2a3e;
-    background: rgba(255,255,255,0.02);
-    border-radius: 8px 8px 0 0;
-}
-
-.workflow-node .node-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: white;
-    flex-shrink: 0;
-}
-
-.workflow-node .node-title {
-    flex: 1;
-    font-size: 12px;
-    font-weight: 600;
-    color: #e8e8e8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.workflow-node .node-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.workflow-node .node-actions button {
-    background: none;
-    border: none;
-    color: #555577;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    transition: all 0.2s;
-}
-
-.workflow-node .node-actions button:hover {
-    color: #ef4444;
-    background: rgba(239,68,68,0.1);
-}
-
-/* Node Body */
-.workflow-node .node-body {
-    padding: 8px 12px;
-    font-size: 11px;
-    color: #8888aa;
-    min-height: 20px;
-}
-
-.workflow-node .node-body .config-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 0;
-    font-size: 10px;
-}
-
-.workflow-node .node-body .config-item .label {
-    color: #666688;
-}
-
-.workflow-node .node-body .config-item .value {
-    color: #aabbcc;
-    font-family: monospace;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Node Ports */
-.workflow-node .node-ports {
-    display: flex;
-    gap: 4px;
-    padding: 6px 10px 8px;
-    border-top: 1px solid #2a2a3e;
-    flex-wrap: wrap;
-}
-
-.workflow-node .port {
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 8px;
-    font-weight: 700;
-    cursor: crosshair;
-    transition: all 0.2s;
-    background: #2a2a3e;
-    color: #8888aa;
-    border: 1px solid #3a3a4e;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.workflow-node .port:hover {
-    background: #d4af37;
-    color: #1a1a2e;
-    transform: scale(1.05);
-}
-
-.workflow-node .port .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.workflow-node .port.port-next .dot { background: #10b981; }
-.workflow-node .port.port-true .dot { background: #10b981; }
-.workflow-node .port.port-false .dot { background: #ef4444; }
-.workflow-node .port.port-error .dot { background: #ef4444; }
-
-.workflow-node .port.port-error {
-    border-color: #ef4444;
-    color: #ef4444;
-}
-
-.workflow-node .port.port-error:hover {
-    background: #ef4444;
-    color: white;
-}
-
-/* Status Indicator */
-.workflow-node .status-dot {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid #1a1a2e;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px;
-}
-
-.workflow-node .status-dot.success { background: #10b981; }
-.workflow-node .status-dot.error { background: #ef4444; }
-.workflow-node .status-dot.running { background: #f59e0b; animation: spin 1s linear infinite; }
-
-/* Plus Button */
-.workflow-node .node-plus {
-    position: absolute;
-    bottom: -14px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #2a2a3e;
-    border: 2px solid #3a3a4e;
-    color: #8888aa;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.2s;
-    z-index: 15;
-}
-
-.workflow-node .node-plus:hover {
-    background: #d4af37;
-    color: #1a1a2e;
-    border-color: #d4af37;
-    transform: translateX(-50%) scale(1.1);
-}
-
-/* Node States */
-.workflow-node.executing {
-    border-color: #f59e0b !important;
-    animation: nodePulse 0.8s ease-in-out infinite;
-}
-
-.workflow-node.completed {
-    border-color: #10b981 !important;
-    background: linear-gradient(135deg, #1a1a2e, rgba(16,185,129,0.08));
-}
-
-.workflow-node.failed {
-    border-color: #ef4444 !important;
-    background: linear-gradient(135deg, #1a1a2e, rgba(239,68,68,0.08));
-}
-
-@keyframes nodePulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.3); }
-    50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Connection lines */
-.workflow-connection {
-    stroke: #d4af37;
-    stroke-width: 2;
-    fill: none;
-}
-
-.workflow-connection.error {
-    stroke: #ef4444;
-    stroke-dasharray: 5,5;
-}
-
-.workflow-connection.animated {
-    stroke: #f59e0b;
-    stroke-width: 3;
-    stroke-dasharray: 8,4;
-    animation: dash 0.5s linear infinite;
-}
-
-@keyframes dash {
-    to { stroke-dashoffset: -16; }
-}
 </style>
 </head>
 <body>
@@ -2749,7 +2471,7 @@
     console.log(`? Fixed ${fixed} node configurations`);
 })();
 </script>
-<script src="workflow-api-fix.js"></script>
+</body>
 
 
 <script>
@@ -8584,4 +8306,3 @@
         window.updateNodeConfigField = updateNodeConfigField;
     </script>
 </html>
-</body>

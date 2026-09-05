@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -13,7 +13,7 @@ const { Resend } = require('resend');
 require("dotenv").config();
 
 const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 // ================= IMPORT NEW SERVICES =================
 const CloudflareGateway = require('../services/cloudflare-gateway');
@@ -111,6 +111,152 @@ const workflowVersioning = require('./workflow-versioning');
 const debugExecutor = require('./debug-executor');
 const errorHandler = require('./error-handler');
 
+// ===== DEBUG: Check if route files exist =====
+const fs = require('fs');
+const pathModule = require('path');
+
+const routesPath = pathModule.join(__dirname, 'routes');
+console.log(`?? Checking routes directory: ${routesPath}`);
+
+try {
+  const files = fs.readdirSync(routesPath);
+  console.log(`?? Files in routes directory: ${files.join(', ')}`);
+} catch (err) {
+  console.error(`? Could not read routes directory: ${err.message}`);
+}
+
+const templateRouteFile = pathModule.join(__dirname, 'routes', 'automation-templates-routes.js');
+console.log(`?? Checking template route file: ${templateRouteFile}`);
+if (fs.existsSync(templateRouteFile)) {
+  console.log(`? File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
+  try {
+    const content = fs.readFileSync(templateRouteFile, 'utf8');
+    console.log(`?? First 100 chars: ${content.substring(0, 100)}...`);
+  } catch (readErr) {
+    console.log(`?? Could not read file: ${readErr.message}`);
+  }
+} else {
+  console.log(`? File NOT FOUND at: ${templateRouteFile}`);
+}
+
+// Import new automation modules
+const automationRoutes = require('../api/automations-routes');
+const AutomationEngine = require('../services/automation-engine');
+const IntegrationService = require('../services/integrations');
+
+// Import analytics and settings routes
+const analyticsRoutes = require('../api/analytics-routes');
+const settingsRoutes = require('../api/settings-routes');
+
+// ===== AI POWERHOUSE ROUTES =====
+const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
+
+// ===== NEW: AUTOMATION TEMPLATES ROUTES (with error handling) =====
+let automationTemplatesRoutes;
+let userAutomationsRoutes;
+let leadsRoutes;
+
+try {
+  automationTemplatesRoutes = require('./routes/automation-templates-routes');
+  console.log('? automation-templates-routes.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load automation-templates-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  automationTemplatesRoutes = (req, res) => res.status(500).json({ error: 'Templates routes not available', details: err.message });
+}
+
+try {
+  userAutomationsRoutes = require('./routes/user-automations-routes');
+  console.log('? user-automations-routes.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load user-automations-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  userAutomationsRoutes = (req, res) => res.status(500).json({ error: 'User automations routes not available', details: err.message });
+}
+
+try {
+  leadsRoutes = require('./routes/leads-routes');
+  console.log('? leads-routes.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load leads-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
+}
+
+// ===== NEW: AI BUSINESS COACH ROUTES =====
+let coachRoutes;
+try {
+  coachRoutes = require('./routes/coach');
+  console.log('? coach.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load coach.js:', err.message);
+  coachRoutes = (req, res) => res.status(500).json({ error: 'Business Coach routes not available', details: err.message });
+}
+
+// ===== NEW: WORKFLOW ENGINE IMPORTS (REAL-TIME AUTOMATION) =====
+let workflowRoutes;
+let webhookHandler;
+let webhookListener;
+let workflowScheduler;
+let workflowTemplatesRoutes;
+
+try {
+  workflowRoutes = require('./routes/workflow-routes');
+  console.log('? workflow-routes.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load workflow-routes.js:', err.message);
+  workflowRoutes = null;
+}
+
+try {
+  webhookHandler = require('./webhook-handler');
+  console.log('? webhook-handler.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load webhook-handler.js:', err.message);
+  webhookHandler = null;
+}
+
+try {
+  const { webhookRouter } = require('./webhook-listener');
+  webhookListener = webhookRouter;
+  console.log('? webhook-listener.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load webhook-listener.js:', err.message);
+  webhookListener = null;
+}
+
+try {
+  workflowScheduler = require('./scheduler');
+  console.log('? scheduler.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load scheduler.js:', err.message);
+  workflowScheduler = null;
+}
+
+try {
+  workflowTemplatesRoutes = require('./workflow-templates');
+  console.log('? workflow-templates.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load workflow-templates.js:', err.message);
+  workflowTemplatesRoutes = null;
+}
+
+// ================= CREATE APP =================
+const app = express();
+
+// ================================================
+// IMPORT SMART HUB ROUTES (MUST BE DEFINED BEFORE USE)
+// ================================================
+let smartHubRoutes;
+try {
+  smartHubRoutes = require('./smart-hub');
+  console.log('? smart-hub.js loaded successfully');
+} catch (err) {
+  console.error('? Failed to load smart-hub.js:', err.message);
+  console.error('   Stack:', err.stack);
+  smartHubRoutes = (req, res) => res.status(500).json({ error: 'Smart Hub routes not available', details: err.message });
+}
+
 // ================================================
 // GLOBAL LOGGING SYSTEM
 // ================================================
@@ -130,7 +276,6 @@ async function logSystemEvent(eventType, message, details = {}, userId = null) {
   systemLogs.unshift(logEntry);
   if (systemLogs.length > MAX_LOGS) systemLogs.pop();
   
-  // Persist to database
   try {
     await supabase.from('system_logs').insert({
       id: logEntry.id,
@@ -144,7 +289,7 @@ async function logSystemEvent(eventType, message, details = {}, userId = null) {
     console.error('Failed to persist system log:', err.message);
   }
   
-  console.log(`📋 [SYS-LOG] ${eventType}: ${message}`);
+  console.log(`?? [SYS-LOG] ${eventType}: ${message}`);
   return logEntry;
 }
 
@@ -184,9 +329,10 @@ async function updatePlatformHealth() {
     
     // Check queue health
     const queueStats = await getQueueStats();
+    const queueStatus = await getQueueStatus();
     platformHealth.components.queue = {
-      status: queueStats.pending > 100 ? 'degraded' : 'healthy',
-      depth: queueStats.pending,
+      status: (queueStats.pending || 0) > 100 ? 'degraded' : 'healthy',
+      depth: queueStats.pending || 0,
       activeJobs: queueStats.activeJobs || 0,
       maxConcurrent: queueStats.maxConcurrent || 5,
       pausedJobs: queueStats.pausedJobs || 0,
@@ -205,7 +351,7 @@ async function updatePlatformHealth() {
     const avgExecutionTime = executions?.reduce((sum, e) => sum + (e.execution_time_ms || 0), 0) / (totalExecutions || 1);
     
     platformHealth.metrics = {
-      activeExecutions: 0, // Would need to track active executions
+      activeExecutions: 0,
       totalExecutionsToday: totalExecutions,
       avgExecutionTime: Math.round(avgExecutionTime),
       errorRate: totalExecutions > 0 ? (failedExecutions / totalExecutions) * 100 : 0
@@ -219,7 +365,6 @@ async function updatePlatformHealth() {
     platformHealth.status = isHealthy ? 'healthy' : 'degraded';
     platformHealth.lastCheck = new Date().toISOString();
     
-    // Log health status change
     if (platformHealth.status !== 'healthy') {
       await logSystemEvent('HEALTH_DEGRADED', `Platform health degraded`, platformHealth);
     }
@@ -285,7 +430,6 @@ async function ensureWorkspaceAccess(req, res, next) {
 app.use((req, res, next) => {
   const startTime = Date.now();
   
-  // Log request on completion
   res.on('finish', () => {
     const duration = Date.now() - startTime;
     const userId = req.user?.id || 'anonymous';
@@ -304,138 +448,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ===== DEBUG: Check if route files exist =====
-const fs = require('fs');
-const pathModule = require('path');
-
-const routesPath = pathModule.join(__dirname, 'routes');
-console.log(`🔍 Checking routes directory: ${routesPath}`);
-
-try {
-  const files = fs.readdirSync(routesPath);
-  console.log(`📁 Files in routes directory: ${files.join(', ')}`);
-} catch (err) {
-  console.error(`❌ Could not read routes directory: ${err.message}`);
-}
-
-const templateRouteFile = pathModule.join(__dirname, 'routes', 'automation-templates-routes.js');
-console.log(`🔍 Checking template route file: ${templateRouteFile}`);
-if (fs.existsSync(templateRouteFile)) {
-  console.log(`✅ File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
-  try {
-    const content = fs.readFileSync(templateRouteFile, 'utf8');
-    console.log(`📄 First 100 chars: ${content.substring(0, 100)}...`);
-  } catch (readErr) {
-    console.log(`⚠️ Could not read file: ${readErr.message}`);
-  }
-} else {
-  console.log(`❌ File NOT FOUND at: ${templateRouteFile}`);
-}
-
-// Import new automation modules
-const automationRoutes = require('../api/automations-routes');
-const AutomationEngine = require('../services/automation-engine');
-const IntegrationService = require('../services/integrations');
-
-// Import analytics and settings routes
-const analyticsRoutes = require('../api/analytics-routes');
-const settingsRoutes = require('../api/settings-routes');
-
-// ===== AI POWERHOUSE ROUTES =====
-const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
-
-// ===== NEW: AUTOMATION TEMPLATES ROUTES (with error handling) =====
-let automationTemplatesRoutes;
-let userAutomationsRoutes;
-let leadsRoutes;
-
-try {
-  automationTemplatesRoutes = require('./routes/automation-templates-routes');
-  console.log('✅ automation-templates-routes.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load automation-templates-routes.js:', err.message);
-  console.error('   Stack:', err.stack);
-  automationTemplatesRoutes = (req, res) => res.status(500).json({ error: 'Templates routes not available', details: err.message });
-}
-
-try {
-  userAutomationsRoutes = require('./routes/user-automations-routes');
-  console.log('✅ user-automations-routes.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load user-automations-routes.js:', err.message);
-  console.error('   Stack:', err.stack);
-  userAutomationsRoutes = (req, res) => res.status(500).json({ error: 'User automations routes not available', details: err.message });
-}
-
-try {
-  leadsRoutes = require('./routes/leads-routes');
-  console.log('✅ leads-routes.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load leads-routes.js:', err.message);
-  console.error('   Stack:', err.stack);
-  leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
-}
-
-// ===== NEW: AI BUSINESS COACH ROUTES =====
-let coachRoutes;
-try {
-  coachRoutes = require('./routes/coach');
-  console.log('✅ coach.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load coach.js:', err.message);
-  coachRoutes = (req, res) => res.status(500).json({ error: 'Business Coach routes not available', details: err.message });
-}
-
-// ===== NEW: WORKFLOW ENGINE IMPORTS (REAL-TIME AUTOMATION) =====
-let workflowRoutes;
-let webhookHandler;
-let webhookListener;
-let workflowScheduler;
-let workflowTemplatesRoutes;
-
-try {
-  workflowRoutes = require('./routes/workflow-routes');
-  console.log('✅ workflow-routes.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load workflow-routes.js:', err.message);
-  workflowRoutes = null;
-}
-
-try {
-  webhookHandler = require('./webhook-handler');
-  console.log('✅ webhook-handler.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load webhook-handler.js:', err.message);
-  webhookHandler = null;
-}
-
-try {
-  const { webhookRouter } = require('./webhook-listener');
-  webhookListener = webhookRouter;
-  console.log('✅ webhook-listener.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load webhook-listener.js:', err.message);
-  webhookListener = null;
-}
-
-try {
-  workflowScheduler = require('./scheduler');
-  console.log('✅ scheduler.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load scheduler.js:', err.message);
-  workflowScheduler = null;
-}
-
-try {
-  workflowTemplatesRoutes = require('./workflow-templates');
-  console.log('✅ workflow-templates.js loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to load workflow-templates.js:', err.message);
-  workflowTemplatesRoutes = null;
-}
-
-const app = express();
-
 // ================= MIDDLEWARE =================
 // CORS first - with proper configuration
 const corsOptions = {
@@ -448,9 +460,172 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight requests
 
-// Then body-parser
+// Then body-parser with increased limit for image uploads
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
+
+// ================= SOCKET.IO =================
+const http = require("http");
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server, { 
+  cors: { origin: "*" },
+  transports: ['websocket', 'polling']
+});
+app.set("socketio", io);
+
+// Make io globally accessible for routes
+global.io = io;
+
+// Socket.io connection handling with authentication
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication required'));
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "super_secret_key");
+    const user = await getUserById(decoded.id);
+    if (!user) {
+      return next(new Error('User not found'));
+    }
+    socket.userId = user.id;
+    socket.userEmail = user.email;
+    next();
+  } catch (err) {
+    next(new Error('Invalid token'));
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log(`?? User connected: ${socket.userId}`);
+  
+  // Join user to their personal room
+  socket.join(`user:${socket.userId}`);
+  
+  // Join organization room if applicable
+  if (socket.userId) {
+    socket.join(`org:${socket.userId}`);
+  }
+
+  socket.on("join", (userId) => {
+    socket.join(`user:${userId}`);
+    console.log(`?? User joined socket room: user:${userId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`?? User disconnected: ${socket.userId}`);
+  });
+});
+
+// ================= CONFIGURATION =================
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const CLOUDFLARE_AI_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
+const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+
+// ================= INITIALIZE SERVICES =================
+const encryptionService = new EncryptionService(ENCRYPTION_KEY);
+const platformClients = new PlatformClients(ENCRYPTION_KEY);
+const metricsService = new MetricsService();
+
+// ================= RESEND CONFIGURATION =================
+let resend = null;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+  console.log("? Resend configured for reliable email delivery");
+} else {
+  console.warn("?? RESEND_API_KEY not found. Using nodemailer fallback.");
+}
+
+// Fallback to Nodemailer
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: { rejectUnauthorized: false }
+});
+
+// ================= EMAIL SENDING FUNCTION WITH FALLBACK =================
+async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
+  // Try Resend first (best option)
+  if (resend) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: "AI Smart Hub <noreply@aismarthub.website>",
+        to: [to],
+        subject: subject,
+        html: html,
+        text: text || html.replace(/<[^>]*>/g, '')
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      console.log(`? Resend email sent to: ${to}`);
+      return { success: true, method: 'resend' };
+    } catch (err) {
+      console.error(`? Resend failed for ${to}:`, err.message);
+    }
+  }
+
+  // Fallback to nodemailer
+  try {
+    await transporter.sendMail({
+      from: `"${fromName}" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, '')
+    });
+    console.log(`? Nodemailer email sent to: ${to}`);
+    return { success: true, method: 'nodemailer' };
+  } catch (err) {
+    console.error(`? Both email methods failed for ${to}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// ================= FILE PROCESSING =================
+async function extractTextFromFile(fileData, fileName, mimeType) {
+  try {
+    const base64Data = fileData.split(',')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    if (mimeType.includes('pdf')) {
+      const pdfData = await pdf(buffer);
+      return pdfData.text.substring(0, 5000);
+    } 
+    else if (mimeType.includes('word') || mimeType.includes('docx') || mimeType.includes('doc')) {
+      const result = await mammoth.extractRawText({ buffer });
+      return result.value.substring(0, 5000);
+    }
+    else if (mimeType.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.csv')) {
+      return buffer.toString('utf-8').substring(0, 5000);
+    }
+    else {
+      return `[File: ${fileName}] Cannot extract text from this file type.`;
+    }
+  } catch (err) {
+    console.error("File extraction error:", err);
+    return `[Error processing file: ${fileName}]`;
+  }
+}
+
+// ================= STATIC FILES =================
+app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
+
+// ================= SERVE STATIC HTML FILES =================
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ================================================
 // PLATFORM HEALTH ENDPOINT
@@ -541,179 +716,10 @@ app.get('/api/platform/metrics', authenticateToken, async (req, res) => {
   }
 });
 
-// ================================================
-// WORKSPACE MIDDLEWARE (Apply to protected routes)
-// ================================================
-app.use('/api/workflows', authenticateToken, ensureWorkspaceAccess);
-app.use('/api/automations', authenticateToken, ensureWorkspaceAccess);
-app.use('/api/leads', authenticateToken, ensureWorkspaceAccess);
-app.use('/api/chats', authenticateToken, ensureWorkspaceAccess);
-
-// ================= SOCKET.IO =================
-const http = require("http");
-const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server, { 
-  cors: { origin: "*" },
-  transports: ['websocket', 'polling']
-});
-app.set("socketio", io);
-
-// Make io globally accessible for routes
-global.io = io;
-
-// Socket.io connection handling with authentication
-io.use(async (socket, next) => {
-  const token = socket.handshake.auth.token;
-  if (!token) {
-    return next(new Error('Authentication required'));
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "super_secret_key");
-    const user = await getUserById(decoded.id);
-    if (!user) {
-      return next(new Error('User not found'));
-    }
-    socket.userId = user.id;
-    socket.userEmail = user.email;
-    next();
-  } catch (err) {
-    next(new Error('Invalid token'));
-  }
-});
-
-io.on("connection", (socket) => {
-  console.log(`👤 User connected: ${socket.userId}`);
-  
-  // Join user to their personal room
-  socket.join(`user:${socket.userId}`);
-  
-  // Join organization room if applicable
-  if (socket.userId) {
-    socket.join(`org:${socket.userId}`);
-  }
-
-  socket.on("join", (userId) => {
-    socket.join(`user:${userId}`);
-    console.log(`👤 User joined socket room: user:${userId}`);
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`👤 User disconnected: ${socket.userId}`);
-  });
-});
-
-// ================= CONFIGURATION =================
-const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-const CLOUDFLARE_AI_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
-const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
-
-// ================= INITIALIZE SERVICES =================
-const encryptionService = new EncryptionService(ENCRYPTION_KEY);
-const platformClients = new PlatformClients(ENCRYPTION_KEY);
-const metricsService = new MetricsService();
-
-// ================= RESEND CONFIGURATION =================
-let resend = null;
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY);
-  console.log("✅ Resend configured for reliable email delivery");
-} else {
-  console.warn("⚠️ RESEND_API_KEY not found. Using nodemailer fallback.");
-}
-
-// Fallback to Nodemailer
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false }
-});
-
-// ================= EMAIL SENDING FUNCTION WITH FALLBACK =================
-async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
-  // Try Resend first (best option)
-  if (resend) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: "AI Smart Hub <noreply@aismarthub.website>",
-        to: [to],
-        subject: subject,
-        html: html,
-        text: text || html.replace(/<[^>]*>/g, '')
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log(`✅ Resend email sent to: ${to}`);
-      return { success: true, method: 'resend' };
-    } catch (err) {
-      console.error(`❌ Resend failed for ${to}:`, err.message);
-    }
-  }
-
-  // Fallback to nodemailer
-  try {
-    await transporter.sendMail({
-      from: `"${fromName}" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-      text: text || html.replace(/<[^>]*>/g, '')
-    });
-    console.log(`✅ Nodemailer email sent to: ${to}`);
-    return { success: true, method: 'nodemailer' };
-  } catch (err) {
-    console.error(`❌ Both email methods failed for ${to}:`, err.message);
-    return { success: false, error: err.message };
-  }
-}
-
-// ================= FILE PROCESSING =================
-async function extractTextFromFile(fileData, fileName, mimeType) {
-  try {
-    const base64Data = fileData.split(',')[1];
-    const buffer = Buffer.from(base64Data, 'base64');
-    
-    if (mimeType.includes('pdf')) {
-      const pdfData = await pdf(buffer);
-      return pdfData.text.substring(0, 5000);
-    } 
-    else if (mimeType.includes('word') || mimeType.includes('docx') || mimeType.includes('doc')) {
-      const result = await mammoth.extractRawText({ buffer });
-      return result.value.substring(0, 5000);
-    }
-    else if (mimeType.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.csv')) {
-      return buffer.toString('utf-8').substring(0, 5000);
-    }
-    else {
-      return `[File: ${fileName}] Cannot extract text from this file type.`;
-    }
-  } catch (err) {
-    console.error("File extraction error:", err);
-    return `[Error processing file: ${fileName}]`;
-  }
-}
-
-// ================= STATIC FILES =================
-app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
-
-// ================= SERVE STATIC HTML FILES =================
-app.use(express.static(path.join(__dirname, '../public')));
-
-// ================= ROUTES =================
-app.use('/api/smart-hub', require('./smart-hub'));
+// ================= SMART HUB ROUTES - MOUNTED HERE =================
+// This is CRITICAL for image upload and tools analytics to work
+app.use('/api/smart-hub', smartHubRoutes);
+console.log('? Smart Hub routes mounted at /api/smart-hub');
 
 // Health check endpoint for Render
 app.get('/healthz', (req, res) => {
@@ -724,9 +730,9 @@ app.get('/healthz', (req, res) => {
 let customerRouter;
 try {
   customerRouter = require('./customer-insights');
-  console.log("✅ SUCCESS: customer-insights.js LOADED correctly");
+  console.log("? SUCCESS: customer-insights.js LOADED correctly");
 } catch (err) {
-  console.error("❌ FAILED to load customer-insights.js:", err.message);
+  console.error("? FAILED to load customer-insights.js:", err.message);
   customerRouter = express.Router();
 }
 app.use('/api/customer-insights', customerRouter);
@@ -748,28 +754,28 @@ app.use('/api/settings', settingsRoutes);
 // ===== AI POWERHOUSE ROUTES - MOUNTED HERE =====
 // Initialize AI Powerhouse with Cloudflare Gateway
 const AI_POWERHOUSE_ENABLED = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
-console.log(`🔷 AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '✅ Enabled' : '⚠️ Disabled (Cloudflare credentials missing)'}`);
+console.log(`?? AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '? Enabled' : '?? Disabled (Cloudflare credentials missing)'}`);
 
 // Mount AI Powerhouse routes
 app.use('/api/powerhouse', authenticateToken, aiPowerhouseRoutes);
-console.log('✅ AI Powerhouse routes mounted at /api/powerhouse');
+console.log('? AI Powerhouse routes mounted at /api/powerhouse');
 
 // ===== NEW: AUTOMATION TEMPLATES ROUTES =====
 app.use('/api/automation', automationTemplatesRoutes);
-console.log('✅ Automation Templates routes mounted at /api/automation');
+console.log('? Automation Templates routes mounted at /api/automation');
 
 // ===== NEW: USER AUTOMATIONS ROUTES =====
 app.use('/api', userAutomationsRoutes);
-console.log('✅ User Automations routes mounted at /api/automations');
+console.log('? User Automations routes mounted at /api/automations');
 
 // ===== NEW: LEADS MANAGEMENT ROUTES =====
 app.use('/api', leadsRoutes);
-console.log('✅ Leads Management routes mounted at /api/leads');
+console.log('? Leads Management routes mounted at /api/leads');
 
 // ===== NEW: AI BUSINESS COACH ROUTES =====
 // Mount Business Coach routes (requires authentication)
 app.use('/api/coach', authenticateToken, coachRoutes);
-console.log('✅ AI Business Coach routes mounted at /api/coach');
+console.log('? AI Business Coach routes mounted at /api/coach');
 
 // ===== NEW: WORKFLOW ENGINE ROUTES (REAL-TIME AUTOMATION) =====
 if (workflowRoutes) {
@@ -777,24 +783,24 @@ if (workflowRoutes) {
   app.use('/api/workflows/:id/execute', rateLimitMiddleware);
   app.use('/api/workflows/execute', rateLimitMiddleware);
   app.use('/api', workflowRoutes);
-  console.log('✅ Workflow routes mounted at /api/workflows with rate limiting');
+  console.log('? Workflow routes mounted at /api/workflows with rate limiting');
 }
 
 if (webhookHandler) {
   app.use('/', webhookHandler);
-  console.log('✅ Webhook handler mounted at /webhook/*');
+  console.log('? Webhook handler mounted at /webhook/*');
 }
 
 // ===== NEW: WEBHOOK LISTENER (for registered webhooks) =====
 if (webhookListener) {
   app.use('/', webhookListener);
-  console.log('✅ Webhook listener mounted');
+  console.log('? Webhook listener mounted');
 }
 
 // ===== NEW: WORKFLOW TEMPLATES ROUTES =====
 if (workflowTemplatesRoutes) {
   app.use('/', workflowTemplatesRoutes);
-  console.log('✅ Workflow templates routes mounted at /api/workflow-templates');
+  console.log('? Workflow templates routes mounted at /api/workflow-templates');
 }
 
 // ================= ENTERPRISE FEATURE ENDPOINTS =================
@@ -803,7 +809,6 @@ if (workflowTemplatesRoutes) {
 app.get('/api/queue/stats', authenticateToken, async (req, res) => {
   try {
     const stats = await getQueueStats();
-    await logSystemEvent('QUEUE_STATS_VIEWED', 'Queue stats viewed', stats, req.user.id);
     res.json(stats);
   } catch (error) {
     console.error('Error getting queue stats:', error);
@@ -833,7 +838,6 @@ app.post('/api/workflows/:id/versions/save', authenticateToken, ensureWorkspaceA
       edges, 
       change_note
     );
-    await logSystemEvent('VERSION_SAVED', `Version ${version.version} saved for workflow ${req.params.id}`, { version }, req.user.id);
     res.json(version);
   } catch (error) {
     console.error('Error saving version:', error);
@@ -844,7 +848,6 @@ app.post('/api/workflows/:id/versions/save', authenticateToken, ensureWorkspaceA
 app.post('/api/workflows/:id/rollback/:version', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
     const workflow = await workflowVersioning.rollbackToVersion(req.params.id, parseInt(req.params.version));
-    await logSystemEvent('VERSION_ROLLBACK', `Rolled back workflow ${req.params.id} to version ${req.params.version}`, {}, req.user.id);
     res.json(workflow);
   } catch (error) {
     console.error('Error rolling back:', error);
@@ -875,7 +878,6 @@ app.post('/api/workflows/:id/debug', authenticateToken, ensureWorkspaceAccess, a
       req.user.id, 
       trigger_data
     );
-    await logSystemEvent('DEBUG_SESSION_STARTED', `Debug session ${sessionId} started for workflow ${req.params.id}`, {}, req.user.id);
     res.json({ session_id: sessionId });
   } catch (error) {
     console.error('Error starting debug session:', error);
@@ -927,7 +929,6 @@ app.post('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceA
   try {
     const { error_workflow_id, error_types } = req.body;
     await errorHandler.registerErrorHandler(req.params.id, error_workflow_id, error_types);
-    await logSystemEvent('ERROR_HANDLER_SET', `Error handler set for workflow ${req.params.id}`, { error_workflow_id }, req.user.id);
     res.json({ success: true });
   } catch (error) {
     console.error('Error registering error handler:', error);
@@ -952,7 +953,7 @@ app.get('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAc
 
 // ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
 app.post("/api/webhook-test", (req, res) => {
-  console.log("🔗 Webhook test received:", req.body);
+  console.log("?? Webhook test received:", req.body);
   res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
 });
 
@@ -960,15 +961,15 @@ app.post("/api/webhook-test", (req, res) => {
 if (workflowScheduler && workflowScheduler.initialize) {
   setTimeout(async () => {
     await workflowScheduler.initialize();
-    console.log('✅ Workflow scheduler initialized');
+    console.log('? Workflow scheduler initialized');
   }, 5000);
-  console.log('⏰ Workflow scheduler will start in 5 seconds');
+  console.log('? Workflow scheduler will start in 5 seconds');
 }
 
 // Initialize error handlers on startup
 setTimeout(async () => {
   await errorHandler.loadErrorHandlers();
-  console.log('✅ Error handlers loaded');
+  console.log('? Error handlers loaded');
 }, 6000);
 
 // ================================================
@@ -1218,7 +1219,7 @@ app.post('/api/business/profile', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const profile = req.body;
     
-    console.log(`📊 Business profile saved for user ${userId}:`, profile);
+    console.log(`?? Business profile saved for user ${userId}:`, profile);
     
     try {
         // Save profile to users table
@@ -1231,8 +1232,6 @@ app.post('/api/business/profile', authenticateToken, async (req, res) => {
             .eq('id', userId);
         
         if (error) throw error;
-        
-        await logSystemEvent('BUSINESS_PROFILE_SAVED', `Business profile saved for user ${userId}`, profile, userId);
         
         res.json({ success: true, message: 'Profile saved' });
         
@@ -1272,7 +1271,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('cart-recovery', profile);
             insights.push({
                 type: 'ecommerce',
-                title: '🛒 E-commerce Opportunity',
+                title: '?? E-commerce Opportunity',
                 description: `Based on your business type, you could recover 15% of abandoned carts with automated follow-up emails. This could save you ${roi.hours_saved_per_week} hours/week and add $${roi.revenue_impact_monthly}/month.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1285,7 +1284,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('lead-scoring', profile);
             insights.push({
                 type: 'operations',
-                title: '📊 Agency Efficiency',
+                title: '?? Agency Efficiency',
                 description: `Automate client reporting and save ${roi.hours_saved_per_week} hours per week per client with AI-powered reports.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1298,7 +1297,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('lead-scoring', profile);
             insights.push({
                 type: 'lead_generation',
-                title: '🎯 Lead Generation Potential',
+                title: '?? Lead Generation Potential',
                 description: `AI lead scoring can increase conversion by 45%. Based on your profile, this could generate ${roi.leads_generated_monthly} leads/month and save ${roi.hours_saved_per_week} hours/week.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1311,7 +1310,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('ai-social-media-scheduler', profile);
             insights.push({
                 type: 'content',
-                title: '✍️ Content Scaling',
+                title: '?? Content Scaling',
                 description: `AI content generation can 3x your output. Save ${roi.hours_saved_per_week} hours/week and generate ${roi.leads_generated_monthly} more leads.`,
                 priority: 'medium',
                 roi: roi.revenue_impact_monthly,
@@ -1324,7 +1323,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('auto-responder', profile);
             insights.push({
                 type: 'customer_support',
-                title: '💬 24/7 Support',
+                title: '?? 24/7 Support',
                 description: `AI auto-responder can handle 70% of common questions automatically. Save ${roi.hours_saved_per_week} hours/week on support.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1337,7 +1336,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('cart-recovery', profile);
             insights.push({
                 type: 'sales',
-                title: '💰 Sales Growth Opportunity',
+                title: '?? Sales Growth Opportunity',
                 description: `Automated cart recovery and follow-up sequences can boost sales by 15-25%. Potential revenue increase: $${roi.revenue_impact_monthly}/month.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1352,7 +1351,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const savedHours = Math.floor(currentHours * 0.7);
             insights.push({
                 type: 'operations',
-                title: '⏰ Time Savings Opportunity',
+                title: '? Time Savings Opportunity',
                 description: `You spend ~${currentHours} hours/week on manual tasks. Automations could save you ${savedHours} hours/week - that's ${Math.floor(savedHours / 8)} extra days per week!`,
                 priority: 'high',
                 roi: savedHours * 50,
@@ -1364,7 +1363,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.challenge === 'manual_data') {
             insights.push({
                 type: 'operations',
-                title: '📊 Data Entry Automation',
+                title: '?? Data Entry Automation',
                 description: `Manual data entry is a major time sink. Automate form submissions and CRM updates to save 8+ hours/week.`,
                 priority: 'high',
                 roi: 600,
@@ -1375,7 +1374,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.challenge === 'followups') {
             insights.push({
                 type: 'sales',
-                title: '📧 Follow-up Automation',
+                title: '?? Follow-up Automation',
                 description: `Automated follow-up sequences can increase response rates by 3x and save 5+ hours/week.`,
                 priority: 'high',
                 roi: 1500,
@@ -1388,7 +1387,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
             const roi = calculateAutomationROI('cart-recovery', profile);
             insights.push({
                 type: 'ecommerce',
-                title: '🛒 E-commerce Revenue Opportunity',
+                title: '?? E-commerce Revenue Opportunity',
                 description: `You're losing 15-25% of potential sales from abandoned carts. Automated recovery could add $${roi.revenue_impact_monthly}/month.`,
                 priority: 'high',
                 roi: roi.revenue_impact_monthly,
@@ -1399,7 +1398,7 @@ app.get('/api/business/insights', authenticateToken, async (req, res) => {
         if (profile.tools && profile.tools.includes('slack')) {
             insights.push({
                 type: 'operations',
-                title: '💬 Team Communication Boost',
+                title: '?? Team Communication Boost',
                 description: `Connect your automations to Slack for real-time team notifications on leads, sales, and support tickets.`,
                 priority: 'medium',
                 roi: 400,
@@ -1571,8 +1570,6 @@ app.post('/api/business/recommendations/:recId/:action', authenticateToken, asyn
         
         if (error) throw error;
         
-        await logSystemEvent('RECOMMENDATION_' + action.toUpperCase(), `Recommendation ${recId} ${action}ed by user`, { recId, action }, userId);
-        
         res.json({ success: true });
         
     } catch (error) {
@@ -1665,7 +1662,7 @@ const PLAN_LIMITS = {
 };
 
 // ================= ALL SQLITE MIGRATIONS REMOVED =================
-console.log("✅ Using Supabase for all database operations");
+console.log("? Using Supabase for all database operations");
 
 // ================= VERIFICATION MIDDLEWARE =================
 async function checkVerified(req, res, next) {
@@ -1713,7 +1710,7 @@ app.post("/api/auth/resend-verification", bodyParser.json(), async (req, res) =>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
         <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">✨ AI Smart Hub</h1>
+            <h1 style="color: white; margin: 0;">? AI Smart Hub</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
           </div>
           <div style="padding: 40px;">
@@ -1777,7 +1774,7 @@ app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
         <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
+            <h1 style="color: white; margin: 0;">? Welcome to AI Smart Hub</h1>
           </div>
           <div style="padding: 40px;">
             <h2 style="color: #333;">Verify Your Email</h2>
@@ -1842,8 +1839,6 @@ app.post("/api/auth/verify-code", bodyParser.json(), async (req, res) => {
         JWT_SECRET, 
         { expiresIn: '7d' }
       );
-      
-      await logSystemEvent('USER_VERIFIED', `User ${user.email} verified their account`, {}, user.id);
       
       res.json({ 
         success: true, 
@@ -1924,8 +1919,6 @@ app.delete("/api/admin/users/delete-account", auth, async (req, res) => {
     await supabase.from('leads').delete().eq('user_id', userId);
     await supabase.from('support_tickets').delete().eq('user_id', userId);
     await supabase.from('users').delete().eq('id', userId);
-    
-    await logSystemEvent('ACCOUNT_DELETED', `User ${userId} deleted their account`, {}, userId);
     
     res.json({ success: true, message: "Account deleted permanently" });
   } catch (err) {
@@ -2106,7 +2099,7 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
        Current date: ${new Date().toLocaleDateString()}`;
 
     const aiRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
       {
         method: "POST",
         headers: {
@@ -2137,7 +2130,7 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
 
     res.json({ success: true, reply, session_id: activeSession });
   } catch (err) {
-    console.error("❌ AI Error:", err.message);
+    console.error("? AI Error:", err.message);
     res.status(500).json({ error: "AI server error" });
   }
 });
@@ -2294,7 +2287,7 @@ ${historyContext}`;
         const systemContext = buildSystemPrompt();
         
         const cfRes = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+          `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
           {
             method: "POST",
             headers: {
@@ -2335,7 +2328,7 @@ ${historyContext}`;
       const hasBookingIntent = bookingKeywords.test(message);
       
       const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
         {
           method: "POST",
           headers: {
@@ -2360,7 +2353,7 @@ ${historyContext}`;
         reply = cfData.result?.response || "I couldn't generate a response.";
         
         if (hasBookingIntent && smartSettings?.booking_url && smartSettings?.booking_active && !reply.includes(smartSettings.booking_url)) {
-          reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
+          reply += `\n\n?? You can book here: ${smartSettings.booking_url}`;
         }
       }
     }
@@ -2384,7 +2377,7 @@ ${historyContext}`;
       sentiment: 'neutral'
     });
   } catch (e) {
-    console.error("❌ Public Chat Error:", e.message);
+    console.error("? Public Chat Error:", e.message);
     res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
   }
 });
@@ -2470,7 +2463,7 @@ app.post("/api/public/leads", bodyParser.json(), async (req, res) => {
       
     res.json({ success: true, message: "Lead captured!" });
   } catch (err) {
-    console.error("❌ Lead Save Error:", err);
+    console.error("? Lead Save Error:", err);
     res.status(500).json({ error: "Database save failed" });
   }
 });
@@ -2784,7 +2777,7 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
     res.json({ success: true, message: "Tool deactivated successfully" });
 
   } catch (err) {
-    console.error("❌ Deactivation Error:", err.message);
+    console.error("? Deactivation Error:", err.message);
     res.status(500).json({ success: false, error: "Database error during deactivation" });
   }
 });
@@ -2912,7 +2905,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
       <head><meta charset="UTF-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">📬 New Contact Form Submission</h1>
+          <h1 style="color: white; margin: 0;">?? New Contact Form Submission</h1>
         </div>
         <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
           <p><strong>Name:</strong> ${name}</p>
@@ -2949,7 +2942,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
             <head><meta charset="UTF-8"></head>
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px;">
-                <h1 style="color: white; margin: 0;">✅ Thank You for Contacting AI Smart Hub</h1>
+                <h1 style="color: white; margin: 0;">? Thank You for Contacting AI Smart Hub</h1>
               </div>
               <div style="background: white; padding: 30px; margin-top: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
                 <p>We've received your message and will respond within 24 hours.</p>
@@ -2965,7 +2958,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
         });
       }
 
-      console.log(`✅ Contact form message sent from: ${email}`);
+      console.log(`? Contact form message sent from: ${email}`);
     }
 
     res.json({ success: true, message: "Message sent successfully" });
@@ -3016,7 +3009,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
           <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
             <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">✨ ${user.business_name || 'AI Smart Hub'}</h1>
+                <h1 style="color: white; margin: 0; font-size: 28px;">? ${user.business_name || 'AI Smart Hub'}</h1>
                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">Customer Update</p>
               </div>
               <div style="padding: 30px; background: white;">
@@ -3058,7 +3051,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
     const method = resend ? 'Resend' : 'Nodemailer';
     res.json({ 
       success: true, 
-      message: `✅ [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
+      message: `? [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
       stats: results
     });
 
@@ -3080,7 +3073,7 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
     const user = await getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    console.log(`📧 Sending test email to: ${user.email}`);
+    console.log(`?? Sending test email to: ${user.email}`);
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -3089,17 +3082,17 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
         <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <div style="background: #f8f9fa; padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">
-            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">🔔 TEST MODE</span>
+            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">?? TEST MODE</span>
           </div>
           <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">✨ ${user.business_name || 'AI Smart Hub'}</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">? ${user.business_name || 'AI Smart Hub'}</h1>
           </div>
           <div style="padding: 30px;">
             ${content.replace(/\n/g, '<br>')}
           </div>
           <div style="background: #fff3cd; padding: 20px; text-align: center; border-top: 2px solid #ffc107;">
             <p style="color: #856404; margin: 0; font-size: 14px;">
-              ⚠️ This was a test email from your AI Smart Hub dashboard. 
+              ?? This was a test email from your AI Smart Hub dashboard. 
               <strong>No customers received this message.</strong>
             </p>
           </div>
@@ -3116,7 +3109,7 @@ app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
     );
 
     if (result.success) {
-      res.json({ success: true, message: `✅ Test email sent via ${result.method}! Check your inbox.` });
+      res.json({ success: true, message: `? Test email sent via ${result.method}! Check your inbox.` });
     } else {
       throw new Error(result.error);
     }
@@ -3190,82 +3183,37 @@ app.get("/api/user/profile", auth, (req, res) => {
   });
 });
 
-// ================================================
-// DATABASE SCHEMA FOR SYSTEM LOGS
-// ================================================
-// Run this SQL in Supabase:
-/*
-CREATE TABLE IF NOT EXISTS system_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_type VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
-    details JSONB,
-    user_id UUID,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_system_logs_event_type ON system_logs(event_type);
-CREATE INDEX IF NOT EXISTS idx_system_logs_user_id ON system_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_system_logs_created_at ON system_logs(created_at);
-*/
-
-// ================================================
-// DATABASE SCHEMA FOR WORKSPACES (if using multi-tenant)
-// ================================================
-/*
-CREATE TABLE IF NOT EXISTS workspaces (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS workspace_members (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(50) DEFAULT 'member',
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(workspace_id, user_id)
-);
-*/
-
 // ================= START SERVER =================
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📋 Workflow API Endpoints:`);
+  console.log(`?? Server running on http://localhost:${PORT}`);
+  console.log(`?? Smart Hub API: /api/smart-hub/*`);
+  console.log(`?? Image upload endpoint: /api/smart-hub/upload-proof`);
+  console.log(`?? Tools metrics endpoint: /api/smart-hub/tools-metrics`);
+  console.log(`?? Workflow API Endpoints:`);
   console.log(`   - GET /api/workflows - List workflows`);
   console.log(`   - POST /api/workflows - Create workflow`);
   console.log(`   - POST /api/workflows/:id/execute - Execute workflow (rate limited)`);
   console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
   console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
-  console.log(`📋 Webhook Listener:`);
+  console.log(`?? Webhook Listener:`);
   console.log(`   - POST /api/webhooks/register - Register webhook`);
   console.log(`   - GET /api/webhooks - List webhooks`);
   console.log(`   - DELETE /api/webhooks/:path - Delete webhook`);
-  console.log(`📋 Workflow Templates:`);
+  console.log(`?? Workflow Templates:`);
   console.log(`   - GET /api/workflow-templates - List templates`);
   console.log(`   - POST /api/workflow-templates/:templateId/apply - Apply template`);
-  console.log(`📋 Enterprise Features:`);
+  console.log(`?? Enterprise Features:`);
   console.log(`   - GET /api/queue/stats - Queue statistics`);
   console.log(`   - GET /api/workflows/:id/versions - Workflow versions`);
   console.log(`   - POST /api/workflows/:id/versions/save - Save version`);
   console.log(`   - POST /api/workflows/:id/rollback/:version - Rollback`);
   console.log(`   - POST /api/workflows/:id/debug - Start debug session`);
   console.log(`   - POST /api/workflows/:id/error-handler - Set error handler`);
-  console.log(`📋 Platform Health:`);
+  console.log(`?? Platform Health:`);
   console.log(`   - GET /api/platform/health - Platform health status`);
   console.log(`   - GET /api/platform/queue - Queue status`);
   console.log(`   - GET /api/platform/logs - System logs (admin only)`);
   console.log(`   - GET /api/platform/metrics - System metrics`);
-  console.log(`⏰ Workflow Scheduler: Initialized with cron jobs`);
-  console.log(`🔄 Error handlers loaded and ready`);
-  
-  // Log startup event
-  logSystemEvent('SERVER_STARTED', `Server started on port ${PORT}`, { 
-    port: PORT, 
-    nodeVersion: process.version,
-    environment: process.env.NODE_ENV || 'development'
-  });
+  console.log(`? Workflow Scheduler: Initialized with cron jobs`);
+  console.log(`?? Error handlers loaded and ready`);
 });

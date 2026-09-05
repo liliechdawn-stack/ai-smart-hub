@@ -1,5 +1,4 @@
 const express = require("express");
-
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -14,12 +13,24 @@ const { Resend } = require('resend');
 require("dotenv").config();
 
 const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-// Use centralized DB from database.js
-const dbModule = require("./database.js");
+// ================= IMPORT NEW SERVICES =================
+const CloudflareGateway = require('../services/cloudflare-gateway');
+const PlatformClients = require('../services/platform-clients');
+const EncryptionService = require('../services/encryption');
+const MetricsService = require('../services/metrics');
+
+// ================= IMPORT MODELS =================
+const AccountModel = require('../models/Account');
+const ActivityModel = require('../models/Activity');
+const GovernanceModel = require('../models/Governance');
+const AlertModel = require('../models/Alert');
+
+// Use centralized DB from database-supabase.js
+const dbModule = require("./database-supabase.js");
 const { 
-  db, 
+  supabase,
   getUserByEmail, 
   createUser, 
   getUserById, 
@@ -38,36 +49,473 @@ const {
   getBroadcastStats,
   getBusinessIdentity,
   saveBusinessIdentity,
-  getSmartSettings
+  getSmartSettings,
+  // Activity log functions
+  logActivity,
+  getRecentActivity,
+  // Automation functions
+  createAutomation,
+  getAutomationsByUser,
+  getAutomationById,
+  updateAutomation,
+  deleteAutomation,
+  incrementAutomationTriggers,
+  createAutomationRun,
+  completeAutomationRun,
+  getAutomationRuns,
+  // Connected accounts
+  saveConnectedAccount,
+  getConnectedAccounts,
+  deleteConnectedAccount,
+  updateAccountLastSync,
+  // Governance functions
+  getGovernanceSettings,
+  updateGovernanceSettings,
+  // Alert functions
+  createAlert,
+  getActiveAlerts,
+  resolveAlert,
+  // Usage logs
+  logUsage,
+  getUsageStats,
+  // Mobile instances
+  spawnMobileInstance,
+  getMobileInstances,
+  terminateMobileInstance,
+  // API Keys
+  createApiKey,
+  getApiKeys,
+  deleteApiKey,
+  updateApiKeyLastUsed,
+  validateApiKey,
+  // Notification settings
+  getNotificationSettings,
+  saveNotificationSettings,
+  // Incidents
+  getIncidents,
+  addIncident,
+  // Status subscribers
+  addSubscriber,
+  getSubscribers,
+  removeSubscriber
 } = dbModule;
 
 // Import auth
 const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
+// ===== ENTERPRISE FEATURE IMPORTS =====
+const { addToQueue, getQueueStats, getQueueStatus } = require('./queue-service');
+const { rateLimitMiddleware } = require('./rate-limiter');
+const workflowVersioning = require('./workflow-versioning');
+const debugExecutor = require('./debug-executor');
+const errorHandler = require('./error-handler');
+
+// ===== DEBUG: Check if route files exist =====
+const fs = require('fs');
+const pathModule = require('path');
+
+const routesPath = pathModule.join(__dirname, 'routes');
+console.log(`🔍 Checking routes directory: ${routesPath}`);
+
+try {
+  const files = fs.readdirSync(routesPath);
+  console.log(`📁 Files in routes directory: ${files.join(', ')}`);
+} catch (err) {
+  console.error(`❌ Could not read routes directory: ${err.message}`);
+}
+
+const templateRouteFile = pathModule.join(__dirname, 'routes', 'automation-templates-routes.js');
+console.log(`🔍 Checking template route file: ${templateRouteFile}`);
+if (fs.existsSync(templateRouteFile)) {
+  console.log(`✅ File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
+  try {
+    const content = fs.readFileSync(templateRouteFile, 'utf8');
+    console.log(`📄 First 100 chars: ${content.substring(0, 100)}...`);
+  } catch (readErr) {
+    console.log(`⚠️ Could not read file: ${readErr.message}`);
+  }
+} else {
+  console.log(`❌ File NOT FOUND at: ${templateRouteFile}`);
+}
+
 // Import new automation modules
 const automationRoutes = require('../api/automations-routes');
 const AutomationEngine = require('../services/automation-engine');
 const IntegrationService = require('../services/integrations');
 
+// Import analytics and settings routes
+const analyticsRoutes = require('../api/analytics-routes');
+const settingsRoutes = require('../api/settings-routes');
+
+// ===== AI POWERHOUSE ROUTES =====
+const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
+
+// ===== NEW: AUTOMATION TEMPLATES ROUTES (with error handling) =====
+let automationTemplatesRoutes;
+let userAutomationsRoutes;
+let leadsRoutes;
+
+try {
+  automationTemplatesRoutes = require('./routes/automation-templates-routes');
+  console.log('✅ automation-templates-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load automation-templates-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  automationTemplatesRoutes = (req, res) => res.status(500).json({ error: 'Templates routes not available', details: err.message });
+}
+
+try {
+  userAutomationsRoutes = require('./routes/user-automations-routes');
+  console.log('✅ user-automations-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load user-automations-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  userAutomationsRoutes = (req, res) => res.status(500).json({ error: 'User automations routes not available', details: err.message });
+}
+
+try {
+  leadsRoutes = require('./routes/leads-routes');
+  console.log('✅ leads-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load leads-routes.js:', err.message);
+  console.error('   Stack:', err.stack);
+  leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
+}
+
+// ===== NEW: AI BUSINESS COACH ROUTES =====
+let coachRoutes;
+try {
+  coachRoutes = require('./routes/coach');
+  console.log('✅ coach.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load coach.js:', err.message);
+  coachRoutes = (req, res) => res.status(500).json({ error: 'Business Coach routes not available', details: err.message });
+}
+
+// ===== NEW: WORKFLOW ENGINE IMPORTS (REAL-TIME AUTOMATION) =====
+let workflowRoutes;
+let webhookHandler;
+let webhookListener;
+let workflowScheduler;
+let workflowTemplatesRoutes;
+
+try {
+  workflowRoutes = require('./routes/workflow-routes');
+  console.log('✅ workflow-routes.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load workflow-routes.js:', err.message);
+  workflowRoutes = null;
+}
+
+try {
+  webhookHandler = require('./webhook-handler');
+  console.log('✅ webhook-handler.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load webhook-handler.js:', err.message);
+  webhookHandler = null;
+}
+
+try {
+  const { webhookRouter } = require('./webhook-listener');
+  webhookListener = webhookRouter;
+  console.log('✅ webhook-listener.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load webhook-listener.js:', err.message);
+  webhookListener = null;
+}
+
+try {
+  workflowScheduler = require('./scheduler');
+  console.log('✅ scheduler.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load scheduler.js:', err.message);
+  workflowScheduler = null;
+}
+
+try {
+  workflowTemplatesRoutes = require('./workflow-templates');
+  console.log('✅ workflow-templates.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load workflow-templates.js:', err.message);
+  workflowTemplatesRoutes = null;
+}
+
+// ================= CREATE APP =================
 const app = express();
 
+// ================================================
+// IMPORT SMART HUB ROUTES (MUST BE DEFINED BEFORE USE)
+// ================================================
+let smartHubRoutes;
+try {
+  smartHubRoutes = require('./smart-hub');
+  console.log('✅ smart-hub.js loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to load smart-hub.js:', err.message);
+  console.error('   Stack:', err.stack);
+  smartHubRoutes = (req, res) => res.status(500).json({ error: 'Smart Hub routes not available', details: err.message });
+}
+
+// ================================================
+// GLOBAL LOGGING SYSTEM
+// ================================================
+const systemLogs = [];
+const MAX_LOGS = 10000;
+
+async function logSystemEvent(eventType, message, details = {}, userId = null) {
+  const logEntry = {
+    id: uuidv4(),
+    timestamp: new Date().toISOString(),
+    event_type: eventType,
+    message: message,
+    details: details,
+    user_id: userId
+  };
+  
+  systemLogs.unshift(logEntry);
+  if (systemLogs.length > MAX_LOGS) systemLogs.pop();
+  
+  try {
+    await supabase.from('system_logs').insert({
+      id: logEntry.id,
+      event_type: eventType,
+      message: message,
+      details: details,
+      user_id: userId,
+      created_at: logEntry.timestamp
+    });
+  } catch (err) {
+    console.error('Failed to persist system log:', err.message);
+  }
+  
+  console.log(`📋 [SYS-LOG] ${eventType}: ${message}`);
+  return logEntry;
+}
+
+// ================================================
+// PLATFORM HEALTH MONITOR
+// ================================================
+let platformHealth = {
+  status: 'healthy',
+  lastCheck: new Date().toISOString(),
+  components: {
+    database: { status: 'healthy', latency: 0, lastCheck: null },
+    queue: { status: 'healthy', depth: 0, activeJobs: 0, maxConcurrent: 5 },
+    ai: { status: 'healthy', lastRequest: null, avgLatency: 0 },
+    webhook: { status: 'healthy', lastEvent: null, eventsProcessed: 0 }
+  },
+  metrics: {
+    activeExecutions: 0,
+    totalExecutionsToday: 0,
+    avgExecutionTime: 0,
+    errorRate: 0
+  }
+};
+
+async function updatePlatformHealth() {
+  const startTime = Date.now();
+  
+  try {
+    // Check database health
+    const dbStart = Date.now();
+    const { data: dbCheck, error: dbError } = await supabase.from('workflows').select('count', { count: 'exact', head: true });
+    platformHealth.components.database = {
+      status: dbError ? 'unhealthy' : 'healthy',
+      latency: Date.now() - dbStart,
+      lastCheck: new Date().toISOString(),
+      error: dbError?.message
+    };
+    
+    // Check queue health
+    const queueStats = await getQueueStats();
+    const queueStatus = await getQueueStatus();
+    platformHealth.components.queue = {
+      status: (queueStats.pending || 0) > 100 ? 'degraded' : 'healthy',
+      depth: queueStats.pending || 0,
+      activeJobs: queueStats.activeJobs || 0,
+      maxConcurrent: queueStats.maxConcurrent || 5,
+      pausedJobs: queueStats.pausedJobs || 0,
+      lastCheck: new Date().toISOString()
+    };
+    
+    // Get execution metrics from last 24 hours
+    const yesterday = new Date(Date.now() - 86400000).toISOString();
+    const { data: executions } = await supabase
+      .from('workflow_executions')
+      .select('status, execution_time_ms')
+      .gte('started_at', yesterday);
+    
+    const totalExecutions = executions?.length || 0;
+    const failedExecutions = executions?.filter(e => e.status === 'failed').length || 0;
+    const avgExecutionTime = executions?.reduce((sum, e) => sum + (e.execution_time_ms || 0), 0) / (totalExecutions || 1);
+    
+    platformHealth.metrics = {
+      activeExecutions: 0,
+      totalExecutionsToday: totalExecutions,
+      avgExecutionTime: Math.round(avgExecutionTime),
+      errorRate: totalExecutions > 0 ? (failedExecutions / totalExecutions) * 100 : 0
+    };
+    
+    // Overall health status
+    const isHealthy = 
+      platformHealth.components.database.status === 'healthy' &&
+      platformHealth.components.queue.status !== 'unhealthy';
+    
+    platformHealth.status = isHealthy ? 'healthy' : 'degraded';
+    platformHealth.lastCheck = new Date().toISOString();
+    
+    if (platformHealth.status !== 'healthy') {
+      await logSystemEvent('HEALTH_DEGRADED', `Platform health degraded`, platformHealth);
+    }
+    
+  } catch (error) {
+    console.error('Health check failed:', error);
+    platformHealth.status = 'unhealthy';
+    platformHealth.components.database.status = 'unhealthy';
+    await logSystemEvent('HEALTH_CHECK_FAILED', error.message, { error: error.message });
+  }
+}
+
+// Run health check every 30 seconds
+setInterval(updatePlatformHealth, 30000);
+updatePlatformHealth();
+
+// ================================================
+// WORKSPACE SCOPING MIDDLEWARE
+// ================================================
+async function ensureWorkspaceAccess(req, res, next) {
+  const userId = req.user?.id;
+  const requestedWorkspaceId = req.params.workspaceId || req.body.workspaceId || req.query.workspaceId;
+  
+  if (!userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  // If no specific workspace requested, use user's default
+  if (!requestedWorkspaceId) {
+    req.workspaceId = userId;
+    return next();
+  }
+  
+  // Verify user has access to this workspace
+  try {
+    const { data: workspaceMember, error } = await supabase
+      .from('workspace_members')
+      .select('*')
+      .eq('workspace_id', requestedWorkspaceId)
+      .eq('user_id', userId)
+      .single();
+    
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', requestedWorkspaceId)
+      .single();
+    
+    if ((workspaceMember || workspace?.owner_id === userId) || userId === process.env.ADMIN_USER_ID) {
+      req.workspaceId = requestedWorkspaceId;
+      return next();
+    }
+    
+    return res.status(403).json({ error: 'Access denied to this workspace' });
+  } catch (error) {
+    return res.status(403).json({ error: 'Workspace access denied' });
+  }
+}
+
+// ================================================
+// REQUEST LOGGING MIDDLEWARE
+// ================================================
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    const userId = req.user?.id || 'anonymous';
+    
+    logSystemEvent('API_REQUEST', `${req.method} ${req.path}`, {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      duration: duration,
+      userId: userId,
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    }, userId);
+  });
+  
+  next();
+});
+
 // ================= MIDDLEWARE =================
+// CORS first - with proper configuration
+const corsOptions = {
+  origin: true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Workspace-Id']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight requests
+
+// Then body-parser with increased limit for image uploads
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
-app.use(cors());
 
 // ================= SOCKET.IO =================
 const http = require("http");
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { 
+  cors: { origin: "*" },
+  transports: ['websocket', 'polling']
+});
 app.set("socketio", io);
 
+// Make io globally accessible for routes
+global.io = io;
+
+// Socket.io connection handling with authentication
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication required'));
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "super_secret_key");
+    const user = await getUserById(decoded.id);
+    if (!user) {
+      return next(new Error('User not found'));
+    }
+    socket.userId = user.id;
+    socket.userEmail = user.email;
+    next();
+  } catch (err) {
+    next(new Error('Invalid token'));
+  }
+});
+
 io.on("connection", (socket) => {
+  console.log(`👤 User connected: ${socket.userId}`);
+  
+  // Join user to their personal room
+  socket.join(`user:${socket.userId}`);
+  
+  // Join organization room if applicable
+  if (socket.userId) {
+    socket.join(`org:${socket.userId}`);
+  }
+
   socket.on("join", (userId) => {
-    socket.join(userId);
-    console.log(`👤 User joined socket room: ${userId}`);
+    socket.join(`user:${userId}`);
+    console.log(`👤 User joined socket room: user:${userId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`👤 User disconnected: ${socket.userId}`);
   });
 });
 
@@ -78,7 +526,12 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const CLOUDFLARE_AI_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+
+// ================= INITIALIZE SERVICES =================
+const encryptionService = new EncryptionService(ENCRYPTION_KEY);
+const platformClients = new PlatformClients(ENCRYPTION_KEY);
+const metricsService = new MetricsService();
 
 // ================= RESEND CONFIGURATION =================
 let resend = null;
@@ -107,7 +560,7 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
   if (resend) {
     try {
       const { data, error } = await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+        from: "AI Smart Hub <noreply@aismarthub.website>",
         to: [to],
         subject: subject,
         html: html,
@@ -122,7 +575,6 @@ async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
       return { success: true, method: 'resend' };
     } catch (err) {
       console.error(`❌ Resend failed for ${to}:`, err.message);
-      // Fall through to nodemailer
     }
   }
 
@@ -173,11 +625,101 @@ async function extractTextFromFile(fileData, fileName, mimeType) {
 app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 
 // ================= SERVE STATIC HTML FILES =================
-// Serve static files from the public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ================= ROUTES =================
-app.use('/api/smart-hub', require('./smart-hub'));
+// ================================================
+// PLATFORM HEALTH ENDPOINT
+// ================================================
+app.get('/api/platform/health', async (req, res) => {
+  await updatePlatformHealth();
+  res.json({
+    ...platformHealth,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.version,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ================================================
+// QUEUE STATUS ENDPOINT (Enhanced)
+// ================================================
+app.get('/api/platform/queue', authenticateToken, async (req, res) => {
+  try {
+    const queueStats = await getQueueStats();
+    const queueStatus = await getQueueStatus();
+    res.json({
+      ...queueStats,
+      ...queueStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting queue status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================================================
+// SYSTEM LOGS ENDPOINT (Admin only)
+// ================================================
+app.get('/api/platform/logs', authenticateToken, isAdminMiddleware, async (req, res) => {
+  const { limit = 100, eventType, startDate, endDate } = req.query;
+  
+  try {
+    let query = supabase
+      .from('system_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+    
+    if (eventType) {
+      query = query.eq('event_type', eventType);
+    }
+    
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    res.json(data || []);
+  } catch (error) {
+    console.error('Error fetching system logs:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================================================
+// SYSTEM METRICS ENDPOINT
+// ================================================
+app.get('/api/platform/metrics', authenticateToken, async (req, res) => {
+  try {
+    const { data: usageStats } = await getUsageStats(req.user.id);
+    const queueStats = await getQueueStats();
+    const health = platformHealth;
+    
+    res.json({
+      usage: usageStats,
+      queue: queueStats,
+      health: health,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting metrics:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================= SMART HUB ROUTES - MOUNTED HERE =================
+// This is CRITICAL for image upload and tools analytics to work
+app.use('/api/smart-hub', smartHubRoutes);
+console.log('✅ Smart Hub routes mounted at /api/smart-hub');
 
 // Health check endpoint for Render
 app.get('/healthz', (req, res) => {
@@ -201,666 +743,913 @@ app.get('/api/customer-insights/debug', (req, res) => {
 
 // AI Automations
 app.use('/api/ai-automations', require('./ai-automations'));
-const { supabase } = require('./database-supabase');
 
 // ================= NEW: AUTOMATION POWERHOUSE ROUTES =================
 app.use('/api/automations', automationRoutes);
 
-// ================= AI AUTOMATION POWERHOUSE ENDPOINTS =================
-// These endpoints power the AI Powerhouse 2.0 page with Cloudflare AI
+// ================= NEW: ANALYTICS AND SETTINGS ROUTES =================
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/settings', settingsRoutes);
 
-// Get automation stats
-app.get("/api/automations/stats", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  db.get(`SELECT 
-    (SELECT COUNT(*) FROM users WHERE plan IN ('pro', 'agency')) as activeAgents,
-    (SELECT COUNT(*) FROM chats WHERE date(created_at) = date('now')) as imagesProcessed,
-    (SELECT COUNT(*) FROM leads WHERE date(created_at) = date('now')) as totalLeads,
-    (SELECT SUM(messages_used) FROM users) as hoursSaved
-  `, (err, stats) => {
-    if (err) {
-      return res.json({
-        activeAgents: 247,
-        imagesProcessed: 1245789,
-        totalLeads: 45892,
-        hoursSaved: 1247
-      });
-    }
+// ===== AI POWERHOUSE ROUTES - MOUNTED HERE =====
+// Initialize AI Powerhouse with Cloudflare Gateway
+const AI_POWERHOUSE_ENABLED = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
+console.log(`🔷 AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '✅ Enabled' : '⚠️ Disabled (Cloudflare credentials missing)'}`);
+
+// Mount AI Powerhouse routes
+app.use('/api/powerhouse', authenticateToken, aiPowerhouseRoutes);
+console.log('✅ AI Powerhouse routes mounted at /api/powerhouse');
+
+// ===== NEW: AUTOMATION TEMPLATES ROUTES =====
+app.use('/api/automation', automationTemplatesRoutes);
+console.log('✅ Automation Templates routes mounted at /api/automation');
+
+// ===== NEW: USER AUTOMATIONS ROUTES =====
+app.use('/api', userAutomationsRoutes);
+console.log('✅ User Automations routes mounted at /api/automations');
+
+// ===== NEW: LEADS MANAGEMENT ROUTES =====
+app.use('/api', leadsRoutes);
+console.log('✅ Leads Management routes mounted at /api/leads');
+
+// ===== NEW: AI BUSINESS COACH ROUTES =====
+// Mount Business Coach routes (requires authentication)
+app.use('/api/coach', authenticateToken, coachRoutes);
+console.log('✅ AI Business Coach routes mounted at /api/coach');
+
+// ===== NEW: WORKFLOW ENGINE ROUTES (REAL-TIME AUTOMATION) =====
+if (workflowRoutes) {
+  // Apply rate limiting to workflow execution routes
+  app.use('/api/workflows/:id/execute', rateLimitMiddleware);
+  app.use('/api/workflows/execute', rateLimitMiddleware);
+  app.use('/api', workflowRoutes);
+  console.log('✅ Workflow routes mounted at /api/workflows with rate limiting');
+}
+
+if (webhookHandler) {
+  app.use('/', webhookHandler);
+  console.log('✅ Webhook handler mounted at /webhook/*');
+}
+
+// ===== NEW: WEBHOOK LISTENER (for registered webhooks) =====
+if (webhookListener) {
+  app.use('/', webhookListener);
+  console.log('✅ Webhook listener mounted');
+}
+
+// ===== NEW: WORKFLOW TEMPLATES ROUTES =====
+if (workflowTemplatesRoutes) {
+  app.use('/', workflowTemplatesRoutes);
+  console.log('✅ Workflow templates routes mounted at /api/workflow-templates');
+}
+
+// ================= ENTERPRISE FEATURE ENDPOINTS =================
+
+// Queue Stats endpoint
+app.get('/api/queue/stats', authenticateToken, async (req, res) => {
+  try {
+    const stats = await getQueueStats();
     res.json(stats);
-  });
-});
-
-// Get recent activity
-app.get("/api/automations/activity", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  db.all(`SELECT 
-    'fa-' || CASE ABS(RANDOM() % 5) 
-      WHEN 0 THEN 'eye' 
-      WHEN 1 THEN 'shield-alt'
-      WHEN 2 THEN 'brain'
-      WHEN 3 THEN 'cloud'
-      ELSE 'robot' END as icon,
-    message as title,
-    strftime('%s', 'now') - strftime('%s', created_at) || ' min ago' as time
-  FROM chats 
-  WHERE user_id = ? 
-  ORDER BY created_at DESC 
-  LIMIT 5`, [userId], (err, activities) => {
-    if (err || activities.length === 0) {
-      return res.json([
-        { icon: 'fa-eye', title: 'Vision AI analyzed TikTok videos', time: '2 min ago' },
-        { icon: 'fa-shield-alt', title: 'Anti-detection rotated fingerprints', time: '5 min ago' },
-        { icon: 'fa-brain', title: 'Lead Brain enriched 23 leads', time: '12 min ago' },
-        { icon: 'fa-cloud', title: 'Spawned mobile instances', time: '18 min ago' },
-        { icon: 'fa-robot', title: 'Agentic workflow completed', time: '25 min ago' }
-      ]);
-    }
-    res.json(activities);
-  });
-});
-
-// Computer Vision Analysis with Cloudflare
-app.post("/api/automations/vision/analyze", auth, bodyParser.json(), async (req, res) => {
-  const { image_url, platform } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    // Check if user has pro/agency plan
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    // Use Cloudflare AI for computer vision
-    const cfRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "system",
-              content: "You are a computer vision AI analyzing social media content. Detect objects, faces, text, and sentiment."
-            },
-            {
-              role: "user",
-              content: [
-                { type: "image_url", image_url: image_url || "https://example.com/sample.jpg" },
-                { type: "text", text: `Analyze this ${platform || 'social media'} content in detail. Detect any products, logos, faces, and overall sentiment.` }
-              ]
-            }
-          ]
-        })
-      }
-    );
-
-    if (!cfRes.ok) {
-      throw new Error("Cloudflare Vision API failed");
-    }
-
-    const cfData = await cfRes.json();
-    const frames = Math.floor(Math.random() * 500) + 1000;
-
-    // Store vision result
-    const visionId = uuidv4();
-    db.run(
-      `INSERT INTO vision_results (id, user_id, image_url, analysis, created_at) VALUES (?, ?, ?, ?, ?)`,
-      [visionId, userId, image_url, cfData.result?.response || "Analysis complete", new Date().toISOString()]
-    );
-
-    res.json({
-      success: true,
-      frames: frames,
-      analysis: cfData.result?.response || "Analysis complete",
-      timestamp: new Date().toISOString()
-    });
-
   } catch (error) {
-    console.error("Vision analysis error:", error);
-    // Fallback response
-    res.json({
-      success: true,
-      frames: 1247,
-      analysis: "Detected: Product placement, 3 faces, brand logos visible, sentiment: 94% positive",
-      timestamp: new Date().toISOString()
-    });
+    console.error('Error getting queue stats:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Anti-Detection Engine - Rotate fingerprint
-app.post("/api/automations/anti-detection/rotate", auth, async (req, res) => {
-  const userId = req.user.id;
-  
+// Workflow Versioning endpoints
+app.get('/api/workflows/:id/versions', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    // Log rotation for analytics
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'fingerprint_rotated', 'Fingerprint rotated', new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      message: "Fingerprint rotated successfully",
-      fingerprint: {
-        canvas: "16x16px",
-        webgl: "NVIDIA RTX 4080",
-        timezone: "GMT-5",
-        language: "en-US",
-        ip: "45." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255)
-      }
-    });
-
+    const versions = await workflowVersioning.getVersions(req.params.id);
+    res.json(versions);
   } catch (error) {
-    console.error("Rotation error:", error);
-    res.json({
-      success: true,
-      fingerprint: {
-        canvas: "16x16px",
-        webgl: "NVIDIA RTX 4080",
-        timezone: "GMT-5",
-        language: "en-US",
-        ip: "45.123.45.67"
-      }
-    });
+    console.error('Error getting versions:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get proxy stats
-app.get("/api/automations/proxy-stats", auth, (req, res) => {
-  res.json({
-    proxies: "10,247",
-    successRate: "99.97",
-    rotation: "24/7",
-    active: 10247
-  });
+app.post('/api/workflows/:id/versions/save', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
+  try {
+    const { name, nodes, edges, change_note } = req.body;
+    const version = await workflowVersioning.saveVersion(
+      req.params.id, 
+      req.user.id, 
+      name, 
+      nodes, 
+      edges, 
+      change_note
+    );
+    res.json(version);
+  } catch (error) {
+    console.error('Error saving version:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Lead enrichment with Cloudflare AI
-app.post("/api/automations/leads/enrich", auth, bodyParser.json(), async (req, res) => {
-  const { lead_id, lead_data } = req.body;
-  const userId = req.user.id;
-  
+app.post('/api/workflows/:id/rollback/:version', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
   try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
+    const workflow = await workflowVersioning.rollbackToVersion(req.params.id, parseInt(req.params.version));
+    res.json(workflow);
+  } catch (error) {
+    console.error('Error rolling back:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
-    let leadsToEnrich = [];
-    
-    if (lead_id) {
-      // Enrich specific lead
-      leadsToEnrich = await new Promise((resolve, reject) => {
-        try {
-    const { data: rows, error: err } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-          else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-      });
+app.get('/api/workflows/:id/compare/:version1/:version2', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
+  try {
+    const comparison = await workflowVersioning.compareVersions(
+      req.params.id,
+      parseInt(req.params.version1),
+      parseInt(req.params.version2)
+    );
+    res.json(comparison);
+  } catch (error) {
+    console.error('Error comparing versions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Debug Mode endpoints
+app.post('/api/workflows/:id/debug', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
+  try {
+    const { trigger_data } = req.body;
+    const sessionId = await debugExecutor.startDebugSession(
+      req.params.id, 
+      req.user.id, 
+      trigger_data
+    );
+    res.json({ session_id: sessionId });
+  } catch (error) {
+    console.error('Error starting debug session:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/debug/:sessionId/step', authenticateToken, async (req, res) => {
+  try {
+    const { action } = req.body;
+    const result = await debugExecutor.step(req.params.sessionId, action);
+    res.json(result);
+  } catch (error) {
+    console.error('Error stepping through debug:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/debug/:sessionId/breakpoint', authenticateToken, async (req, res) => {
+  try {
+    const { node_id, action } = req.body;
+    if (action === 'add') {
+      debugExecutor.setBreakpoint(req.params.sessionId, node_id);
     } else {
-      // Enrich recent leads
-      leadsToEnrich = await new Promise((resolve, reject) => {
-        try {
-    const { data: rows, error: err } = await supabase
-      .from('leads')
+      debugExecutor.removeBreakpoint(req.params.sessionId, node_id);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error managing breakpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/debug/:sessionId', authenticateToken, async (req, res) => {
+  try {
+    const session = debugExecutor.getSession(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Debug session not found' });
+    }
+    res.json(session);
+  } catch (error) {
+    console.error('Error getting debug session:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Error Handler endpoints
+app.post('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
+  try {
+    const { error_workflow_id, error_types } = req.body;
+    await errorHandler.registerErrorHandler(req.params.id, error_workflow_id, error_types);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error registering error handler:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
+  try {
+    const { data: handler } = await supabase
+      .from('error_handlers')
       .select('*')
-      .order('created_at', { ascending: false});
+      .eq('workflow_id', req.params.id)
+      .single();
     
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-          else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-      });
-    }
+    res.json(handler || null);
+  } catch (error) {
+    console.error('Error getting error handler:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
-    const enriched = [];
-    for (const lead of leadsToEnrich) {
-      // Use Cloudflare AI to enrich lead data
-      const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content: "You are a lead enrichment AI. Analyze lead information and provide insights about intent, budget, and readiness."
-              },
-              {
-                role: "user",
-                content: `Analyze this lead: Name: ${lead.name}, Email: ${lead.email}. Provide intent score (0-100), estimated budget range, and readiness level.`
-              }
-            ]
+// ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
+app.post("/api/webhook-test", (req, res) => {
+  console.log("🔗 Webhook test received:", req.body);
+  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
+});
+
+// ===== INITIALIZE WORKFLOW SCHEDULER =====
+if (workflowScheduler && workflowScheduler.initialize) {
+  setTimeout(async () => {
+    await workflowScheduler.initialize();
+    console.log('✅ Workflow scheduler initialized');
+  }, 5000);
+  console.log('⏰ Workflow scheduler will start in 5 seconds');
+}
+
+// Initialize error handlers on startup
+setTimeout(async () => {
+  await errorHandler.loadErrorHandlers();
+  console.log('✅ Error handlers loaded');
+}, 6000);
+
+// ================================================
+// ADMIN: SEED AUTOMATION TEMPLATES
+// ================================================
+app.post('/api/admin/seed-templates', authenticateToken, async (req, res) => {
+  // Admin only check
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const templates = [
+    {
+      slug: 'lead-scoring',
+      name: 'AI Lead Scoring',
+      description: 'Automatically score and qualify leads based on behavior, engagement, and demographics.',
+      category: 'lead_generation',
+      icon: 'fa-chart-line',
+      color: '#d4af37',
+      is_featured: true,
+      complexity: 'simple',
+      time_saved: '10 hrs/week',
+      roi_impact: '45% more leads',
+      industries: ['agency', 'saas', 'coach'],
+      default_config: { trigger: { type: 'new_lead', config: { score_threshold: 75 } }, actions: ['score_lead', 'notify_slack'] }
+    },
+    {
+      slug: 'cart-recovery',
+      name: 'Abandoned Cart Recovery',
+      description: 'Recover lost sales by automatically sending follow-up emails to customers who abandon their carts.',
+      category: 'ecommerce',
+      icon: 'fa-shopping-cart',
+      color: '#059669',
+      is_featured: true,
+      complexity: 'simple',
+      time_saved: '5 hrs/week',
+      roi_impact: '25% recovery rate',
+      industries: ['ecommerce'],
+      default_config: { trigger: { type: 'abandoned_cart', config: { delay_hours: 1 } }, actions: ['send_email', 'send_sms'] }
+    },
+    {
+      slug: 'ai-social-media-scheduler',
+      name: 'AI Social Media Scheduler',
+      description: 'Auto-generate and schedule posts across all platforms with AI-optimized timing.',
+      category: 'social_media',
+      icon: 'fa-share-alt',
+      color: '#3b82f6',
+      is_featured: true,
+      complexity: 'medium',
+      time_saved: '8 hrs/week',
+      roi_impact: '3x engagement',
+      industries: ['agency', 'creator', 'coach'],
+      default_config: { trigger: { type: 'schedule_time', config: { post_time: '09:00' } }, actions: ['generate_post', 'post_to_instagram'] }
+    },
+    {
+      slug: 'video-script-generator',
+      name: 'Video Script Generator',
+      description: 'Generate viral video scripts for TikTok, Reels, and YouTube Shorts in seconds.',
+      category: 'content_creation',
+      icon: 'fa-video',
+      color: '#ef4444',
+      is_featured: false,
+      complexity: 'simple',
+      time_saved: '4 hrs/week',
+      roi_impact: '10x content output',
+      industries: ['creator', 'agency'],
+      default_config: { trigger: { type: 'on_demand', config: {} }, actions: ['generate_script'] }
+    },
+    {
+      slug: 'auto-responder',
+      name: 'AI Auto-Responder',
+      description: 'Handle 70% of common customer questions automatically, 24/7.',
+      category: 'customer_support',
+      icon: 'fa-headset',
+      color: '#8b5cf6',
+      is_featured: true,
+      complexity: 'medium',
+      time_saved: '15 hrs/week',
+      roi_impact: '80% faster response',
+      industries: ['all'],
+      default_config: { trigger: { type: 'new_message', config: { response_tone: 'professional' } }, actions: ['ai_response'] }
+    },
+    {
+      slug: 'price-monitoring-alert',
+      name: 'Competitor Price Monitoring',
+      description: 'Track competitor prices and get alerts when they change.',
+      category: 'ecommerce',
+      icon: 'fa-chart-simple',
+      color: '#f59e0b',
+      is_featured: false,
+      complexity: 'advanced',
+      time_saved: '6 hrs/week',
+      roi_impact: '20% better pricing',
+      industries: ['ecommerce'],
+      default_config: { trigger: { type: 'price_change', config: { alert_threshold: 5 } }, actions: ['email_alert'] }
+    },
+    {
+      slug: 'lead-capture-crm-slack',
+      name: 'Lead Capture to CRM + Slack',
+      description: 'Capture leads from your website and instantly notify your team on Slack.',
+      category: 'lead_generation',
+      icon: 'fa-slack',
+      color: '#d4af37',
+      is_featured: true,
+      complexity: 'simple',
+      time_saved: '3 hrs/week',
+      roi_impact: '65% faster response',
+      industries: ['agency', 'saas'],
+      default_config: { trigger: { type: 'new_lead', config: {} }, actions: ['create_lead', 'send_slack'] }
+    },
+    {
+      slug: 'report-generator',
+      name: 'Auto-Generate Client Reports',
+      description: 'Pull data from analytics tools and email beautiful reports to clients weekly.',
+      category: 'reporting',
+      icon: 'fa-file-alt',
+      color: '#d4af37',
+      is_featured: false,
+      complexity: 'advanced',
+      time_saved: '8 hrs/week',
+      roi_impact: '15 hrs saved',
+      industries: ['agency'],
+      default_config: { trigger: { type: 'schedule_time', config: { day: 'Monday', time: '09:00' } }, actions: ['generate_report', 'send_email'] }
+    },
+    {
+      slug: 'review-requests',
+      name: 'Automated Review Requests',
+      description: 'Auto-request reviews after service completion and respond to feedback.',
+      category: 'customer_support',
+      icon: 'fa-star',
+      color: '#f59e0b',
+      is_featured: false,
+      complexity: 'simple',
+      time_saved: '3 hrs/week',
+      roi_impact: '3x more reviews',
+      industries: ['local_business'],
+      default_config: { trigger: { type: 'service_completed', config: { delay_days: 1 } }, actions: ['send_email', 'track_response'] }
+    }
+  ];
+
+  try {
+    let inserted = 0;
+    let updated = 0;
+
+    for (const template of templates) {
+      // Check if template exists
+      const { data: existing } = await supabase
+        .from('automation_templates')
+        .select('id')
+        .eq('slug', template.slug)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('automation_templates')
+          .update({
+            ...template,
+            updated_at: new Date().toISOString()
           })
-        }
-      );
-
-      let intent = 92;
-      let budget = "$5-10k";
-      let readiness = "Ready to buy (next 24h)";
-
-      if (cfRes.ok) {
-        const cfData = await cfRes.json();
-        const analysis = cfData.result?.response || "";
+          .eq('slug', template.slug);
         
-        // Parse AI response (simplified)
-        if (analysis.includes("high intent")) intent = 95;
-        if (analysis.includes("medium intent")) intent = 75;
-        if (analysis.includes("budget")) budget = "$10-20k";
+        if (error) throw error;
+        updated++;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('automation_templates')
+          .insert({
+            ...template,
+            id: uuidv4(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            usage_count: 0
+          });
+        
+        if (error) throw error;
+        inserted++;
       }
-
-      // Store lead score
-      const scoreId = uuidv4();
-      db.run(
-        `INSERT INTO lead_scores (id, user_id, lead_id, score, criteria, scored_at) VALUES (?, ?, ?, ?, ?, ?)`,
-        [scoreId, userId, lead.id, intent, JSON.stringify({ budget, readiness }), new Date().toISOString()]
-      );
-
-      enriched.push({
-        ...lead,
-        enriched: true,
-        intent_score: intent,
-        budget_range: budget,
-        readiness: readiness,
-        similar_to_past: Math.floor(Math.random() * 5) + 1
-      });
     }
 
-    const discovered = enriched.length * Math.floor(Math.random() * 3) + 5;
+    // Get final count
+    const { count, error: countError } = await supabase
+      .from('automation_templates')
+      .select('*', { count: 'exact', head: true });
 
     res.json({
       success: true,
-      discovered: discovered,
-      leads: enriched
+      message: `Templates seeded successfully`,
+      inserted: inserted,
+      updated: updated,
+      total: count || 0
     });
 
   } catch (error) {
-    console.error("Lead enrichment error:", error);
-    res.json({
-      success: true,
-      discovered: 23,
-      message: "Lead enrichment complete"
+    console.error('Error seeding templates:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      hint: 'Make sure automation_templates table exists in Supabase'
     });
   }
 });
 
-// Spawn mobile cloud instance
-app.post("/api/automations/mobile/spawn", auth, async (req, res) => {
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
+// ================================================
+// AI BUSINESS INTELLIGENCE ROUTES
+// ================================================
 
-    const instances = Math.floor(Math.random() * 5) + 1;
+// ========== HELPER FUNCTIONS FOR ROI CALCULATION ==========
+function calculateAutomationROI(automationType, userProfile) {
+  const roiData = {
+    'cart-recovery': { hoursSaved: 5, revenueImpact: 2500, leadsGenerated: 45 },
+    'lead-scoring': { hoursSaved: 10, revenueImpact: 1200, leadsGenerated: 85 },
+    'ai-social-media-scheduler': { hoursSaved: 8, revenueImpact: 600, leadsGenerated: 30 },
+    'video-script-generator': { hoursSaved: 4, revenueImpact: 800, leadsGenerated: 25 },
+    'lead-capture-crm-slack': { hoursSaved: 3, revenueImpact: 800, leadsGenerated: 65 },
+    'price-monitoring-alert': { hoursSaved: 6, revenueImpact: 1200, leadsGenerated: 20 },
+    'auto-responder': { hoursSaved: 15, revenueImpact: 1000, leadsGenerated: 55 }
+  };
+  
+  const baseROI = roiData[automationType] || { hoursSaved: 2, revenueImpact: 500, leadsGenerated: 15 };
+  
+  // Adjust based on business size
+  let sizeMultiplier = 1;
+  if (userProfile.size === '1-5') sizeMultiplier = 1.2;
+  else if (userProfile.size === '6-20') sizeMultiplier = 1.5;
+  else if (userProfile.size === '21-50') sizeMultiplier = 2;
+  else if (userProfile.size === '51+') sizeMultiplier = 3;
+  
+  // Adjust based on hours spent
+  let hoursMultiplier = 1;
+  if (userProfile.hours === '5-15') hoursMultiplier = 1.3;
+  else if (userProfile.hours === '15-25') hoursMultiplier = 1.8;
+  else if (userProfile.hours === '25-40') hoursMultiplier = 2.2;
+  else if (userProfile.hours === '40+') hoursMultiplier = 3;
+  
+  return {
+    hours_saved_per_week: Math.round(baseROI.hoursSaved * sizeMultiplier * hoursMultiplier),
+    revenue_impact_monthly: Math.round(baseROI.revenueImpact * sizeMultiplier),
+    leads_generated_monthly: Math.round(baseROI.leadsGenerated * sizeMultiplier),
+    confidence_score: Math.min(95, Math.round(70 + (sizeMultiplier * 5) + (hoursMultiplier * 5)))
+  };
+}
+
+// Save business profile
+app.post('/api/business/profile', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const profile = req.body;
     
-    // Log instance spawn
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'mobile_instance_spawned', `${instances} instances`, new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      instances: instances,
-      fleet: {
-        total: 1247 + instances,
-        models: 156,
-        uptime: "99.9%"
-      }
-    });
-
-  } catch (error) {
-    console.error("Spawn error:", error);
-    res.json({
-      success: true,
-      instances: 3,
-      fleet: {
-        total: 1247,
-        models: 156,
-        uptime: "99.9%"
-      }
-    });
-  }
-});
-
-// Price intelligence scan
-app.post("/api/automations/prices/scan", auth, async (req, res) => {
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    const drops = Math.floor(Math.random() * 10) + 5;
-    const opportunities = Math.floor(Math.random() * 8) + 3;
-
-    // Log price scan
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'price_scan', `${drops} drops found`, new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      competitors_analyzed: 124,
-      price_drops: drops,
-      opportunities: opportunities,
-      products_scanned: 1200000
-    });
-
-  } catch (error) {
-    console.error("Price scan error:", error);
-    res.json({
-      success: true,
-      competitors_analyzed: 124,
-      price_drops: 7,
-      opportunities: 12,
-      products_scanned: 1200000
-    });
-  }
-});
-
-// Deploy agentic AI agent
-app.post("/api/automations/agents/deploy", auth, async (req, res) => {
-  const { agent_type, config } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    const agentId = Math.floor(Math.random() * 100);
-    const agentTypes = ['VisionAgent', 'LeadAgent', 'ContentAgent', 'EngagementAgent', 'AnalyticsAgent'];
-    const type = agent_type || agentTypes[Math.floor(Math.random() * agentTypes.length)];
-
-    // Log agent deployment
-    db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-      [userId, 'agent_deployed', `${type}-${agentId}`, new Date().toISOString()]);
-
-    res.json({
-      success: true,
-      agentId: agentId,
-      agentType: type,
-      message: `${type}-${agentId} deployed and active`,
-      tasks: Math.floor(Math.random() * 20) + 5
-    });
-
-  } catch (error) {
-    console.error("Agent deploy error:", error);
-    res.json({
-      success: true,
-      agentId: Math.floor(Math.random() * 100),
-      agentType: "Agent",
-      message: "New agent deployed and active",
-      tasks: 12
-    });
-  }
-});
-
-// ================= ENHANCED CONNECT PLATFORM ACCOUNT ENDPOINT =================
-// This now handles additional fields and updates existing accounts
-app.post("/api/automations/connect", auth, bodyParser.json(), async (req, res) => {
-  const { platform, accountName, apiKey, ...additionalFields } = req.body;
-  const userId = req.user.id;
-  
-  try {
-    const user = await getUserById(userId);
-    if (!user || (user.plan !== 'pro' && user.plan !== 'agency' && user.email !== ADMIN_EMAIL)) {
-      return res.status(403).json({ error: "Pro or Agency plan required" });
-    }
-
-    // Encrypt API key
-    const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
-    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    // Store all account data including additional fields
-    const accountInfo = JSON.stringify({
-      ...additionalFields,
-      connected_at: new Date().toISOString(),
-      last_sync: new Date().toISOString()
-    });
-
-    // Check if account already exists
-    db.get(
-      `SELECT id FROM connected_accounts WHERE user_id = ? AND platform = ? AND account_name = ?`,
-      [userId, platform, accountName],
-      (err, existing) => {
-        if (err) {
-          console.error("Error checking existing account:", err);
-          return res.status(500).json({ error: "Database error" });
-        }
-
-        if (existing) {
-          // Update existing account
-          db.run(
-            `UPDATE connected_accounts 
-             SET api_key_encrypted = ?, account_info = ?, status = 'active', last_sync = ?, updated_at = ? 
-             WHERE id = ?`,
-            [encrypted, accountInfo, new Date().toISOString(), new Date().toISOString(), existing.id],
-            function(err) {
-              if (err) {
-                console.error("Error updating account:", err);
-                return res.status(500).json({ error: "Failed to update account" });
-              }
-
-              // Log activity
-              db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-                [userId, 'account_updated', `${platform} account updated`, new Date().toISOString()]);
-
-              res.json({
-                success: true,
-                message: `✅ ${platform} account updated successfully!`,
-                account_id: existing.id
-              });
-            }
-          );
-        } else {
-          // Insert new account
-          db.run(
-            `INSERT INTO connected_accounts (user_id, platform, account_name, api_key_encrypted, account_info, status, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, platform, accountName, encrypted, accountInfo, 'active', new Date().toISOString(), new Date().toISOString()],
-            function(err) {
-              if (err) {
-                console.error("Account connection error:", err);
-                return res.status(500).json({ error: "Failed to save account" });
-              }
-
-              // Log activity
-              db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-                [userId, 'account_connected', `${platform} account connected`, new Date().toISOString()]);
-
-              res.json({
-                success: true,
-                message: `✅ ${platform} account connected successfully!`,
-                account_id: this.lastID
-              });
-            }
-          );
-        }
-      }
-    );
-
-  } catch (error) {
-    console.error("Connection error:", error);
-    res.status(500).json({ error: "Server error during connection" });
-  }
-});
-
-// ===== ACCOUNTS ENDPOINT =====
-app.get("/api/automations/accounts", auth, (req, res) => {
-  const userId = req.user.id;
-  
-  const query = "SELECT id, platform, account_name, account_info, status, created_at, last_sync FROM connected_accounts WHERE user_id = ? ORDER BY created_at DESC";
-  
-  db.all(query, [userId], (err, rows) => {
-    if (err) {
-      console.error("Error fetching accounts:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+    console.log(`📊 Business profile saved for user ${userId}:`, profile);
     
-    const accounts = (rows || []).map(row => {
-      try {
-        return {
-          ...row,
-          account_info: row.account_info ? JSON.parse(row.account_info) : null
-        };
-      } catch (e) {
-        return {
-          ...row,
-          account_info: null
-        };
-      }
-    });
-    
-    res.json(accounts);
-  });
+    try {
+        // Save profile to users table
+        const { error } = await supabase
+            .from('users')
+            .update({ 
+                business_profile: profile,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+        
+        if (error) throw error;
+        
+        res.json({ success: true, message: 'Profile saved' });
+        
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        res.status(500).json({ error: 'Failed to save profile' });
+    }
 });
 
-// ===== SYNC ACCOUNT ENDPOINT =====
-app.post("/api/automations/accounts/:id/sync", auth, async (req, res) => {
-  const accountId = req.params.id;
-  const userId = req.user.id;
-
-  try {
-    // Get account details
-    const account = await new Promise((resolve, reject) => {
-      db.get(
-        `SELECT * FROM connected_accounts WHERE id = ? AND user_id = ?`,
-        [accountId, userId],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
+// Get business insights and recommendations with ROI
+app.get('/api/business/insights', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    
+    try {
+        // Get user profile
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('business_profile, plan, business_name')
+            .eq('id', userId)
+            .single();
+        
+        if (error) throw error;
+        
+        const hasProfile = user?.business_profile && Object.keys(user.business_profile).length > 0;
+        
+        if (!hasProfile) {
+            return res.json({ has_profile: false });
         }
-      );
-    });
-
-    if (!account) {
-      return res.status(404).json({ error: "Account not found" });
-    }
-
-    // Decrypt API key
-    const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
-    let decrypted = decipher.update(account.api_key_encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    // Here you would make API calls to the platform to fetch real data
-    // This is a placeholder for actual platform API integration
-    const syncResult = {
-      last_sync: new Date().toISOString(),
-      status: 'success',
-      message: `Synced ${account.platform} account`
-    };
-
-    // Update last_sync timestamp
-    db.run(
-      `UPDATE connected_accounts SET last_sync = ? WHERE id = ?`,
-      [new Date().toISOString(), accountId],
-      (err) => {
-        if (err) {
-          console.error("Error updating sync time:", err);
-          return res.status(500).json({ error: "Failed to update sync time" });
+        
+        const profile = user.business_profile;
+        
+        // Generate insights based on profile with ROI
+        const insights = [];
+        
+        // E-commerce insights with ROI
+        if (profile.industry === 'ecommerce' || profile.tools?.includes('shopify')) {
+            const roi = calculateAutomationROI('cart-recovery', profile);
+            insights.push({
+                type: 'ecommerce',
+                title: '🛒 E-commerce Opportunity',
+                description: `Based on your business type, you could recover 15% of abandoned carts with automated follow-up emails. This could save you ${roi.hours_saved_per_week} hours/week and add $${roi.revenue_impact_monthly}/month.`,
+                priority: 'high',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
         }
-
-        // Log activity
-        db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-          [userId, 'account_synced', `${account.platform} account synced`, new Date().toISOString()]);
-
+        
+        // Agency insights with ROI
+        if (profile.industry === 'agency') {
+            const roi = calculateAutomationROI('lead-scoring', profile);
+            insights.push({
+                type: 'operations',
+                title: '📊 Agency Efficiency',
+                description: `Automate client reporting and save ${roi.hours_saved_per_week} hours per week per client with AI-powered reports.`,
+                priority: 'high',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+        }
+        
+        // Lead generation insights
+        if (profile.goal === 'leads') {
+            const roi = calculateAutomationROI('lead-scoring', profile);
+            insights.push({
+                type: 'lead_generation',
+                title: '🎯 Lead Generation Potential',
+                description: `AI lead scoring can increase conversion by 45%. Based on your profile, this could generate ${roi.leads_generated_monthly} leads/month and save ${roi.hours_saved_per_week} hours/week.`,
+                priority: 'high',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+        }
+        
+        // Content creation insights
+        if (profile.goal === 'content') {
+            const roi = calculateAutomationROI('ai-social-media-scheduler', profile);
+            insights.push({
+                type: 'content',
+                title: '✍️ Content Scaling',
+                description: `AI content generation can 3x your output. Save ${roi.hours_saved_per_week} hours/week and generate ${roi.leads_generated_monthly} more leads.`,
+                priority: 'medium',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+        }
+        
+        // Customer support insights
+        if (profile.goal === 'support') {
+            const roi = calculateAutomationROI('auto-responder', profile);
+            insights.push({
+                type: 'customer_support',
+                title: '💬 24/7 Support',
+                description: `AI auto-responder can handle 70% of common questions automatically. Save ${roi.hours_saved_per_week} hours/week on support.`,
+                priority: 'high',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+        }
+        
+        // Sales insights
+        if (profile.goal === 'sales') {
+            const roi = calculateAutomationROI('cart-recovery', profile);
+            insights.push({
+                type: 'sales',
+                title: '💰 Sales Growth Opportunity',
+                description: `Automated cart recovery and follow-up sequences can boost sales by 15-25%. Potential revenue increase: $${roi.revenue_impact_monthly}/month.`,
+                priority: 'high',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+        }
+        
+        // Hours-based insights
+        if (profile.hours && profile.hours !== '0-5') {
+            const hoursMap = { '5-15': 10, '15-25': 20, '25-40': 32, '40+': 45 };
+            const currentHours = hoursMap[profile.hours] || 5;
+            const savedHours = Math.floor(currentHours * 0.7);
+            insights.push({
+                type: 'operations',
+                title: '⏰ Time Savings Opportunity',
+                description: `You spend ~${currentHours} hours/week on manual tasks. Automations could save you ${savedHours} hours/week - that's ${Math.floor(savedHours / 8)} extra days per week!`,
+                priority: 'high',
+                roi: savedHours * 50,
+                hours_saved: savedHours
+            });
+        }
+        
+        // Challenge-based insights
+        if (profile.challenge === 'manual_data') {
+            insights.push({
+                type: 'operations',
+                title: '📊 Data Entry Automation',
+                description: `Manual data entry is a major time sink. Automate form submissions and CRM updates to save 8+ hours/week.`,
+                priority: 'high',
+                roi: 600,
+                hours_saved: 8
+            });
+        }
+        
+        if (profile.challenge === 'followups') {
+            insights.push({
+                type: 'sales',
+                title: '📧 Follow-up Automation',
+                description: `Automated follow-up sequences can increase response rates by 3x and save 5+ hours/week.`,
+                priority: 'high',
+                roi: 1500,
+                hours_saved: 5
+            });
+        }
+        
+        // Tool-based insights
+        if (profile.tools && profile.tools.includes('shopify')) {
+            const roi = calculateAutomationROI('cart-recovery', profile);
+            insights.push({
+                type: 'ecommerce',
+                title: '🛒 E-commerce Revenue Opportunity',
+                description: `You're losing 15-25% of potential sales from abandoned carts. Automated recovery could add $${roi.revenue_impact_monthly}/month.`,
+                priority: 'high',
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+        }
+        
+        if (profile.tools && profile.tools.includes('slack')) {
+            insights.push({
+                type: 'operations',
+                title: '💬 Team Communication Boost',
+                description: `Connect your automations to Slack for real-time team notifications on leads, sales, and support tickets.`,
+                priority: 'medium',
+                roi: 400,
+                hours_saved: 2
+            });
+        }
+        
+        // Generate recommendations with ROI
+        const recommendations = [];
+        
+        // E-commerce recommendations with ROI
+        if (profile.industry === 'ecommerce' || profile.tools?.includes('shopify')) {
+            const roi = calculateAutomationROI('cart-recovery', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_1`,
+                automation_template_id: 'cart-recovery',
+                title: 'Abandoned Cart Recovery',
+                reason: `You use e-commerce tools. This automation recovers lost sales by sending follow-up emails to customers who leave items in cart. Estimated ROI: $${roi.revenue_impact_monthly}/month`,
+                confidence: roi.confidence_score,
+                roi: roi.revenue_impact_monthly,
+                hours_saved: roi.hours_saved_per_week
+            });
+            
+            const priceRoi = calculateAutomationROI('price-monitoring-alert', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_2`,
+                automation_template_id: 'price-monitoring-alert',
+                title: 'Competitor Price Monitoring',
+                reason: `Stay competitive with real-time price alerts when competitors change prices. Estimated savings: $${priceRoi.revenue_impact_monthly}/month.`,
+                confidence: priceRoi.confidence_score,
+                roi: priceRoi.revenue_impact_monthly,
+                hours_saved: priceRoi.hours_saved_per_week
+            });
+        }
+        
+        // Lead generation recommendations
+        if (profile.goal === 'leads') {
+            const leadRoi = calculateAutomationROI('lead-scoring', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_3`,
+                automation_template_id: 'lead-scoring',
+                title: 'AI Lead Scoring',
+                reason: `Automatically score leads based on behavior and engagement. Focus your sales team on hot leads first. Estimated: ${leadRoi.leads_generated_monthly} leads/month.`,
+                confidence: leadRoi.confidence_score,
+                roi: leadRoi.revenue_impact_monthly,
+                hours_saved: leadRoi.hours_saved_per_week,
+                leads_generated: leadRoi.leads_generated_monthly
+            });
+            
+            const captureRoi = calculateAutomationROI('lead-capture-crm-slack', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_4`,
+                automation_template_id: 'lead-capture-crm-slack',
+                title: 'Lead to CRM + Slack',
+                reason: `Capture leads from your website and instantly notify your team on Slack. Estimated: ${captureRoi.leads_generated_monthly} more leads/month.`,
+                confidence: captureRoi.confidence_score,
+                roi: captureRoi.revenue_impact_monthly,
+                hours_saved: captureRoi.hours_saved_per_week,
+                leads_generated: captureRoi.leads_generated_monthly
+            });
+        }
+        
+        // Content creation recommendations
+        if (profile.goal === 'content') {
+            const socialRoi = calculateAutomationROI('ai-social-media-scheduler', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_5`,
+                automation_template_id: 'ai-social-media-scheduler',
+                title: 'AI Social Media Scheduler',
+                reason: `Auto-generate and schedule posts across all platforms with optimal timing for maximum engagement. Save ${socialRoi.hours_saved_per_week} hours/week.`,
+                confidence: socialRoi.confidence_score,
+                roi: socialRoi.revenue_impact_monthly,
+                hours_saved: socialRoi.hours_saved_per_week
+            });
+            
+            const videoRoi = calculateAutomationROI('video-script-generator', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_6`,
+                automation_template_id: 'video-script-generator',
+                title: 'Video Script Generator',
+                reason: `Generate engaging TikTok/Reel scripts in seconds. 10x your video output and save ${videoRoi.hours_saved_per_week} hours/week.`,
+                confidence: videoRoi.confidence_score,
+                roi: videoRoi.revenue_impact_monthly,
+                hours_saved: videoRoi.hours_saved_per_week
+            });
+        }
+        
+        // Customer support recommendations
+        if (profile.goal === 'support' || profile.tools?.includes('slack')) {
+            const supportRoi = calculateAutomationROI('auto-responder', profile);
+            recommendations.push({
+                id: `rec_${Date.now()}_7`,
+                automation_template_id: 'auto-responder',
+                title: 'AI Auto-Responder',
+                reason: `Automatically respond to common customer questions 24/7. Reduce response time by 80% and save ${supportRoi.hours_saved_per_week} hours/week.`,
+                confidence: supportRoi.confidence_score,
+                roi: supportRoi.revenue_impact_monthly,
+                hours_saved: supportRoi.hours_saved_per_week
+            });
+        }
+        
+        // Sort recommendations by ROI (highest first)
+        recommendations.sort((a, b) => (b.roi || 0) - (a.roi || 0));
+        
+        // Get existing recommendations from database
+        const { data: existingRecs } = await supabase
+            .from('ai_recommendations')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .limit(10);
+        
+        // If we have existing recommendations, use them
+        const finalRecommendations = existingRecs && existingRecs.length > 0 
+            ? existingRecs.map(rec => ({
+                id: rec.id,
+                automation_template_id: rec.automation_id,
+                title: rec.title,
+                reason: rec.reason,
+                confidence: rec.confidence_score,
+                roi: rec.roi || 500,
+                hours_saved: rec.hours_saved || 5
+            }))
+            : recommendations;
+        
+        // Calculate total ROI metrics
+        const totalHoursSaved = recommendations.reduce((sum, rec) => sum + (rec.hours_saved || 0), 0);
+        const totalRevenueImpact = recommendations.reduce((sum, rec) => sum + (rec.roi || 0), 0);
+        const totalLeadsGenerated = recommendations.reduce((sum, rec) => sum + (rec.leads_generated || 0), 0);
+        
         res.json({
-          success: true,
-          message: `✅ ${account.platform} account synced successfully`,
-          last_sync: new Date().toISOString()
+            has_profile: true,
+            profile: profile,
+            insights: insights,
+            recommendations: finalRecommendations,
+            total_roi: {
+                hours_saved_per_week: totalHoursSaved,
+                revenue_impact_monthly: totalRevenueImpact,
+                leads_generated_monthly: totalLeadsGenerated
+            }
         });
-      }
-    );
-
-  } catch (error) {
-    console.error("Sync error:", error);
-    res.status(500).json({ error: "Failed to sync account" });
-  }
-});
-
-// ===== DISCONNECT ACCOUNT ENDPOINT =====
-app.delete("/api/automations/accounts/:id", auth, (req, res) => {
-  const accountId = req.params.id;
-  const userId = req.user.id;
-
-  db.run(
-    `DELETE FROM connected_accounts WHERE id = ? AND user_id = ?`,
-    [accountId, userId],
-    function(err) {
-      if (err) {
-        console.error("Error deleting account:", err);
-        return res.status(500).json({ error: "Failed to delete account" });
-      }
-
-      if (this.changes === 0) {
-        return res.status(404).json({ error: "Account not found" });
-      }
-
-      // Log activity
-      db.run(`INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)`,
-        [userId, 'account_disconnected', `Account disconnected`, new Date().toISOString()]);
-
-      res.json({
-        success: true,
-        message: "✅ Account disconnected successfully"
-      });
+        
+    } catch (error) {
+        console.error('Error getting insights:', error);
+        res.status(500).json({ error: 'Failed to get insights' });
     }
-  );
 });
 
-// Get user profile
-app.get("/api/user/profile", auth, (req, res) => {
-  getUserById(req.user.id).then(user => {
-    if (!user) return res.status(404).json({ error: "User not found" });
+// Accept/dismiss recommendation
+app.post('/api/business/recommendations/:recId/:action', authenticateToken, async (req, res) => {
+    const { recId, action } = req.params;
+    const userId = req.user.id;
     
-    res.json({
-      id: user.id,
-      name: user.business_name || user.name || "User",
-      email: user.email,
-      business_name: user.business_name,
-      plan: user.plan,
-      is_verified: user.is_verified
-    });
-  }).catch(err => {
-    console.error("Profile error:", err);
-    res.status(500).json({ error: "Server error" });
-  });
+    if (!['accept', 'dismiss'].includes(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+    
+    try {
+        const status = action === 'accept' ? 'accepted' : 'rejected';
+        
+        const { error } = await supabase
+            .from('ai_recommendations')
+            .update({ 
+                status: status,
+                deployed_at: action === 'accept' ? new Date().toISOString() : null
+            })
+            .eq('id', recId)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('Error updating recommendation:', error);
+        res.status(500).json({ error: 'Failed to update recommendation' });
+    }
+});
+
+// ================= GET ROI STATS FOR DASHBOARD =================
+app.get('/api/business/roi-stats', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    
+    try {
+        // Get user automations
+        const { data: automations } = await supabase
+            .from('user_automations')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'active');
+        
+        // Get leads generated from automations
+        const { data: leads } = await supabase
+            .from('leads')
+            .select('created_at')
+            .eq('user_id', userId)
+            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        
+        // Get user profile for ROI calculations
+        const { data: user } = await supabase
+            .from('users')
+            .select('business_profile')
+            .eq('id', userId)
+            .single();
+        
+        const profile = user?.business_profile || {};
+        
+        // Calculate hours saved
+        let totalHoursSaved = 0;
+        for (const automation of automations || []) {
+            const templateId = automation.template_id;
+            const roi = calculateAutomationROI(templateId, profile);
+            totalHoursSaved += roi.hours_saved_per_week;
+        }
+        
+        // Calculate leads generated
+        const leadsCount = leads?.length || 0;
+        
+        // Calculate revenue impact
+        let totalRevenueImpact = 0;
+        for (const automation of automations || []) {
+            const templateId = automation.template_id;
+            const roi = calculateAutomationROI(templateId, profile);
+            totalRevenueImpact += roi.revenue_impact_monthly;
+        }
+        
+        // Calculate tasks automated (estimated)
+        const tasksAutomated = (automations?.length || 0) * 45;
+        
+        // Weekly trend data (mock data for chart)
+        const weeklyData = {
+            hours: [totalHoursSaved * 0.2, totalHoursSaved * 0.4, totalHoursSaved * 0.7, totalHoursSaved],
+            revenue: [totalRevenueImpact * 0.2, totalRevenueImpact * 0.4, totalRevenueImpact * 0.7, totalRevenueImpact]
+        };
+        
+        res.json({
+            success: true,
+            stats: {
+                hours_saved: totalHoursSaved,
+                leads_generated: leadsCount,
+                revenue_impact: totalRevenueImpact,
+                tasks_automated: tasksAutomated,
+                leads_growth: leadsCount > 0 ? Math.floor(Math.random() * 30) + 15 : 0,
+                weekly_trend: weeklyData
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting ROI stats:', error);
+        res.status(500).json({ error: 'Failed to get ROI stats' });
+    }
 });
 
 // ================= PLAN LIMITS =================
@@ -872,261 +1661,8 @@ const PLAN_LIMITS = {
   agency: { messages: Infinity, leads: Infinity }
 };
 
-// ================= DATABASE MIGRATIONS =================
-// Removed SQLite serialization
-
-  
-  db.run(`
-    CREATE TABLE IF NOT EXISTS smart_hub_settings (
-      user_id INTEGER PRIMARY KEY,
-      ai_instructions TEXT,
-      ai_temp TEXT DEFAULT '0.7',
-      ai_lang TEXT DEFAULT 'auto',
-      booking_url TEXT,
-      sentiment_enabled INTEGER DEFAULT 0,
-      alert_email TEXT,
-      handover_trigger TEXT DEFAULT 'human',
-      webhook_url TEXT,
-      booking_active INTEGER DEFAULT 0,
-      webhook_active INTEGER DEFAULT 0,
-      brain_active INTEGER DEFAULT 0,
-      sentiment_active INTEGER DEFAULT 0,
-      handover_active INTEGER DEFAULT 0,
-      apollo_active INTEGER DEFAULT 0,
-      followup_active INTEGER DEFAULT 0,
-      vision_active INTEGER DEFAULT 0,
-      analytics_active INTEGER DEFAULT 0
-    )
-  `);
-
-  // Add columns
-  const smartHubColumns = [
-    "booking_active INTEGER DEFAULT 0",
-    "webhook_active INTEGER DEFAULT 0",
-    "brain_active INTEGER DEFAULT 0",
-    "sentiment_active INTEGER DEFAULT 0",
-    "handover_active INTEGER DEFAULT 0",
-    "apollo_active INTEGER DEFAULT 0",
-    "followup_active INTEGER DEFAULT 0",
-    "vision_active INTEGER DEFAULT 0",
-    "analytics_active INTEGER DEFAULT 0",
-    "apollo_key TEXT",
-    "auto_sync INTEGER DEFAULT 0",
-    "vision_sensitivity TEXT DEFAULT 'high'",
-    "vision_area TEXT DEFAULT 'all'"
-  ];
-
-  smartHubColumns.forEach(col => {
-    db.run(`ALTER TABLE smart_hub_settings ADD COLUMN ${col}`, () => {});
-  });
-
-  // Create broadcasts table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS broadcasts (
-      id TEXT PRIMARY KEY,
-      user_id INTEGER,
-      subject TEXT,
-      recipients INTEGER,
-      sent_count INTEGER,
-      failed_count INTEGER,
-      status TEXT DEFAULT 'sent',
-      created_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Broadcasts table ready");
-  });
-
-  // ================= NEW: INCIDENTS TABLE FOR STATUS PAGE =================
-  db.run(`
-    CREATE TABLE IF NOT EXISTS incidents (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date DATETIME,
-      title TEXT,
-      description TEXT,
-      status TEXT DEFAULT 'resolved',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Incidents table ready");
-  });
-
-  // ================= NEW: STATUS SUBSCRIBERS TABLE =================
-  db.run(`
-    CREATE TABLE IF NOT EXISTS status_subscribers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Status subscribers table ready");
-  });
-
-  // ================= NEW: AUTOMATIONS TABLES =================
-  db.run(`
-    CREATE TABLE IF NOT EXISTS automations (
-      id TEXT PRIMARY KEY,
-      user_id INTEGER,
-      name TEXT,
-      description TEXT,
-      trigger_type TEXT,
-      trigger_config TEXT,
-      action_type TEXT,
-      action_config TEXT,
-      schedule TEXT,
-      status TEXT DEFAULT 'active',
-      trigger_count INTEGER DEFAULT 0,
-      success_count INTEGER DEFAULT 0,
-      avg_duration INTEGER DEFAULT 0,
-      last_run DATETIME,
-      created_at DATETIME,
-      updated_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Automations table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS connected_accounts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      platform TEXT,
-      account_name TEXT,
-      api_key_encrypted TEXT,
-      account_info TEXT,
-      status TEXT DEFAULT 'active',
-      last_sync DATETIME,
-      created_at DATETIME,
-      updated_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Connected accounts table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS platform_metrics (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      platform TEXT,
-      metrics TEXT,
-      collected_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Platform metrics table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS automation_runs (
-      id TEXT PRIMARY KEY,
-      automation_id TEXT,
-      user_id INTEGER,
-      status TEXT,
-      result TEXT,
-      duration INTEGER,
-      error TEXT,
-      started_at DATETIME,
-      completed_at DATETIME,
-      FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Automation runs table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS vision_results (
-      id TEXT PRIMARY KEY,
-      user_id INTEGER,
-      image_url TEXT,
-      analysis TEXT,
-      objects_detected TEXT,
-      sentiment TEXT,
-      confidence REAL,
-      created_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Vision results table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS activity_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      action TEXT,
-      details TEXT,
-      icon TEXT,
-      type TEXT DEFAULT 'info',
-      timestamp DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Activity log table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS price_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      product_id TEXT,
-      product_name TEXT,
-      competitor TEXT,
-      price REAL,
-      currency TEXT,
-      detected_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Price history table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS inventory_alerts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      product_id TEXT,
-      product_name TEXT,
-      current_quantity INTEGER,
-      threshold INTEGER,
-      status TEXT DEFAULT 'active',
-      created_at DATETIME,
-      resolved_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Inventory alerts table ready");
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS lead_scores (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      lead_id INTEGER,
-      score INTEGER,
-      criteria TEXT,
-      scored_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (!err) console.log("✅ Lead scores table ready");
-  });
-
-  // Insert sample incident if none exist
-  db.get(`SELECT COUNT(*) as count FROM incidents`, (err, row) => {
-    if (!err && row && row.count === 0) {
-      db.run(`
-        INSERT INTO incidents (date, title, description, status) VALUES 
-        (datetime('now', '-3 days'), 'Scheduled Maintenance', 'Database optimization completed successfully. No downtime.', 'resolved'),
-        (datetime('now', '-8 days'), 'AI Response Delay', 'Cloudflare API experienced brief latency. Resolved within 5 minutes.', 'resolved'),
-        (datetime('now', '-15 days'), 'Email Delivery Delay', 'Resend API had intermittent issues. All emails delivered.', 'resolved')
-      `);
-    }
-  });
-});
+// ================= ALL SQLITE MIGRATIONS REMOVED =================
+console.log("✅ Using Supabase for all database operations");
 
 // ================= VERIFICATION MIDDLEWARE =================
 async function checkVerified(req, res, next) {
@@ -1138,6 +1674,7 @@ async function checkVerified(req, res, next) {
       res.status(403).json({ error: "Please verify your email to access this feature." });
     }
   } catch (err) {
+    console.error("Verification check error:", err);
     res.status(500).json({ error: "Verification check failed" });
   }
 }
@@ -1153,65 +1690,58 @@ app.post("/api/auth/resend-verification", bodyParser.json(), async (req, res) =>
   const normalizedEmail = email.trim().toLowerCase();
   
   try {
-    // Generate new verification code
     const vCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Update user with new verification token
-    db.run(
-      `UPDATE users SET verification_token = ? WHERE email = ?`,
-      [vCode, normalizedEmail],
-      async function(err) {
-        if (err) {
-          console.error("Update verification token error:", err);
-          return res.status(500).json({ error: "Database error" });
-        }
-        
-        if (this.changes === 0) {
-          return res.status(404).json({ error: "Email not found" });
-        }
+    // Update user with new verification token using Supabase
+    const { error } = await supabase
+      .from('users')
+      .update({ verification_token: vCode })
+      .eq('email', normalizedEmail);
 
-        // Send verification email
-        const emailHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head><meta charset="UTF-8"></head>
-          <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
-              <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0;">✨ AI Smart Hub</h1>
-                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
-              </div>
-              <div style="padding: 40px;">
-                <h2 style="color: #333; margin-bottom: 20px;">Your New Verification Code</h2>
-                <p style="color: #666; margin-bottom: 20px;">You requested a new verification code for your account.</p>
-                <div style="background: #f8f9fa; padding: 30px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                  <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
-                </div>
-                <p style="color: #666;">Enter this code on the website to verify your account.</p>
-                <p style="color: #999; font-size: 14px; margin-top: 20px;">This code will expire in 24 hours.</p>
-              </div>
+    if (error) {
+      console.error("Update verification token error:", error);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"></head>
+      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">✨ AI Smart Hub</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
+          </div>
+          <div style="padding: 40px;">
+            <h2 style="color: #333; margin-bottom: 20px;">Your New Verification Code</h2>
+            <p style="color: #666; margin-bottom: 20px;">You requested a new verification code for your account.</p>
+            <div style="background: #f8f9fa; padding: 30px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
             </div>
-          </body>
-          </html>
-        `;
+            <p style="color: #666;">Enter this code on the website to verify your account.</p>
+            <p style="color: #999; font-size: 14px; margin-top: 20px;">This code will expire in 24 hours.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-        const result = await sendEmailWithFallback(
-          normalizedEmail,
-          'AI Smart Hub Support',
-          'Your New Verification Code',
-          emailHtml
-        );
-
-        if (result.success) {
-          res.json({ 
-            success: true, 
-            message: `New verification code sent to ${normalizedEmail} via ${result.method}` 
-          });
-        } else {
-          res.status(500).json({ error: "Failed to send verification email" });
-        }
-      }
+    const result = await sendEmailWithFallback(
+      normalizedEmail,
+      'AI Smart Hub Support',
+      'Your New Verification Code',
+      emailHtml
     );
+
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: `New verification code sent to ${normalizedEmail} via ${result.method}` 
+      });
+    } else {
+      res.status(500).json({ error: "Failed to send verification email" });
+    }
   } catch (err) {
     console.error("Resend verification error:", err);
     res.status(500).json({ error: "Server error" });
@@ -1228,58 +1758,54 @@ app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
   const hashed = await bcrypt.hash(password, 10);
   const business_id = "biz_" + Math.random().toString(36).substring(2, 12);
 
-  getUserByEmail(normalizedEmail)
-    .then(existing => {
-      if (existing) return res.status(400).json({ error: "User already exists" });
+  try {
+    const existing = await getUserByEmail(normalizedEmail);
+    if (existing) return res.status(400).json({ error: "User already exists" });
 
-      createUser(normalizedEmail, hashed, business_id, business_name, vCode)
-        .then(userId => {
-          const widgetKey = uuidv4();
-          setWidgetKey(userId, widgetKey);
+    const userId = await createUser(normalizedEmail, hashed, business_id, business_name, vCode);
+    
+    const widgetKey = uuidv4();
+    await setWidgetKey(userId, widgetKey);
 
-          // Send verification email
-          const emailHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"></head>
-            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
-                <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
-                </div>
-                <div style="padding: 40px;">
-                  <h2 style="color: #333;">Verify Your Email</h2>
-                  <p style="color: #666; margin-bottom: 20px;">Your verification code is:</p>
-                  <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                    <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
-                  </div>
-                  <p style="color: #666;">Enter this code on the website to verify your account.</p>
-                  <p style="color: #999; font-size: 14px;">This code will expire in 24 hours.</p>
-                </div>
-              </div>
-            </body>
-            </html>
-          `;
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"></head>
+      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">✨ Welcome to AI Smart Hub</h1>
+          </div>
+          <div style="padding: 40px;">
+            <h2 style="color: #333;">Verify Your Email</h2>
+            <p style="color: #666; margin-bottom: 20px;">Your verification code is:</p>
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
+            </div>
+            <p style="color: #666;">Enter this code on the website to verify your account.</p>
+            <p style="color: #999; font-size: 14px;">This code will expire in 24 hours.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-          sendEmailWithFallback(
-            normalizedEmail,
-            'AI Smart Hub Support',
-            'Your Verification Code',
-            emailHtml
-          );
+    await sendEmailWithFallback(
+      normalizedEmail,
+      'AI Smart Hub Support',
+      'Your Verification Code',
+      emailHtml
+    );
 
-          res.json({ 
-            success: true, 
-            message: "Signup successful. Please check your email for your 6-digit verification code.",
-            email: normalizedEmail
-          });
-        })
-        .catch(err => {
-          console.error("Signup insert error:", err);
-          res.status(500).json({ error: "Failed to create user" });
-        });
-    })
-    .catch(() => res.status(500).json({ error: "Database error" }));
+    res.json({ 
+      success: true, 
+      message: "Signup successful. Please check your email for your 6-digit verification code.",
+      email: normalizedEmail
+    });
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Failed to create user" });
+  }
 });
 
 app.get("/api/auth/verify/:token", async (req, res) => {
@@ -1295,36 +1821,19 @@ app.post("/api/auth/verify-code", bodyParser.json(), async (req, res) => {
   const { code, email } = req.body;
   
   try {
-    // Find user with this verification token
-    const user = await new Promise((resolve, reject) => {
-      try {
-    const { data: row, error: err } = await supabase
+    const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('verification_token', code)
       .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-        else resolve(row);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-    });
 
-    if (!user) {
+    if (error || !user) {
       return res.status(400).json({ error: "Invalid verification code." });
     }
 
-    // Verify the user
     const success = await verifyUser(code);
     
     if (success) {
-      // Generate JWT token
       const token = jwt.sign(
         { id: user.id, email: user.email, plan: user.plan }, 
         JWT_SECRET, 
@@ -1351,14 +1860,17 @@ app.post("/api/auth/verify-code", bodyParser.json(), async (req, res) => {
 app.post("/api/auth/login", bodyParser.json(), (req, res, next) => {
   const { email } = req.body;
   if (email && email.toLowerCase().trim() === ADMIN_EMAIL) {
-    db.run(
-      `UPDATE users SET is_verified = 1, plan = 'agency', plan_expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() WHERE email = ?`, 
-      [ADMIN_EMAIL], 
-      (err) => {
-        if (err) console.error("Admin update error:", err);
+    supabase
+      .from('users')
+      .update({ is_verified: 1, plan: 'agency', plan_expires: new Date(Date.now() + 30*24*60*60*1000).toISOString() })
+      .eq('email', ADMIN_EMAIL)
+      .then(() => {
         login(req, res, next);
-      }
-    );
+      })
+      .catch(err => {
+        console.error("Admin update error:", err);
+        login(req, res, next);
+      });
   } else {
     login(req, res, next);
   }
@@ -1372,36 +1884,47 @@ app.put("/api/admin/users/update-profile", auth, bodyParser.json(), async (req, 
   try {
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      db.run(
-        `UPDATE users SET business_name = ?, password = ? WHERE id = ?`,
-        [business_name, hashedPassword, userId],
-        function(err) {
-          if (err) return res.status(500).json({ error: "Update failed" });
-          res.json({ success: true, message: "Profile and password updated" });
-        }
-      );
+      const { error } = await supabase
+        .from('users')
+        .update({ business_name, password: hashedPassword })
+        .eq('id', userId);
+
+      if (error) throw error;
+      res.json({ success: true, message: "Profile and password updated" });
     } else {
-      db.run(
-        `UPDATE users SET business_name = ? WHERE id = ?`,
-        [business_name, userId],
-        function(err) {
-          if (err) return res.status(500).json({ error: "Update failed" });
-          res.json({ success: true, message: "Profile name updated" });
-        }
-      );
+      const { error } = await supabase
+        .from('users')
+        .update({ business_name })
+        .eq('id', userId);
+
+      if (error) throw error;
+      res.json({ success: true, message: "Profile name updated" });
     }
   } catch (e) {
     res.status(500).json({ error: "Server error during update" });
   }
 });
 
-app.delete("/api/admin/users/delete-account", auth, (req, res) => {
+app.delete("/api/admin/users/delete-account", auth, async (req, res) => {
   const userId = req.user.id;
-  // Removed SQLite serialization
-
-      res.json({ success: true, message: "Account deleted permanently" });
-    });
-  });
+  
+  try {
+    // Delete in correct order due to foreign key constraints
+    await supabase.from('activity_log').delete().eq('user_id', userId);
+    await supabase.from('automations').delete().eq('user_id', userId);
+    await supabase.from('chats').delete().eq('user_id', userId);
+    await supabase.from('connected_accounts').delete().eq('user_id', userId);
+    await supabase.from('governance_settings').delete().eq('user_id', userId);
+    await supabase.from('knowledge_base').delete().eq('user_id', userId);
+    await supabase.from('leads').delete().eq('user_id', userId);
+    await supabase.from('support_tickets').delete().eq('user_id', userId);
+    await supabase.from('users').delete().eq('id', userId);
+    
+    res.json({ success: true, message: "Account deleted permanently" });
+  } catch (err) {
+    console.error("Delete account error:", err);
+    res.status(500).json({ error: "Failed to delete account" });
+  }
 });
 
 // ================= KNOWLEDGE BASE =================
@@ -1411,13 +1934,15 @@ app.post("/api/knowledge/add", auth, checkVerified, bodyParser.json(), async (re
     await addKnowledge(req.user.id, content);
     res.json({ success: true, message: "Knowledge added" });
   } catch (err) { 
-    res.status(500).json({ error: "Failed to save" }); 
+    console.error("Knowledge add error:", err);
+    res.status(500).json({ error: "Failed to save knowledge" }); 
   }
 });
 
 // ================= DASHBOARD =================
-app.get("/api/dashboard/full", auth, (req, res) => {
-  getUserById(req.user.id).then(user => {
+app.get("/api/dashboard/full", auth, async (req, res) => {
+  try {
+    const user = await getUserById(req.user.id);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
     let dbPlan = (user.plan || 'free').toLowerCase().trim();
@@ -1425,7 +1950,7 @@ app.get("/api/dashboard/full", auth, (req, res) => {
     let currentPlan = dbPlan;
 
     if (user.email.toLowerCase().trim() === ADMIN_EMAIL) {
-        currentPlan = "agency";
+      currentPlan = "agency";
     } 
 
     const limits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.free;
@@ -1433,104 +1958,109 @@ app.get("/api/dashboard/full", auth, (req, res) => {
 
     console.log(`[DASHBOARD] Sending to frontend - plan: ${currentPlan} (raw DB: ${user.plan || 'free'})`);
 
-    db.all(
-      `SELECT session_id, client_name, message, response, MAX(created_at) as last_message, COUNT(*) as msg_count 
-       FROM chats WHERE user_id = ? GROUP BY session_id ORDER BY last_message DESC`,
-      [user.id],
-      (_, chats) => {
-        db.all(
-          `SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC`,
-          [user.id],
-          (_, leads) => {
-            res.json({
-              name: displayName, 
-              business_name: displayName,
-              businessName: displayName,
-              email: user.email,
-              plan: currentPlan,
-              plan_expires: user.plan_expires,
-              is_verified: user.is_verified, 
-              widget_color: user.widget_color, 
-              messages_used: user.messages_used || 0,
-              messages_limit: limits.messages,
-              leads_used: user.leads_used || 0,
-              leads_limit: limits.leads,
-              chats: chats || [], 
-              leads: leads || [],
-              widget_key: user.widget_key || "generate-new-key"
-            });
-          }
-        );
-      }
-    );
-  }).catch(() => res.status(500).json({ error: "Server error" }));
+    // Get chats using Supabase
+    const { data: chats } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    // Get leads using Supabase
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    // Get business profile if exists
+    const businessProfile = user.business_profile || null;
+
+    res.json({
+      name: displayName, 
+      business_name: displayName,
+      businessName: displayName,
+      email: user.email,
+      plan: currentPlan,
+      plan_expires: user.plan_expires,
+      is_verified: user.is_verified, 
+      widget_color: user.widget_color, 
+      messages_used: user.messages_used || 0,
+      messages_limit: limits.messages,
+      leads_used: user.leads_used || 0,
+      leads_limit: limits.leads,
+      chats: chats || [], 
+      leads: leads || [],
+      widget_key: user.widget_key || "generate-new-key",
+      business_profile: businessProfile
+    });
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 // ================= CHAT SESSIONS =================
-app.get("/api/chat/session/:session_id", auth, (req, res) => {
-  db.all(
-    `SELECT * FROM chats WHERE session_id = ? AND user_id = ? ORDER BY created_at ASC`,
-    [req.params.session_id, req.user.id],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "Database error" });
-      res.json(rows);
-    }
-  );
+app.get("/api/chat/session/:session_id", auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('session_id', req.params.session_id)
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error("Chat session error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
-// ================= WIDGET CONFIG - CRITICAL FIX: Return all smart settings =================
-app.get("/api/public/widget-config/:key", (req, res) => {
+// ================= WIDGET CONFIG =================
+app.get("/api/public/widget-config/:key", async (req, res) => {
   const widgetKey = req.params.key;
   
-  db.get(`SELECT id, business_name, widget_color, welcome_message, plan FROM users WHERE widget_key = ?`, [widgetKey], (err, user) => {
-    if (err || !user) return res.status(404).json({ error: "Widget not found" });
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, business_name, widget_color, welcome_message, plan')
+      .eq('widget_key', widgetKey)
+      .single();
+
+    if (error || !user) return res.status(404).json({ error: "Widget not found" });
     
-    // Get smart hub settings for this user
-    db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, smartSettings) => {
-      const settings = smartSettings || {};
-      
-      // Get business identity
-      getBusinessIdentity(user.id).then(identity => {
-        res.json({
-          business_name: user.business_name || "AI Assistant",
-          widget_color: user.widget_color || "#d4af37",
-          welcome_message: user.welcome_message || "Hi! How can I help you today?",
-          plan: user.plan || 'free',
-          // Business identity
-          business_type: identity.business_type || '',
-          business_description: identity.business_description || '',
-          // CRITICAL FIX: Include all smart hub settings for the widget
-          booking_url: settings.booking_url || '',
-          booking_active: settings.booking_active || 0,
-          apollo_active: settings.apollo_active || 0,
-          apollo_key: settings.apollo_key || '',
-          followup_active: settings.followup_active || 0,
-          vision_active: settings.vision_active || 0,
-          sentiment_active: settings.sentiment_active || 0,
-          ai_instructions: settings.ai_instructions || '',
-          ai_temp: settings.ai_temp || '0.7',
-          smart_hub: settings // Include full settings object
-        });
-      }).catch(() => {
-        res.json({
-          business_name: user.business_name || "AI Assistant",
-          widget_color: user.widget_color || "#d4af37",
-          welcome_message: user.welcome_message || "Hi! How can I help you today?",
-          plan: user.plan || 'free',
-          booking_url: settings.booking_url || '',
-          booking_active: settings.booking_active || 0,
-          apollo_active: settings.apollo_active || 0,
-          apollo_key: settings.apollo_key || '',
-          followup_active: settings.followup_active || 0,
-          vision_active: settings.vision_active || 0,
-          sentiment_active: settings.sentiment_active || 0,
-          ai_instructions: settings.ai_instructions || '',
-          ai_temp: settings.ai_temp || '0.7',
-          smart_hub: settings
-        });
-      });
+    const { data: smartSettings } = await supabase
+      .from('smart_hub_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    const settings = smartSettings || {};
+    const identity = await getBusinessIdentity(user.id).catch(() => ({}));
+
+    res.json({
+      business_name: user.business_name || "AI Assistant",
+      widget_color: user.widget_color || "#d4af37",
+      welcome_message: user.welcome_message || "Hi! How can I help you today?",
+      plan: user.plan || 'free',
+      business_type: identity.business_type || '',
+      business_description: identity.business_description || '',
+      booking_url: settings.booking_url || '',
+      booking_active: settings.booking_active || 0,
+      apollo_active: settings.apollo_active || 0,
+      apollo_key: settings.apollo_key || '',
+      followup_active: settings.followup_active || 0,
+      vision_active: settings.vision_active || 0,
+      sentiment_active: settings.sentiment_active || 0,
+      ai_instructions: settings.ai_instructions || '',
+      ai_temp: settings.ai_temp || '0.7',
+      smart_hub: settings
     });
-  });
+  } catch (err) {
+    console.error("Widget config error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 // ================= AI CHAT (DASHBOARD) =================
@@ -1539,76 +2069,74 @@ app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req,
   const activeSession = session_id || "sess_" + Date.now();
   if (!message) return res.status(400).json({ error: "Message required" });
 
-  getUserById(req.user.id).then(async user => {
+  try {
+    const user = await getUserById(req.user.id);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
     const limit = PLAN_LIMITS[user.plan].messages;
     if (user.messages_used >= limit)
       return res.status(403).json({ error: "Message limit reached" });
 
-    try {
-      const knowledge = await getKnowledgeByUser(user.id);
-      const context = knowledge.map(k => k.content).join("\n");
+    const knowledge = await getKnowledgeByUser(user.id);
+    const context = knowledge.map(k => k.content).join("\n");
 
-      const smartSettings = await new Promise((resolve) => {
-        db.get(`SELECT ai_instructions, ai_temp FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
-      });
+    const { data: smartSettings } = await supabase
+      .from('smart_hub_settings')
+      .select('ai_instructions, ai_temp')
+      .eq('user_id', user.id)
+      .single();
 
-      // Get business identity
-      const identity = await getBusinessIdentity(user.id);
+    const identity = await getBusinessIdentity(user.id);
 
-      // Build system prompt with business identity
-      const businessContext = identity.business_type ? 
-        `Business Type: ${identity.business_type}\nBusiness Description: ${identity.business_description || 'Not provided'}\n` : '';
+    const businessContext = identity.business_type ? 
+      `Business Type: ${identity.business_type}\nBusiness Description: ${identity.business_description || 'Not provided'}\n` : '';
 
-      // CRITICAL FIX: Stronger system prompt that establishes AI persona
-      const systemPrompt = smartSettings.ai_instructions || 
-        `You are the AI assistant for ${user.business_name || 'this business'}. 
-         ${businessContext}
-         You are helpful, professional, and knowledgeable about the business. 
-         Always represent yourself as the business assistant, never as a generic AI.
-         Current date: ${new Date().toLocaleDateString()}`;
+    const systemPrompt = smartSettings?.ai_instructions || 
+      `You are the AI assistant for ${user.business_name || 'this business'}. 
+       ${businessContext}
+       You are helpful, professional, and knowledgeable about the business. 
+       Always represent yourself as the business assistant, never as a generic AI.
+       Current date: ${new Date().toLocaleDateString()}`;
 
-      // CRITICAL FIX: Remove space in Cloudflare URL
-      const aiRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: [
-              { role: "system", content: `${systemPrompt}\n\nBusiness Context:\n${context}` },
-              { role: "user", content: message }
-            ]
-          })
-        }
-      );
-
-      if (!aiRes.ok) {
-        const errData = await aiRes.json();
-        throw new Error(errData.errors?.[0]?.message || "Cloudflare AI failed");
+    const aiRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: `${systemPrompt}\n\nBusiness Context:\n${context}` },
+            { role: "user", content: message }
+          ]
+        })
       }
+    );
 
-      const aiData = await aiRes.json();
-      const reply = aiData.result?.response || "AI error";
-
-      await saveChat(uuidv4(), user.id, activeSession, client_name || "Guest", message, reply);
-      await incrementMessagesUsed(user.id);
-
-      res.json({ success: true, reply, session_id: activeSession });
-    } catch (err) {
-      console.error("❌ AI Error:", err.message);
-      res.status(500).json({ error: "AI server error" });
+    if (!aiRes.ok) {
+      const errData = await aiRes.json();
+      throw new Error(errData.errors?.[0]?.message || "Cloudflare AI failed");
     }
-  });
+
+    const aiData = await aiRes.json();
+    const reply = aiData.result?.response || "AI error";
+
+    await saveChat(uuidv4(), user.id, activeSession, client_name || "Guest", message, reply);
+    await incrementMessagesUsed(user.id);
+
+    await logActivity(user.id, 'chat_message', 'Sent message via dashboard chat', 'chat');
+
+    res.json({ success: true, reply, session_id: activeSession });
+  } catch (err) {
+    console.error("❌ AI Error:", err.message);
+    res.status(500).json({ error: "AI server error" });
+  }
 });
 
-// ================= PUBLIC WIDGET CHAT - FIXED REPETITION =================
+// ================= PUBLIC WIDGET CHAT =================
 app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res) => {
-  // Extract all fields
   const { 
     message, 
     image_data, 
@@ -1635,57 +2163,59 @@ app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res
     return res.status(400).json({ error: "Widget key required" });
   }
 
-  db.get(`SELECT * FROM users WHERE widget_key = ?`, [widget_key], async (err, user) => {
-    if (err || !user) return res.status(401).json({ error: "Invalid Widget Key" });
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('widget_key', widget_key)
+      .single();
+
+    if (error || !user) return res.status(401).json({ error: "Invalid Widget Key" });
 
     const limit = PLAN_LIMITS[user.plan].messages;
     if (user.messages_used >= limit) return res.status(403).json({ error: "Limit reached" });
 
-    try {
-      const knowledge = await getKnowledgeByUser(user.id);
-      const context = knowledge.map(k => k.content).join("\n");
+    const knowledge = await getKnowledgeByUser(user.id);
+    const context = knowledge.map(k => k.content).join("\n");
 
-      // Get ALL smart settings
-      const smartSettings = await new Promise((resolve) => {
-        db.get(`SELECT * FROM smart_hub_settings WHERE user_id = ?`, [user.id], (err, row) => resolve(row || {}));
-      });
+    const { data: smartSettings } = await supabase
+      .from('smart_hub_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
 
-      // Get business identity
-      const identity = await getBusinessIdentity(user.id).catch(() => ({ 
-        business_type: '', 
-        business_description: '' 
-      }));
+    const identity = await getBusinessIdentity(user.id).catch(() => ({ 
+      business_type: '', 
+      business_description: '' 
+    }));
 
-      let reply = "";
-      let fileContent = "";
+    let reply = "";
+    let fileContent = "";
 
-      // FIXED: Build system prompt that prevents repetition
-      const buildSystemPrompt = () => {
-        const basePrompt = smartSettings.ai_instructions || 
-          `You are the AI assistant for ${user.business_name || 'our business'}.`;
-        
-        const businessContext = identity.business_type ? 
-          `Business Type: ${identity.business_type}. ${identity.business_description || ''}` : '';
-        
-        // FIXED: Don't reintroduce if already introduced
-        const introductionRule = has_introduced 
-          ? "IMPORTANT: Do NOT introduce yourself again. Continue the conversation naturally based on the history."
-          : `Introduce yourself as ${ai_name || 'the AI assistant'} for ${user.business_name || 'our business'} ONLY in the first message.`;
-        
-        const visitorContext = is_visitor 
-          ? `You are chatting with a website visitor named ${client_name || 'Guest'}.`
-          : `You are assisting the business owner.`;
-        
-        const bookingContext = smartSettings.booking_url && smartSettings.booking_active
-          ? `When visitors want to book, schedule, or make appointments, provide this booking link: ${smartSettings.booking_url}`
-          : '';
-        
-        // FIXED: Add conversation history context
-        const historyContext = conversation_history && conversation_history.length > 0
-          ? `\nPrevious conversation:\n${conversation_history.map(msg => `${msg.role}: ${msg.text}`).join('\n')}`
-          : '';
-        
-        return `${basePrompt}
+    const buildSystemPrompt = () => {
+      const basePrompt = smartSettings?.ai_instructions || 
+        `You are the AI assistant for ${user.business_name || 'our business'}.`;
+      
+      const businessContext = identity.business_type ? 
+        `Business Type: ${identity.business_type}. ${identity.business_description || ''}` : '';
+      
+      const introductionRule = has_introduced 
+        ? "IMPORTANT: Do NOT introduce yourself again. Continue the conversation naturally based on the history."
+        : `Introduce yourself as ${ai_name || 'the AI assistant'} for ${user.business_name || 'our business'} ONLY in the first message.`;
+      
+      const visitorContext = is_visitor 
+        ? `You are chatting with a website visitor named ${client_name || 'Guest'}.`
+        : `You are assisting the business owner.`;
+      
+      const bookingContext = smartSettings?.booking_url && smartSettings?.booking_active
+        ? `When visitors want to book, schedule, or make appointments, provide this booking link: ${smartSettings.booking_url}`
+        : '';
+      
+      const historyContext = conversation_history && conversation_history.length > 0
+        ? `\nPrevious conversation:\n${conversation_history.map(msg => `${msg.role}: ${msg.text}`).join('\n')}`
+        : '';
+      
+      return `${basePrompt}
 ${businessContext}
 ${visitorContext}
 ${bookingContext}
@@ -1701,100 +2231,60 @@ CRITICAL INSTRUCTIONS:
 - Keep responses natural and conversational like a real business assistant
 - Today's date: ${new Date().toLocaleDateString()}
 ${historyContext}`;
-      };
+    };
 
-      if (image_data) {
-        console.log("[WIDGET] Processing image with Cloudflare Vision");
-        
-        const base64Data = image_data.split(",")[1];
-        const mimeType = image_data.match(/:(.*?);/)[1];
+    if (image_data) {
+      console.log("[WIDGET] Processing image with Cloudflare Vision");
+      
+      const base64Data = image_data.split(",")[1];
+      const mimeType = image_data.match(/:(.*?);/)[1];
 
-        const userPrompt = message || "Please describe what you see in this image in detail.";
-        const systemContext = buildSystemPrompt();
+      const userPrompt = message || "Please describe what you see in this image in detail.";
+      const systemContext = buildSystemPrompt();
 
-        const cfRes = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              messages: [
-                { role: "system", content: systemContext },
-                {
-                  role: "user",
-                  content: [
-                    { type: "image_url", image_url: `data:${mimeType};base64,${base64Data}` },
-                    { type: "text", text: userPrompt }
-                  ]
-                }
-              ]
-            })
-          }
-        );
-
-        if (!cfRes.ok) {
-          const errData = await cfRes.json();
-          console.error("Vision API error:", errData);
-          reply = `I had trouble analyzing this image. Please try again.`;
-        } else {
-          const cfData = await cfRes.json();
-          reply = cfData.result?.response || "I couldn't analyze this image.";
-        }
-      } 
-      else if (file_data) {
-        console.log("[WIDGET] Processing file:", file_name);
-        
-        const mimeType = file_data.split(';')[0].split(':')[1];
-        
-        try {
-          fileContent = await extractTextFromFile(file_data, file_name, mimeType);
-          
-          const systemContext = buildSystemPrompt();
-          
-          const cfRes = await fetch(
-            `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
-            {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                messages: [
-                  { role: "system", content: systemContext },
-                  { 
-                    role: "user", 
-                    content: `Here is the content of the file "${file_name}":\n\n${fileContent}\n\nUser question: ${message || "Please summarize this document."}` 
-                  }
+      const cfRes = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            messages: [
+              { role: "system", content: systemContext },
+              {
+                role: "user",
+                content: [
+                  { type: "image_url", image_url: `data:${mimeType};base64,${base64Data}` },
+                  { type: "text", text: userPrompt }
                 ]
-              })
-            }
-          );
-
-          if (!cfRes.ok) {
-            const errData = await cfRes.json();
-            console.error("File processing error:", errData);
-            reply = `I had trouble processing this file.`;
-          } else {
-            const cfData = await cfRes.json();
-            reply = cfData.result?.response || "I couldn't extract any information from this file.";
-          }
-        } catch (fileErr) {
-          console.error("File extraction error:", fileErr);
-          reply = `Sorry, I couldn't process this file.`;
+              }
+            ]
+          })
         }
-      } 
-      else {
-        console.log("[WIDGET] Processing text message");
+      );
+
+      if (!cfRes.ok) {
+        const errData = await cfRes.json();
+        console.error("Vision API error:", errData);
+        reply = `I had trouble analyzing this image. Please try again.`;
+      } else {
+        const cfData = await cfRes.json();
+        reply = cfData.result?.response || "I couldn't analyze this image.";
+        
+        await logActivity(user.id, 'vision_analysis', 'Analyzed image via widget', 'vision');
+      }
+    } 
+    else if (file_data) {
+      console.log("[WIDGET] Processing file:", file_name);
+      
+      const mimeType = file_data.split(';')[0].split(':')[1];
+      
+      try {
+        fileContent = await extractTextFromFile(file_data, file_name, mimeType);
         
         const systemContext = buildSystemPrompt();
-        
-        // Check for booking intent
-        const bookingKeywords = /book|appointment|schedule|meeting|reserve|consultation|demo/i;
-        const hasBookingIntent = bookingKeywords.test(message);
         
         const cfRes = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
@@ -1807,7 +2297,10 @@ ${historyContext}`;
             body: JSON.stringify({
               messages: [
                 { role: "system", content: systemContext },
-                { role: "user", content: message }
+                { 
+                  role: "user", 
+                  content: `Here is the content of the file "${file_name}":\n\n${fileContent}\n\nUser question: ${message || "Please summarize this document."}` 
+                }
               ]
             })
           }
@@ -1815,151 +2308,245 @@ ${historyContext}`;
 
         if (!cfRes.ok) {
           const errData = await cfRes.json();
-          console.error("Text API error:", errData);
-          reply = `I'm having trouble connecting. Please try again.`;
+          console.error("File processing error:", errData);
+          reply = `I had trouble processing this file.`;
         } else {
           const cfData = await cfRes.json();
-          reply = cfData.result?.response || "I couldn't generate a response.";
-          
-          // FIXED: Only append booking link if not already included and intent detected
-          if (hasBookingIntent && smartSettings.booking_url && smartSettings.booking_active && !reply.includes(smartSettings.booking_url)) {
-            reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
-          }
+          reply = cfData.result?.response || "I couldn't extract any information from this file.";
+        }
+      } catch (fileErr) {
+        console.error("File extraction error:", fileErr);
+        reply = `Sorry, I couldn't process this file.`;
+      }
+    } 
+    else {
+      console.log("[WIDGET] Processing text message");
+      
+      const systemContext = buildSystemPrompt();
+      
+      const bookingKeywords = /book|appointment|schedule|meeting|reserve|consultation|demo/i;
+      const hasBookingIntent = bookingKeywords.test(message);
+      
+      const cfRes = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            messages: [
+              { role: "system", content: systemContext },
+              { role: "user", content: message }
+            ]
+          })
+        }
+      );
+
+      if (!cfRes.ok) {
+        const errData = await cfRes.json();
+        console.error("Text API error:", errData);
+        reply = `I'm having trouble connecting. Please try again.`;
+      } else {
+        const cfData = await cfRes.json();
+        reply = cfData.result?.response || "I couldn't generate a response.";
+        
+        if (hasBookingIntent && smartSettings?.booking_url && smartSettings?.booking_active && !reply.includes(smartSettings.booking_url)) {
+          reply += `\n\n📅 You can book here: ${smartSettings.booking_url}`;
         }
       }
-
-      // FIXED: Remove any repeated introductions from the response
-      if (has_introduced && message_count > 1) {
-        // Remove common introduction patterns
-        reply = reply
-          .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
-          .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
-          .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
-          .replace(/^Nice\s+to\s+meet\s+you[!,\s]+i'?m?\s+[^,.]*[,.\s]+/i, '')
-          .trim();
-      }
-
-      await saveChat(uuidv4(), user.id, activeSession, client_name || "Web Visitor", message || "[File/Image Sent]", reply);
-      await incrementMessagesUsed(user.id);
-
-      res.json({ 
-        success: true, 
-        reply, 
-        session_id: activeSession,
-        sentiment: 'neutral' // You can add sentiment analysis here
-      });
-    } catch (e) {
-      console.error("❌ Public Chat Error:", e.message);
-      res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
     }
-  });
+
+    if (has_introduced && message_count > 1) {
+      reply = reply
+        .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
+        .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
+        .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
+        .replace(/^Nice\s+to\s+meet\s+you[!,\s]+i'?m?\s+[^,.]*[,.\s]+/i, '')
+        .trim();
+    }
+
+    await saveChat(uuidv4(), user.id, activeSession, client_name || "Web Visitor", message || "[File/Image Sent]", reply);
+    await incrementMessagesUsed(user.id);
+
+    res.json({ 
+      success: true, 
+      reply, 
+      session_id: activeSession,
+      sentiment: 'neutral'
+    });
+  } catch (e) {
+    console.error("❌ Public Chat Error:", e.message);
+    res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
+  }
 });
 
-app.get("/api/chat", auth, (req, res) => {
-  db.all(
-    `SELECT session_id, client_name, MAX(created_at) as created_at, message, response 
-     FROM chats WHERE user_id = ? 
-     GROUP BY session_id 
-     ORDER BY created_at DESC`,
-    [req.user.id],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "Database error" });
-      res.json(rows || []);
-    }
-  );
+app.get("/api/chat", auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('chats')
+      .select('session_id, client_name, message, response, created_at')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    // Group by session_id
+    const sessions = {};
+    data.forEach(chat => {
+      if (!sessions[chat.session_id]) {
+        sessions[chat.session_id] = {
+          session_id: chat.session_id,
+          client_name: chat.client_name,
+          last_message: chat.created_at,
+          messages: []
+        };
+      }
+      sessions[chat.session_id].messages.push(chat);
+    });
+
+    const result = Object.values(sessions).map(s => ({
+      session_id: s.session_id,
+      client_name: s.client_name,
+      created_at: s.last_message,
+      message_count: s.messages.length
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error("Chat list error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // ================= LEADS =================
-app.post("/api/public/leads", bodyParser.json(), (req, res) => {
+app.post("/api/public/leads", bodyParser.json(), async (req, res) => {
   const { name, email, phone, widget_key } = req.body;
   
   if (!name || !email || !widget_key) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  db.get(`SELECT * FROM users WHERE widget_key = ?`, [widget_key], (err, user) => {
-    if (err || !user) return res.status(401).json({ error: "Invalid Widget Key" });
+  try {
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('widget_key', widget_key)
+      .single();
+
+    if (userError || !user) return res.status(401).json({ error: "Invalid Widget Key" });
 
     const limit = PLAN_LIMITS[user.plan]?.leads || 10;
     if (user.leads_used >= limit) {
       return res.status(403).json({ error: "Leads limit reached for this business" });
     }
 
-    db.get(`SELECT id FROM leads WHERE user_id = ? AND email = ?`, [user.id, email.toLowerCase().trim()], (err, existingLead) => {
-      if (err) {
-        console.error("❌ Lead check error:", err);
-        return res.status(500).json({ error: "Database error" });
-      }
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('email', email.toLowerCase().trim())
+      .single();
 
-      if (existingLead) {
-        console.log(`[LEADS] Duplicate lead prevented for email: ${email}`);
-        const io = req.app.get("socketio");
-        io.to(user.id).emit("new_lead", { name, email, duplicate: true });
-        return res.json({ success: true, message: "Welcome back!", duplicate: true });
-      }
+    if (existingLead) {
+      console.log(`[LEADS] Duplicate lead prevented for email: ${email}`);
+      io.to(`user:${user.id}`).emit("new_lead", { name, email, duplicate: true });
+      return res.json({ success: true, message: "Welcome back!", duplicate: true });
+    }
 
-      saveLead(user.id, name, email, phone || "N/A")
-        .then(() => {
-          incrementLeadsUsed(user.id);
-          const io = req.app.get("socketio");
-          io.to(user.id).emit("new_lead", { name, email });
-          res.json({ success: true, message: "Lead captured!" });
-        })
-        .catch(err => {
-          console.error("❌ Lead Save Error:", err);
-          res.status(500).json({ error: "Database save failed" });
-        });
-    });
-  });
+    await saveLead(user.id, name, email, phone || "N/A");
+    await incrementLeadsUsed(user.id);
+    
+    io.to(`user:${user.id}`).emit("new_lead", { name, email });
+    await logActivity(user.id, 'lead_captured', `New lead: ${name}`, 'lead');
+      
+    res.json({ success: true, message: "Lead captured!" });
+  } catch (err) {
+    console.error("❌ Lead Save Error:", err);
+    res.status(500).json({ error: "Database save failed" });
+  }
 });
 
-app.delete("/api/leads/:id", auth, (req, res) => {
+app.delete("/api/leads/:id", auth, async (req, res) => {
   const leadId = req.params.id;
-  db.get(`SELECT * FROM leads WHERE id = ? AND user_id = ?`, [leadId, req.user.id], (err, lead) => {
-    if (err || !lead) return res.status(404).json({ error: "Lead not found" });
+  
+  try {
+    const { data: lead, error: findError } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', leadId)
+      .eq('user_id', req.user.id)
+      .single();
 
-    db.run(`DELETE FROM leads WHERE id = ?`, [leadId], err => {
-      if (err) return res.status(500).json({ error: "Failed to delete" });
-      db.run(`UPDATE users SET leads_used = leads_used - 1 WHERE id = ? AND leads_used > 0`, [req.user.id]);
-      res.json({ success: true, message: "Lead deleted" });
-    });
-  });
+    if (findError || !lead) return res.status(404).json({ error: "Lead not found" });
+
+    const { error: deleteError } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', leadId);
+
+    if (deleteError) throw deleteError;
+
+    await supabase
+      .from('users')
+      .update({ leads_used: supabase.raw('GREATEST(leads_used - 1, 0)') })
+      .eq('id', req.user.id);
+    
+    await logActivity(req.user.id, 'lead_deleted', `Deleted lead: ${lead.name}`, 'lead');
+      
+    res.json({ success: true, message: "Lead deleted" });
+  } catch (err) {
+    console.error("Lead delete error:", err);
+    res.status(500).json({ error: "Failed to delete lead" });
+  }
 });
 
 // ================= SUPPORT TICKETS =================
-app.post("/api/support/ticket", auth, bodyParser.json(), (req, res) => {
+app.post("/api/support/ticket", auth, bodyParser.json(), async (req, res) => {
   const { subject, message, priority } = req.body;
   if (!message) return res.status(400).json({ error: "Message is required" });
 
   const ticketId = uuidv4();
-  db.run(
-    `INSERT INTO support_tickets (id, user_id, subject, message, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [ticketId, req.user.id, subject || "General Support", message, priority || "medium", "open", new Date().toISOString()],
-    (err) => {
-      if (err) return res.status(500).json({ error: "Failed to submit ticket" });
-      res.json({ success: true, message: "Support ticket created successfully." });
-    }
-  );
+  
+  try {
+    const { error } = await supabase
+      .from('support_tickets')
+      .insert({
+        id: ticketId,
+        user_id: req.user.id,
+        subject: subject || "General Support",
+        message,
+        priority: priority || "medium",
+        status: "open",
+        created_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
+    
+    await logActivity(req.user.id, 'ticket_created', `Support ticket: ${subject || 'General'}`, 'support');
+      
+    res.json({ success: true, message: "Support ticket created successfully." });
+  } catch (err) {
+    console.error("Ticket error:", err);
+    res.status(500).json({ error: "Failed to submit ticket" });
+  }
 });
 
-app.get("/api/support/my-tickets", auth, (req, res) => {
+app.get("/api/support/my-tickets", auth, async (req, res) => {
   try {
-    const { data: rows, error: err } = await supabase
+    const { data, error } = await supabase
       .from('support_tickets')
       .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err)  res.status(500).json({ error: "Database error"
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data || []);
   } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-    res.json(rows || []);
-  });
+    console.error("Tickets error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // ================= GUIDANCE CONTENT =================
@@ -1983,35 +2570,71 @@ app.get("/api/content/legal", (req, res) => {
 });
 
 // ================= ADMIN ROUTES =================
-app.get("/api/admin/users", auth, isAdminMiddleware, (req, res) => {
-  db.all(`SELECT id, email, business_name, plan, messages_used, leads_used, is_verified FROM users ORDER BY created_at DESC`, (_, rows) => {
-    res.json(rows || []);
-  });
+app.get("/api/admin/users", auth, isAdminMiddleware, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, business_name, plan, messages_used, leads_used, is_verified')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error("Admin users error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
-app.put("/api/admin/users/:id", auth, isAdminMiddleware, bodyParser.json(), (req, res) => {
+app.put("/api/admin/users/:id", auth, isAdminMiddleware, bodyParser.json(), async (req, res) => {
   const { plan, is_verified, messages_used, leads_used } = req.body;
-  db.run(
-    `UPDATE users SET plan = ?, is_verified = ?, messages_used = ?, leads_used = ? WHERE id = ?`,
-    [plan, is_verified, messages_used, leads_used, req.params.id],
-    function(err) {
-      if (err) return res.status(500).json({ error: "Update failed" });
-      res.json({ success: true });
-    }
-  );
+  
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ plan, is_verified, messages_used, leads_used })
+      .eq('id', req.params.id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Admin update error:", err);
+    res.status(500).json({ error: "Update failed" });
+  }
 });
 
-app.delete("/api/admin/users/:id", auth, isAdminMiddleware, (req, res) => {
+app.delete("/api/admin/users/:id", auth, isAdminMiddleware, async (req, res) => {
   const userId = req.params.id;
-  // Removed SQLite serialization
-
-  });
+  
+  try {
+    await supabase.from('activity_log').delete().eq('user_id', userId);
+    await supabase.from('automations').delete().eq('user_id', userId);
+    await supabase.from('chats').delete().eq('user_id', userId);
+    await supabase.from('connected_accounts').delete().eq('user_id', userId);
+    await supabase.from('governance_settings').delete().eq('user_id', userId);
+    await supabase.from('leads').delete().eq('user_id', userId);
+    await supabase.from('users').delete().eq('id', userId);
+    
+    res.json({ success: true, message: "User and all data deleted" });
+  } catch (err) {
+    console.error("Admin delete error:", err);
+    res.status(500).json({ error: "Delete failed" });
+  }
 });
 
-app.get("/api/admin/activities", auth, isAdminMiddleware, (req, res) => {
-  db.all(`SELECT * FROM chats ORDER BY created_at DESC LIMIT 100`, (_, rows) => {
-    res.json(rows || []);
-  });
+app.get("/api/admin/activities", auth, isAdminMiddleware, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('activity_log')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error("Admin activities error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // ================= SMART HUB SAVE ENDPOINT =================
@@ -2021,16 +2644,7 @@ app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
     const userId = req.user.id;
     
     console.log(`[SMART-HUB] Saving ${toolType} for user ${userId}:`, data);
-    
-    // Ensure smart_hub_settings exists
-    await new Promise((resolve, reject) => {
-      db.run(`INSERT OR IGNORE INTO smart_hub_settings (user_id) VALUES (?)`, [userId], (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
-    // Handle business_type separately
     if (toolType === 'business_type') {
       const businessType = data.businessType || data.business_type || '';
       const businessDescription = data.businessDescription || data.business_description || '';
@@ -2039,55 +2653,79 @@ app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
       return res.json({ success: true });
     }
     
-    // Handle other tool types
-    let query = "";
-    let params = [];
+    // Handle other tool types using Supabase
+    let updateData = {};
 
     switch(toolType) {
       case 'brain':
-        query = `UPDATE smart_hub_settings SET ai_instructions = ?, ai_temp = ?, ai_lang = ?, brain_active = 1 WHERE user_id = ?`;
-        params = [data.instructions, data.temp, data.lang, userId];
+        updateData = {
+          ai_instructions: data.instructions,
+          ai_temp: data.temp,
+          ai_lang: data.lang,
+          brain_active: 1
+        };
         break;
       case 'booking':
-        query = `UPDATE smart_hub_settings SET booking_url = ?, booking_active = 1 WHERE user_id = ?`;
-        params = [data.url, userId];
+        updateData = {
+          booking_url: data.url,
+          booking_active: 1
+        };
         break;
       case 'sentiment':
-        query = `UPDATE smart_hub_settings SET sentiment_enabled = ?, alert_email = ?, sentiment_active = 1 WHERE user_id = ?`;
-        params = [data.enabled ? 1 : 0, data.email, userId];
+        updateData = {
+          sentiment_enabled: data.enabled ? 1 : 0,
+          alert_email: data.email,
+          sentiment_active: 1
+        };
         break;
       case 'handover':
-        query = `UPDATE smart_hub_settings SET handover_trigger = ?, handover_active = 1 WHERE user_id = ?`;
-        params = [data.trigger, userId];
+        updateData = {
+          handover_trigger: data.trigger,
+          handover_active: 1
+        };
         break;
       case 'webhook':
-        query = `UPDATE smart_hub_settings SET webhook_url = ?, webhook_active = 1 WHERE user_id = ?`;
-        params = [data.url, userId];
+        updateData = {
+          webhook_url: data.url,
+          webhook_active: 1
+        };
         break;
       case 'apollo':
       case 'enrichment':
-        query = `UPDATE smart_hub_settings SET apollo_active = ?, apollo_key = ?, auto_sync = ? WHERE user_id = ?`;
-        params = [data.apolloKey ? 1 : 0, data.apolloKey || null, data.autoSync ? 1 : 0, userId];
+        updateData = {
+          apollo_active: data.apolloKey ? 1 : 0,
+          apollo_key: data.apolloKey || null,
+          auto_sync: data.autoSync ? 1 : 0
+        };
         break;
       case 'vision':
-        query = `UPDATE smart_hub_settings SET vision_active = ?, vision_sensitivity = ?, vision_area = ? WHERE user_id = ?`;
-        params = [data.enabled ? 1 : 0, data.sensitivity || 'high', data.area || 'all', userId];
+        updateData = {
+          vision_active: data.enabled ? 1 : 0,
+          vision_sensitivity: data.sensitivity || 'high',
+          vision_area: data.area || 'all'
+        };
         break;
       case 'followup':
-        query = `UPDATE smart_hub_settings SET followup_active = ? WHERE user_id = ?`;
-        params = [data.enabled ? 1 : 0, userId];
+        updateData = {
+          followup_active: data.enabled ? 1 : 0
+        };
         break;
       default:
         return res.status(400).json({ error: "Invalid tool type" });
     }
 
-    db.run(query, params, function(err) {
-      if (err) {
-        console.error("Smart hub save error:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ success: true });
-    });
+    // Ensure record exists
+    await supabase
+      .from('smart_hub_settings')
+      .upsert({ user_id: userId }, { onConflict: 'user_id' });
+
+    const { error } = await supabase
+      .from('smart_hub_settings')
+      .update(updateData)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    res.json({ success: true });
 
   } catch (err) {
     console.error("Smart hub save error:", err);
@@ -2105,7 +2743,6 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
       return res.status(400).json({ error: "Tool type required" });
     }
 
-    // Map frontend tool names to database 'active' columns
     const activeColumnMap = {
       'brain': 'brain_active',
       'booking': 'booking_active',
@@ -2129,16 +2766,12 @@ app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
       return res.json({ success: true, message: "Business type remains active" });
     }
 
-    await new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE smart_hub_settings SET ${activeColumn} = 0 WHERE user_id = ?`,
-        [userId],
-        function(err) {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    const { error } = await supabase
+      .from('smart_hub_settings')
+      .update({ [activeColumn]: 0 })
+      .eq('user_id', userId);
+
+    if (error) throw error;
 
     console.log(`[SMART-HUB] Tool deactivated: ${toolType} for user ${userId}`);
     res.json({ success: true, message: "Tool deactivated successfully" });
@@ -2154,34 +2787,19 @@ app.get("/api/smart-hub/settings", auth, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    const settings = await new Promise((resolve, reject) => {
-      try {
-    const { data: row, error: err } = await supabase
+    const { data: settings } = await supabase
       .from('smart_hub_settings')
       .select('*')
       .eq('user_id', userId)
       .single();
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-        else resolve(row || {
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-      });
-    });
 
     const identity = await getBusinessIdentity(userId).catch(() => ({}));
     const user = await getUserById(userId);
 
     res.json({
-      ...settings,
+      ...(settings || {}),
       ...identity,
-      booking_url: settings.booking_url || user?.booking_url || ''
+      booking_url: settings?.booking_url || user?.booking_url || ''
     });
 
   } catch (err) {
@@ -2226,6 +2844,7 @@ app.post("/api/subscription/create-checkout-session", auth, bodyParser.json(), a
 
     res.json({ url: data.data.authorization_url });
   } catch (err) {
+    console.error("Paystack error:", err);
     res.status(500).json({ error: "Paystack server error" });
   }
 });
@@ -2244,15 +2863,29 @@ app.post("/api/subscription/webhook", bodyParser.raw({ type: "application/json" 
   if (event.event === "charge.success") {
     const { userId, plan } = event.data.metadata;
     
-    db.run(
-      `UPDATE users SET plan = ?, plan_expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), messages_used = 0, leads_used = 0 WHERE id = ?`, 
-      [plan, userId]
-    );
-
-    db.run(
-      `INSERT INTO payments (id, user_id, plan, amount, reference, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [uuidv4(), userId, plan, event.data.amount / 100, event.data.reference, "success", new Date().toISOString()]
-    );
+    supabase
+      .from('users')
+      .update({ 
+        plan, 
+        plan_expires: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+        messages_used: 0,
+        leads_used: 0 
+      })
+      .eq('id', userId)
+      .then(() => {
+        supabase
+          .from('payments')
+          .insert({
+            id: uuidv4(),
+            user_id: userId,
+            plan,
+            amount: event.data.amount / 100,
+            reference: event.data.reference,
+            status: "success",
+            created_at: new Date().toISOString()
+          })
+          .then(() => {});
+      });
   }
   res.sendStatus(200);
 });
@@ -2292,7 +2925,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
 
     if (resend) {
       await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+        from: "AI Smart Hub <noreply@aismarthub.website>",
         to: ['aismarthub68@gmail.com'],
         subject: `[Contact Form] ${subject} - ${name}`,
         html: emailHtml,
@@ -2300,7 +2933,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
 
       if (copyMe) {
         await resend.emails.send({
-          from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
+          from: "AI Smart Hub <noreply@aismarthub.website>",
           to: [email],
           subject: `Copy: ${subject}`,
           html: `
@@ -2349,26 +2982,14 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
     const user = await getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const leads = await new Promise((resolve, reject) => {
-      try {
-    const { data: rows, error: err } = await supabase
+    const { data: leads, error: leadsError } = await supabase
       .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false});
-    
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (err) reject(err);
-        else resolve(rows || []);
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  });
-    });
+      .select('name, email')
+      .eq('user_id', userId);
 
-    if (leads.length === 0) {
+    if (leadsError) throw leadsError;
+
+    if (!leads || leads.length === 0) {
       return res.status(400).json({ error: "No leads found to send emails to" });
     }
 
@@ -2425,6 +3046,7 @@ app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
 
     const broadcastId = uuidv4();
     await saveBroadcast(broadcastId, userId, subject, recipients.length, results.sent, results.failed);
+    await logActivity(userId, 'broadcast_sent', `Broadcast sent to ${results.sent} leads`, 'email');
 
     const method = resend ? 'Resend' : 'Nodemailer';
     res.json({ 
@@ -2542,5 +3164,56 @@ app.get("/api/test", (req, res) => {
   });
 });
 
+// ================= GET USER PROFILE =================
+app.get("/api/user/profile", auth, (req, res) => {
+  getUserById(req.user.id).then(user => {
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    res.json({
+      id: user.id,
+      name: user.business_name || user.name || "User",
+      email: user.email,
+      business_name: user.business_name,
+      plan: user.plan,
+      is_verified: user.is_verified
+    });
+  }).catch(err => {
+    console.error("Profile error:", err);
+    res.status(500).json({ error: "Server error" });
+  });
+});
+
 // ================= START SERVER =================
-server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📋 Smart Hub API: /api/smart-hub/*`);
+  console.log(`📸 Image upload endpoint: /api/smart-hub/upload-proof`);
+  console.log(`📊 Tools metrics endpoint: /api/smart-hub/tools-metrics`);
+  console.log(`📋 Workflow API Endpoints:`);
+  console.log(`   - GET /api/workflows - List workflows`);
+  console.log(`   - POST /api/workflows - Create workflow`);
+  console.log(`   - POST /api/workflows/:id/execute - Execute workflow (rate limited)`);
+  console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
+  console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
+  console.log(`📋 Webhook Listener:`);
+  console.log(`   - POST /api/webhooks/register - Register webhook`);
+  console.log(`   - GET /api/webhooks - List webhooks`);
+  console.log(`   - DELETE /api/webhooks/:path - Delete webhook`);
+  console.log(`📋 Workflow Templates:`);
+  console.log(`   - GET /api/workflow-templates - List templates`);
+  console.log(`   - POST /api/workflow-templates/:templateId/apply - Apply template`);
+  console.log(`📋 Enterprise Features:`);
+  console.log(`   - GET /api/queue/stats - Queue statistics`);
+  console.log(`   - GET /api/workflows/:id/versions - Workflow versions`);
+  console.log(`   - POST /api/workflows/:id/versions/save - Save version`);
+  console.log(`   - POST /api/workflows/:id/rollback/:version - Rollback`);
+  console.log(`   - POST /api/workflows/:id/debug - Start debug session`);
+  console.log(`   - POST /api/workflows/:id/error-handler - Set error handler`);
+  console.log(`📋 Platform Health:`);
+  console.log(`   - GET /api/platform/health - Platform health status`);
+  console.log(`   - GET /api/platform/queue - Queue status`);
+  console.log(`   - GET /api/platform/logs - System logs (admin only)`);
+  console.log(`   - GET /api/platform/metrics - System metrics`);
+  console.log(`⏰ Workflow Scheduler: Initialized with cron jobs`);
+  console.log(`🔄 Error handlers loaded and ready`);
+});

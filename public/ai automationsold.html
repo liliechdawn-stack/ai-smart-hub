@@ -208,480 +208,7 @@
         }
 
         /* ========================================
-           TAB BAR STYLES
-           ========================================
-        */
-        .tab-bar {
-            background: white;
-            border-bottom: 1px solid var(--medium-gray);
-            padding: 0 32px;
-            display: flex;
-            gap: 8px;
-            position: relative;
-            z-index: 100;
-        }
-        
-        .tab {
-            padding: 16px 24px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s ease;
-        }
-        
-        .tab:hover { color: var(--primary-dark); }
-        .tab.active {
-            color: var(--primary-dark);
-            border-bottom-color: var(--primary);
-        }
-        
-        /* Automations Tab Content */
-        .automations-tab {
-            display: block;
-        }
-        
-        .automations-tab.hidden { display: none; }
-        
-        /* Canvas Workspace */
-        .canvas-workspace {
-            display: none;
-            height: calc(100vh - 140px);
-            overflow: hidden;
-            flex-direction: column;
-            background: #f0f2f5;
-            position: relative;
-        }
-        
-        .canvas-workspace.active { display: flex; }
-        
-        /* Canvas Toolbar */
-        .canvas-toolbar {
-            padding: 8px 16px;
-            background: white;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-            z-index: 10;
-        }
-        
-        .canvas-btn {
-            padding: 6px 12px;
-            background: var(--light-gray);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: var(--transition);
-        }
-        
-        .canvas-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-        .canvas-btn.primary { background: var(--primary-gradient); color: white; border: none; }
-        
-        /* Canvas Layout */
-        .canvas-layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        /* Node Library Panel */
-        .node-library-panel {
-            width: 280px;
-            background: white;
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            z-index: 5;
-        }
-        
-        .node-search {
-            padding: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .node-search input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 0.8rem;
-        }
-        
-        .node-category {
-            margin-bottom: 16px;
-        }
-        
-        .node-category-header {
-            padding: 10px 12px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--light-gray);
-        }
-        
-        .node-category-header i { transition: transform 0.2s; }
-        .node-category-header.collapsed i { transform: rotate(-90deg); }
-        
-        .node-category-items {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            padding: 8px;
-        }
-        
-        .node-category-items.collapsed { display: none; }
-        
-        .node-item {
-            padding: 8px 12px;
-            background: var(--light-gray);
-            border-radius: 8px;
-            cursor: grab;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.8rem;
-            transition: var(--transition);
-            border: 1px solid transparent;
-        }
-        
-        .node-item:hover { background: rgba(212,175,55,0.1); border-color: var(--primary); transform: translateX(4px); }
-        .node-item i { width: 20px; }
-        .node-item.dragging { opacity: 0.5; }
-        
-        /* Canvas Area */
-        .canvas-area {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: #f0f2f5;
-            background-image: radial-gradient(circle, #c8c8d0 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
-        
-        #canvasInner {
-            position: absolute;
-            transform-origin: 0 0;
-            width: 5000px;
-            height: 5000px;
-        }
-        
-        .node-card {
-            position: absolute;
-            width: 220px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: move;
-            transition: box-shadow 0.15s;
-            z-index: 10;
-        }
-        
-        .node-card.selected { border: 2px solid var(--primary); box-shadow: var(--shadow-gold); }
-        .node-card.running { 
-            border-left: 3px solid var(--warning);
-            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
-            animation: pulseGlow 1s infinite;
-        }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.2); }
-            50% { box-shadow: 0 0 0 8px rgba(212,175,55,0.1); }
-        }
-        .node-card.success { border-left: 3px solid var(--success); background: #f0fdf4; }
-        .node-card.error { border-left: 3px solid var(--danger); background: #fef2f2; }
-        .node-card.disabled { opacity: 0.5; filter: grayscale(0.3); }
-        
-        .node-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .node-icon-box {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
-        }
-        
-        .node-name { flex: 1; font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .node-subtitle { padding: 6px 12px 10px; font-size: 0.65rem; color: #888; }
-        
-        /* Running node spinner */
-        .running-spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid var(--warning);
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-left: 8px;
-        }
-        
-        .node-port {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: white;
-            border: 2px solid #b0b8c4;
-            border-radius: 50%;
-            cursor: crosshair;
-            transition: all 0.2s;
-            z-index: 15;
-        }
-        
-        .node-port:hover { transform: scale(1.3); background: var(--primary); border-color: var(--primary); }
-        .node-port.connected { background: var(--success); border-color: var(--success); }
-        
-        .input-port { left: -6px; top: 50%; transform: translateY(-50%); }
-        .output-port { right: -6px; top: 50%; transform: translateY(-50%); }
-        
-        /* Connection SVG Layer */
-        .connection-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 20;
-        }
-        
-        .connection-layer svg { width: 100%; height: 100%; }
-        
-        .connection-path {
-            fill: none;
-            stroke: #cbd5e1;
-            stroke-width: 2;
-            pointer-events: stroke;
-            cursor: pointer;
-            transition: stroke 0.3s, stroke-width 0.3s;
-        }
-        
-        .connection-path:hover { stroke: var(--primary); stroke-width: 3; }
-        .connection-path.flowing { 
-            stroke: var(--primary); 
-            stroke-dasharray: 8 6; 
-            animation: flowMove 0.5s linear infinite;
-        }
-        
-        @keyframes flowMove { to { stroke-dashoffset: -28; } }
-        
-        /* Animated dot along connection path */
-        .flow-dot {
-            fill: var(--primary);
-            filter: drop-shadow(0 0 2px var(--primary));
-        }
-        
-        .delete-conn-btn {
-            fill: var(--danger);
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s;
-            pointer-events: auto;
-        }
-        
-        .connection-path:hover + .delete-conn-btn,
-        .delete-conn-btn:hover { opacity: 1; }
-        
-        /* Right Inspector Panel */
-        .inspector-panel {
-            width: 320px;
-            background: white;
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            position: absolute;
-            right: 0;
-            top: 0;
-            height: 100%;
-            z-index: 30;
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .inspector-panel.open { transform: translateX(0); }
-        
-        .inspector-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .inspector-header h3 { font-size: 1rem; font-weight: 600; }
-        .close-inspector { cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-        .close-inspector:hover { background: var(--light-gray); }
-        
-        .inspector-content { padding: 16px; overflow-y: auto; flex: 1; }
-        .inspector-field { margin-bottom: 20px; }
-        .inspector-field label {
-            display: block;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-        .inspector-field input, .inspector-field select, .inspector-field textarea {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-family: inherit;
-        }
-        .inspector-field textarea { min-height: 80px; resize: vertical; }
-        
-        /* Execution Panel - FIXED POSITION (does NOT cover canvas) */
-        .execution-panel {
-            position: relative;
-            bottom: auto;
-            left: auto;
-            right: auto;
-            background: #1e293b;
-            color: #94a3b8;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            z-index: 25;
-            font-family: monospace;
-            border-top: 1px solid #334155;
-        }
-        
-        .execution-panel.open { 
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        
-        .execution-header {
-            padding: 8px 16px;
-            background: #0f172a;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            position: sticky;
-            top: 0;
-            z-index: 26;
-        }
-        
-        .execution-content {
-            padding: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.7rem;
-        }
-        
-        .execution-item {
-            display: flex;
-            gap: 12px;
-            padding: 6px 0;
-            border-bottom: 1px solid #334155;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.7rem;
-        }
-        
-        .execution-item .status-icon { width: 24px; text-align: center; }
-        .execution-item .node-name { font-weight: 600; color: #e2e8f0; width: 140px; }
-        .execution-item .duration { color: #475569; width: 60px; text-align: right; }
-        .execution-item .output-summary { flex: 1; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        /* Mini-map */
-        .minimap {
-            position: absolute;
-            bottom: 60px;
-            right: 16px;
-            width: 150px;
-            height: 100px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 8px;
-            border: 2px solid var(--primary);
-            z-index: 15;
-            cursor: pointer;
-            overflow: hidden;
-        }
-        
-        .minimap canvas { width: 100%; height: 100%; }
-        
-        .status-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 6px 16px;
-            background: white;
-            border-top: 1px solid var(--border-color);
-            font-size: 0.7rem;
-            display: flex;
-            justify-content: space-between;
-            z-index: 10;
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 10px 20px;
-            background: var(--dark);
-            color: white;
-            border-radius: 8px;
-            z-index: 3000;
-            animation: slideIn 0.2s ease;
-        }
-        
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        
-        /* Empty canvas state */
-        .empty-canvas-state {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 5;
-            pointer-events: none;
-        }
-        
-        .empty-canvas-state i { font-size: 64px; color: var(--primary); opacity: 0.4; margin-bottom: 20px; }
-        .empty-canvas-state h3 { color: var(--text-secondary); margin-bottom: 8px; }
-        .empty-canvas-state p { color: #94a3b8; }
-        
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .node-library-panel { width: 60px; }
-            .node-library-panel .node-category-header span,
-            .node-library-panel .node-item span { display: none; }
-            .node-library-panel .node-item { justify-content: center; }
-            .inspector-panel { width: 100%; }
-        }
-
-        /* ========================================
-           EXISTING STYLES CONTINUE BELOW - FULLY PRESERVED
+           PREMIUM HERO SECTION
            ========================================
         */
         .hero { 
@@ -723,6 +250,10 @@
             line-height: 1.8;
         }
 
+        /* ========================================
+           PREMIUM STATS GRID
+           ========================================
+        */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -775,6 +306,160 @@
             color: var(--text-secondary);
             font-size: 0.95rem;
             font-weight: 500;
+        }
+
+        /* ========================================
+           AI RECOMMENDED AUTOMATIONS SECTION (NEW)
+           ========================================
+        */
+        .recommended-section {
+            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+            border: 2px solid var(--primary);
+            border-radius: 24px;
+            padding: 28px;
+            margin: 40px 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommended-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .recommended-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .recommended-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #1e293b 0%, #b8962e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .ai-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-badge i {
+            font-size: 0.8rem;
+        }
+
+        .recommended-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+        }
+
+        .recommended-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid rgba(212,175,55,0.3);
+            transition: var(--transition);
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .recommended-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg), var(--shadow-gold);
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .recommended-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(212,175,55,0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .recommended-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .recommended-reason {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--light-gray);
+            border-radius: 12px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .recommended-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        .btn-ai-deploy {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ai-deploy:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
         }
 
         .section-header {
@@ -935,6 +620,11 @@
             box-shadow: var(--shadow-lg), var(--shadow-gold);
         }
 
+        .automation-card.ai-recommended {
+            border: 2px solid var(--primary);
+            background: linear-gradient(135deg, white 0%, #fff9e6 100%);
+        }
+
         .automation-header {
             display: flex;
             justify-content: space-between;
@@ -977,6 +667,11 @@
         .status-paused {
             background: var(--warning-light);
             color: var(--warning);
+        }
+
+        .status-draft {
+            background: var(--medium-gray);
+            color: var(--text-secondary);
         }
 
         .automation-stats {
@@ -1389,6 +1084,10 @@
                 grid-template-columns: 1fr;
             }
             
+            .recommended-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .fab {
                 bottom: 20px;
                 right: 20px;
@@ -1429,208 +1128,252 @@
     </div>
 </div>
 
-<div class="hero" id="heroSection">
+<div class="hero">
     <h1>AI Automations Studio</h1>
     <p>Build powerful no-code AI workflows that automate your entire business 24/7</p>
 </div>
 
-<!-- Tab Bar -->
-<div class="tab-bar">
-    <div class="tab active" data-tab="automations" onclick="switchTab('automations')">📊 Automations</div>
-    <div class="tab" data-tab="canvas" onclick="switchTab('canvas')">🔗 Workflow Builder</div>
+<!-- Premium Stats -->
+<div class="stats-grid" id="main-content">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+        <div class="stat-content">
+            <h3 id="active-count">0</h3>
+            <p>Active Automations</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-content">
+            <h3 id="hours-saved">0</h3>
+            <p>Hours Saved</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-content">
+            <h3 id="leads-generated">0</h3>
+            <p>Leads Generated</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-content">
+            <h3 id="success-rate">98%</h3>
+            <p>Success Rate</p>
+        </div>
+    </div>
 </div>
 
-<!-- AUTOMATIONS TAB CONTENT (AI Recommended Section REMOVED) -->
-<div id="automationsTab" class="automations-tab">
-    <!-- Premium Stats -->
-    <div class="stats-grid" id="main-content">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-bolt"></i></div>
-            <div class="stat-content">
-                <h3 id="active-count">0</h3>
-                <p>Active Automations</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-clock"></i></div>
-            <div class="stat-content">
-                <h3 id="hours-saved">0</h3>
-                <p>Hours Saved</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
-            <div class="stat-content">
-                <h3 id="leads-generated">0</h3>
-                <p>Leads Generated</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-            <div class="stat-content">
-                <h3 id="success-rate">98%</h3>
-                <p>Success Rate</p>
-            </div>
-        </div>
+<!-- ========== NEW: AI RECOMMENDED AUTOMATIONS SECTION ========== -->
+<div id="recommendedAutomationsSection" class="recommended-section" style="display: none;">
+    <div class="recommended-header">
+        <h2>
+            <i class="fas fa-magic"></i>
+            AI-Powered Automations
+            <span class="ai-badge"><i class="fas fa-robot"></i> Deployed by AI</span>
+        </h2>
+        <span class="live-badge pulse"><i class="fas fa-circle"></i> Live from Insights</span>
     </div>
+    <div id="recommendedAutomationsGrid" class="recommended-grid">
+        <!-- AI recommended automations will be loaded here -->
+    </div>
+</div>
 
-    <!-- Analytics Dashboard -->
-    <div class="analytics-dashboard">
-        <div class="chart-card">
-            <div class="chart-header">
-                <div class="chart-title">Automation Performance</div>
-                <div class="chart-legend">
-                    <div class="legend-item"><span class="legend-color" style="background: var(--primary);"></span> Success</div>
-                    <div class="legend-item"><span class="legend-color" style="background: var(--danger);"></span> Failed</div>
-                </div>
+<!-- Analytics Dashboard -->
+<div class="analytics-dashboard">
+    <div class="chart-card">
+        <div class="chart-header">
+            <div class="chart-title">Automation Performance</div>
+            <div class="chart-legend">
+                <div class="legend-item"><span class="legend-color" style="background: var(--primary);"></span> Success</div>
+                <div class="legend-item"><span class="legend-color" style="background: var(--danger);"></span> Failed</div>
             </div>
-            <canvas id="performanceChart" height="200"></canvas>
         </div>
-        <div class="chart-card">
-            <div class="chart-header">
-                <div class="chart-title">Trigger Types</div>
-            </div>
-            <canvas id="triggerChart" height="200"></canvas>
-        </div>
-    </div>
-
-    <!-- Templates Section -->
-    <div class="section-header">
-        <h2><i class="fas fa-bolt"></i> Quick Start Templates</h2>
-        <button class="btn-secondary" onclick="showTemplateModal()"><i class="fas fa-eye"></i> Browse All</button>
-    </div>
-    <div class="template-grid" id="template-grid"></div>
-
-    <!-- Your Automations -->
-    <div class="section-header">
-        <h2><i class="fas fa-cog"></i> Your Automations</h2>
-        <div>
-            <button class="btn-secondary" onclick="filterAutomations('all')" style="margin-right:10px;">All</button>
-            <button class="btn-secondary" onclick="filterAutomations('live')" style="margin-right:10px;">Live</button>
-            <button class="btn-secondary" onclick="filterAutomations('paused')">Paused</button>
-        </div>
-    </div>
-    <div class="automation-grid" id="automation-grid"></div>
-
-    <!-- Activity Timeline -->
-    <div class="section-header">
-        <h2><i class="fas fa-history"></i> Recent Activity</h2>
+        <canvas id="performanceChart" height="200"></canvas>
     </div>
     <div class="chart-card">
-        <div class="timeline" id="activity-timeline"></div>
-    </div>
-
-    <!-- Floating Action Button -->
-    <button onclick="showCreateModal()" class="fab">
-        <i class="fas fa-plus"></i> New Automation
-    </button>
-
-    <footer>
-        <p>© 2026 AI Smart Hub • <span style="color: var(--primary);">Enterprise AI Automation Platform</span></p>
-    </footer>
-</div>
-
-<!-- CANVAS TAB CONTENT (New Workflow Builder) -->
-<div id="canvasTab" class="canvas-workspace">
-    <div class="canvas-toolbar">
-        <button class="canvas-btn primary" onclick="runWorkflow()"><i class="fas fa-play"></i> Run</button>
-        <button class="canvas-btn" onclick="stopWorkflow()" id="stopWorkflowBtn" style="display:none;"><i class="fas fa-stop"></i> Stop</button>
-        <div style="width:1px; height:24px; background:#e9ecef; margin:0 4px;"></div>
-        <button class="canvas-btn" onclick="saveWorkflow()"><i class="fas fa-save"></i> Save</button>
-        <button class="canvas-btn" onclick="showWorkflowsDropdown()"><i class="fas fa-folder-open"></i> My Workflows ▼</button>
-        <button class="canvas-btn" onclick="exportWorkflow()"><i class="fas fa-download"></i> Export</button>
-        <button class="canvas-btn" onclick="document.getElementById('importWorkflowFile').click()"><i class="fas fa-upload"></i> Import</button>
-        <input type="file" id="importWorkflowFile" style="display:none" accept=".json" onchange="importWorkflow(this)">
-        <div style="width:1px; height:24px; background:#e9ecef; margin:0 4px;"></div>
-        <button class="canvas-btn" onclick="showTemplatesDropdown()"><i class="fas fa-copy"></i> Templates ▼</button>
-        <div style="width:1px; height:24px; background:#e9ecef; margin:0 4px;"></div>
-        <button class="canvas-btn" onclick="zoomOut()"><i class="fas fa-search-minus"></i></button>
-        <span id="zoomPercent" style="font-size:0.7rem; min-width:45px; text-align:center;">100%</span>
-        <button class="canvas-btn" onclick="zoomIn()"><i class="fas fa-search-plus"></i></button>
-        <button class="canvas-btn" onclick="fitToScreen()"><i class="fas fa-expand"></i> Fit</button>
-        <div style="width:1px; height:24px; background:#e9ecef; margin:0 4px;"></div>
-        <button class="canvas-btn" onclick="undoCanvas()"><i class="fas fa-undo"></i></button>
-        <button class="canvas-btn" onclick="redoCanvas()"><i class="fas fa-redo"></i></button>
-        <button class="canvas-btn" onclick="clearCanvas()"><i class="fas fa-trash"></i> Clear</button>
-    </div>
-    
-    <div class="canvas-layout">
-        <!-- Left Panel - Node Library -->
-        <div class="node-library-panel">
-            <div class="node-search">
-                <input type="text" id="nodeSearch" placeholder="Search nodes..." oninput="filterNodeLibrary()">
-            </div>
-            <div id="nodeLibraryContainer"></div>
+        <div class="chart-header">
+            <div class="chart-title">Trigger Types</div>
         </div>
-        
-        <!-- Center Canvas -->
-        <div class="canvas-area" id="canvasArea">
-            <div id="canvasInner"></div>
-            <div class="connection-layer" id="connectionLayer"><svg width="100%" height="100%"></svg></div>
-            <div class="minimap" id="minimap"><canvas id="minimapCanvas" width="150" height="100"></canvas></div>
-            <div class="status-bar">
-                <span id="canvasNodeCount">0 nodes</span>
-                <span id="canvasConnectionCount">0 connections</span>
-                <span id="lastSavedStatus">Ready</span>
-                <span id="canvasZoomPercent">Zoom: 100%</span>
-            </div>
-        </div>
-        
-        <!-- Right Panel - Inspector -->
-        <div class="inspector-panel" id="inspectorPanel">
-            <div class="inspector-header">
-                <h3>Node Inspector</h3>
-                <button class="close-inspector" onclick="closeInspector()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="inspector-content" id="inspectorContent"></div>
-        </div>
-    </div>
-    
-    <!-- Execution Panel - NOW PROPERLY POSITIONED (does NOT cover canvas) -->
-    <div class="execution-panel" id="executionPanel">
-        <div class="execution-header" onclick="toggleExecutionPanel()">
-            <span><i class="fas fa-terminal"></i> Execution Log</span>
-            <span id="execSummary">Ready</span>
-        </div>
-        <div class="execution-content" id="executionContent"></div>
+        <canvas id="triggerChart" height="200"></canvas>
     </div>
 </div>
 
-<!-- Existing Modals (preserved) -->
+<!-- Templates Section -->
+<div class="section-header">
+    <h2><i class="fas fa-bolt"></i> Quick Start Templates</h2>
+    <button class="btn-secondary" onclick="showTemplateModal()"><i class="fas fa-eye"></i> Browse All</button>
+</div>
+
+<div class="template-grid" id="template-grid">
+    <!-- Templates will be loaded here -->
+</div>
+
+<!-- Your Automations -->
+<div class="section-header">
+    <h2><i class="fas fa-cog"></i> Your Automations</h2>
+    <div>
+        <button class="btn-secondary" onclick="filterAutomations('all')" style="margin-right:10px;">All</button>
+        <button class="btn-secondary" onclick="filterAutomations('live')" style="margin-right:10px;">Live</button>
+        <button class="btn-secondary" onclick="filterAutomations('paused')">Paused</button>
+    </div>
+</div>
+
+<div class="automation-grid" id="automation-grid">
+    <!-- Automations will be loaded here -->
+</div>
+
+<!-- Activity Timeline -->
+<div class="section-header">
+    <h2><i class="fas fa-history"></i> Recent Activity</h2>
+</div>
+
+<div class="chart-card">
+    <div class="timeline" id="activity-timeline">
+        <!-- Timeline will be loaded here -->
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<button onclick="showCreateModal()" class="fab">
+    <i class="fas fa-plus"></i> New Automation
+</button>
+
+<footer>
+    <p>© 2026 AI Smart Hub • <span style="color: var(--primary);">Enterprise AI Automation Platform</span></p>
+</footer>
+
+<!-- Create/Edit Modal -->
 <div id="automation-modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="modal-title">Create Automation</h3>
             <button class="close-btn" onclick="closeModal()">&times;</button>
         </div>
+        
         <div class="modal-tabs">
             <span class="modal-tab active" onclick="switchModalTab('basic')">Basic</span>
             <span class="modal-tab" onclick="switchModalTab('conditions')">Conditions</span>
             <span class="modal-tab" onclick="switchModalTab('actions')">Actions</span>
             <span class="modal-tab" onclick="switchModalTab('schedule')">Schedule</span>
         </div>
+
         <div id="modal-basic">
-            <div class="form-group"><label>Automation Name</label><input type="text" id="automation-name" class="form-control" placeholder="e.g., Welcome Series"></div>
-            <div class="form-group"><label>Description</label><textarea id="automation-description" class="form-control" rows="2"></textarea></div>
-            <div class="form-group"><label>Trigger</label><select id="automation-trigger" class="form-control"><option value="new-lead">New Lead Captured</option><option value="sentiment-negative">Negative Sentiment Detected</option><option value="cart-abandoned">Cart Abandoned</option><option value="purchase-made">Purchase Made</option></select></div>
+            <div class="form-group">
+                <label>Automation Name</label>
+                <input type="text" id="automation-name" class="form-control" placeholder="e.g., Welcome Series">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="automation-description" class="form-control" rows="2" placeholder="What does this automation do?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Trigger</label>
+                <select id="automation-trigger" class="form-control">
+                    <option value="new-lead">New Lead Captured</option>
+                    <option value="sentiment-negative">Negative Sentiment Detected</option>
+                    <option value="cart-abandoned">Cart Abandoned (1 hour)</option>
+                    <option value="purchase-made">Purchase Made</option>
+                    <option value="inactive-7d">Customer Inactive (7 days)</option>
+                    <option value="booking-request">Booking Requested</option>
+                    <option value="support-ticket">Support Ticket Created</option>
+                    <option value="price-question">Price Question Asked</option>
+                    <option value="competitor-mention">Competitor Mentioned</option>
+                </select>
+            </div>
         </div>
-        <div id="modal-conditions" style="display:none;"><div class="condition-builder"><div class="condition-row"><select class="form-control" id="condition-field"><option value="lead-score">Lead Score</option></select><select class="form-control" id="condition-operator"><option value="greater-than">Greater than</option></select><input type="text" class="form-control" id="condition-value" placeholder="Value"><button class="btn-icon" onclick="addCondition()"><i class="fas fa-plus"></i></button></div><div id="conditions-list"></div></div></div>
-        <div id="modal-actions" style="display:none;"><div class="form-group"><label>Action Type</label><select id="automation-action" class="form-control"><option value="send-email">Send Email</option><option value="send-sms">Send SMS</option><option value="update-score">Update Lead Score</option></select></div><div class="form-group"><label>Action Details</label><textarea id="action-config" class="form-control" rows="3"></textarea></div></div>
-        <div id="modal-schedule" style="display:none;"><div class="form-group"><label>When to Run</label><select id="schedule-type" class="form-control"><option value="immediate">Immediately</option><option value="delay">Delay</option></select></div></div>
-        <div style="display:flex;gap:16px;margin-top:40px;"><button onclick="closeModal()" class="btn-secondary" style="flex:1;">Cancel</button><button onclick="saveAutomation()" class="btn-primary" style="flex:1;">Save Automation</button></div>
+
+        <div id="modal-conditions" style="display:none;">
+            <div class="condition-builder">
+                <div class="condition-row">
+                    <select class="form-control" style="flex:1;" id="condition-field">
+                        <option value="lead-score">Lead Score</option>
+                        <option value="email-domain">Email Domain</option>
+                        <option value="location">Location</option>
+                        <option value="device">Device Type</option>
+                        <option value="visit-count">Visit Count</option>
+                        <option value="purchase-value">Purchase Value</option>
+                    </select>
+                    <select class="form-control" style="flex:1;" id="condition-operator">
+                        <option value="greater-than">Greater than</option>
+                        <option value="less-than">Less than</option>
+                        <option value="equals">Equals</option>
+                        <option value="contains">Contains</option>
+                        <option value="not-equals">Not equals</option>
+                    </select>
+                    <input type="text" class="form-control" style="flex:1;" id="condition-value" placeholder="Value">
+                    <button class="btn-icon" onclick="addCondition()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="conditions-list"></div>
+                <p style="color: var(--text-secondary); font-size:0.85rem; margin-top:15px;">
+                    <i class="fas fa-info-circle"></i> All conditions must be met for automation to run
+                </p>
+            </div>
+        </div>
+
+        <div id="modal-actions" style="display:none;">
+            <div class="form-group">
+                <label>Action Type</label>
+                <select id="automation-action" class="form-control">
+                    <option value="send-email">📧 Send Email</option>
+                    <option value="send-sms">📱 Send SMS</option>
+                    <option value="update-score">📊 Update Lead Score</option>
+                    <option value="add-tag">🏷️ Add Tag</option>
+                    <option value="send-webhook">🔗 Send Webhook</option>
+                    <option value="slack-notify">💬 Slack Notification</option>
+                    <option value="create-task">✅ Create Task</option>
+                    <option value="assign-owner">👤 Assign to Owner</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Action Details</label>
+                <textarea id="action-config" class="form-control" rows="3" placeholder='{"template":"welcome", "subject":"Welcome!"}'></textarea>
+            </div>
+        </div>
+
+        <div id="modal-schedule" style="display:none;">
+            <div class="form-group">
+                <label>When to Run</label>
+                <select id="schedule-type" class="form-control">
+                    <option value="immediate">Immediately</option>
+                    <option value="delay">Delay (minutes)</option>
+                    <option value="specific">Specific Time</option>
+                    <option value="business-hours">Business Hours Only</option>
+                    <option value="recurring">Recurring</option>
+                </select>
+            </div>
+            <div class="form-group" id="schedule-config">
+                <label>Delay (minutes)</label>
+                <input type="number" class="form-control" value="60" min="0">
+            </div>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:40px;">
+            <button onclick="closeModal()" class="btn-secondary" style="flex:1;">Cancel</button>
+            <button onclick="saveAutomation()" class="btn-primary" style="flex:1;">Save Automation</button>
+        </div>
     </div>
 </div>
 
+<!-- Template Preview Modal -->
 <div id="template-modal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h3>Automation Templates</h3><button class="close-btn" onclick="closeTemplateModal()">&times;</button></div>
-        <div class="template-grid" style="grid-template-columns:1fr 1fr; max-height:500px; overflow-y:auto;" id="template-modal-grid"></div>
+        <div class="modal-header">
+            <h3>Automation Templates</h3>
+            <button class="close-btn" onclick="closeTemplateModal()">&times;</button>
+        </div>
+        <div class="template-grid" style="grid-template-columns:1fr 1fr; max-height:500px; overflow-y:auto;" id="template-modal-grid">
+            <!-- Templates will be loaded here -->
+        </div>
     </div>
 </div>
 
 <script>
 // ================================================
-// ORIGINAL EXISTING SCRIPT - FULLY PRESERVED
+// AI AUTOMATIONS - ENTERPRISE SAAS VERSION
+// REAL-TIME LEAD & BUSINESS AUTOMATION ENGINE
+// WITH WEBSOCKET LIVE UPDATES & ENTERPRISE FEATURES
 // ================================================
 
 const BACKEND_URL = window.BACKEND_URL || 'https://ai-smart-hub.onrender.com';
@@ -2153,6 +1896,7 @@ function unlockContent() {
     renderTemplates();
     loadActivity();
     loadAutomations();
+    loadRecommendedAutomations();
     initEnterpriseWebSocket(); // Initialize enterprise WebSocket
     initRealTimeUpdates();
     startAutoRefresh();
@@ -2170,17 +1914,128 @@ function startLeadPolling() {
     }, 15000);
 }
 
-// ===== LOAD AI RECOMMENDED AUTOMATIONS - REMOVED =====
-// The AI Recommended section has been removed from the UI
-
+// ===== LOAD AI RECOMMENDED AUTOMATIONS =====
 async function loadRecommendedAutomations(silent = false) {
-    // Section removed - returns empty
-    return;
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${BACKEND_URL}/api/automations?source=recommended`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const recommended = (data.automations || []).filter(a => 
+                a.metadata?.source === 'ai_recommendation' || 
+                a.name?.includes('AI Recommended') ||
+                a.description?.includes('deployed by AI')
+            );
+            
+            const section = document.getElementById('recommendedAutomationsSection');
+            const grid = document.getElementById('recommendedAutomationsGrid');
+            
+            if (recommended.length > 0) {
+                if (section) section.style.display = 'block';
+                if (grid) {
+                    grid.innerHTML = recommended.map(automation => `
+                        <div class="recommended-card">
+                            <div class="recommended-badge">
+                                <i class="fas fa-robot"></i> AI Recommended
+                            </div>
+                            <div class="recommended-icon">
+                                <i class="fas ${automation.icon || 'fa-magic'}"></i>
+                            </div>
+                            <div class="recommended-title">${automation.name || automation.title}</div>
+                            <div class="recommended-reason">
+                                <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
+                                ${automation.metadata?.reason || 'Deployed by AI based on your business profile'}
+                            </div>
+                            <div class="recommended-footer">
+                                <span class="automation-status status-live">🟢 ACTIVE</span>
+                                <button class="btn-ai-deploy" onclick="viewAutomation('${automation.id}')">
+                                    <i class="fas fa-eye"></i> View Automation
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                const insightsRes = await fetch(`${BACKEND_URL}/api/business/insights`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (insightsRes.ok) {
+                    const insightsData = await insightsRes.json();
+                    if (insightsData.recommendations && insightsData.recommendations.length > 0) {
+                        if (section) section.style.display = 'block';
+                        if (grid) {
+                            grid.innerHTML = insightsData.recommendations.map(rec => `
+                                <div class="recommended-card">
+                                    <div class="recommended-badge">
+                                        <i class="fas fa-robot"></i> AI Suggested
+                                    </div>
+                                    <div class="recommended-icon">
+                                        <i class="fas ${rec.icon || 'fa-magic'}"></i>
+                                    </div>
+                                    <div class="recommended-title">${rec.title}</div>
+                                    <div class="recommended-reason">
+                                        <i class="fas fa-lightbulb" style="color: var(--primary);"></i>
+                                        ${rec.reason}
+                                    </div>
+                                    <div class="recommended-footer">
+                                        <button class="btn-ai-deploy" onclick="deployAIAutomation('${rec.automation_template_id}')">
+                                            <i class="fas fa-rocket"></i> Deploy Now
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    } else if (section) {
+                        section.style.display = 'none';
+                    }
+                } else if (section) {
+                    section.style.display = 'none';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading recommended automations:', error);
+        const section = document.getElementById('recommendedAutomationsSection');
+        if (section) section.style.display = 'none';
+    }
 }
 
 async function deployAIAutomation(templateId) {
-    // Function kept for compatibility but not used
-    return;
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${TEMPLATE_API}/automations/from-template/${templateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: `AI Recommended Automation`,
+                customizations: { auto_configured: true, source: 'ai_recommendation' }
+            })
+        });
+        
+        if (response.ok) {
+            showToast('✅ AI automation deployed successfully!', 'success');
+            loadAutomations();
+            loadRecommendedAutomations();
+            
+            // Notify via WebSocket
+            if (realtimeSocket && realtimeSocket.connected) {
+                realtimeSocket.emit('automation_deployed', { templateId });
+            }
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Deployment failed');
+        }
+    } catch (error) {
+        console.error('Deploy error:', error);
+        showToast('Failed to deploy automation: ' + error.message, 'error');
+    }
 }
 
 function viewAutomation(id) {
@@ -2198,6 +2053,7 @@ function startAutoRefresh() {
         if (document.visibilityState === 'visible') {
             loadAutomations(true);
             loadActivity(true);
+            loadRecommendedAutomations(true);
         }
     }, 30000);
 }
@@ -2718,6 +2574,7 @@ async function toggleAutomation(id, shouldEnable) {
         if (response.ok) {
             showToast(`Automation ${shouldEnable ? 'activated' : 'paused'}`);
             await loadAutomations(true);
+            await loadRecommendedAutomations(true);
             
             // Notify via WebSocket
             if (realtimeSocket && realtimeSocket.connected) {
@@ -2746,6 +2603,7 @@ async function deleteAutomation(id) {
         if (response.ok) {
             showToast("Automation deleted successfully");
             await loadAutomations();
+            await loadRecommendedAutomations();
         } else {
             throw new Error('Delete failed');
         }
@@ -2919,6 +2777,7 @@ async function saveAutomation() {
             showToast(isEdit ? "Automation updated!" : "Automation created!");
             closeModal();
             await loadAutomations();
+            await loadRecommendedAutomations();
             
             if (trigger.includes('lead') || action.includes('score')) {
                 showToast("⚡ Lead automation active - ready to convert!", "success", 5000);
@@ -3005,6 +2864,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (document.visibilityState === 'visible') {
                 loadAutomations(true);
                 loadActivity(true);
+                loadRecommendedAutomations(true);
             }
         });
         
@@ -3013,11 +2873,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (leadUpdateInterval) clearInterval(leadUpdateInterval);
             if (realtimeSocket) realtimeSocket.disconnect();
         });
-    }
-    
-    // Check if URL has canvas=1 parameter
-    if (window.location.search.includes('canvas=1')) {
-        switchTab('canvas');
     }
 });
 
@@ -3038,828 +2893,6 @@ window.editAutomation = editAutomation;
 window.testAutomation = testAutomation;
 window.deployAIAutomation = deployAIAutomation;
 window.viewAutomation = viewAutomation;
-
-// Tab switching function
-function switchTab(tabName) {
-    const automationsTab = document.getElementById('automationsTab');
-    const canvasTab = document.getElementById('canvasTab');
-    const tabs = document.querySelectorAll('.tab');
-    
-    tabs.forEach(tab => tab.classList.remove('active'));
-    document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
-    
-    if (tabName === 'automations') {
-        automationsTab.classList.remove('hidden');
-        canvasTab.classList.remove('active');
-        document.title = "AI Automations Studio | AI Smart Hub";
-    } else {
-        automationsTab.classList.add('hidden');
-        canvasTab.classList.add('active');
-        document.title = "Workflow Builder | AI Smart Hub";
-        if (!window.canvasInitialized) initCanvas();
-    }
-}
-
-// ================================================
-// CANVAS WORKFLOW BUILDER - FULLY FUNCTIONAL WITH ENHANCED NODES
-// ================================================
-
-let canvasNodes = [];
-let canvasConnections = [];
-let canvasSelectedNodeId = null;
-let canvasPanX = 200, canvasPanY = 100, canvasZoom = 0.75;
-let canvasIsPanning = false, canvasPanStartX, canvasPanStartY;
-let liveWire = { active: false, fromNodeId: null, fromPort: null, mouseX: 0, mouseY: 0 };
-let canvasHistory = [[]], canvasHistoryIndex = 0;
-let nextNodeId = 100;
-let isWorkflowRunning = false;
-let stopWorkflowFlag = false;
-let currentExecution = null;
-
-// Enhanced Node categories for Business, Schools, Organizations
-const canvasCategories = {
-    triggers: { name: "TRIGGERS 🟡", color: "#f59e0b", nodes: [
-        { id: "webhook", name: "Webhook", icon: "fa-globe", desc: "Receive HTTP POST/GET", category: "triggers" },
-        { id: "schedule", name: "Schedule", icon: "fa-clock", desc: "Run on cron schedule", category: "triggers" },
-        { id: "new-lead", name: "New Lead", icon: "fa-user-plus", desc: "Lead captured in CRM", category: "triggers" },
-        { id: "cart-abandoned", name: "Cart Abandoned", icon: "fa-shopping-cart", desc: "Cart left for 1hr", category: "triggers" },
-        { id: "booking-created", name: "Booking Created", icon: "fa-calendar-plus", desc: "New appointment", category: "triggers" },
-        { id: "form-submit", name: "Form Submit", icon: "fa-wpforms", desc: "Web form submission", category: "triggers" },
-        { id: "email-received", name: "Email Received", icon: "fa-envelope", desc: "Incoming email", category: "triggers" }
-    ]},
-    ai: { name: "AI & LLM 🤖", color: "#8b5cf6", nodes: [
-        { id: "claude", name: "Claude AI", icon: "fa-brain", desc: "Anthropic Claude", category: "ai" },
-        { id: "openai", name: "OpenAI GPT-4o", icon: "fa-microchip", desc: "GPT-4o model", category: "ai" },
-        { id: "lead-scorer", name: "Lead Scorer", icon: "fa-chart-line", desc: "Score lead 0-100", category: "ai" },
-        { id: "ai-email-writer", name: "Email Writer", icon: "fa-pen-fancy", desc: "Write emails", category: "ai" },
-        { id: "sentiment-analyzer", name: "Sentiment Analyzer", icon: "fa-smile", desc: "Analyze sentiment", category: "ai" },
-        { id: "text-summarizer", name: "Text Summarizer", icon: "fa-compress", desc: "Summarize content", category: "ai" }
-    ]},
-    actions: { name: "ACTIONS 🔵", color: "#3b82f6", nodes: [
-        { id: "send-email", name: "Send Email", icon: "fa-envelope", desc: "Send via SMTP", category: "actions" },
-        { id: "send-sms", name: "Send SMS", icon: "fa-mobile-alt", desc: "Send via Twilio", category: "actions" },
-        { id: "slack-notify", name: "Slack Message", icon: "fa-slack", desc: "Post to Slack", category: "actions" },
-        { id: "post-crm", name: "Post to CRM", icon: "fa-database", desc: "Create CRM record", category: "actions" },
-        { id: "http-request", name: "HTTP Request", icon: "fa-link", desc: "Call external API", category: "actions" },
-        { id: "create-document", name: "Create Document", icon: "fa-file-alt", desc: "Generate document", category: "actions" },
-        { id: "add-to-calendar", name: "Add to Calendar", icon: "fa-calendar", desc: "Google Calendar event", category: "actions" }
-    ]},
-    logic: { name: "LOGIC 🟣", color: "#ec4899", nodes: [
-        { id: "if-else", name: "IF / Else", icon: "fa-code-branch", desc: "Branch on condition", category: "logic" },
-        { id: "delay", name: "Wait / Delay", icon: "fa-hourglass-half", desc: "Pause workflow", category: "logic" },
-        { id: "filter", name: "Filter", icon: "fa-filter", desc: "Keep matching items", category: "logic" },
-        { id: "switch", name: "Switch / Router", icon: "fa-random", desc: "Route to multiple outputs", category: "logic" },
-        { id: "loop", name: "Loop Each", icon: "fa-redo", desc: "Iterate over items", category: "logic" },
-        { id: "merge", name: "Merge", icon: "fa-code-merge", desc: "Combine streams", category: "logic" }
-    ]},
-    business: { name: "BUSINESS 🏢", color: "#10b981", nodes: [
-        { id: "invoice-generator", name: "Generate Invoice", icon: "fa-file-invoice", desc: "Create invoice PDF", category: "business" },
-        { id: "approval-flow", name: "Approval Flow", icon: "fa-check-double", desc: "Multi-step approval", category: "business" },
-        { id: "kpi-tracker", name: "KPI Tracker", icon: "fa-chart-line", desc: "Track metrics", category: "business" },
-        { id: "report-builder", name: "Report Builder", icon: "fa-chart-bar", desc: "Generate reports", category: "business" },
-        { id: "contract-draft", name: "Contract Draft", icon: "fa-file-signature", desc: "Draft contract", category: "business" },
-        { id: "expense-tracker", name: "Expense Tracker", icon: "fa-receipt", desc: "Track expenses", category: "business" }
-    ]},
-    education: { name: "EDUCATION 📚", color: "#06b6d4", nodes: [
-        { id: "grade-calculator", name: "Grade Calculator", icon: "fa-calculator", desc: "Calculate grades", category: "education" },
-        { id: "certificate-gen", name: "Certificate Gen", icon: "fa-certificate", desc: "Generate certificates", category: "education" },
-        { id: "enrollment-trigger", name: "Enrollment Trigger", icon: "fa-user-graduate", desc: "New enrollment", category: "education" },
-        { id: "quiz-analyzer", name: "Quiz Analyzer", icon: "fa-puzzle-piece", desc: "Analyze quiz results", category: "education" },
-        { id: "attendance-tracker", name: "Attendance Tracker", icon: "fa-clock", desc: "Track attendance", category: "education" },
-        { id: "email-students", name: "Email Students", icon: "fa-envelope-open-text", desc: "Bulk email students", category: "education" }
-    ]},
-    social: { name: "SOCIAL MEDIA 📱", color: "#e1306c", nodes: [
-        { id: "instagram-post", name: "Instagram Post", icon: "fa-instagram", desc: "Post to IG", category: "social" },
-        { id: "linkedin-post", name: "LinkedIn Post", icon: "fa-linkedin", desc: "Post to LinkedIn", category: "social" },
-        { id: "twitter-post", name: "X/Twitter Post", icon: "fa-x-twitter", desc: "Post to X", category: "social" },
-        { id: "facebook-post", name: "Facebook Post", icon: "fa-facebook", desc: "Post to FB", category: "social" },
-        { id: "hashtag-gen", name: "Hashtag Generator", icon: "fa-hashtag", desc: "Generate hashtags", category: "social" },
-        { id: "caption-writer", name: "Caption Writer", icon: "fa-magic", desc: "AI caption writer", category: "social" }
-    ]}
-};
-
-function initCanvas() {
-    window.canvasInitialized = true;
-    renderNodeLibrary();
-    setupCanvasEvents();
-    updateCanvasStats();
-    showEmptyCanvasState();
-}
-
-function renderNodeLibrary() {
-    const container = document.getElementById('nodeLibraryContainer');
-    if (!container) return;
-    
-    container.innerHTML = Object.entries(canvasCategories).map(([key, cat]) => `
-        <div class="node-category">
-            <div class="node-category-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed')">
-                <span><span style="display:inline-block; width:10px; height:10px; background:${cat.color}; border-radius:50%; margin-right:8px;"></span>${cat.name}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="node-category-items">
-                ${cat.nodes.map(node => `
-                    <div class="node-item" draggable="true" data-node-id="${node.id}" data-node-name="${node.name}" data-node-category="${key}"
-                         ondragstart="dragCanvasNode(event)" ondragend="dragCanvasEnd(event)">
-                        <div style="width:28px; height:28px; background:${cat.color}; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white;"><i class="fab ${node.icon.includes('fa-') ? node.icon : 'fas ' + node.icon}"></i></div>
-                        <div style="flex:1;"><div style="font-weight:600; font-size:0.8rem;">${node.name}</div><div style="font-size:0.65rem; color:#94a3b8;">${node.desc}</div></div>
-                        <i class="fas fa-grip-vertical" style="color:#cbd5e1;"></i>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `).join('');
-}
-
-function filterNodeLibrary() {
-    const search = document.getElementById('nodeSearch').value.toLowerCase();
-    document.querySelectorAll('.node-category').forEach(cat => {
-        let visible = false;
-        cat.querySelectorAll('.node-item').forEach(item => {
-            if (item.innerText.toLowerCase().includes(search)) {
-                item.style.display = 'flex';
-                visible = true;
-            } else {
-                item.style.display = 'none';
-            }
-        });
-        cat.style.display = visible ? 'block' : 'none';
-    });
-}
-
-function dragCanvasNode(e) {
-    const item = e.target.closest('.node-item');
-    if (!item) return;
-    e.dataTransfer.setData('text/plain', JSON.stringify({
-        id: item.dataset.nodeId,
-        name: item.dataset.nodeName,
-        category: item.dataset.nodeCategory
-    }));
-    e.dataTransfer.effectAllowed = 'copy';
-    item.classList.add('dragging');
-}
-
-function dragCanvasEnd(e) {
-    e.target.classList.remove('dragging');
-}
-
-function setupCanvasEvents() {
-    const canvasArea = document.getElementById('canvasArea');
-    const canvasInner = document.getElementById('canvasInner');
-    if (!canvasArea) return;
-    
-    canvasArea.addEventListener('dragover', (e) => e.preventDefault());
-    canvasArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const rect = canvasArea.getBoundingClientRect();
-        const x = (e.clientX - rect.left - canvasPanX) / canvasZoom;
-        const y = (e.clientY - rect.top - canvasPanY) / canvasZoom;
-        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-        addCanvasNode(data.id, data.name, data.category, x - 110, y - 40);
-        updateCanvasStats();
-    });
-    
-    canvasArea.addEventListener('mousedown', (e) => {
-        if (e.target === canvasArea || e.target.classList.contains('canvas-area')) {
-            canvasIsPanning = true;
-            canvasPanStartX = e.clientX - canvasPanX;
-            canvasPanStartY = e.clientY - canvasPanY;
-            canvasArea.style.cursor = 'grabbing';
-        }
-    });
-    
-    window.addEventListener('mousemove', (e) => {
-        if (canvasIsPanning) {
-            canvasPanX = e.clientX - canvasPanStartX;
-            canvasPanY = e.clientY - canvasPanStartY;
-            renderCanvas();
-            updateMinimap();
-        }
-        if (liveWire.active) {
-            const rect = canvasArea.getBoundingClientRect();
-            liveWire.mouseX = (e.clientX - rect.left - canvasPanX) / canvasZoom;
-            liveWire.mouseY = (e.clientY - rect.top - canvasPanY) / canvasZoom;
-            renderCanvas();
-        }
-    });
-    
-    window.addEventListener('mouseup', () => {
-        if (liveWire.active) {
-            // Cancel connection if no port clicked
-            liveWire.active = false;
-            renderCanvas();
-        }
-        canvasIsPanning = false;
-        if (canvasArea) canvasArea.style.cursor = 'grab';
-    });
-    
-    canvasArea.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.05 : 0.05;
-        const newZoom = Math.min(2, Math.max(0.3, canvasZoom + delta));
-        if (newZoom !== canvasZoom) {
-            canvasZoom = newZoom;
-            document.getElementById('zoomPercent').innerHTML = `${Math.round(canvasZoom * 100)}%`;
-            document.getElementById('canvasZoomPercent').innerHTML = `Zoom: ${Math.round(canvasZoom * 100)}%`;
-            renderCanvas();
-            updateMinimap();
-        }
-    });
-}
-
-function addCanvasNode(type, name, category, x, y) {
-    const newNode = {
-        id: nextNodeId++,
-        type: type,
-        name: name,
-        category: category,
-        x: x,
-        y: y,
-        config: {},
-        enabled: true
-    };
-    canvasNodes.push(newNode);
-    saveCanvasToHistory();
-    renderCanvas();
-    updateCanvasStats();
-    showEmptyCanvasState();
-    showToast(`Added "${name}" node`, 'success');
-}
-
-function renderCanvas() {
-    const canvasInner = document.getElementById('canvasInner');
-    const svgLayer = document.querySelector('#connectionLayer svg');
-    if (!canvasInner) return;
-    
-    canvasInner.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
-    canvasInner.style.width = '5000px';
-    canvasInner.style.height = '5000px';
-    
-    // Render nodes
-    canvasInner.innerHTML = canvasNodes.map(node => {
-        const isRunning = currentExecution && currentExecution.runningNodes?.has(node.id);
-        const isSuccess = currentExecution && currentExecution.completedNodes?.has(node.id);
-        const isError = currentExecution && currentExecution.failedNodes?.has(node.id);
-        let statusClass = '';
-        if (isRunning) statusClass = 'running';
-        else if (isSuccess) statusClass = 'success';
-        else if (isError) statusClass = 'error';
-        
-        return `
-        <div class="node-card ${canvasSelectedNodeId === node.id ? 'selected' : ''} ${statusClass} ${!node.enabled ? 'disabled' : ''}" style="left: ${node.x}px; top: ${node.y}px;"
-             data-node-id="${node.id}" onclick="selectCanvasNode(${node.id}, event)" ondblclick="openCanvasInspector(${node.id})"
-             onmousedown="startNodeDrag(event, ${node.id})">
-            <div class="node-header">
-                <div class="node-icon-box" style="background: ${canvasCategories[node.category]?.color || '#64748b'}">
-                    <i class="fas ${getNodeIconByType(node.type)}" style="color:white; font-size:12px;"></i>
-                </div>
-                <div class="node-name">${escapeHtml(node.name)}</div>
-                ${isRunning ? '<div class="running-spinner"></div>' : ''}
-            </div>
-            ${node.config && Object.keys(node.config).length > 0 ? `<div class="node-subtitle">${getNodeSummary(node)}</div>` : ''}
-            <div class="node-port input-port" data-node="${node.id}" data-port="input" onclick="startCanvasConnection(event, ${node.id}, 'input')"></div>
-            <div class="node-port output-port" data-node="${node.id}" data-port="output" onclick="startCanvasConnection(event, ${node.id}, 'output')"></div>
-        </div>
-    `}).join('');
-    
-    // Render connections
-    svgLayer.innerHTML = canvasConnections.map(conn => {
-        const fromNode = canvasNodes.find(n => n.id === conn.fromNode);
-        const toNode = canvasNodes.find(n => n.id === conn.toNode);
-        if (!fromNode || !toNode) return '';
-        const fromX = fromNode.x + 220;
-        const fromY = fromNode.y + 35;
-        const toX = toNode.x;
-        const toY = toNode.y + 35;
-        const midX = (fromX + toX) / 2;
-        const isFlowing = currentExecution && currentExecution.activeConnections?.has(conn.id);
-        return `<path class="connection-path ${isFlowing ? 'flowing' : ''}" d="M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}" data-conn-id="${conn.id}"></path>
-                <circle class="delete-conn-btn" data-conn-id="${conn.id}" cx="${midX}" cy="${(fromY+toY)/2}" r="8" fill="#ef4444" onclick="deleteCanvasConnection(${conn.id})" style="cursor:pointer;"></circle>`;
-    }).join('');
-    
-    // Draw live wire
-    if (liveWire.active) {
-        const fromNode = canvasNodes.find(n => n.id === liveWire.fromNodeId);
-        if (fromNode) {
-            const fromX = fromNode.x + 220;
-            const fromY = fromNode.y + 35;
-            svgLayer.innerHTML += `<path class="live-wire" d="M ${fromX} ${fromY} L ${liveWire.mouseX} ${liveWire.mouseY}" style="fill:none; stroke:#d4af37; stroke-width:2; stroke-dasharray:6 4; animation: dashMove 0.3s linear infinite;"></path>`;
-        }
-    }
-    
-    updateMinimap();
-}
-
-function getNodeIconByType(type) {
-    const icons = { 
-        'webhook': 'fa-globe', 'schedule': 'fa-clock', 'new-lead': 'fa-user-plus', 'cart-abandoned': 'fa-shopping-cart', 
-        'send-email': 'fa-envelope', 'claude': 'fa-brain', 'if-else': 'fa-code-branch', 'delay': 'fa-hourglass-half',
-        'invoice-generator': 'fa-file-invoice', 'grade-calculator': 'fa-calculator', 'instagram-post': 'fa-instagram',
-        'linkedin-post': 'fa-linkedin', 'twitter-post': 'fa-x-twitter', 'facebook-post': 'fa-facebook'
-    };
-    return icons[type] || 'fa-cube';
-}
-
-function getNodeSummary(node) {
-    if (node.type === 'send-email') return '📧 Ready to send';
-    if (node.type === 'delay') return '⏱️ ' + (node.config?.duration || 1) + ' ' + (node.config?.unit || 'minutes');
-    if (node.type === 'if-else') return '🔀 Condition configured';
-    if (node.type === 'invoice-generator') return '💰 Invoice ready';
-    if (node.type === 'grade-calculator') return '📊 Grade calculation';
-    if (node.type === 'instagram-post') return '📸 Post ready';
-    return '⚙️ Configured';
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
-
-function selectCanvasNode(id, event) {
-    canvasSelectedNodeId = id;
-    renderCanvas();
-    event.stopPropagation();
-}
-
-function startNodeDrag(event, id) {
-    const node = canvasNodes.find(n => n.id === id);
-    if (!node) return;
-    const startX = event.clientX, startY = event.clientY;
-    const origX = node.x, origY = node.y;
-    const onMouseMove = (e) => {
-        node.x = origX + (e.clientX - startX) / canvasZoom;
-        node.y = origY + (e.clientY - startY) / canvasZoom;
-        renderCanvas();
-        updateMinimap();
-    };
-    const onMouseUp = () => {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        saveCanvasToHistory();
-    };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    event.stopPropagation();
-}
-
-function startCanvasConnection(event, nodeId, port) {
-    event.stopPropagation();
-    liveWire = { active: true, fromNodeId: nodeId, fromPort: port, mouseX: 0, mouseY: 0 };
-    renderCanvas();
-}
-
-function deleteCanvasConnection(id) {
-    canvasConnections = canvasConnections.filter(c => c.id !== id);
-    saveCanvasToHistory();
-    renderCanvas();
-    updateCanvasStats();
-    showToast('Connection removed', 'info');
-}
-
-function openCanvasInspector(nodeId) {
-    const node = canvasNodes.find(n => n.id === nodeId);
-    if (!node) return;
-    canvasSelectedNodeId = nodeId;
-    const panel = document.getElementById('inspectorPanel');
-    const content = document.getElementById('inspectorContent');
-    content.innerHTML = `
-        <div class="inspector-field"><label>Node Name</label><input type="text" value="${escapeHtml(node.name)}" onchange="updateCanvasNodeName(${node.id}, this.value)"></div>
-        <div class="inspector-field"><label>Enabled</label><label class="toggle-switch"><input type="checkbox" ${node.enabled !== false ? 'checked' : ''} onchange="updateCanvasNodeEnabled(${node.id}, this.checked)"><span class="slider"></span></label></div>
-        <div class="inspector-field"><label>Configuration</label><textarea rows="6" id="nodeConfigTextarea" style="width:100%; padding:8px; border:1px solid var(--border-color); border-radius:8px; font-family:monospace;">${JSON.stringify(node.config || {}, null, 2)}</textarea></div>
-        <button class="btn-primary" style="width:100%;" onclick="saveNodeConfigAndTest(${node.id})"><i class="fas fa-save"></i> Save & Test</button>
-        <button class="btn-secondary" style="width:100%; margin-top:12px;" onclick="deleteCanvasNode(${node.id})"><i class="fas fa-trash"></i> Delete Node</button>
-    `;
-    panel.classList.add('open');
-    renderCanvas();
-}
-
-function saveNodeConfigAndTest(nodeId) {
-    const node = canvasNodes.find(n => n.id === nodeId);
-    if (!node) return;
-    const configText = document.getElementById('nodeConfigTextarea')?.value;
-    if (configText) {
-        try {
-            node.config = JSON.parse(configText);
-            showToast(`Configuration saved for "${node.name}"`, 'success');
-        } catch(e) {
-            showToast('Invalid JSON configuration', 'error');
-        }
-    }
-    renderCanvas();
-    testCanvasNode(nodeId);
-}
-
-function closeInspector() {
-    document.getElementById('inspectorPanel').classList.remove('open');
-    canvasSelectedNodeId = null;
-    renderCanvas();
-}
-
-function updateCanvasNodeName(id, name) {
-    const node = canvasNodes.find(n => n.id === id);
-    if (node) node.name = name;
-    renderCanvas();
-}
-
-function updateCanvasNodeEnabled(id, enabled) {
-    const node = canvasNodes.find(n => n.id === id);
-    if (node) node.enabled = enabled;
-    renderCanvas();
-}
-
-function deleteCanvasNode(id) {
-    if (!confirm('Delete this node and all its connections?')) return;
-    canvasNodes = canvasNodes.filter(n => n.id !== id);
-    canvasConnections = canvasConnections.filter(c => c.fromNode !== id && c.toNode !== id);
-    if (canvasSelectedNodeId === id) closeInspector();
-    saveCanvasToHistory();
-    renderCanvas();
-    updateCanvasStats();
-    showEmptyCanvasState();
-    showToast('Node deleted', 'info');
-}
-
-function testCanvasNode(id) {
-    const node = canvasNodes.find(n => n.id === id);
-    if (!node) return;
-    showToast(`Testing "${node.name}"...`, 'info');
-    setTimeout(() => {
-        showToast(`"${node.name}" test completed successfully`, 'success');
-        addExecutionLog(node.id, node.name, 'success', Math.floor(Math.random() * 500) + 100, 'Sample output ready');
-    }, 1000);
-}
-
-function addExecutionLog(nodeId, nodeName, status, duration, output) {
-    const execContent = document.getElementById('executionContent');
-    if (!execContent) return;
-    const statusIcon = status === 'success' ? '✅' : status === 'error' ? '❌' : '🔄';
-    const logEntry = document.createElement('div');
-    logEntry.className = 'execution-item';
-    logEntry.innerHTML = `
-        <span class="status-icon">${statusIcon}</span>
-        <span class="node-name">${escapeHtml(nodeName)}</span>
-        <span class="duration">${duration}ms</span>
-        <span class="output-summary">${escapeHtml(output)}</span>
-    `;
-    execContent.appendChild(logEntry);
-    execContent.scrollTop = execContent.scrollHeight;
-}
-
-function saveCanvasToHistory() {
-    canvasHistory = canvasHistory.slice(0, canvasHistoryIndex + 1);
-    canvasHistory.push(JSON.parse(JSON.stringify({ nodes: canvasNodes, connections: canvasConnections })));
-    canvasHistoryIndex++;
-    if (canvasHistory.length > 50) canvasHistory.shift();
-}
-
-function undoCanvas() {
-    if (canvasHistoryIndex > 0) {
-        canvasHistoryIndex--;
-        const state = canvasHistory[canvasHistoryIndex];
-        canvasNodes = state.nodes;
-        canvasConnections = state.connections;
-        renderCanvas();
-        updateCanvasStats();
-        showToast('Undo', 'info');
-    } else {
-        showToast('Nothing to undo', 'info');
-    }
-}
-
-function redoCanvas() {
-    if (canvasHistoryIndex < canvasHistory.length - 1) {
-        canvasHistoryIndex++;
-        const state = canvasHistory[canvasHistoryIndex];
-        canvasNodes = state.nodes;
-        canvasConnections = state.connections;
-        renderCanvas();
-        updateCanvasStats();
-        showToast('Redo', 'info');
-    } else {
-        showToast('Nothing to redo', 'info');
-    }
-}
-
-function clearCanvas() {
-    if (confirm('Clear entire canvas? This cannot be undone.')) {
-        canvasNodes = [];
-        canvasConnections = [];
-        saveCanvasToHistory();
-        renderCanvas();
-        updateCanvasStats();
-        showToast('Canvas cleared', 'info');
-        showEmptyCanvasState();
-    }
-}
-
-function updateCanvasStats() {
-    document.getElementById('canvasNodeCount').innerHTML = `${canvasNodes.length} nodes`;
-    document.getElementById('canvasConnectionCount').innerHTML = `${canvasConnections.length} connections`;
-}
-
-function zoomIn() { canvasZoom = Math.min(2, canvasZoom + 0.1); document.getElementById('zoomPercent').innerHTML = `${Math.round(canvasZoom * 100)}%`; document.getElementById('canvasZoomPercent').innerHTML = `Zoom: ${Math.round(canvasZoom * 100)}%`; renderCanvas(); updateMinimap(); }
-function zoomOut() { canvasZoom = Math.max(0.3, canvasZoom - 0.1); document.getElementById('zoomPercent').innerHTML = `${Math.round(canvasZoom * 100)}%`; document.getElementById('canvasZoomPercent').innerHTML = `Zoom: ${Math.round(canvasZoom * 100)}%`; renderCanvas(); updateMinimap(); }
-function fitToScreen() { if (canvasNodes.length === 0) return; let minX = Math.min(...canvasNodes.map(n => n.x)), maxX = Math.max(...canvasNodes.map(n => n.x + 220)); let minY = Math.min(...canvasNodes.map(n => n.y)), maxY = Math.max(...canvasNodes.map(n => n.y + 70)); let width = maxX - minX, height = maxY - minY; canvasZoom = Math.min(1.2, (window.innerWidth - 300) / width, (window.innerHeight - 200) / height); canvasPanX = (window.innerWidth / 2) - ((minX + width/2) * canvasZoom); canvasPanY = (window.innerHeight / 2 - 100) - ((minY + height/2) * canvasZoom); renderCanvas(); updateMinimap(); showToast('Fit to screen', 'info'); }
-
-function updateMinimap() {
-    const canvas = document.getElementById('minimapCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(0, 0, 150, 100);
-    canvasNodes.forEach(node => {
-        ctx.fillStyle = canvasCategories[node.category]?.color || '#64748b';
-        ctx.fillRect(node.x / 30, node.y / 30, 6, 4);
-    });
-    // Draw viewport rectangle
-    const viewX = -canvasPanX / canvasZoom / 30;
-    const viewY = -canvasPanY / canvasZoom / 30;
-    const viewW = window.innerWidth / canvasZoom / 30;
-    const viewH = (window.innerHeight - 200) / canvasZoom / 30;
-    ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(viewX, viewY, viewW, viewH);
-}
-
-function showEmptyCanvasState() {
-    if (canvasNodes.length === 0) {
-        const canvasInner = document.getElementById('canvasInner');
-        if (canvasInner && !canvasInner.querySelector('.empty-canvas-state')) {
-            canvasInner.innerHTML = `<div class="empty-canvas-state"><i class="fas fa-project-diagram"></i><h3>Build Your First Workflow</h3><p>Drag nodes from the left panel to get started</p><div style="margin-top:20px;"><button class="canvas-btn primary" onclick="loadTemplate('lead-capture')" style="margin:5px;">🚀 Lead Capture</button><button class="canvas-btn" onclick="loadTemplate('cart-recovery')" style="margin:5px;">🛒 Cart Recovery</button><button class="canvas-btn" onclick="loadTemplate('education')" style="margin:5px;">📚 Education</button></div></div>`;
-        }
-    } else {
-        const emptyState = document.querySelector('.empty-canvas-state');
-        if (emptyState) emptyState.remove();
-    }
-}
-
-function loadTemplate(templateType) {
-    if (templateType === 'lead-capture') {
-        canvasNodes = [
-            { id: 1, type: "webhook", name: "Webhook", x: 100, y: 200, category: "triggers", enabled: true, config: {} },
-            { id: 2, type: "lead-scorer", name: "Lead Scorer", x: 350, y: 200, category: "ai", enabled: true, config: { threshold: 70 } },
-            { id: 3, type: "if-else", name: "IF Score > 70", x: 600, y: 200, category: "logic", enabled: true, config: { condition: "score > 70" } },
-            { id: 4, type: "post-crm", name: "Post to CRM", x: 850, y: 150, category: "actions", enabled: true, config: {} },
-            { id: 5, type: "slack-notify", name: "Slack Alert", x: 850, y: 250, category: "actions", enabled: true, config: { channel: "#leads" } }
-        ];
-        canvasConnections = [
-            { id: 1, fromNode: 1, toNode: 2 },
-            { id: 2, fromNode: 2, toNode: 3 },
-            { id: 3, fromNode: 3, toNode: 4 },
-            { id: 4, fromNode: 3, toNode: 5 }
-        ];
-    } else if (templateType === 'cart-recovery') {
-        canvasNodes = [
-            { id: 1, type: "cart-abandoned", name: "Cart Abandoned", x: 100, y: 200, category: "triggers", enabled: true, config: {} },
-            { id: 2, type: "delay", name: "Wait 1 hour", x: 350, y: 200, category: "logic", enabled: true, config: { duration: 60, unit: "minutes" } },
-            { id: 3, type: "ai-email-writer", name: "AI Email Writer", x: 600, y: 200, category: "ai", enabled: true, config: {} },
-            { id: 4, type: "send-email", name: "Send Email", x: 850, y: 200, category: "actions", enabled: true, config: {} }
-        ];
-        canvasConnections = [
-            { id: 1, fromNode: 1, toNode: 2 },
-            { id: 2, fromNode: 2, toNode: 3 },
-            { id: 3, fromNode: 3, toNode: 4 }
-        ];
-    } else if (templateType === 'education') {
-        canvasNodes = [
-            { id: 1, type: "enrollment-trigger", name: "Enrollment Trigger", x: 100, y: 200, category: "education", enabled: true, config: {} },
-            { id: 2, type: "email-students", name: "Email Students", x: 350, y: 200, category: "education", enabled: true, config: {} },
-            { id: 3, type: "certificate-gen", name: "Certificate Generator", x: 600, y: 200, category: "education", enabled: true, config: {} },
-            { id: 4, type: "grade-calculator", name: "Grade Calculator", x: 850, y: 200, category: "education", enabled: true, config: {} }
-        ];
-        canvasConnections = [
-            { id: 1, fromNode: 1, toNode: 2 },
-            { id: 2, fromNode: 2, toNode: 3 },
-            { id: 3, fromNode: 3, toNode: 4 }
-        ];
-    }
-    nextNodeId = Math.max(...canvasNodes.map(n => n.id), 0) + 100;
-    renderCanvas();
-    updateCanvasStats();
-    showToast(`Template "${templateType}" loaded`, 'success');
-    saveCanvasToHistory();
-}
-
-function saveWorkflow() {
-    if (canvasNodes.length === 0) { showToast('No nodes to save', 'warning'); return; }
-    const name = prompt('Workflow name:', `Workflow_${Date.now()}`);
-    if (!name) return;
-    const workflow = { id: Date.now(), name, nodes: canvasNodes, connections: canvasConnections, canvas: { panX: canvasPanX, panY: canvasPanY, zoom: canvasZoom } };
-    let saved = JSON.parse(localStorage.getItem('canvas_workflows') || '[]');
-    saved = saved.filter(w => w.name !== name);
-    saved.push(workflow);
-    localStorage.setItem('canvas_workflows', JSON.stringify(saved));
-    document.getElementById('lastSavedStatus').innerHTML = `Saved: ${new Date().toLocaleTimeString()}`;
-    showToast(`Workflow "${name}" saved!`, 'success');
-}
-
-function showWorkflowsDropdown() {
-    const saved = JSON.parse(localStorage.getItem('canvas_workflows') || '[]');
-    if (saved.length === 0) { showToast('No saved workflows', 'info'); return; }
-    const names = saved.map((w,i) => `${i+1}. ${w.name} (${w.nodes.length} nodes)`).join('\n');
-    const idx = prompt(`Select workflow to load:\n${names}\n\nEnter number:`, '1');
-    if (idx && saved[parseInt(idx)-1]) {
-        const w = saved[parseInt(idx)-1];
-        canvasNodes = w.nodes;
-        canvasConnections = w.connections;
-        canvasPanX = w.canvas?.panX || 200;
-        canvasPanY = w.canvas?.panY || 100;
-        canvasZoom = w.canvas?.zoom || 0.75;
-        nextNodeId = Math.max(...canvasNodes.map(n => n.id), 0) + 100;
-        renderCanvas();
-        updateCanvasStats();
-        showToast(`Loaded: ${w.name}`, 'success');
-        saveCanvasToHistory();
-    }
-}
-
-function exportWorkflow() {
-    if (canvasNodes.length === 0 && canvasConnections.length === 0) { showToast('Nothing to export', 'warning'); return; }
-    const data = JSON.stringify({ nodes: canvasNodes, connections: canvasConnections, canvas: { panX: canvasPanX, panY: canvasPanY, zoom: canvasZoom }, version: '1.0', exported: new Date().toISOString() }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `workflow_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Workflow exported', 'success');
-}
-
-function importWorkflow(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            canvasNodes = data.nodes || [];
-            canvasConnections = data.connections || [];
-            canvasPanX = data.canvas?.panX || 200;
-            canvasPanY = data.canvas?.panY || 100;
-            canvasZoom = data.canvas?.zoom || 0.75;
-            nextNodeId = Math.max(...canvasNodes.map(n => n.id), 0) + 100;
-            renderCanvas();
-            updateCanvasStats();
-            showToast('Workflow imported', 'success');
-            saveCanvasToHistory();
-        } catch (err) { showToast('Invalid workflow file', 'error'); }
-    };
-    reader.readAsText(file);
-}
-
-function showTemplatesDropdown() {
-    const templatesList = [
-        { name: "🚀 Lead Capture & Score", id: "lead-capture" },
-        { name: "🛒 Abandoned Cart Recovery", id: "cart-recovery" },
-        { name: "📚 Education Enrollment", id: "education" },
-        { name: "🏢 Business Approval Flow", id: "approval" },
-        { name: "📱 Social Media Posting", id: "social" }
-    ];
-    const names = templatesList.map((t,i) => `${i+1}. ${t.name}`).join('\n');
-    const idx = prompt(`Select template:\n${names}\n\nEnter number:`, '1');
-    if (idx && templatesList[parseInt(idx)-1]) {
-        loadTemplate(templatesList[parseInt(idx)-1].id);
-    }
-}
-
-async function runWorkflow() {
-    if (isWorkflowRunning) { showToast('Workflow already running', 'warning'); return; }
-    if (canvasNodes.length === 0) { showToast('No nodes to execute', 'error'); return; }
-    
-    isWorkflowRunning = true;
-    stopWorkflowFlag = false;
-    document.getElementById('stopWorkflowBtn').style.display = 'inline-flex';
-    document.getElementById('executionPanel').classList.add('open');
-    
-    const execContent = document.getElementById('executionContent');
-    execContent.innerHTML = '';
-    document.getElementById('execSummary').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
-    
-    // Initialize execution tracking
-    currentExecution = {
-        runningNodes: new Set(),
-        completedNodes: new Set(),
-        failedNodes: new Set(),
-        activeConnections: new Set(),
-        startTime: Date.now()
-    };
-    
-    // Get trigger nodes (nodes with no incoming connections)
-    const hasIncomingConnection = (nodeId) => {
-        return canvasConnections.some(c => c.toNode === nodeId);
-    };
-    const triggerNodes = canvasNodes.filter(n => !hasIncomingConnection(n.id) && n.enabled);
-    
-    if (triggerNodes.length === 0) {
-        showToast('No trigger nodes found. Add a trigger node to start.', 'error');
-        isWorkflowRunning = false;
-        document.getElementById('stopWorkflowBtn').style.display = 'none';
-        document.getElementById('execSummary').innerHTML = 'No trigger';
-        return;
-    }
-    
-    // Simple execution order (breadth-first)
-    const executionOrder = [];
-    const visited = new Set();
-    const queue = [...triggerNodes];
-    
-    while (queue.length > 0) {
-        const node = queue.shift();
-        if (visited.has(node.id)) continue;
-        visited.add(node.id);
-        executionOrder.push(node);
-        
-        // Find outgoing connections
-        const outgoing = canvasConnections.filter(c => c.fromNode === node.id);
-        for (const conn of outgoing) {
-            const nextNode = canvasNodes.find(n => n.id === conn.toNode);
-            if (nextNode && !visited.has(nextNode.id) && !queue.includes(nextNode)) {
-                queue.push(nextNode);
-            }
-        }
-    }
-    
-    let nodeIndex = 0;
-    const runNextNode = async () => {
-        if (stopWorkflowFlag || nodeIndex >= executionOrder.length) {
-            const totalDuration = Date.now() - currentExecution.startTime;
-            document.getElementById('execSummary').innerHTML = stopWorkflowFlag ? '<i class="fas fa-stop"></i> Stopped' : '<i class="fas fa-check-circle"></i> Completed';
-            document.getElementById('stopWorkflowBtn').style.display = 'none';
-            isWorkflowRunning = false;
-            currentExecution = null;
-            renderCanvas();
-            showToast(stopWorkflowFlag ? 'Workflow stopped' : `Workflow completed in ${totalDuration}ms`, 'success');
-            return;
-        }
-        
-        const node = executionOrder[nodeIndex];
-        if (!node.enabled) {
-            addExecutionLog(node.id, node.name, 'info', 0, 'Skipped (disabled)');
-            nodeIndex++;
-            runNextNode();
-            return;
-        }
-        
-        // Activate node
-        currentExecution.runningNodes.add(node.id);
-        renderCanvas();
-        addExecutionLog(node.id, node.name, 'running', 0, 'Executing...');
-        
-        // Animate incoming connections
-        const incomingConns = canvasConnections.filter(c => c.toNode === node.id);
-        incomingConns.forEach(conn => {
-            currentExecution.activeConnections.add(conn.id);
-            renderCanvas();
-        });
-        
-        // Simulate node execution (real implementation would call actual API)
-        const executionTime = node.category === 'ai' ? 1200 : (node.category === 'actions' ? 600 : 400);
-        await new Promise(r => setTimeout(r, executionTime + Math.random() * 300));
-        
-        // Mark as completed
-        currentExecution.runningNodes.delete(node.id);
-        currentExecution.completedNodes.add(node.id);
-        incomingConns.forEach(conn => {
-            currentExecution.activeConnections.delete(conn.id);
-        });
-        
-        // Generate output summary based on node type
-        let outputSummary = 'Execution completed';
-        if (node.type === 'send-email') outputSummary = 'Email sent successfully';
-        else if (node.type === 'lead-scorer') outputSummary = 'Score: ' + Math.floor(Math.random() * 30 + 70);
-        else if (node.type === 'grade-calculator') outputSummary = 'Average grade: 85%';
-        else if (node.type === 'instagram-post') outputSummary = 'Post scheduled';
-        else if (node.type === 'invoice-generator') outputSummary = 'Invoice #' + (Math.floor(Math.random() * 9000) + 1000);
-        
-        addExecutionLog(node.id, node.name, 'success', executionTime, outputSummary);
-        renderCanvas();
-        
-        nodeIndex++;
-        runNextNode();
-    };
-    
-    runNextNode();
-}
-
-function stopWorkflow() { 
-    stopWorkflowFlag = true; 
-    isWorkflowRunning = false;
-    if (currentExecution) {
-        currentExecution.runningNodes.clear();
-        document.getElementById('execSummary').innerHTML = '<i class="fas fa-stop"></i> Stopped';
-        showToast('Stopping workflow...', 'info');
-        renderCanvas();
-    }
-}
-
-function toggleExecutionPanel() { 
-    document.getElementById('executionPanel').classList.toggle('open'); 
-}
 </script>
 </body>
 </html>

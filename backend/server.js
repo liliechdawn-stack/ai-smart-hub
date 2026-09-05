@@ -1,40 +1,44 @@
+// ============================================================
+// backend/server.js - AI Smart Hub Main Server
+// ============================================================
+// REFACTORED - Second Stage
+// Extracted business logic to dedicated route files:
+// - Authentication → routes/auth-routes.js
+// - Profile → routes/profile-routes.js
+// - Dashboard → routes/dashboard-routes.js
+// - Chat → routes/chat-routes.js
+// - Widget → routes/widget-routes.js
+// - Widget Chat → routes/widget-chat-routes.js
+// - Subscription/Billing → routes/subscription-routes.js
+// - Admin → routes/admin-routes.js
+// - Support → routes/support-routes.js
+// - Leads → routes/leads-routes.js
+// - Smart Hub → smart-hub.js (existing)
+// ============================================================
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
-const { v4: uuidv4 } = require("uuid");
-const path = require("path"); 
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-const pdf = require('pdf-parse');
-const mammoth = require('mammoth');
-const { Resend } = require('resend');
+const path = require("path");
+const http = require("http");
 require("dotenv").config();
 
-const fetch = (...args) =>
-  import('node-fetch').then(({ default: fetch }) => fetch(...args));
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const config = require("./config");
 
-// ================= IMPORT NEW SERVICES =================
-const CloudflareGateway = require('../services/cloudflare-gateway');
-const PlatformClients = require('../services/platform-clients');
-const EncryptionService = require('../services/encryption');
-const MetricsService = require('../services/metrics');
-
-// ================= IMPORT MODELS =================
-const AccountModel = require('../models/Account');
-const ActivityModel = require('../models/Activity');
-const GovernanceModel = require('../models/Governance');
-const AlertModel = require('../models/Alert');
-
-// Use centralized DB from database-supabase.js
+// ============================================================
+// DATABASE
+// ============================================================
 const dbModule = require("./database-supabase.js");
-const { 
+const {
   supabase,
-  getUserByEmail, 
-  createUser, 
-  getUserById, 
-  setWidgetKey, 
+  getUserByEmail,
+  createUser,
+  getUserById,
+  setWidgetKey,
   incrementMessagesUsed,
   incrementLeadsUsed,
   saveChat,
@@ -44,2856 +48,532 @@ const {
   getKnowledgeByUser,
   updateWidgetSettings,
   getLeadByEmail,
-  saveBroadcast,
-  getBroadcastsByUser,
-  getBroadcastStats,
   getBusinessIdentity,
   saveBusinessIdentity,
   getSmartSettings,
-  // Activity log functions
   logActivity,
-  getRecentActivity,
-  // Automation functions
-  createAutomation,
-  getAutomationsByUser,
-  getAutomationById,
-  updateAutomation,
-  deleteAutomation,
-  incrementAutomationTriggers,
-  createAutomationRun,
-  completeAutomationRun,
-  getAutomationRuns,
-  // Connected accounts
-  saveConnectedAccount,
-  getConnectedAccounts,
-  deleteConnectedAccount,
-  updateAccountLastSync,
-  // Governance functions
-  getGovernanceSettings,
-  updateGovernanceSettings,
-  // Alert functions
-  createAlert,
-  getActiveAlerts,
-  resolveAlert,
-  // Usage logs
-  logUsage,
-  getUsageStats,
-  // Mobile instances
-  spawnMobileInstance,
-  getMobileInstances,
-  terminateMobileInstance,
-  // API Keys
-  createApiKey,
-  getApiKeys,
-  deleteApiKey,
-  updateApiKeyLastUsed,
-  validateApiKey,
-  // Notification settings
-  getNotificationSettings,
-  saveNotificationSettings,
-  // Incidents
-  getIncidents,
-  addIncident,
-  // Status subscribers
-  addSubscriber,
-  getSubscribers,
-  removeSubscriber
+  // ... all other exports preserved
 } = dbModule;
 
-// Import auth
+// ============================================================
+// AUTH
+// ============================================================
 const { auth, isAdminMiddleware, signup, login } = require("./auth");
 const { authenticateToken } = require("./auth-middleware");
 
-// ===== ENTERPRISE FEATURE IMPORTS =====
-const { addToQueue, getQueueStats, getQueueStatus } = require('./queue-service');
-const { rateLimitMiddleware } = require('./rate-limiter');
-const workflowVersioning = require('./workflow-versioning');
-const debugExecutor = require('./debug-executor');
-const errorHandler = require('./error-handler');
+// ============================================================
+// ENTERPRISE FEATURES
+// ============================================================
+const { addToQueue, getQueueStats, getQueueStatus } = require("./queue-service");
+const { rateLimitMiddleware } = require("./rate-limiter");
+const workflowVersioning = require("./workflow-versioning");
+const debugExecutor = require("./debug-executor");
+const errorHandler = require("./error-handler");
 
-// ===== DEBUG: Check if route files exist =====
-const fs = require('fs');
-const pathModule = require('path');
+// ============================================================
+// SERVICES
+// ============================================================
+const { sendEmail, sendEmailWithFallback } = require("./services/email-service");
+const { extractTextFromFile } = require("./services/file-service");
+const {
+  platformHealth,
+  updatePlatformHealth,
+  logSystemEvent,
+  getSystemLogs,
+} = require("./services/health-service");
+const {
+  calculateAutomationROI,
+  generateBusinessInsights,
+  generateRecommendations,
+  calculateTotalROI,
+} = require("./services/business-intelligence-service");
 
-const routesPath = pathModule.join(__dirname, 'routes');
-console.log(`?? Checking routes directory: ${routesPath}`);
+// ============================================================
+// EXTERNAL SERVICES
+// ============================================================
+const CloudflareGateway = require("../services/cloudflare-gateway");
+const PlatformClients = require("../services/platform-clients");
+const EncryptionService = require("../services/encryption");
+const MetricsService = require("../services/metrics");
 
+// ============================================================
+// MODELS
+// ============================================================
+const AccountModel = require("../models/Account");
+const ActivityModel = require("../models/Activity");
+const GovernanceModel = require("../models/Governance");
+const AlertModel = require("../models/Alert");
+
+// ============================================================
+// ROUTE IMPORTS (All routes extracted from server.js)
+// ============================================================
+
+// Authentication Routes
+const authRoutes = require("./routes/auth-routes");
+
+// Profile Routes
+const profileRoutes = require("./routes/profile-routes");
+
+// Dashboard Routes
+const dashboardRoutes = require("./routes/dashboard-routes");
+
+// Chat Routes
+const chatRoutes = require("./routes/chat-routes");
+
+// Widget Routes
+const widgetRoutes = require("./routes/widget-routes");
+
+// Widget Chat Routes
+const widgetChatRoutes = require("./routes/widget-chat-routes");
+
+// Subscription/Billing Routes
+const subscriptionRoutes = require("./routes/subscription-routes");
+
+// Admin Routes
+const adminRoutes = require("./routes/admin-routes");
+
+// Support Routes
+const supportRoutes = require("./routes/support-routes");
+
+// Leads Routes
+const leadsRoutes = require("./routes/leads-routes");
+
+// Business Intelligence Routes
+const businessRoutes = require("./routes/business-routes");
+
+// Broadcast Routes
+const broadcastRoutes = require("./routes/broadcast-routes");
+
+// Platform Routes
+const platformRoutes = require("./routes/platform-routes");
+
+// Smart Hub (existing)
+let smartHubRoutes;
 try {
-  const files = fs.readdirSync(routesPath);
-  console.log(`?? Files in routes directory: ${files.join(', ')}`);
+  smartHubRoutes = require("./smart-hub");
+  console.log("✓ smart-hub.js loaded successfully");
 } catch (err) {
-  console.error(`? Could not read routes directory: ${err.message}`);
+  console.error("✗ Failed to load smart-hub.js:", err.message);
+  smartHubRoutes = (req, res) =>
+    res.status(500).json({ error: "Smart Hub routes not available" });
 }
 
-const templateRouteFile = pathModule.join(__dirname, 'routes', 'automation-templates-routes.js');
-console.log(`?? Checking template route file: ${templateRouteFile}`);
-if (fs.existsSync(templateRouteFile)) {
-  console.log(`? File exists! Size: ${fs.statSync(templateRouteFile).size} bytes`);
-  try {
-    const content = fs.readFileSync(templateRouteFile, 'utf8');
-    console.log(`?? First 100 chars: ${content.substring(0, 100)}...`);
-  } catch (readErr) {
-    console.log(`?? Could not read file: ${readErr.message}`);
-  }
-} else {
-  console.log(`? File NOT FOUND at: ${templateRouteFile}`);
+// Customer Insights (existing)
+let customerRouter;
+try {
+  customerRouter = require("./customer-insights");
+  console.log("✓ customer-insights.js loaded successfully");
+} catch (err) {
+  console.error("✗ Failed to load customer-insights.js:", err.message);
+  customerRouter = express.Router();
 }
 
-// Import new automation modules
-const automationRoutes = require('../api/automations-routes');
-const AutomationEngine = require('../services/automation-engine');
-const IntegrationService = require('../services/integrations');
+// AI Automations (existing)
+const automationRoutes = require("../api/automations-routes");
 
-// Import analytics and settings routes
-const analyticsRoutes = require('../api/analytics-routes');
-const settingsRoutes = require('../api/settings-routes');
+// Analytics and Settings (existing)
+const analyticsRoutes = require("../api/analytics-routes");
+const settingsRoutes = require("../api/settings-routes");
 
-// ===== AI POWERHOUSE ROUTES =====
-const aiPowerhouseRoutes = require('../api/ai-powerhouse-routes');
+// AI Powerhouse (existing)
+const aiPowerhouseRoutes = require("../api/ai-powerhouse-routes");
 
-// ===== NEW: AUTOMATION TEMPLATES ROUTES (with error handling) =====
+// Automation Templates (existing)
 let automationTemplatesRoutes;
+try {
+  automationTemplatesRoutes = require("./routes/automation-templates-routes");
+  console.log("✓ automation-templates-routes.js loaded successfully");
+} catch (err) {
+  console.error("✗ Failed to load automation-templates-routes.js:", err.message);
+  automationTemplatesRoutes = (req, res) =>
+    res.status(500).json({ error: "Templates routes not available" });
+}
+
+// User Automations (existing)
 let userAutomationsRoutes;
-let leadsRoutes;
-
 try {
-  automationTemplatesRoutes = require('./routes/automation-templates-routes');
-  console.log('? automation-templates-routes.js loaded successfully');
+  userAutomationsRoutes = require("./routes/user-automations-routes");
+  console.log("✓ user-automations-routes.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load automation-templates-routes.js:', err.message);
-  console.error('   Stack:', err.stack);
-  automationTemplatesRoutes = (req, res) => res.status(500).json({ error: 'Templates routes not available', details: err.message });
+  console.error("✗ Failed to load user-automations-routes.js:", err.message);
+  userAutomationsRoutes = (req, res) =>
+    res.status(500).json({ error: "User automations routes not available" });
 }
 
-try {
-  userAutomationsRoutes = require('./routes/user-automations-routes');
-  console.log('? user-automations-routes.js loaded successfully');
-} catch (err) {
-  console.error('? Failed to load user-automations-routes.js:', err.message);
-  console.error('   Stack:', err.stack);
-  userAutomationsRoutes = (req, res) => res.status(500).json({ error: 'User automations routes not available', details: err.message });
-}
-
-try {
-  leadsRoutes = require('./routes/leads-routes');
-  console.log('? leads-routes.js loaded successfully');
-} catch (err) {
-  console.error('? Failed to load leads-routes.js:', err.message);
-  console.error('   Stack:', err.stack);
-  leadsRoutes = (req, res) => res.status(500).json({ error: 'Leads routes not available', details: err.message });
-}
-
-// ===== NEW: AI BUSINESS COACH ROUTES =====
+// Business Coach (existing)
 let coachRoutes;
 try {
-  coachRoutes = require('./routes/coach');
-  console.log('? coach.js loaded successfully');
+  coachRoutes = require("./routes/coach");
+  console.log("✓ coach.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load coach.js:', err.message);
-  coachRoutes = (req, res) => res.status(500).json({ error: 'Business Coach routes not available', details: err.message });
+  console.error("✗ Failed to load coach.js:", err.message);
+  coachRoutes = (req, res) =>
+    res.status(500).json({ error: "Business Coach routes not available" });
 }
 
-// ===== NEW: WORKFLOW ENGINE IMPORTS (REAL-TIME AUTOMATION) =====
+// Workflow Engine (existing)
 let workflowRoutes;
-let webhookHandler;
-let webhookListener;
-let workflowScheduler;
-let workflowTemplatesRoutes;
-
 try {
-  workflowRoutes = require('./routes/workflow-routes');
-  console.log('? workflow-routes.js loaded successfully');
+  workflowRoutes = require("./routes/workflow-routes");
+  console.log("✓ workflow-routes.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load workflow-routes.js:', err.message);
+  console.error("✗ Failed to load workflow-routes.js:", err.message);
   workflowRoutes = null;
 }
 
+let webhookHandler;
 try {
-  webhookHandler = require('./webhook-handler');
-  console.log('? webhook-handler.js loaded successfully');
+  webhookHandler = require("./webhook-handler");
+  console.log("✓ webhook-handler.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load webhook-handler.js:', err.message);
+  console.error("✗ Failed to load webhook-handler.js:", err.message);
   webhookHandler = null;
 }
 
+let webhookListener;
 try {
-  const { webhookRouter } = require('./webhook-listener');
+  const { webhookRouter } = require("./webhook-listener");
   webhookListener = webhookRouter;
-  console.log('? webhook-listener.js loaded successfully');
+  console.log("✓ webhook-listener.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load webhook-listener.js:', err.message);
+  console.error("✗ Failed to load webhook-listener.js:", err.message);
   webhookListener = null;
 }
 
+let workflowScheduler;
 try {
-  workflowScheduler = require('./scheduler');
-  console.log('? scheduler.js loaded successfully');
+  workflowScheduler = require("./scheduler");
+  console.log("✓ scheduler.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load scheduler.js:', err.message);
+  console.error("✗ Failed to load scheduler.js:", err.message);
   workflowScheduler = null;
 }
 
+let workflowTemplatesRoutes;
 try {
-  workflowTemplatesRoutes = require('./workflow-templates');
-  console.log('? workflow-templates.js loaded successfully');
+  workflowTemplatesRoutes = require("./workflow-templates");
+  console.log("✓ workflow-templates.js loaded successfully");
 } catch (err) {
-  console.error('? Failed to load workflow-templates.js:', err.message);
+  console.error("✗ Failed to load workflow-templates.js:", err.message);
   workflowTemplatesRoutes = null;
 }
 
-// ================= CREATE APP =================
+// ============================================================
+// EXPRESS APP
+// ============================================================
 const app = express();
 
-// ================================================
-// IMPORT SMART HUB ROUTES (MUST BE DEFINED BEFORE USE)
-// ================================================
-let smartHubRoutes;
-try {
-  smartHubRoutes = require('./smart-hub');
-  console.log('? smart-hub.js loaded successfully');
-} catch (err) {
-  console.error('? Failed to load smart-hub.js:', err.message);
-  console.error('   Stack:', err.stack);
-  smartHubRoutes = (req, res) => res.status(500).json({ error: 'Smart Hub routes not available', details: err.message });
-}
-
-// ================================================
-// GLOBAL LOGGING SYSTEM
-// ================================================
-const systemLogs = [];
-const MAX_LOGS = 10000;
-
-async function logSystemEvent(eventType, message, details = {}, userId = null) {
-  const logEntry = {
-    id: uuidv4(),
-    timestamp: new Date().toISOString(),
-    event_type: eventType,
-    message: message,
-    details: details,
-    user_id: userId
-  };
-  
-  systemLogs.unshift(logEntry);
-  if (systemLogs.length > MAX_LOGS) systemLogs.pop();
-  
-  try {
-    await supabase.from('system_logs').insert({
-      id: logEntry.id,
-      event_type: eventType,
-      message: message,
-      details: details,
-      user_id: userId,
-      created_at: logEntry.timestamp
-    });
-  } catch (err) {
-    console.error('Failed to persist system log:', err.message);
-  }
-  
-  console.log(`?? [SYS-LOG] ${eventType}: ${message}`);
-  return logEntry;
-}
-
-// ================================================
-// PLATFORM HEALTH MONITOR
-// ================================================
-let platformHealth = {
-  status: 'healthy',
-  lastCheck: new Date().toISOString(),
-  components: {
-    database: { status: 'healthy', latency: 0, lastCheck: null },
-    queue: { status: 'healthy', depth: 0, activeJobs: 0, maxConcurrent: 5 },
-    ai: { status: 'healthy', lastRequest: null, avgLatency: 0 },
-    webhook: { status: 'healthy', lastEvent: null, eventsProcessed: 0 }
-  },
-  metrics: {
-    activeExecutions: 0,
-    totalExecutionsToday: 0,
-    avgExecutionTime: 0,
-    errorRate: 0
-  }
+// ============================================================
+// SECURITY MIDDLEWARE
+// ============================================================
+const corsOptions = {
+  origin: config.CORS_ORIGIN,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Workspace-Id"],
 };
 
-async function updatePlatformHealth() {
-  const startTime = Date.now();
-  
-  try {
-    // Check database health
-    const dbStart = Date.now();
-    const { data: dbCheck, error: dbError } = await supabase.from('workflows').select('count', { count: 'exact', head: true });
-    platformHealth.components.database = {
-      status: dbError ? 'unhealthy' : 'healthy',
-      latency: Date.now() - dbStart,
-      lastCheck: new Date().toISOString(),
-      error: dbError?.message
-    };
-    
-    // Check queue health
-    const queueStats = await getQueueStats();
-    const queueStatus = await getQueueStatus();
-    platformHealth.components.queue = {
-      status: (queueStats.pending || 0) > 100 ? 'degraded' : 'healthy',
-      depth: queueStats.pending || 0,
-      activeJobs: queueStats.activeJobs || 0,
-      maxConcurrent: queueStats.maxConcurrent || 5,
-      pausedJobs: queueStats.pausedJobs || 0,
-      lastCheck: new Date().toISOString()
-    };
-    
-    // Get execution metrics from last 24 hours
-    const yesterday = new Date(Date.now() - 86400000).toISOString();
-    const { data: executions } = await supabase
-      .from('workflow_executions')
-      .select('status, execution_time_ms')
-      .gte('started_at', yesterday);
-    
-    const totalExecutions = executions?.length || 0;
-    const failedExecutions = executions?.filter(e => e.status === 'failed').length || 0;
-    const avgExecutionTime = executions?.reduce((sum, e) => sum + (e.execution_time_ms || 0), 0) / (totalExecutions || 1);
-    
-    platformHealth.metrics = {
-      activeExecutions: 0,
-      totalExecutionsToday: totalExecutions,
-      avgExecutionTime: Math.round(avgExecutionTime),
-      errorRate: totalExecutions > 0 ? (failedExecutions / totalExecutions) * 100 : 0
-    };
-    
-    // Overall health status
-    const isHealthy = 
-      platformHealth.components.database.status === 'healthy' &&
-      platformHealth.components.queue.status !== 'unhealthy';
-    
-    platformHealth.status = isHealthy ? 'healthy' : 'degraded';
-    platformHealth.lastCheck = new Date().toISOString();
-    
-    if (platformHealth.status !== 'healthy') {
-      await logSystemEvent('HEALTH_DEGRADED', `Platform health degraded`, platformHealth);
-    }
-    
-  } catch (error) {
-    console.error('Health check failed:', error);
-    platformHealth.status = 'unhealthy';
-    platformHealth.components.database.status = 'unhealthy';
-    await logSystemEvent('HEALTH_CHECK_FAILED', error.message, { error: error.message });
-  }
-}
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
-// Run health check every 30 seconds
-setInterval(updatePlatformHealth, 30000);
-updatePlatformHealth();
+app.use(bodyParser.json({ limit: config.MAX_JSON_SIZE }));
+app.use(bodyParser.urlencoded({ limit: config.MAX_JSON_SIZE, extended: true }));
 
-// ================================================
+// ============================================================
 // WORKSPACE SCOPING MIDDLEWARE
-// ================================================
+// ============================================================
 async function ensureWorkspaceAccess(req, res, next) {
   const userId = req.user?.id;
-  const requestedWorkspaceId = req.params.workspaceId || req.body.workspaceId || req.query.workspaceId;
-  
+  const requestedWorkspaceId =
+    req.params.workspaceId || req.body.workspaceId || req.query.workspaceId;
+
   if (!userId) {
-    return res.status(401).json({ error: 'Authentication required' });
+    return res.status(401).json({ error: "Authentication required" });
   }
-  
-  // If no specific workspace requested, use user's default
+
   if (!requestedWorkspaceId) {
     req.workspaceId = userId;
     return next();
   }
-  
-  // Verify user has access to this workspace
+
   try {
     const { data: workspaceMember, error } = await supabase
-      .from('workspace_members')
-      .select('*')
-      .eq('workspace_id', requestedWorkspaceId)
-      .eq('user_id', userId)
+      .from("workspace_members")
+      .select("*")
+      .eq("workspace_id", requestedWorkspaceId)
+      .eq("user_id", userId)
       .single();
-    
+
     const { data: workspace } = await supabase
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', requestedWorkspaceId)
+      .from("workspaces")
+      .select("owner_id")
+      .eq("id", requestedWorkspaceId)
       .single();
-    
-    if ((workspaceMember || workspace?.owner_id === userId) || userId === process.env.ADMIN_USER_ID) {
+
+    if (
+      workspaceMember ||
+      workspace?.owner_id === userId ||
+      userId === config.ADMIN_USER_ID
+    ) {
       req.workspaceId = requestedWorkspaceId;
       return next();
     }
-    
-    return res.status(403).json({ error: 'Access denied to this workspace' });
+
+    return res.status(403).json({ error: "Access denied to this workspace" });
   } catch (error) {
-    return res.status(403).json({ error: 'Workspace access denied' });
+    return res.status(403).json({ error: "Workspace access denied" });
   }
 }
 
-// ================================================
+// ============================================================
 // REQUEST LOGGING MIDDLEWARE
-// ================================================
+// ============================================================
 app.use((req, res, next) => {
   const startTime = Date.now();
-  
-  res.on('finish', () => {
+
+  res.on("finish", () => {
     const duration = Date.now() - startTime;
-    const userId = req.user?.id || 'anonymous';
-    
-    logSystemEvent('API_REQUEST', `${req.method} ${req.path}`, {
-      method: req.method,
-      path: req.path,
-      statusCode: res.statusCode,
-      duration: duration,
-      userId: userId,
-      ip: req.ip,
-      userAgent: req.get('user-agent')
-    }, userId);
+    const userId = req.user?.id || "anonymous";
+
+    logSystemEvent(
+      "API_REQUEST",
+      `${req.method} ${req.path}`,
+      {
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        duration: duration,
+        userId: userId,
+        ip: req.ip,
+        userAgent: req.get("user-agent"),
+      },
+      userId
+    );
   });
-  
+
   next();
 });
 
-// ================= MIDDLEWARE =================
-// CORS first - with proper configuration
-const corsOptions = {
-  origin: true, // Allow all origins in development
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Workspace-Id']
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight requests
-
-// Then body-parser with increased limit for image uploads
-app.use(bodyParser.json({ limit: "50mb" }));
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
-
-// ================= SOCKET.IO =================
-const http = require("http");
+// ============================================================
+// SOCKET.IO
+// ============================================================
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server, { 
-  cors: { origin: "*" },
-  transports: ['websocket', 'polling']
+const io = new Server(server, {
+  cors: config.SOCKET_CORS,
+  transports: ["websocket", "polling"],
 });
 app.set("socketio", io);
-
-// Make io globally accessible for routes
 global.io = io;
 
-// Socket.io connection handling with authentication
+// Socket.io authentication
 io.use(async (socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) {
-    return next(new Error('Authentication required'));
+    return next(new Error("Authentication required"));
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "super_secret_key");
+    const decoded = jwt.verify(token, config.JWT_SECRET);
     const user = await getUserById(decoded.id);
     if (!user) {
-      return next(new Error('User not found'));
+      return next(new Error("User not found"));
     }
     socket.userId = user.id;
     socket.userEmail = user.email;
     next();
   } catch (err) {
-    next(new Error('Invalid token'));
+    next(new Error("Invalid token"));
   }
 });
 
+// Socket.io connection - FIXED: Removed arbitrary room join vulnerability
 io.on("connection", (socket) => {
-  console.log(`?? User connected: ${socket.userId}`);
-  
-  // Join user to their personal room
-  socket.join(`user:${socket.userId}`);
-  
-  // Join organization room if applicable
+  console.log(`🔌 User connected: ${socket.userId}`);
+
+  // Only join the authenticated user's room
   if (socket.userId) {
+    socket.join(`user:${socket.userId}`);
     socket.join(`org:${socket.userId}`);
+    console.log(`🔌 User joined their own room: user:${socket.userId}`);
   }
 
-  socket.on("join", (userId) => {
-    socket.join(`user:${userId}`);
-    console.log(`?? User joined socket room: user:${userId}`);
-  });
+  // REMOVED: socket.on("join", ...) - This was a security vulnerability
+  // Client can no longer request to join arbitrary user rooms
 
   socket.on("disconnect", () => {
-    console.log(`?? User disconnected: ${socket.userId}`);
+    console.log(`🔌 User disconnected: ${socket.userId}`);
   });
 });
 
-// ================= CONFIGURATION =================
-const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-const CLOUDFLARE_AI_API_TOKEN = process.env.CLOUDFLARE_AI_API_TOKEN;
-const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const ADMIN_EMAIL = "ericchung992@gmail.com".toLowerCase().trim();
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
-
-// ================= INITIALIZE SERVICES =================
-const encryptionService = new EncryptionService(ENCRYPTION_KEY);
-const platformClients = new PlatformClients(ENCRYPTION_KEY);
-const metricsService = new MetricsService();
-
-// ================= RESEND CONFIGURATION =================
-let resend = null;
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY);
-  console.log("? Resend configured for reliable email delivery");
-} else {
-  console.warn("?? RESEND_API_KEY not found. Using nodemailer fallback.");
-}
-
-// Fallback to Nodemailer
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false }
-});
-
-// ================= EMAIL SENDING FUNCTION WITH FALLBACK =================
-async function sendEmailWithFallback(to, fromName, subject, html, text = '') {
-  // Try Resend first (best option)
-  if (resend) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: "AI Smart Hub <noreply@aismarthub.website>",
-        to: [to],
-        subject: subject,
-        html: html,
-        text: text || html.replace(/<[^>]*>/g, '')
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log(`? Resend email sent to: ${to}`);
-      return { success: true, method: 'resend' };
-    } catch (err) {
-      console.error(`? Resend failed for ${to}:`, err.message);
-    }
-  }
-
-  // Fallback to nodemailer
-  try {
-    await transporter.sendMail({
-      from: `"${fromName}" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-      text: text || html.replace(/<[^>]*>/g, '')
-    });
-    console.log(`? Nodemailer email sent to: ${to}`);
-    return { success: true, method: 'nodemailer' };
-  } catch (err) {
-    console.error(`? Both email methods failed for ${to}:`, err.message);
-    return { success: false, error: err.message };
-  }
-}
-
-// ================= FILE PROCESSING =================
-async function extractTextFromFile(fileData, fileName, mimeType) {
-  try {
-    const base64Data = fileData.split(',')[1];
-    const buffer = Buffer.from(base64Data, 'base64');
-    
-    if (mimeType.includes('pdf')) {
-      const pdfData = await pdf(buffer);
-      return pdfData.text.substring(0, 5000);
-    } 
-    else if (mimeType.includes('word') || mimeType.includes('docx') || mimeType.includes('doc')) {
-      const result = await mammoth.extractRawText({ buffer });
-      return result.value.substring(0, 5000);
-    }
-    else if (mimeType.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.csv')) {
-      return buffer.toString('utf-8').substring(0, 5000);
-    }
-    else {
-      return `[File: ${fileName}] Cannot extract text from this file type.`;
-    }
-  } catch (err) {
-    console.error("File extraction error:", err);
-    return `[Error processing file: ${fileName}]`;
-  }
-}
-
-// ================= STATIC FILES =================
+// ============================================================
+// STATIC FILES
+// ============================================================
 app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
+app.use(express.static(path.join(__dirname, "../public")));
 
-// ================= SERVE STATIC HTML FILES =================
-app.use(express.static(path.join(__dirname, '../public')));
+// ============================================================
+// ROUTE MOUNTS (All routes now imported from dedicated files)
+// ============================================================
 
-// ================================================
-// PLATFORM HEALTH ENDPOINT
-// ================================================
-app.get('/api/platform/health', async (req, res) => {
-  await updatePlatformHealth();
-  res.json({
-    ...platformHealth,
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    version: process.version,
-    timestamp: new Date().toISOString()
-  });
-});
+// Authentication
+app.use("/api/auth", authRoutes);
+console.log("✓ Auth routes mounted at /api/auth");
 
-// ================================================
-// QUEUE STATUS ENDPOINT (Enhanced)
-// ================================================
-app.get('/api/platform/queue', authenticateToken, async (req, res) => {
-  try {
-    const queueStats = await getQueueStats();
-    const queueStatus = await getQueueStatus();
-    res.json({
-      ...queueStats,
-      ...queueStatus,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Error getting queue status:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// Profile
+app.use("/api/admin/users", profileRoutes);
+console.log("✓ Profile routes mounted at /api/admin/users");
 
-// ================================================
-// SYSTEM LOGS ENDPOINT (Admin only)
-// ================================================
-app.get('/api/platform/logs', authenticateToken, isAdminMiddleware, async (req, res) => {
-  const { limit = 100, eventType, startDate, endDate } = req.query;
-  
-  try {
-    let query = supabase
-      .from('system_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(parseInt(limit));
-    
-    if (eventType) {
-      query = query.eq('event_type', eventType);
-    }
-    
-    if (startDate) {
-      query = query.gte('created_at', startDate);
-    }
-    
-    if (endDate) {
-      query = query.lte('created_at', endDate);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    res.json(data || []);
-  } catch (error) {
-    console.error('Error fetching system logs:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// Dashboard
+app.use("/api/dashboard", dashboardRoutes);
+console.log("✓ Dashboard routes mounted at /api/dashboard");
 
-// ================================================
-// SYSTEM METRICS ENDPOINT
-// ================================================
-app.get('/api/platform/metrics', authenticateToken, async (req, res) => {
-  try {
-    const { data: usageStats } = await getUsageStats(req.user.id);
-    const queueStats = await getQueueStats();
-    const health = platformHealth;
-    
-    res.json({
-      usage: usageStats,
-      queue: queueStats,
-      health: health,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Error getting metrics:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// Chat
+app.use("/api/chat", chatRoutes);
+console.log("✓ Chat routes mounted at /api/chat");
 
-// ================= SMART HUB ROUTES - MOUNTED HERE =================
-// This is CRITICAL for image upload and tools analytics to work
-app.use('/api/smart-hub', smartHubRoutes);
-console.log('? Smart Hub routes mounted at /api/smart-hub');
+// Widget (config + key)
+app.use("/api", widgetRoutes);
+console.log("✓ Widget routes mounted at /api/widget and /api/public/widget-config");
 
-// Health check endpoint for Render
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
+// Widget Chat (dashboard + public)
+app.use("/api", widgetChatRoutes);
+console.log("✓ Widget chat routes mounted at /api/widget/chat and /api/public/chat");
+
+// Subscription/Billing
+app.use("/api/subscription", subscriptionRoutes);
+console.log("✓ Subscription routes mounted at /api/subscription");
+
+// Admin
+app.use("/api/admin", adminRoutes);
+console.log("✓ Admin routes mounted at /api/admin");
+
+// Support
+app.use("/api/support", supportRoutes);
+console.log("✓ Support routes mounted at /api/support");
+
+// Leads
+app.use("/api", leadsRoutes);
+console.log("✓ Leads routes mounted at /api/leads and /api/public/leads");
+
+// Business Intelligence
+app.use("/api/business", authenticateToken, businessRoutes);
+console.log("✓ Business Intelligence routes mounted at /api/business");
+
+// Broadcast
+app.use("/api/broadcast", authenticateToken, broadcastRoutes);
+console.log("✓ Broadcast routes mounted at /api/broadcast");
+
+// Platform
+app.use("/api/platform", platformRoutes);
+console.log("✓ Platform routes mounted at /api/platform");
+
+// Smart Hub
+app.use("/api/smart-hub", smartHubRoutes);
+console.log("✓ Smart Hub routes mounted at /api/smart-hub");
 
 // Customer Insights
-let customerRouter;
-try {
-  customerRouter = require('./customer-insights');
-  console.log("? SUCCESS: customer-insights.js LOADED correctly");
-} catch (err) {
-  console.error("? FAILED to load customer-insights.js:", err.message);
-  customerRouter = express.Router();
-}
-app.use('/api/customer-insights', customerRouter);
+app.use("/api/customer-insights", customerRouter);
+console.log("✓ Customer Insights routes mounted at /api/customer-insights");
 
-app.get('/api/customer-insights/debug', (req, res) => {
-  res.json({ status: "alive", message: "Customer Insights prefix is reachable", time: new Date().toISOString() });
+// Customer Insights Debug
+app.get("/api/customer-insights/debug", (req, res) => {
+  res.json({
+    status: "alive",
+    message: "Customer Insights prefix is reachable",
+    time: new Date().toISOString(),
+  });
 });
 
 // AI Automations
-app.use('/api/ai-automations', require('./ai-automations'));
+app.use("/api/ai-automations", require("./ai-automations"));
+console.log("✓ AI Automations routes mounted at /api/ai-automations");
 
-// ================= NEW: AUTOMATION POWERHOUSE ROUTES =================
-app.use('/api/automations', automationRoutes);
+// Automation Powerhouse
+app.use("/api/automations", automationRoutes);
+console.log("✓ Automation Powerhouse routes mounted at /api/automations");
 
-// ================= NEW: ANALYTICS AND SETTINGS ROUTES =================
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/settings', settingsRoutes);
+// Analytics and Settings
+app.use("/api/analytics", analyticsRoutes);
+console.log("✓ Analytics routes mounted at /api/analytics");
+app.use("/api/settings", settingsRoutes);
+console.log("✓ Settings routes mounted at /api/settings");
 
-// ===== AI POWERHOUSE ROUTES - MOUNTED HERE =====
-// Initialize AI Powerhouse with Cloudflare Gateway
-const AI_POWERHOUSE_ENABLED = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
-console.log(`?? AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? '? Enabled' : '?? Disabled (Cloudflare credentials missing)'}`);
+// AI Powerhouse
+const AI_POWERHOUSE_ENABLED =
+  config.CLOUDFLARE_ACCOUNT_ID && config.CLOUDFLARE_AI_API_TOKEN;
+console.log(
+  `🔋 AI Powerhouse: ${AI_POWERHOUSE_ENABLED ? "✅ Enabled" : "⛔ Disabled"}`
+);
+app.use("/api/powerhouse", authenticateToken, aiPowerhouseRoutes);
+console.log("✓ AI Powerhouse routes mounted at /api/powerhouse");
 
-// Mount AI Powerhouse routes
-app.use('/api/powerhouse', authenticateToken, aiPowerhouseRoutes);
-console.log('? AI Powerhouse routes mounted at /api/powerhouse');
+// Automation Templates
+app.use("/api/automation", automationTemplatesRoutes);
+console.log("✓ Automation Templates routes mounted at /api/automation");
 
-// ===== NEW: AUTOMATION TEMPLATES ROUTES =====
-app.use('/api/automation', automationTemplatesRoutes);
-console.log('? Automation Templates routes mounted at /api/automation');
+// User Automations
+app.use("/api", userAutomationsRoutes);
+console.log("✓ User Automations routes mounted at /api/automations");
 
-// ===== NEW: USER AUTOMATIONS ROUTES =====
-app.use('/api', userAutomationsRoutes);
-console.log('? User Automations routes mounted at /api/automations');
+// AI Business Coach
+app.use("/api/coach", authenticateToken, coachRoutes);
+console.log("✓ AI Business Coach routes mounted at /api/coach");
 
-// ===== NEW: LEADS MANAGEMENT ROUTES =====
-app.use('/api', leadsRoutes);
-console.log('? Leads Management routes mounted at /api/leads');
-
-// ===== NEW: AI BUSINESS COACH ROUTES =====
-// Mount Business Coach routes (requires authentication)
-app.use('/api/coach', authenticateToken, coachRoutes);
-console.log('? AI Business Coach routes mounted at /api/coach');
-
-// ===== NEW: WORKFLOW ENGINE ROUTES (REAL-TIME AUTOMATION) =====
+// Workflow Engine
 if (workflowRoutes) {
-  // Apply rate limiting to workflow execution routes
-  app.use('/api/workflows/:id/execute', rateLimitMiddleware);
-  app.use('/api/workflows/execute', rateLimitMiddleware);
-  app.use('/api', workflowRoutes);
-  console.log('? Workflow routes mounted at /api/workflows with rate limiting');
+  app.use("/api/workflows/:id/execute", rateLimitMiddleware);
+  app.use("/api/workflows/execute", rateLimitMiddleware);
+  app.use("/api", workflowRoutes);
+  console.log("✓ Workflow routes mounted at /api/workflows with rate limiting");
 }
 
 if (webhookHandler) {
-  app.use('/', webhookHandler);
-  console.log('? Webhook handler mounted at /webhook/*');
+  app.use("/", webhookHandler);
+  console.log("✓ Webhook handler mounted at /webhook/*");
 }
 
-// ===== NEW: WEBHOOK LISTENER (for registered webhooks) =====
 if (webhookListener) {
-  app.use('/', webhookListener);
-  console.log('? Webhook listener mounted');
+  app.use("/", webhookListener);
+  console.log("✓ Webhook listener mounted");
 }
 
-// ===== NEW: WORKFLOW TEMPLATES ROUTES =====
 if (workflowTemplatesRoutes) {
-  app.use('/', workflowTemplatesRoutes);
-  console.log('? Workflow templates routes mounted at /api/workflow-templates');
+  app.use("/", workflowTemplatesRoutes);
+  console.log("✓ Workflow templates routes mounted at /api/workflow-templates");
 }
 
-// ================= ENTERPRISE FEATURE ENDPOINTS =================
-
-// Queue Stats endpoint
-app.get('/api/queue/stats', authenticateToken, async (req, res) => {
-  try {
-    const stats = await getQueueStats();
-    res.json(stats);
-  } catch (error) {
-    console.error('Error getting queue stats:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Workflow Versioning endpoints
-app.get('/api/workflows/:id/versions', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const versions = await workflowVersioning.getVersions(req.params.id);
-    res.json(versions);
-  } catch (error) {
-    console.error('Error getting versions:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/workflows/:id/versions/save', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const { name, nodes, edges, change_note } = req.body;
-    const version = await workflowVersioning.saveVersion(
-      req.params.id, 
-      req.user.id, 
-      name, 
-      nodes, 
-      edges, 
-      change_note
-    );
-    res.json(version);
-  } catch (error) {
-    console.error('Error saving version:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/workflows/:id/rollback/:version', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const workflow = await workflowVersioning.rollbackToVersion(req.params.id, parseInt(req.params.version));
-    res.json(workflow);
-  } catch (error) {
-    console.error('Error rolling back:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/workflows/:id/compare/:version1/:version2', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const comparison = await workflowVersioning.compareVersions(
-      req.params.id,
-      parseInt(req.params.version1),
-      parseInt(req.params.version2)
-    );
-    res.json(comparison);
-  } catch (error) {
-    console.error('Error comparing versions:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Debug Mode endpoints
-app.post('/api/workflows/:id/debug', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const { trigger_data } = req.body;
-    const sessionId = await debugExecutor.startDebugSession(
-      req.params.id, 
-      req.user.id, 
-      trigger_data
-    );
-    res.json({ session_id: sessionId });
-  } catch (error) {
-    console.error('Error starting debug session:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/debug/:sessionId/step', authenticateToken, async (req, res) => {
-  try {
-    const { action } = req.body;
-    const result = await debugExecutor.step(req.params.sessionId, action);
-    res.json(result);
-  } catch (error) {
-    console.error('Error stepping through debug:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/debug/:sessionId/breakpoint', authenticateToken, async (req, res) => {
-  try {
-    const { node_id, action } = req.body;
-    if (action === 'add') {
-      debugExecutor.setBreakpoint(req.params.sessionId, node_id);
-    } else {
-      debugExecutor.removeBreakpoint(req.params.sessionId, node_id);
-    }
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error managing breakpoint:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/debug/:sessionId', authenticateToken, async (req, res) => {
-  try {
-    const session = debugExecutor.getSession(req.params.sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Debug session not found' });
-    }
-    res.json(session);
-  } catch (error) {
-    console.error('Error getting debug session:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Error Handler endpoints
-app.post('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const { error_workflow_id, error_types } = req.body;
-    await errorHandler.registerErrorHandler(req.params.id, error_workflow_id, error_types);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error registering error handler:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/workflows/:id/error-handler', authenticateToken, ensureWorkspaceAccess, async (req, res) => {
-  try {
-    const { data: handler } = await supabase
-      .from('error_handlers')
-      .select('*')
-      .eq('workflow_id', req.params.id)
-      .single();
-    
-    res.json(handler || null);
-  } catch (error) {
-    console.error('Error getting error handler:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ===== WORKFLOW WEBHOOK TEST ENDPOINT =====
-app.post("/api/webhook-test", (req, res) => {
-  console.log("?? Webhook test received:", req.body);
-  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
-});
-
-// ===== INITIALIZE WORKFLOW SCHEDULER =====
-if (workflowScheduler && workflowScheduler.initialize) {
-  setTimeout(async () => {
-    await workflowScheduler.initialize();
-    console.log('? Workflow scheduler initialized');
-  }, 5000);
-  console.log('? Workflow scheduler will start in 5 seconds');
-}
-
-// Initialize error handlers on startup
-setTimeout(async () => {
-  await errorHandler.loadErrorHandlers();
-  console.log('? Error handlers loaded');
-}, 6000);
-
-// ================================================
-// ADMIN: SEED AUTOMATION TEMPLATES
-// ================================================
-app.post('/api/admin/seed-templates', authenticateToken, async (req, res) => {
-  // Admin only check
-  if (req.user.email !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-
-  const templates = [
-    {
-      slug: 'lead-scoring',
-      name: 'AI Lead Scoring',
-      description: 'Automatically score and qualify leads based on behavior, engagement, and demographics.',
-      category: 'lead_generation',
-      icon: 'fa-chart-line',
-      color: '#d4af37',
-      is_featured: true,
-      complexity: 'simple',
-      time_saved: '10 hrs/week',
-      roi_impact: '45% more leads',
-      industries: ['agency', 'saas', 'coach'],
-      default_config: { trigger: { type: 'new_lead', config: { score_threshold: 75 } }, actions: ['score_lead', 'notify_slack'] }
-    },
-    {
-      slug: 'cart-recovery',
-      name: 'Abandoned Cart Recovery',
-      description: 'Recover lost sales by automatically sending follow-up emails to customers who abandon their carts.',
-      category: 'ecommerce',
-      icon: 'fa-shopping-cart',
-      color: '#059669',
-      is_featured: true,
-      complexity: 'simple',
-      time_saved: '5 hrs/week',
-      roi_impact: '25% recovery rate',
-      industries: ['ecommerce'],
-      default_config: { trigger: { type: 'abandoned_cart', config: { delay_hours: 1 } }, actions: ['send_email', 'send_sms'] }
-    },
-    {
-      slug: 'ai-social-media-scheduler',
-      name: 'AI Social Media Scheduler',
-      description: 'Auto-generate and schedule posts across all platforms with AI-optimized timing.',
-      category: 'social_media',
-      icon: 'fa-share-alt',
-      color: '#3b82f6',
-      is_featured: true,
-      complexity: 'medium',
-      time_saved: '8 hrs/week',
-      roi_impact: '3x engagement',
-      industries: ['agency', 'creator', 'coach'],
-      default_config: { trigger: { type: 'schedule_time', config: { post_time: '09:00' } }, actions: ['generate_post', 'post_to_instagram'] }
-    },
-    {
-      slug: 'video-script-generator',
-      name: 'Video Script Generator',
-      description: 'Generate viral video scripts for TikTok, Reels, and YouTube Shorts in seconds.',
-      category: 'content_creation',
-      icon: 'fa-video',
-      color: '#ef4444',
-      is_featured: false,
-      complexity: 'simple',
-      time_saved: '4 hrs/week',
-      roi_impact: '10x content output',
-      industries: ['creator', 'agency'],
-      default_config: { trigger: { type: 'on_demand', config: {} }, actions: ['generate_script'] }
-    },
-    {
-      slug: 'auto-responder',
-      name: 'AI Auto-Responder',
-      description: 'Handle 70% of common customer questions automatically, 24/7.',
-      category: 'customer_support',
-      icon: 'fa-headset',
-      color: '#8b5cf6',
-      is_featured: true,
-      complexity: 'medium',
-      time_saved: '15 hrs/week',
-      roi_impact: '80% faster response',
-      industries: ['all'],
-      default_config: { trigger: { type: 'new_message', config: { response_tone: 'professional' } }, actions: ['ai_response'] }
-    },
-    {
-      slug: 'price-monitoring-alert',
-      name: 'Competitor Price Monitoring',
-      description: 'Track competitor prices and get alerts when they change.',
-      category: 'ecommerce',
-      icon: 'fa-chart-simple',
-      color: '#f59e0b',
-      is_featured: false,
-      complexity: 'advanced',
-      time_saved: '6 hrs/week',
-      roi_impact: '20% better pricing',
-      industries: ['ecommerce'],
-      default_config: { trigger: { type: 'price_change', config: { alert_threshold: 5 } }, actions: ['email_alert'] }
-    },
-    {
-      slug: 'lead-capture-crm-slack',
-      name: 'Lead Capture to CRM + Slack',
-      description: 'Capture leads from your website and instantly notify your team on Slack.',
-      category: 'lead_generation',
-      icon: 'fa-slack',
-      color: '#d4af37',
-      is_featured: true,
-      complexity: 'simple',
-      time_saved: '3 hrs/week',
-      roi_impact: '65% faster response',
-      industries: ['agency', 'saas'],
-      default_config: { trigger: { type: 'new_lead', config: {} }, actions: ['create_lead', 'send_slack'] }
-    },
-    {
-      slug: 'report-generator',
-      name: 'Auto-Generate Client Reports',
-      description: 'Pull data from analytics tools and email beautiful reports to clients weekly.',
-      category: 'reporting',
-      icon: 'fa-file-alt',
-      color: '#d4af37',
-      is_featured: false,
-      complexity: 'advanced',
-      time_saved: '8 hrs/week',
-      roi_impact: '15 hrs saved',
-      industries: ['agency'],
-      default_config: { trigger: { type: 'schedule_time', config: { day: 'Monday', time: '09:00' } }, actions: ['generate_report', 'send_email'] }
-    },
-    {
-      slug: 'review-requests',
-      name: 'Automated Review Requests',
-      description: 'Auto-request reviews after service completion and respond to feedback.',
-      category: 'customer_support',
-      icon: 'fa-star',
-      color: '#f59e0b',
-      is_featured: false,
-      complexity: 'simple',
-      time_saved: '3 hrs/week',
-      roi_impact: '3x more reviews',
-      industries: ['local_business'],
-      default_config: { trigger: { type: 'service_completed', config: { delay_days: 1 } }, actions: ['send_email', 'track_response'] }
-    }
-  ];
-
-  try {
-    let inserted = 0;
-    let updated = 0;
-
-    for (const template of templates) {
-      // Check if template exists
-      const { data: existing } = await supabase
-        .from('automation_templates')
-        .select('id')
-        .eq('slug', template.slug)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing
-        const { error } = await supabase
-          .from('automation_templates')
-          .update({
-            ...template,
-            updated_at: new Date().toISOString()
-          })
-          .eq('slug', template.slug);
-        
-        if (error) throw error;
-        updated++;
-      } else {
-        // Insert new
-        const { error } = await supabase
-          .from('automation_templates')
-          .insert({
-            ...template,
-            id: uuidv4(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            usage_count: 0
-          });
-        
-        if (error) throw error;
-        inserted++;
-      }
-    }
-
-    // Get final count
-    const { count, error: countError } = await supabase
-      .from('automation_templates')
-      .select('*', { count: 'exact', head: true });
-
-    res.json({
-      success: true,
-      message: `Templates seeded successfully`,
-      inserted: inserted,
-      updated: updated,
-      total: count || 0
-    });
-
-  } catch (error) {
-    console.error('Error seeding templates:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      hint: 'Make sure automation_templates table exists in Supabase'
-    });
-  }
-});
-
-// ================================================
-// AI BUSINESS INTELLIGENCE ROUTES
-// ================================================
-
-// ========== HELPER FUNCTIONS FOR ROI CALCULATION ==========
-function calculateAutomationROI(automationType, userProfile) {
-  const roiData = {
-    'cart-recovery': { hoursSaved: 5, revenueImpact: 2500, leadsGenerated: 45 },
-    'lead-scoring': { hoursSaved: 10, revenueImpact: 1200, leadsGenerated: 85 },
-    'ai-social-media-scheduler': { hoursSaved: 8, revenueImpact: 600, leadsGenerated: 30 },
-    'video-script-generator': { hoursSaved: 4, revenueImpact: 800, leadsGenerated: 25 },
-    'lead-capture-crm-slack': { hoursSaved: 3, revenueImpact: 800, leadsGenerated: 65 },
-    'price-monitoring-alert': { hoursSaved: 6, revenueImpact: 1200, leadsGenerated: 20 },
-    'auto-responder': { hoursSaved: 15, revenueImpact: 1000, leadsGenerated: 55 }
-  };
-  
-  const baseROI = roiData[automationType] || { hoursSaved: 2, revenueImpact: 500, leadsGenerated: 15 };
-  
-  // Adjust based on business size
-  let sizeMultiplier = 1;
-  if (userProfile.size === '1-5') sizeMultiplier = 1.2;
-  else if (userProfile.size === '6-20') sizeMultiplier = 1.5;
-  else if (userProfile.size === '21-50') sizeMultiplier = 2;
-  else if (userProfile.size === '51+') sizeMultiplier = 3;
-  
-  // Adjust based on hours spent
-  let hoursMultiplier = 1;
-  if (userProfile.hours === '5-15') hoursMultiplier = 1.3;
-  else if (userProfile.hours === '15-25') hoursMultiplier = 1.8;
-  else if (userProfile.hours === '25-40') hoursMultiplier = 2.2;
-  else if (userProfile.hours === '40+') hoursMultiplier = 3;
-  
-  return {
-    hours_saved_per_week: Math.round(baseROI.hoursSaved * sizeMultiplier * hoursMultiplier),
-    revenue_impact_monthly: Math.round(baseROI.revenueImpact * sizeMultiplier),
-    leads_generated_monthly: Math.round(baseROI.leadsGenerated * sizeMultiplier),
-    confidence_score: Math.min(95, Math.round(70 + (sizeMultiplier * 5) + (hoursMultiplier * 5)))
-  };
-}
-
-// Save business profile
-app.post('/api/business/profile', authenticateToken, async (req, res) => {
-    const userId = req.user.id;
-    const profile = req.body;
-    
-    console.log(`?? Business profile saved for user ${userId}:`, profile);
-    
+// ============================================================
+// KNOWLEDGE BASE
+// ============================================================
+app.post(
+  "/api/knowledge/add",
+  auth,
+  async (req, res) => {
+    // checkVerified middleware logic moved inline
     try {
-        // Save profile to users table
-        const { error } = await supabase
-            .from('users')
-            .update({ 
-                business_profile: profile,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-        
-        if (error) throw error;
-        
-        res.json({ success: true, message: 'Profile saved' });
-        
-    } catch (error) {
-        console.error('Error saving profile:', error);
-        res.status(500).json({ error: 'Failed to save profile' });
-    }
-});
-
-// Get business insights and recommendations with ROI
-app.get('/api/business/insights', authenticateToken, async (req, res) => {
-    const userId = req.user.id;
-    
-    try {
-        // Get user profile
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('business_profile, plan, business_name')
-            .eq('id', userId)
-            .single();
-        
-        if (error) throw error;
-        
-        const hasProfile = user?.business_profile && Object.keys(user.business_profile).length > 0;
-        
-        if (!hasProfile) {
-            return res.json({ has_profile: false });
-        }
-        
-        const profile = user.business_profile;
-        
-        // Generate insights based on profile with ROI
-        const insights = [];
-        
-        // E-commerce insights with ROI
-        if (profile.industry === 'ecommerce' || profile.tools?.includes('shopify')) {
-            const roi = calculateAutomationROI('cart-recovery', profile);
-            insights.push({
-                type: 'ecommerce',
-                title: '?? E-commerce Opportunity',
-                description: `Based on your business type, you could recover 15% of abandoned carts with automated follow-up emails. This could save you ${roi.hours_saved_per_week} hours/week and add $${roi.revenue_impact_monthly}/month.`,
-                priority: 'high',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        // Agency insights with ROI
-        if (profile.industry === 'agency') {
-            const roi = calculateAutomationROI('lead-scoring', profile);
-            insights.push({
-                type: 'operations',
-                title: '?? Agency Efficiency',
-                description: `Automate client reporting and save ${roi.hours_saved_per_week} hours per week per client with AI-powered reports.`,
-                priority: 'high',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        // Lead generation insights
-        if (profile.goal === 'leads') {
-            const roi = calculateAutomationROI('lead-scoring', profile);
-            insights.push({
-                type: 'lead_generation',
-                title: '?? Lead Generation Potential',
-                description: `AI lead scoring can increase conversion by 45%. Based on your profile, this could generate ${roi.leads_generated_monthly} leads/month and save ${roi.hours_saved_per_week} hours/week.`,
-                priority: 'high',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        // Content creation insights
-        if (profile.goal === 'content') {
-            const roi = calculateAutomationROI('ai-social-media-scheduler', profile);
-            insights.push({
-                type: 'content',
-                title: '?? Content Scaling',
-                description: `AI content generation can 3x your output. Save ${roi.hours_saved_per_week} hours/week and generate ${roi.leads_generated_monthly} more leads.`,
-                priority: 'medium',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        // Customer support insights
-        if (profile.goal === 'support') {
-            const roi = calculateAutomationROI('auto-responder', profile);
-            insights.push({
-                type: 'customer_support',
-                title: '?? 24/7 Support',
-                description: `AI auto-responder can handle 70% of common questions automatically. Save ${roi.hours_saved_per_week} hours/week on support.`,
-                priority: 'high',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        // Sales insights
-        if (profile.goal === 'sales') {
-            const roi = calculateAutomationROI('cart-recovery', profile);
-            insights.push({
-                type: 'sales',
-                title: '?? Sales Growth Opportunity',
-                description: `Automated cart recovery and follow-up sequences can boost sales by 15-25%. Potential revenue increase: $${roi.revenue_impact_monthly}/month.`,
-                priority: 'high',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        // Hours-based insights
-        if (profile.hours && profile.hours !== '0-5') {
-            const hoursMap = { '5-15': 10, '15-25': 20, '25-40': 32, '40+': 45 };
-            const currentHours = hoursMap[profile.hours] || 5;
-            const savedHours = Math.floor(currentHours * 0.7);
-            insights.push({
-                type: 'operations',
-                title: '? Time Savings Opportunity',
-                description: `You spend ~${currentHours} hours/week on manual tasks. Automations could save you ${savedHours} hours/week - that's ${Math.floor(savedHours / 8)} extra days per week!`,
-                priority: 'high',
-                roi: savedHours * 50,
-                hours_saved: savedHours
-            });
-        }
-        
-        // Challenge-based insights
-        if (profile.challenge === 'manual_data') {
-            insights.push({
-                type: 'operations',
-                title: '?? Data Entry Automation',
-                description: `Manual data entry is a major time sink. Automate form submissions and CRM updates to save 8+ hours/week.`,
-                priority: 'high',
-                roi: 600,
-                hours_saved: 8
-            });
-        }
-        
-        if (profile.challenge === 'followups') {
-            insights.push({
-                type: 'sales',
-                title: '?? Follow-up Automation',
-                description: `Automated follow-up sequences can increase response rates by 3x and save 5+ hours/week.`,
-                priority: 'high',
-                roi: 1500,
-                hours_saved: 5
-            });
-        }
-        
-        // Tool-based insights
-        if (profile.tools && profile.tools.includes('shopify')) {
-            const roi = calculateAutomationROI('cart-recovery', profile);
-            insights.push({
-                type: 'ecommerce',
-                title: '?? E-commerce Revenue Opportunity',
-                description: `You're losing 15-25% of potential sales from abandoned carts. Automated recovery could add $${roi.revenue_impact_monthly}/month.`,
-                priority: 'high',
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-        }
-        
-        if (profile.tools && profile.tools.includes('slack')) {
-            insights.push({
-                type: 'operations',
-                title: '?? Team Communication Boost',
-                description: `Connect your automations to Slack for real-time team notifications on leads, sales, and support tickets.`,
-                priority: 'medium',
-                roi: 400,
-                hours_saved: 2
-            });
-        }
-        
-        // Generate recommendations with ROI
-        const recommendations = [];
-        
-        // E-commerce recommendations with ROI
-        if (profile.industry === 'ecommerce' || profile.tools?.includes('shopify')) {
-            const roi = calculateAutomationROI('cart-recovery', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_1`,
-                automation_template_id: 'cart-recovery',
-                title: 'Abandoned Cart Recovery',
-                reason: `You use e-commerce tools. This automation recovers lost sales by sending follow-up emails to customers who leave items in cart. Estimated ROI: $${roi.revenue_impact_monthly}/month`,
-                confidence: roi.confidence_score,
-                roi: roi.revenue_impact_monthly,
-                hours_saved: roi.hours_saved_per_week
-            });
-            
-            const priceRoi = calculateAutomationROI('price-monitoring-alert', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_2`,
-                automation_template_id: 'price-monitoring-alert',
-                title: 'Competitor Price Monitoring',
-                reason: `Stay competitive with real-time price alerts when competitors change prices. Estimated savings: $${priceRoi.revenue_impact_monthly}/month.`,
-                confidence: priceRoi.confidence_score,
-                roi: priceRoi.revenue_impact_monthly,
-                hours_saved: priceRoi.hours_saved_per_week
-            });
-        }
-        
-        // Lead generation recommendations
-        if (profile.goal === 'leads') {
-            const leadRoi = calculateAutomationROI('lead-scoring', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_3`,
-                automation_template_id: 'lead-scoring',
-                title: 'AI Lead Scoring',
-                reason: `Automatically score leads based on behavior and engagement. Focus your sales team on hot leads first. Estimated: ${leadRoi.leads_generated_monthly} leads/month.`,
-                confidence: leadRoi.confidence_score,
-                roi: leadRoi.revenue_impact_monthly,
-                hours_saved: leadRoi.hours_saved_per_week,
-                leads_generated: leadRoi.leads_generated_monthly
-            });
-            
-            const captureRoi = calculateAutomationROI('lead-capture-crm-slack', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_4`,
-                automation_template_id: 'lead-capture-crm-slack',
-                title: 'Lead to CRM + Slack',
-                reason: `Capture leads from your website and instantly notify your team on Slack. Estimated: ${captureRoi.leads_generated_monthly} more leads/month.`,
-                confidence: captureRoi.confidence_score,
-                roi: captureRoi.revenue_impact_monthly,
-                hours_saved: captureRoi.hours_saved_per_week,
-                leads_generated: captureRoi.leads_generated_monthly
-            });
-        }
-        
-        // Content creation recommendations
-        if (profile.goal === 'content') {
-            const socialRoi = calculateAutomationROI('ai-social-media-scheduler', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_5`,
-                automation_template_id: 'ai-social-media-scheduler',
-                title: 'AI Social Media Scheduler',
-                reason: `Auto-generate and schedule posts across all platforms with optimal timing for maximum engagement. Save ${socialRoi.hours_saved_per_week} hours/week.`,
-                confidence: socialRoi.confidence_score,
-                roi: socialRoi.revenue_impact_monthly,
-                hours_saved: socialRoi.hours_saved_per_week
-            });
-            
-            const videoRoi = calculateAutomationROI('video-script-generator', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_6`,
-                automation_template_id: 'video-script-generator',
-                title: 'Video Script Generator',
-                reason: `Generate engaging TikTok/Reel scripts in seconds. 10x your video output and save ${videoRoi.hours_saved_per_week} hours/week.`,
-                confidence: videoRoi.confidence_score,
-                roi: videoRoi.revenue_impact_monthly,
-                hours_saved: videoRoi.hours_saved_per_week
-            });
-        }
-        
-        // Customer support recommendations
-        if (profile.goal === 'support' || profile.tools?.includes('slack')) {
-            const supportRoi = calculateAutomationROI('auto-responder', profile);
-            recommendations.push({
-                id: `rec_${Date.now()}_7`,
-                automation_template_id: 'auto-responder',
-                title: 'AI Auto-Responder',
-                reason: `Automatically respond to common customer questions 24/7. Reduce response time by 80% and save ${supportRoi.hours_saved_per_week} hours/week.`,
-                confidence: supportRoi.confidence_score,
-                roi: supportRoi.revenue_impact_monthly,
-                hours_saved: supportRoi.hours_saved_per_week
-            });
-        }
-        
-        // Sort recommendations by ROI (highest first)
-        recommendations.sort((a, b) => (b.roi || 0) - (a.roi || 0));
-        
-        // Get existing recommendations from database
-        const { data: existingRecs } = await supabase
-            .from('ai_recommendations')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('status', 'pending')
-            .limit(10);
-        
-        // If we have existing recommendations, use them
-        const finalRecommendations = existingRecs && existingRecs.length > 0 
-            ? existingRecs.map(rec => ({
-                id: rec.id,
-                automation_template_id: rec.automation_id,
-                title: rec.title,
-                reason: rec.reason,
-                confidence: rec.confidence_score,
-                roi: rec.roi || 500,
-                hours_saved: rec.hours_saved || 5
-            }))
-            : recommendations;
-        
-        // Calculate total ROI metrics
-        const totalHoursSaved = recommendations.reduce((sum, rec) => sum + (rec.hours_saved || 0), 0);
-        const totalRevenueImpact = recommendations.reduce((sum, rec) => sum + (rec.roi || 0), 0);
-        const totalLeadsGenerated = recommendations.reduce((sum, rec) => sum + (rec.leads_generated || 0), 0);
-        
-        res.json({
-            has_profile: true,
-            profile: profile,
-            insights: insights,
-            recommendations: finalRecommendations,
-            total_roi: {
-                hours_saved_per_week: totalHoursSaved,
-                revenue_impact_monthly: totalRevenueImpact,
-                leads_generated_monthly: totalLeadsGenerated
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error getting insights:', error);
-        res.status(500).json({ error: 'Failed to get insights' });
-    }
-});
-
-// Accept/dismiss recommendation
-app.post('/api/business/recommendations/:recId/:action', authenticateToken, async (req, res) => {
-    const { recId, action } = req.params;
-    const userId = req.user.id;
-    
-    if (!['accept', 'dismiss'].includes(action)) {
-        return res.status(400).json({ error: 'Invalid action' });
-    }
-    
-    try {
-        const status = action === 'accept' ? 'accepted' : 'rejected';
-        
-        const { error } = await supabase
-            .from('ai_recommendations')
-            .update({ 
-                status: status,
-                deployed_at: action === 'accept' ? new Date().toISOString() : null
-            })
-            .eq('id', recId)
-            .eq('user_id', userId);
-        
-        if (error) throw error;
-        
-        res.json({ success: true });
-        
-    } catch (error) {
-        console.error('Error updating recommendation:', error);
-        res.status(500).json({ error: 'Failed to update recommendation' });
-    }
-});
-
-// ================= GET ROI STATS FOR DASHBOARD =================
-app.get('/api/business/roi-stats', authenticateToken, async (req, res) => {
-    const userId = req.user.id;
-    
-    try {
-        // Get user automations
-        const { data: automations } = await supabase
-            .from('user_automations')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('status', 'active');
-        
-        // Get leads generated from automations
-        const { data: leads } = await supabase
-            .from('leads')
-            .select('created_at')
-            .eq('user_id', userId)
-            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-        
-        // Get user profile for ROI calculations
-        const { data: user } = await supabase
-            .from('users')
-            .select('business_profile')
-            .eq('id', userId)
-            .single();
-        
-        const profile = user?.business_profile || {};
-        
-        // Calculate hours saved
-        let totalHoursSaved = 0;
-        for (const automation of automations || []) {
-            const templateId = automation.template_id;
-            const roi = calculateAutomationROI(templateId, profile);
-            totalHoursSaved += roi.hours_saved_per_week;
-        }
-        
-        // Calculate leads generated
-        const leadsCount = leads?.length || 0;
-        
-        // Calculate revenue impact
-        let totalRevenueImpact = 0;
-        for (const automation of automations || []) {
-            const templateId = automation.template_id;
-            const roi = calculateAutomationROI(templateId, profile);
-            totalRevenueImpact += roi.revenue_impact_monthly;
-        }
-        
-        // Calculate tasks automated (estimated)
-        const tasksAutomated = (automations?.length || 0) * 45;
-        
-        // Weekly trend data (mock data for chart)
-        const weeklyData = {
-            hours: [totalHoursSaved * 0.2, totalHoursSaved * 0.4, totalHoursSaved * 0.7, totalHoursSaved],
-            revenue: [totalRevenueImpact * 0.2, totalRevenueImpact * 0.4, totalRevenueImpact * 0.7, totalRevenueImpact]
-        };
-        
-        res.json({
-            success: true,
-            stats: {
-                hours_saved: totalHoursSaved,
-                leads_generated: leadsCount,
-                revenue_impact: totalRevenueImpact,
-                tasks_automated: tasksAutomated,
-                leads_growth: leadsCount > 0 ? Math.floor(Math.random() * 30) + 15 : 0,
-                weekly_trend: weeklyData
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error getting ROI stats:', error);
-        res.status(500).json({ error: 'Failed to get ROI stats' });
-    }
-});
-
-// ================= PLAN LIMITS =================
-const PLAN_LIMITS = {
-  free: { messages: 50, leads: 10 },
-  basic: { messages: 500, leads: 500 },
-  pro: { messages: 3000, leads: 3000 },
-  enterprise: { messages: Infinity, leads: Infinity },
-  agency: { messages: Infinity, leads: Infinity }
-};
-
-// ================= ALL SQLITE MIGRATIONS REMOVED =================
-console.log("? Using Supabase for all database operations");
-
-// ================= VERIFICATION MIDDLEWARE =================
-async function checkVerified(req, res, next) {
-  try {
-    const user = await getUserById(req.user.id);
-    if (user && (user.is_verified === 1 || user.email.toLowerCase().trim() === ADMIN_EMAIL)) {
-      next();
-    } else {
-      res.status(403).json({ error: "Please verify your email to access this feature." });
-    }
-  } catch (err) {
-    console.error("Verification check error:", err);
-    res.status(500).json({ error: "Verification check failed" });
-  }
-}
-
-// ================= RESEND VERIFICATION CODE =================
-app.post("/api/auth/resend-verification", bodyParser.json(), async (req, res) => {
-  const { email } = req.body;
-  
-  if (!email) {
-    return res.status(400).json({ error: "Email required" });
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-  
-  try {
-    const vCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Update user with new verification token using Supabase
-    const { error } = await supabase
-      .from('users')
-      .update({ verification_token: vCode })
-      .eq('email', normalizedEmail);
-
-    if (error) {
-      console.error("Update verification token error:", error);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="UTF-8"></head>
-      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
-          <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">? AI Smart Hub</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">New Verification Code</p>
-          </div>
-          <div style="padding: 40px;">
-            <h2 style="color: #333; margin-bottom: 20px;">Your New Verification Code</h2>
-            <p style="color: #666; margin-bottom: 20px;">You requested a new verification code for your account.</p>
-            <div style="background: #f8f9fa; padding: 30px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
-            </div>
-            <p style="color: #666;">Enter this code on the website to verify your account.</p>
-            <p style="color: #999; font-size: 14px; margin-top: 20px;">This code will expire in 24 hours.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const result = await sendEmailWithFallback(
-      normalizedEmail,
-      'AI Smart Hub Support',
-      'Your New Verification Code',
-      emailHtml
-    );
-
-    if (result.success) {
-      res.json({ 
-        success: true, 
-        message: `New verification code sent to ${normalizedEmail} via ${result.method}` 
-      });
-    } else {
-      res.status(500).json({ error: "Failed to send verification email" });
-    }
-  } catch (err) {
-    console.error("Resend verification error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ================= AUTH ROUTES =================
-app.post("/api/auth/signup", bodyParser.json(), async (req, res) => {
-  const { email, password, business_name } = req.body; 
-  if (!email || !password) return res.status(400).json({ error: "Missing fields" });
-
-  const normalizedEmail = email.trim().toLowerCase();
-  const vCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const hashed = await bcrypt.hash(password, 10);
-  const business_id = "biz_" + Math.random().toString(36).substring(2, 12);
-
-  try {
-    const existing = await getUserByEmail(normalizedEmail);
-    if (existing) return res.status(400).json({ error: "User already exists" });
-
-    const userId = await createUser(normalizedEmail, hashed, business_id, business_name, vCode);
-    
-    const widgetKey = uuidv4();
-    await setWidgetKey(userId, widgetKey);
-
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="UTF-8"></head>
-      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;">
-          <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">? Welcome to AI Smart Hub</h1>
-          </div>
-          <div style="padding: 40px;">
-            <h2 style="color: #333;">Verify Your Email</h2>
-            <p style="color: #666; margin-bottom: 20px;">Your verification code is:</p>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              <h1 style="font-size: 48px; letter-spacing: 8px; color: #d4af37; margin: 0;">${vCode}</h1>
-            </div>
-            <p style="color: #666;">Enter this code on the website to verify your account.</p>
-            <p style="color: #999; font-size: 14px;">This code will expire in 24 hours.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    await sendEmailWithFallback(
-      normalizedEmail,
-      'AI Smart Hub Support',
-      'Your Verification Code',
-      emailHtml
-    );
-
-    res.json({ 
-      success: true, 
-      message: "Signup successful. Please check your email for your 6-digit verification code.",
-      email: normalizedEmail
-    });
-  } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({ error: "Failed to create user" });
-  }
-});
-
-app.get("/api/auth/verify/:token", async (req, res) => {
-  const success = await verifyUser(req.params.token);
-  if (success) {
-    res.send("<h1>Email Verified!</h1><p>Your account is now active. You can now log in to your dashboard.</p>");
-  } else {
-    res.status(400).send("Invalid or expired verification code.");
-  }
-});
-
-app.post("/api/auth/verify-code", bodyParser.json(), async (req, res) => {
-  const { code, email } = req.body;
-  
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('verification_token', code)
-      .single();
-
-    if (error || !user) {
-      return res.status(400).json({ error: "Invalid verification code." });
-    }
-
-    const success = await verifyUser(code);
-    
-    if (success) {
-      const token = jwt.sign(
-        { id: user.id, email: user.email, plan: user.plan }, 
-        JWT_SECRET, 
-        { expiresIn: '7d' }
-      );
-      
-      res.json({ 
-        success: true, 
-        message: "Account verified successfully!",
-        token,
-        plan: user.plan,
-        email: user.email,
-        business_name: user.business_name
-      });
-    } else {
-      res.status(400).json({ error: "Invalid verification code." });
-    }
-  } catch (err) {
-    console.error("Verify code error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-app.post("/api/auth/login", bodyParser.json(), (req, res, next) => {
-  const { email } = req.body;
-  if (email && email.toLowerCase().trim() === ADMIN_EMAIL) {
-    supabase
-      .from('users')
-      .update({ is_verified: 1, plan: 'agency', plan_expires: new Date(Date.now() + 30*24*60*60*1000).toISOString() })
-      .eq('email', ADMIN_EMAIL)
-      .then(() => {
-        login(req, res, next);
-      })
-      .catch(err => {
-        console.error("Admin update error:", err);
-        login(req, res, next);
-      });
-  } else {
-    login(req, res, next);
-  }
-});
-
-// ================= PROFILE MANAGEMENT =================
-app.put("/api/admin/users/update-profile", auth, bodyParser.json(), async (req, res) => {
-  const { business_name, password } = req.body;
-  const userId = req.user.id;
-
-  try {
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const { error } = await supabase
-        .from('users')
-        .update({ business_name, password: hashedPassword })
-        .eq('id', userId);
-
-      if (error) throw error;
-      res.json({ success: true, message: "Profile and password updated" });
-    } else {
-      const { error } = await supabase
-        .from('users')
-        .update({ business_name })
-        .eq('id', userId);
-
-      if (error) throw error;
-      res.json({ success: true, message: "Profile name updated" });
-    }
-  } catch (e) {
-    res.status(500).json({ error: "Server error during update" });
-  }
-});
-
-app.delete("/api/admin/users/delete-account", auth, async (req, res) => {
-  const userId = req.user.id;
-  
-  try {
-    // Delete in correct order due to foreign key constraints
-    await supabase.from('activity_log').delete().eq('user_id', userId);
-    await supabase.from('automations').delete().eq('user_id', userId);
-    await supabase.from('chats').delete().eq('user_id', userId);
-    await supabase.from('connected_accounts').delete().eq('user_id', userId);
-    await supabase.from('governance_settings').delete().eq('user_id', userId);
-    await supabase.from('knowledge_base').delete().eq('user_id', userId);
-    await supabase.from('leads').delete().eq('user_id', userId);
-    await supabase.from('support_tickets').delete().eq('user_id', userId);
-    await supabase.from('users').delete().eq('id', userId);
-    
-    res.json({ success: true, message: "Account deleted permanently" });
-  } catch (err) {
-    console.error("Delete account error:", err);
-    res.status(500).json({ error: "Failed to delete account" });
-  }
-});
-
-// ================= KNOWLEDGE BASE =================
-app.post("/api/knowledge/add", auth, checkVerified, bodyParser.json(), async (req, res) => {
-  const { content } = req.body;
-  try {
-    await addKnowledge(req.user.id, content);
-    res.json({ success: true, message: "Knowledge added" });
-  } catch (err) { 
-    console.error("Knowledge add error:", err);
-    res.status(500).json({ error: "Failed to save knowledge" }); 
-  }
-});
-
-// ================= DASHBOARD =================
-app.get("/api/dashboard/full", auth, async (req, res) => {
-  try {
-    const user = await getUserById(req.user.id);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-    let dbPlan = (user.plan || 'free').toLowerCase().trim();
-    if (dbPlan === 'agence') dbPlan = 'agency';
-    let currentPlan = dbPlan;
-
-    if (user.email.toLowerCase().trim() === ADMIN_EMAIL) {
-      currentPlan = "agency";
-    } 
-
-    const limits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.free;
-    const displayName = user.business_name || user.name || "My Business";
-
-    console.log(`[DASHBOARD] Sending to frontend - plan: ${currentPlan} (raw DB: ${user.plan || 'free'})`);
-
-    // Get chats using Supabase
-    const { data: chats } = await supabase
-      .from('chats')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    // Get leads using Supabase
-    const { data: leads } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    // Get business profile if exists
-    const businessProfile = user.business_profile || null;
-
-    res.json({
-      name: displayName, 
-      business_name: displayName,
-      businessName: displayName,
-      email: user.email,
-      plan: currentPlan,
-      plan_expires: user.plan_expires,
-      is_verified: user.is_verified, 
-      widget_color: user.widget_color, 
-      messages_used: user.messages_used || 0,
-      messages_limit: limits.messages,
-      leads_used: user.leads_used || 0,
-      leads_limit: limits.leads,
-      chats: chats || [], 
-      leads: leads || [],
-      widget_key: user.widget_key || "generate-new-key",
-      business_profile: businessProfile
-    });
-  } catch (err) {
-    console.error("Dashboard error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ================= CHAT SESSIONS =================
-app.get("/api/chat/session/:session_id", auth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('chats')
-      .select('*')
-      .eq('session_id', req.params.session_id)
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) {
-    console.error("Chat session error:", err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-// ================= WIDGET CONFIG =================
-app.get("/api/public/widget-config/:key", async (req, res) => {
-  const widgetKey = req.params.key;
-  
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, business_name, widget_color, welcome_message, plan')
-      .eq('widget_key', widgetKey)
-      .single();
-
-    if (error || !user) return res.status(404).json({ error: "Widget not found" });
-    
-    const { data: smartSettings } = await supabase
-      .from('smart_hub_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    const settings = smartSettings || {};
-    const identity = await getBusinessIdentity(user.id).catch(() => ({}));
-
-    res.json({
-      business_name: user.business_name || "AI Assistant",
-      widget_color: user.widget_color || "#d4af37",
-      welcome_message: user.welcome_message || "Hi! How can I help you today?",
-      plan: user.plan || 'free',
-      business_type: identity.business_type || '',
-      business_description: identity.business_description || '',
-      booking_url: settings.booking_url || '',
-      booking_active: settings.booking_active || 0,
-      apollo_active: settings.apollo_active || 0,
-      apollo_key: settings.apollo_key || '',
-      followup_active: settings.followup_active || 0,
-      vision_active: settings.vision_active || 0,
-      sentiment_active: settings.sentiment_active || 0,
-      ai_instructions: settings.ai_instructions || '',
-      ai_temp: settings.ai_temp || '0.7',
-      smart_hub: settings
-    });
-  } catch (err) {
-    console.error("Widget config error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ================= AI CHAT (DASHBOARD) =================
-app.post("/api/widget/chat", auth, checkVerified, bodyParser.json(), async (req, res) => {
-  const { message, client_name, session_id } = req.body;
-  const activeSession = session_id || "sess_" + Date.now();
-  if (!message) return res.status(400).json({ error: "Message required" });
-
-  try {
-    const user = await getUserById(req.user.id);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-    const limit = PLAN_LIMITS[user.plan].messages;
-    if (user.messages_used >= limit)
-      return res.status(403).json({ error: "Message limit reached" });
-
-    const knowledge = await getKnowledgeByUser(user.id);
-    const context = knowledge.map(k => k.content).join("\n");
-
-    const { data: smartSettings } = await supabase
-      .from('smart_hub_settings')
-      .select('ai_instructions, ai_temp')
-      .eq('user_id', user.id)
-      .single();
-
-    const identity = await getBusinessIdentity(user.id);
-
-    const businessContext = identity.business_type ? 
-      `Business Type: ${identity.business_type}\nBusiness Description: ${identity.business_description || 'Not provided'}\n` : '';
-
-    const systemPrompt = smartSettings?.ai_instructions || 
-      `You are the AI assistant for ${user.business_name || 'this business'}. 
-       ${businessContext}
-       You are helpful, professional, and knowledgeable about the business. 
-       Always represent yourself as the business assistant, never as a generic AI.
-       Current date: ${new Date().toLocaleDateString()}`;
-
-    const aiRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: `${systemPrompt}\n\nBusiness Context:\n${context}` },
-            { role: "user", content: message }
-          ]
-        })
+      const user = await getUserById(req.user.id);
+      if (!user || (user.is_verified !== 1 && user.email.toLowerCase().trim() !== config.ADMIN_EMAIL)) {
+        return res.status(403).json({ error: "Please verify your email to access this feature." });
       }
-    );
-
-    if (!aiRes.ok) {
-      const errData = await aiRes.json();
-      throw new Error(errData.errors?.[0]?.message || "Cloudflare AI failed");
+      
+      const { content } = req.body;
+      await addKnowledge(req.user.id, content);
+      res.json({ success: true, message: "Knowledge added" });
+    } catch (err) {
+      console.error("Knowledge add error:", err);
+      res.status(500).json({ error: "Failed to save knowledge" });
     }
-
-    const aiData = await aiRes.json();
-    const reply = aiData.result?.response || "AI error";
-
-    await saveChat(uuidv4(), user.id, activeSession, client_name || "Guest", message, reply);
-    await incrementMessagesUsed(user.id);
-
-    await logActivity(user.id, 'chat_message', 'Sent message via dashboard chat', 'chat');
-
-    res.json({ success: true, reply, session_id: activeSession });
-  } catch (err) {
-    console.error("? AI Error:", err.message);
-    res.status(500).json({ error: "AI server error" });
   }
-});
-
-// ================= PUBLIC WIDGET CHAT =================
-app.post("/api/public/chat", bodyParser.json({ limit: "50mb" }), async (req, res) => {
-  const { 
-    message, 
-    image_data, 
-    file_data, 
-    file_name, 
-    widget_key, 
-    client_name, 
-    session_id, 
-    is_visitor,
-    conversation_history,
-    has_introduced,
-    message_count,
-    business_name,
-    ai_name
-  } = req.body;
-  
-  const activeSession = session_id || "pub_" + Date.now();
-
-  if (!message && !image_data && !file_data) {
-    return res.status(400).json({ error: "Missing message or file" });
-  }
-
-  if (!widget_key) {
-    return res.status(400).json({ error: "Widget key required" });
-  }
-
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('widget_key', widget_key)
-      .single();
-
-    if (error || !user) return res.status(401).json({ error: "Invalid Widget Key" });
-
-    const limit = PLAN_LIMITS[user.plan].messages;
-    if (user.messages_used >= limit) return res.status(403).json({ error: "Limit reached" });
-
-    const knowledge = await getKnowledgeByUser(user.id);
-    const context = knowledge.map(k => k.content).join("\n");
-
-    const { data: smartSettings } = await supabase
-      .from('smart_hub_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    const identity = await getBusinessIdentity(user.id).catch(() => ({ 
-      business_type: '', 
-      business_description: '' 
-    }));
-
-    let reply = "";
-    let fileContent = "";
-
-    const buildSystemPrompt = () => {
-      const basePrompt = smartSettings?.ai_instructions || 
-        `You are the AI assistant for ${user.business_name || 'our business'}.`;
-      
-      const businessContext = identity.business_type ? 
-        `Business Type: ${identity.business_type}. ${identity.business_description || ''}` : '';
-      
-      const introductionRule = has_introduced 
-        ? "IMPORTANT: Do NOT introduce yourself again. Continue the conversation naturally based on the history."
-        : `Introduce yourself as ${ai_name || 'the AI assistant'} for ${user.business_name || 'our business'} ONLY in the first message.`;
-      
-      const visitorContext = is_visitor 
-        ? `You are chatting with a website visitor named ${client_name || 'Guest'}.`
-        : `You are assisting the business owner.`;
-      
-      const bookingContext = smartSettings?.booking_url && smartSettings?.booking_active
-        ? `When visitors want to book, schedule, or make appointments, provide this booking link: ${smartSettings.booking_url}`
-        : '';
-      
-      const historyContext = conversation_history && conversation_history.length > 0
-        ? `\nPrevious conversation:\n${conversation_history.map(msg => `${msg.role}: ${msg.text}`).join('\n')}`
-        : '';
-      
-      return `${basePrompt}
-${businessContext}
-${visitorContext}
-${bookingContext}
-${introductionRule}
-Business Context:
-${context || 'No additional context provided.'}
-
-CRITICAL INSTRUCTIONS:
-- Always identify yourself as ${user.business_name || 'our'} AI assistant, NEVER as "a language model" or "AI"
-- Be concise and professional (2-3 sentences for simple questions, up to 5 for complex ones)
-- NEVER repeat yourself or use the same phrasing twice
-- If you don't know something specific, say "Let me connect you with our team"
-- Keep responses natural and conversational like a real business assistant
-- Today's date: ${new Date().toLocaleDateString()}
-${historyContext}`;
-    };
-
-    if (image_data) {
-      console.log("[WIDGET] Processing image with Cloudflare Vision");
-      
-      const base64Data = image_data.split(",")[1];
-      const mimeType = image_data.match(/:(.*?);/)[1];
-
-      const userPrompt = message || "Please describe what you see in this image in detail.";
-      const systemContext = buildSystemPrompt();
-
-      const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/llava-hf/llava-1.5-7b-hf`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: [
-              { role: "system", content: systemContext },
-              {
-                role: "user",
-                content: [
-                  { type: "image_url", image_url: `data:${mimeType};base64,${base64Data}` },
-                  { type: "text", text: userPrompt }
-                ]
-              }
-            ]
-          })
-        }
-      );
-
-      if (!cfRes.ok) {
-        const errData = await cfRes.json();
-        console.error("Vision API error:", errData);
-        reply = `I had trouble analyzing this image. Please try again.`;
-      } else {
-        const cfData = await cfRes.json();
-        reply = cfData.result?.response || "I couldn't analyze this image.";
-        
-        await logActivity(user.id, 'vision_analysis', 'Analyzed image via widget', 'vision');
-      }
-    } 
-    else if (file_data) {
-      console.log("[WIDGET] Processing file:", file_name);
-      
-      const mimeType = file_data.split(';')[0].split(':')[1];
-      
-      try {
-        fileContent = await extractTextFromFile(file_data, file_name, mimeType);
-        
-        const systemContext = buildSystemPrompt();
-        
-        const cfRes = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              messages: [
-                { role: "system", content: systemContext },
-                { 
-                  role: "user", 
-                  content: `Here is the content of the file "${file_name}":\n\n${fileContent}\n\nUser question: ${message || "Please summarize this document."}` 
-                }
-              ]
-            })
-          }
-        );
-
-        if (!cfRes.ok) {
-          const errData = await cfRes.json();
-          console.error("File processing error:", errData);
-          reply = `I had trouble processing this file.`;
-        } else {
-          const cfData = await cfRes.json();
-          reply = cfData.result?.response || "I couldn't extract any information from this file.";
-        }
-      } catch (fileErr) {
-        console.error("File extraction error:", fileErr);
-        reply = `Sorry, I couldn't process this file.`;
-      }
-    } 
-    else {
-      console.log("[WIDGET] Processing text message");
-      
-      const systemContext = buildSystemPrompt();
-      
-      const bookingKeywords = /book|appointment|schedule|meeting|reserve|consultation|demo/i;
-      const hasBookingIntent = bookingKeywords.test(message);
-      
-      const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${CLOUDFLARE_AI_API_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: [
-              { role: "system", content: systemContext },
-              { role: "user", content: message }
-            ]
-          })
-        }
-      );
-
-      if (!cfRes.ok) {
-        const errData = await cfRes.json();
-        console.error("Text API error:", errData);
-        reply = `I'm having trouble connecting. Please try again.`;
-      } else {
-        const cfData = await cfRes.json();
-        reply = cfData.result?.response || "I couldn't generate a response.";
-        
-        if (hasBookingIntent && smartSettings?.booking_url && smartSettings?.booking_active && !reply.includes(smartSettings.booking_url)) {
-          reply += `\n\n?? You can book here: ${smartSettings.booking_url}`;
-        }
-      }
-    }
-
-    if (has_introduced && message_count > 1) {
-      reply = reply
-        .replace(/^(Hi|Hello|Hey|Greetings)[!,\s]+(I'?m|I am|this is)\s+[^,.]*[,.\s]+/i, '')
-        .replace(/^(I'?m|I am|this is)\s+[^,.]*[,.\s]+(the )?AI assistant\s+(for|of|at)\s+[^,.]*[,.\s]+/i, '')
-        .replace(/^Welcome\s+to\s+[^,.]*[,.\s]+(I'?m|I am)\s+[^,.]*[,.\s]+/i, '')
-        .replace(/^Nice\s+to\s+meet\s+you[!,\s]+i'?m?\s+[^,.]*[,.\s]+/i, '')
-        .trim();
-    }
-
-    await saveChat(uuidv4(), user.id, activeSession, client_name || "Web Visitor", message || "[File/Image Sent]", reply);
-    await incrementMessagesUsed(user.id);
-
-    res.json({ 
-      success: true, 
-      reply, 
-      session_id: activeSession,
-      sentiment: 'neutral'
-    });
-  } catch (e) {
-    console.error("? Public Chat Error:", e.message);
-    res.status(500).json({ error: "AI processing error: " + (e.message || "Unknown issue") });
-  }
-});
-
-app.get("/api/chat", auth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('chats')
-      .select('session_id, client_name, message, response, created_at')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    
-    // Group by session_id
-    const sessions = {};
-    data.forEach(chat => {
-      if (!sessions[chat.session_id]) {
-        sessions[chat.session_id] = {
-          session_id: chat.session_id,
-          client_name: chat.client_name,
-          last_message: chat.created_at,
-          messages: []
-        };
-      }
-      sessions[chat.session_id].messages.push(chat);
-    });
-
-    const result = Object.values(sessions).map(s => ({
-      session_id: s.session_id,
-      client_name: s.client_name,
-      created_at: s.last_message,
-      message_count: s.messages.length
-    }));
-
-    res.json(result);
-  } catch (err) {
-    console.error("Chat list error:", err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-// ================= LEADS =================
-app.post("/api/public/leads", bodyParser.json(), async (req, res) => {
-  const { name, email, phone, widget_key } = req.body;
-  
-  if (!name || !email || !widget_key) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  try {
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('widget_key', widget_key)
-      .single();
-
-    if (userError || !user) return res.status(401).json({ error: "Invalid Widget Key" });
-
-    const limit = PLAN_LIMITS[user.plan]?.leads || 10;
-    if (user.leads_used >= limit) {
-      return res.status(403).json({ error: "Leads limit reached for this business" });
-    }
-
-    const { data: existingLead } = await supabase
-      .from('leads')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('email', email.toLowerCase().trim())
-      .single();
-
-    if (existingLead) {
-      console.log(`[LEADS] Duplicate lead prevented for email: ${email}`);
-      io.to(`user:${user.id}`).emit("new_lead", { name, email, duplicate: true });
-      return res.json({ success: true, message: "Welcome back!", duplicate: true });
-    }
-
-    await saveLead(user.id, name, email, phone || "N/A");
-    await incrementLeadsUsed(user.id);
-    
-    io.to(`user:${user.id}`).emit("new_lead", { name, email });
-    await logActivity(user.id, 'lead_captured', `New lead: ${name}`, 'lead');
-      
-    res.json({ success: true, message: "Lead captured!" });
-  } catch (err) {
-    console.error("? Lead Save Error:", err);
-    res.status(500).json({ error: "Database save failed" });
-  }
-});
-
-app.delete("/api/leads/:id", auth, async (req, res) => {
-  const leadId = req.params.id;
-  
-  try {
-    const { data: lead, error: findError } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('id', leadId)
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (findError || !lead) return res.status(404).json({ error: "Lead not found" });
-
-    const { error: deleteError } = await supabase
-      .from('leads')
-      .delete()
-      .eq('id', leadId);
-
-    if (deleteError) throw deleteError;
-
-    await supabase
-      .from('users')
-      .update({ leads_used: supabase.raw('GREATEST(leads_used - 1, 0)') })
-      .eq('id', req.user.id);
-    
-    await logActivity(req.user.id, 'lead_deleted', `Deleted lead: ${lead.name}`, 'lead');
-      
-    res.json({ success: true, message: "Lead deleted" });
-  } catch (err) {
-    console.error("Lead delete error:", err);
-    res.status(500).json({ error: "Failed to delete lead" });
-  }
-});
-
-// ================= SUPPORT TICKETS =================
-app.post("/api/support/ticket", auth, bodyParser.json(), async (req, res) => {
-  const { subject, message, priority } = req.body;
-  if (!message) return res.status(400).json({ error: "Message is required" });
-
-  const ticketId = uuidv4();
-  
-  try {
-    const { error } = await supabase
-      .from('support_tickets')
-      .insert({
-        id: ticketId,
-        user_id: req.user.id,
-        subject: subject || "General Support",
-        message,
-        priority: priority || "medium",
-        status: "open",
-        created_at: new Date().toISOString()
-      });
-
-    if (error) throw error;
-    
-    await logActivity(req.user.id, 'ticket_created', `Support ticket: ${subject || 'General'}`, 'support');
-      
-    res.json({ success: true, message: "Support ticket created successfully." });
-  } catch (err) {
-    console.error("Ticket error:", err);
-    res.status(500).json({ error: "Failed to submit ticket" });
-  }
-});
-
-app.get("/api/support/my-tickets", auth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('support_tickets')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) {
-    console.error("Tickets error:", err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-// ================= GUIDANCE CONTENT =================
-app.get("/api/content/guidance", (req, res) => {
-  res.json({
-    title: "How to Use Your AI Assistant",
-    steps: [
-      "Step 1: Go to Knowledge Base and add information about your business.",
-      "Step 2: Copy your Widget Script from the Dashboard.",
-      "Step 3: Paste the script tag into the <head> or <body> of your website.",
-      "Step 4: Customize your widget color and welcome message in settings."
-    ]
-  });
-});
-
-app.get("/api/content/legal", (req, res) => {
-  res.json({
-    terms: "By using our AI SaaS, you agree to provide accurate information and not use the AI for illegal purposes...",
-    privacy: "We value your privacy. We store chat logs to improve your AI's responses and do not sell your lead data..."
-  });
-});
-
-// ================= ADMIN ROUTES =================
-app.get("/api/admin/users", auth, isAdminMiddleware, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, email, business_name, plan, messages_used, leads_used, is_verified')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) {
-    console.error("Admin users error:", err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-app.put("/api/admin/users/:id", auth, isAdminMiddleware, bodyParser.json(), async (req, res) => {
-  const { plan, is_verified, messages_used, leads_used } = req.body;
-  
-  try {
-    const { error } = await supabase
-      .from('users')
-      .update({ plan, is_verified, messages_used, leads_used })
-      .eq('id', req.params.id);
-
-    if (error) throw error;
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Admin update error:", err);
-    res.status(500).json({ error: "Update failed" });
-  }
-});
-
-app.delete("/api/admin/users/:id", auth, isAdminMiddleware, async (req, res) => {
-  const userId = req.params.id;
-  
-  try {
-    await supabase.from('activity_log').delete().eq('user_id', userId);
-    await supabase.from('automations').delete().eq('user_id', userId);
-    await supabase.from('chats').delete().eq('user_id', userId);
-    await supabase.from('connected_accounts').delete().eq('user_id', userId);
-    await supabase.from('governance_settings').delete().eq('user_id', userId);
-    await supabase.from('leads').delete().eq('user_id', userId);
-    await supabase.from('users').delete().eq('id', userId);
-    
-    res.json({ success: true, message: "User and all data deleted" });
-  } catch (err) {
-    console.error("Admin delete error:", err);
-    res.status(500).json({ error: "Delete failed" });
-  }
-});
-
-app.get("/api/admin/activities", auth, isAdminMiddleware, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('activity_log')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(100);
-
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) {
-    console.error("Admin activities error:", err);
-    res.status(500).json({ error: "Database error" });
-  }
-});
-
-// ================= SMART HUB SAVE ENDPOINT =================
-app.post("/api/smart-hub/save", auth, bodyParser.json(), async (req, res) => {
-  try {
-    const { toolType, data } = req.body;
-    const userId = req.user.id;
-    
-    console.log(`[SMART-HUB] Saving ${toolType} for user ${userId}:`, data);
-
-    if (toolType === 'business_type') {
-      const businessType = data.businessType || data.business_type || '';
-      const businessDescription = data.businessDescription || data.business_description || '';
-      
-      await saveBusinessIdentity(userId, businessType, businessDescription);
-      return res.json({ success: true });
-    }
-    
-    // Handle other tool types using Supabase
-    let updateData = {};
-
-    switch(toolType) {
-      case 'brain':
-        updateData = {
-          ai_instructions: data.instructions,
-          ai_temp: data.temp,
-          ai_lang: data.lang,
-          brain_active: 1
-        };
-        break;
-      case 'booking':
-        updateData = {
-          booking_url: data.url,
-          booking_active: 1
-        };
-        break;
-      case 'sentiment':
-        updateData = {
-          sentiment_enabled: data.enabled ? 1 : 0,
-          alert_email: data.email,
-          sentiment_active: 1
-        };
-        break;
-      case 'handover':
-        updateData = {
-          handover_trigger: data.trigger,
-          handover_active: 1
-        };
-        break;
-      case 'webhook':
-        updateData = {
-          webhook_url: data.url,
-          webhook_active: 1
-        };
-        break;
-      case 'apollo':
-      case 'enrichment':
-        updateData = {
-          apollo_active: data.apolloKey ? 1 : 0,
-          apollo_key: data.apolloKey || null,
-          auto_sync: data.autoSync ? 1 : 0
-        };
-        break;
-      case 'vision':
-        updateData = {
-          vision_active: data.enabled ? 1 : 0,
-          vision_sensitivity: data.sensitivity || 'high',
-          vision_area: data.area || 'all'
-        };
-        break;
-      case 'followup':
-        updateData = {
-          followup_active: data.enabled ? 1 : 0
-        };
-        break;
-      default:
-        return res.status(400).json({ error: "Invalid tool type" });
-    }
-
-    // Ensure record exists
-    await supabase
-      .from('smart_hub_settings')
-      .upsert({ user_id: userId }, { onConflict: 'user_id' });
-
-    const { error } = await supabase
-      .from('smart_hub_settings')
-      .update(updateData)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("Smart hub save error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ================= SMART HUB DEACTIVATE ENDPOINT =================
-app.post("/api/smart-hub/deactivate", auth, async (req, res) => {
-  try {
-    const { toolType } = req.body;
-    const userId = req.user.id;
-
-    if (!toolType) {
-      return res.status(400).json({ error: "Tool type required" });
-    }
-
-    const activeColumnMap = {
-      'brain': 'brain_active',
-      'booking': 'booking_active',
-      'sentiment': 'sentiment_active',
-      'handover': 'handover_active',
-      'webhook': 'webhook_active',
-      'apollo': 'apollo_active',
-      'enrichment': 'apollo_active',
-      'followup': 'followup_active',
-      'vision': 'vision_active',
-      'business_type': null
-    };
-
-    const activeColumn = activeColumnMap[toolType];
-
-    if (!activeColumn && toolType !== 'business_type') {
-      return res.status(400).json({ error: "Invalid tool type" });
-    }
-
-    if (toolType === 'business_type') {
-      return res.json({ success: true, message: "Business type remains active" });
-    }
-
-    const { error } = await supabase
-      .from('smart_hub_settings')
-      .update({ [activeColumn]: 0 })
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    console.log(`[SMART-HUB] Tool deactivated: ${toolType} for user ${userId}`);
-    res.json({ success: true, message: "Tool deactivated successfully" });
-
-  } catch (err) {
-    console.error("? Deactivation Error:", err.message);
-    res.status(500).json({ success: false, error: "Database error during deactivation" });
-  }
-});
-
-// ================= SMART HUB GET SETTINGS =================
-app.get("/api/smart-hub/settings", auth, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    const { data: settings } = await supabase
-      .from('smart_hub_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    const identity = await getBusinessIdentity(userId).catch(() => ({}));
-    const user = await getUserById(userId);
-
-    res.json({
-      ...(settings || {}),
-      ...identity,
-      booking_url: settings?.booking_url || user?.booking_url || ''
-    });
-
-  } catch (err) {
-    console.error("Smart hub get error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ================= SMART HUB TOOL STATE ENDPOINT =================
-app.post("/api/smart-hub/tool-state", auth, async (req, res) => {
-  try {
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Tool state error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ================= PAYSTACK =================
-app.post("/api/subscription/create-checkout-session", auth, bodyParser.json(), async (req, res) => {
-  const { plan } = req.body;
-  const prices = { basic: 10000, pro: 25000, agency: 80000 };
-  if (!prices[plan]) return res.status(400).json({ error: "Invalid plan" });
-
-  try {
-    const response = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ 
-          email: req.user.email, 
-          amount: prices[plan] * 100, 
-          currency: "NGN",
-          metadata: { userId: req.user.id, plan } 
-      })
-    });
-
-    const data = await response.json();
-    if (!data.status) return res.status(400).json({ error: data.message });
-
-    res.json({ url: data.data.authorization_url });
-  } catch (err) {
-    console.error("Paystack error:", err);
-    res.status(500).json({ error: "Paystack server error" });
-  }
-});
-
-app.post("/api/subscription/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
-  const hash = crypto.createHmac("sha512", PAYSTACK_SECRET_KEY)
-                        .update(req.body)
-                        .digest("hex");
-
-  if (hash !== req.headers["x-paystack-signature"]) {
-    return res.status(401).send("Invalid signature");
-  }
-
-  const event = JSON.parse(req.body);
-  
-  if (event.event === "charge.success") {
-    const { userId, plan } = event.data.metadata;
-    
-    supabase
-      .from('users')
-      .update({ 
-        plan, 
-        plan_expires: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
-        messages_used: 0,
-        leads_used: 0 
-      })
-      .eq('id', userId)
-      .then(() => {
-        supabase
-          .from('payments')
-          .insert({
-            id: uuidv4(),
-            user_id: userId,
-            plan,
-            amount: event.data.amount / 100,
-            reference: event.data.reference,
-            status: "success",
-            created_at: new Date().toISOString()
-          })
-          .then(() => {});
-      });
-  }
-  res.sendStatus(200);
-});
-
-// ================= CONTACT FORM ENDPOINT =================
+);
+console.log("✓ Knowledge routes mounted at /api/knowledge");
+
+// ============================================================
+// CONTACT FORM
+// ============================================================
 app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
   const { name, email, subject, message, priority, copyMe } = req.body;
-  
+
   if (!name || !email || !subject || !message) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -2905,7 +585,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
       <head><meta charset="UTF-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">?? New Contact Form Submission</h1>
+          <h1 style="color: white; margin: 0;">📩 New Contact Form Submission</h1>
         </div>
         <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
           <p><strong>Name:</strong> ${name}</p>
@@ -2914,7 +594,7 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
           <p><strong>Priority:</strong> ${priority}</p>
           <p><strong>Message:</strong></p>
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
-            ${message.replace(/\n/g, '<br>')}
+            ${message.replace(/\n/g, "<br>")}
           </div>
           <hr style="margin: 20px 0;">
           <p style="color: #666; font-size: 0.9rem;">Sent from AI Smart Hub Contact Form</p>
@@ -2923,10 +603,13 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
       </html>
     `;
 
-    if (resend) {
+    if (config.RESEND_API_KEY) {
+      const { Resend } = require("resend");
+      const resend = new Resend(config.RESEND_API_KEY);
+
       await resend.emails.send({
         from: "AI Smart Hub <noreply@aismarthub.website>",
-        to: ['aismarthub68@gmail.com'],
+        to: ["aismarthub68@gmail.com"],
         subject: `[Contact Form] ${subject} - ${name}`,
         html: emailHtml,
       });
@@ -2942,13 +625,13 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
             <head><meta charset="UTF-8"></head>
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px;">
-                <h1 style="color: white; margin: 0;">? Thank You for Contacting AI Smart Hub</h1>
+                <h1 style="color: white; margin: 0;">📧 Thank You for Contacting AI Smart Hub</h1>
               </div>
               <div style="background: white; padding: 30px; margin-top: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
                 <p>We've received your message and will respond within 24 hours.</p>
                 <p><strong>Your message:</strong></p>
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                  ${message.replace(/\n/g, '<br>')}
+                  ${message.replace(/\n/g, "<br>")}
                 </div>
                 <p style="margin-top: 20px; color: #666;">Best regards,<br>AI Smart Hub Team</p>
               </div>
@@ -2958,262 +641,278 @@ app.post("/api/contact/send", bodyParser.json(), async (req, res) => {
         });
       }
 
-      console.log(`? Contact form message sent from: ${email}`);
+      console.log(`📧 Contact form message sent from: ${email}`);
     }
 
     res.json({ success: true, message: "Message sent successfully" });
-
   } catch (err) {
     console.error("Contact form error:", err);
     res.status(500).json({ error: "Failed to send message" });
   }
 });
+console.log("✓ Contact routes mounted at /api/contact");
 
-// ================= ENHANCED EMAIL BROADCAST SYSTEM =================
-app.post("/api/broadcast/send", auth, bodyParser.json(), async (req, res) => {
-  const { subject, content, target } = req.body;
-  const userId = req.user.id;
-  
-  if (!subject || !content) {
-    return res.status(400).json({ error: "Subject and content are required" });
-  }
-
-  try {
-    const user = await getUserById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const { data: leads, error: leadsError } = await supabase
-      .from('leads')
-      .select('name, email')
-      .eq('user_id', userId);
-
-    if (leadsError) throw leadsError;
-
-    if (!leads || leads.length === 0) {
-      return res.status(400).json({ error: "No leads found to send emails to" });
-    }
-
-    let recipients = leads;
-    const batchSize = 10;
-    const results = { sent: 0, failed: 0 };
-    
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const batch = recipients.slice(i, i + batchSize);
-      
-      const promises = batch.map(lead => {
-        const personalizedContent = content.replace(/{{name}}/g, lead.name || 'Valued Customer');
-        const emailHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head><meta charset="UTF-8"></head>
-          <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-            <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">? ${user.business_name || 'AI Smart Hub'}</h1>
-                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">Customer Update</p>
-              </div>
-              <div style="padding: 30px; background: white;">
-                ${personalizedContent.replace(/\n/g, '<br>')}
-              </div>
-              <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-                <p style="color: #666; font-size: 14px; margin: 0;">
-                  You're receiving this because you're a valued customer of ${user.business_name || 'AI Smart Hub'}.
-                </p>
-                <p style="color: #999; font-size: 12px; margin: 10px 0 0;">
-                  <a href="#" style="color: #d4af37; text-decoration: none;">Unsubscribe</a>
-                </p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-        
-        return sendEmailWithFallback(
-          lead.email,
-          user.business_name || 'AI Smart Hub',
-          subject,
-          emailHtml
-        );
-      });
-
-      const batchResults = await Promise.all(promises);
-      batchResults.forEach(r => r.success ? results.sent++ : results.failed++);
-      
-      if (i + batchSize < recipients.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-
-    const broadcastId = uuidv4();
-    await saveBroadcast(broadcastId, userId, subject, recipients.length, results.sent, results.failed);
-    await logActivity(userId, 'broadcast_sent', `Broadcast sent to ${results.sent} leads`, 'email');
-
-    const method = resend ? 'Resend' : 'Nodemailer';
-    res.json({ 
-      success: true, 
-      message: `? [${method}] Broadcast sent to ${results.sent} recipients${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
-      stats: results
-    });
-
-  } catch (err) {
-    console.error("Broadcast error:", err);
-    res.status(500).json({ error: "Failed to send broadcast: " + err.message });
-  }
-});
-
-app.post("/api/broadcast/test", auth, bodyParser.json(), async (req, res) => {
-  const { subject, content } = req.body;
-  const userId = req.user.id;
-
-  if (!subject || !content) {
-    return res.status(400).json({ error: "Subject and content are required" });
-  }
-
-  try {
-    const user = await getUserById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    console.log(`?? Sending test email to: ${user.email}`);
-
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="UTF-8"></head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
-        <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <div style="background: #f8f9fa; padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">
-            <span style="background: #d4af37; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">?? TEST MODE</span>
-          </div>
-          <div style="background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">? ${user.business_name || 'AI Smart Hub'}</h1>
-          </div>
-          <div style="padding: 30px;">
-            ${content.replace(/\n/g, '<br>')}
-          </div>
-          <div style="background: #fff3cd; padding: 20px; text-align: center; border-top: 2px solid #ffc107;">
-            <p style="color: #856404; margin: 0; font-size: 14px;">
-              ?? This was a test email from your AI Smart Hub dashboard. 
-              <strong>No customers received this message.</strong>
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const result = await sendEmailWithFallback(
-      user.email,
-      user.business_name || 'AI Smart Hub',
-      `[TEST] ${subject}`,
-      emailHtml
-    );
-
-    if (result.success) {
-      res.json({ success: true, message: `? Test email sent via ${result.method}! Check your inbox.` });
-    } else {
-      throw new Error(result.error);
-    }
-
-  } catch (err) {
-    console.error("Test email error:", err);
-    res.status(500).json({ 
-      error: "Failed to send test email: " + err.message,
-      tip: "Sign up for Resend at https://resend.com for reliable delivery"
-    });
-  }
-});
-
-app.get("/api/broadcast/history", auth, (req, res) => {
-  const userId = req.user.id;
-  getBroadcastsByUser(userId)
-    .then(history => res.json(history))
-    .catch(err => res.status(500).json({ error: "Database error" }));
-});
-
-app.get("/api/broadcast/stats", auth, (req, res) => {
-  const userId = req.user.id;
-  getBroadcastStats(userId)
-    .then(stats => res.json(stats))
-    .catch(err => res.status(500).json({ error: "Database error" }));
-});
-
-// ================= WIDGET KEY =================
-app.get("/api/widget/key", auth, (req, res) => {
-  getUserById(req.user.id).then(user => {
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ key: user.widget_key || "generate-new-key" });
-  }).catch(err => {
-      console.error("Key Fetch Error:", err);
-      res.status(500).json({ error: "Server error fetching key" });
+// ============================================================
+// GUIDANCE CONTENT
+// ============================================================
+app.get("/api/content/guidance", (req, res) => {
+  res.json({
+    title: "How to Use Your AI Assistant",
+    steps: [
+      "Step 1: Go to Knowledge Base and add information about your business.",
+      "Step 2: Copy your Widget Script from the Dashboard.",
+      "Step 3: Paste the script tag into the <head> or <body> of your website.",
+      "Step 4: Customize your widget color and welcome message in settings.",
+    ],
   });
 });
 
-app.post("/api/widget/regenerate-key", auth, (req, res) => {
-  const newKey = uuidv4();
-  setWidgetKey(req.user.id, newKey)
-    .then(() => res.json({ key: newKey, message: "New key generated successfully" }))
-    .catch(err => res.status(500).json({ error: "Failed to regenerate key" }));
+app.get("/api/content/legal", (req, res) => {
+  res.json({
+    terms: "By using our AI SaaS, you agree to provide accurate information and not use the AI for illegal purposes...",
+    privacy: "We value your privacy. We store chat logs to improve your AI's responses and do not sell your lead data...",
+  });
 });
+console.log("✓ Content routes mounted at /api/content");
 
-// ===== TEST ENDPOINT =====
+// ============================================================
+// TEST AND HEALTH ENDPOINTS
+// ============================================================
 app.get("/api/test", (req, res) => {
-  res.json({ 
-    status: "ok", 
-    message: "API is working", 
-    timestamp: new Date().toISOString() 
+  res.json({
+    status: "ok",
+    message: "API is working",
+    timestamp: new Date().toISOString(),
   });
 });
 
-// ================= GET USER PROFILE =================
-app.get("/api/user/profile", auth, (req, res) => {
-  getUserById(req.user.id).then(user => {
-    if (!user) return res.status(404).json({ error: "User not found" });
-    
-    res.json({
-      id: user.id,
-      name: user.business_name || user.name || "User",
-      email: user.email,
-      business_name: user.business_name,
-      plan: user.plan,
-      is_verified: user.is_verified
-    });
-  }).catch(err => {
-    console.error("Profile error:", err);
-    res.status(500).json({ error: "Server error" });
-  });
+app.get("/healthz", (req, res) => {
+  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
-// ================= START SERVER =================
-server.listen(PORT, () => {
-  console.log(`?? Server running on http://localhost:${PORT}`);
-  console.log(`?? Smart Hub API: /api/smart-hub/*`);
-  console.log(`?? Image upload endpoint: /api/smart-hub/upload-proof`);
-  console.log(`?? Tools metrics endpoint: /api/smart-hub/tools-metrics`);
-  console.log(`?? Workflow API Endpoints:`);
-  console.log(`   - GET /api/workflows - List workflows`);
-  console.log(`   - POST /api/workflows - Create workflow`);
-  console.log(`   - POST /api/workflows/:id/execute - Execute workflow (rate limited)`);
-  console.log(`   - POST /webhook/:path - Webhook trigger endpoint`);
-  console.log(`   - POST /api/webhook-test - Test webhook endpoint`);
-  console.log(`?? Webhook Listener:`);
-  console.log(`   - POST /api/webhooks/register - Register webhook`);
-  console.log(`   - GET /api/webhooks - List webhooks`);
-  console.log(`   - DELETE /api/webhooks/:path - Delete webhook`);
-  console.log(`?? Workflow Templates:`);
-  console.log(`   - GET /api/workflow-templates - List templates`);
-  console.log(`   - POST /api/workflow-templates/:templateId/apply - Apply template`);
-  console.log(`?? Enterprise Features:`);
-  console.log(`   - GET /api/queue/stats - Queue statistics`);
-  console.log(`   - GET /api/workflows/:id/versions - Workflow versions`);
-  console.log(`   - POST /api/workflows/:id/versions/save - Save version`);
-  console.log(`   - POST /api/workflows/:id/rollback/:version - Rollback`);
-  console.log(`   - POST /api/workflows/:id/debug - Start debug session`);
-  console.log(`   - POST /api/workflows/:id/error-handler - Set error handler`);
-  console.log(`?? Platform Health:`);
-  console.log(`   - GET /api/platform/health - Platform health status`);
-  console.log(`   - GET /api/platform/queue - Queue status`);
-  console.log(`   - GET /api/platform/logs - System logs (admin only)`);
-  console.log(`   - GET /api/platform/metrics - System metrics`);
-  console.log(`? Workflow Scheduler: Initialized with cron jobs`);
-  console.log(`?? Error handlers loaded and ready`);
+app.post("/api/webhook-test", (req, res) => {
+  console.log("📨 Webhook test received:", req.body);
+  res.json({ received: true, data: req.body, timestamp: new Date().toISOString() });
+});
+
+// ============================================================
+// ENTERPRISE FEATURE ENDPOINTS (Consolidated)
+// ============================================================
+
+// Queue Stats
+app.get("/api/queue/stats", authenticateToken, async (req, res) => {
+  try {
+    const stats = await getQueueStats();
+    res.json(stats);
+  } catch (error) {
+    console.error("Error getting queue stats:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Workflow Versioning
+app.get(
+  "/api/workflows/:id/versions",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const versions = await workflowVersioning.getVersions(req.params.id);
+      res.json(versions);
+    } catch (error) {
+      console.error("Error getting versions:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+app.post(
+  "/api/workflows/:id/versions/save",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const { name, nodes, edges, change_note } = req.body;
+      const version = await workflowVersioning.saveVersion(
+        req.params.id,
+        req.user.id,
+        name,
+        nodes,
+        edges,
+        change_note
+      );
+      res.json(version);
+    } catch (error) {
+      console.error("Error saving version:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+app.post(
+  "/api/workflows/:id/rollback/:version",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const workflow = await workflowVersioning.rollbackToVersion(
+        req.params.id,
+        parseInt(req.params.version)
+      );
+      res.json(workflow);
+    } catch (error) {
+      console.error("Error rolling back:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+app.get(
+  "/api/workflows/:id/compare/:version1/:version2",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const comparison = await workflowVersioning.compareVersions(
+        req.params.id,
+        parseInt(req.params.version1),
+        parseInt(req.params.version2)
+      );
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error comparing versions:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// Debug Mode
+app.post(
+  "/api/workflows/:id/debug",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const { trigger_data } = req.body;
+      const sessionId = await debugExecutor.startDebugSession(
+        req.params.id,
+        req.user.id,
+        trigger_data
+      );
+      res.json({ session_id: sessionId });
+    } catch (error) {
+      console.error("Error starting debug session:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+app.post("/api/debug/:sessionId/step", authenticateToken, async (req, res) => {
+  try {
+    const { action } = req.body;
+    const result = await debugExecutor.step(req.params.sessionId, action);
+    res.json(result);
+  } catch (error) {
+    console.error("Error stepping through debug:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/debug/:sessionId/breakpoint", authenticateToken, async (req, res) => {
+  try {
+    const { node_id, action } = req.body;
+    if (action === "add") {
+      debugExecutor.setBreakpoint(req.params.sessionId, node_id);
+    } else {
+      debugExecutor.removeBreakpoint(req.params.sessionId, node_id);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error managing breakpoint:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/debug/:sessionId", authenticateToken, async (req, res) => {
+  try {
+    const session = debugExecutor.getSession(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Debug session not found" });
+    }
+    res.json(session);
+  } catch (error) {
+    console.error("Error getting debug session:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Error Handler
+app.post(
+  "/api/workflows/:id/error-handler",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const { error_workflow_id, error_types } = req.body;
+      await errorHandler.registerErrorHandler(req.params.id, error_workflow_id, error_types);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error registering error handler:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+app.get(
+  "/api/workflows/:id/error-handler",
+  authenticateToken,
+  ensureWorkspaceAccess,
+  async (req, res) => {
+    try {
+      const { data: handler } = await supabase
+        .from("error_handlers")
+        .select("*")
+        .eq("workflow_id", req.params.id)
+        .single();
+
+      res.json(handler || null);
+    } catch (error) {
+      console.error("Error getting error handler:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// ============================================================
+// INITIALIZE BACKGROUND SERVICES
+// ============================================================
+
+if (workflowScheduler && workflowScheduler.initialize) {
+  setTimeout(async () => {
+    await workflowScheduler.initialize();
+    console.log("✓ Workflow scheduler initialized");
+  }, 5000);
+  console.log("⏳ Workflow scheduler will start in 5 seconds");
+}
+
+setTimeout(async () => {
+  await errorHandler.loadErrorHandlers();
+  console.log("✓ Error handlers loaded");
+}, 6000);
+
+// ============================================================
+// START SERVER
+// ============================================================
+
+server.listen(config.PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${config.PORT}`);
+  console.log(`📡 API endpoints available at /api/*`);
+  console.log(`🔧 Workflow API: /api/workflows/*`);
+  console.log(`💪 Platform Health: /api/platform/health`);
+  console.log(`💰 Subscription: /api/subscription/*`);
+  console.log(`🛡️ Auth: /api/auth/*`);
+  console.log(`📊 Dashboard: /api/dashboard/*`);
+  console.log(`🤖 AI Chat: /api/widget/chat and /api/public/chat`);
+  console.log(`📧 Broadcast: /api/broadcast/*`);
+  console.log(`🏢 Business Intelligence: /api/business/*`);
 });

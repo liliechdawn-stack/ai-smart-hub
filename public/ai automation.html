@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Automations Studio | Enterprise Workflow Automation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* ========================================
+           PREMIUM DESIGN TOKENS - White & Gold Theme
+           ========================================
+        */
+        :root {
+            --primary: #d4af37;
+            --primary-light: #f5e7b2;
+            --primary-dark: #b8962e;
+            --primary-gradient: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+            --primary-glow: 0 0 20px rgba(212, 175, 55, 0.3);
+            
+            --dark: #1a1a1a;
+            --dark-accent: #2d2d2d;
+            --light: #ffffff;
+            --light-gray: #f8fafc;
+            --medium-gray: #e9ecef;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --info: #3b82f6;
+            --info-light: #dbeafe;
+            
+            --border-color: rgba(0,0,0,0.08);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
+            --shadow-gold: 0 10px 30px rgba(212, 175, 55, 0.2);
+            
+            --card-radius: 24px;
+            --button-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Node type colors */
+            --trigger-color: #10b981;
+            --action-color: #3b82f6;
+            --logic-color: #f59e0b;
+            --app-color: #8b5cf6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text-primary); 
+            line-height: 1.6; 
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========================================
+           PREMIUM NAVIGATION
+           ========================================
+        */
+        nav {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(10px);
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .nav-container { 
+            max-width: 100%; 
+            margin: 0 auto; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 32px; 
+        }
+        
+        .nav-logo { 
+            font-weight: 800; 
+            font-size: 1.5rem; 
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        
+        .nav-logo i {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.8rem;
+        }
+        
+        .nav-links { display: flex; gap: 32px; align-items: center; }
+        .nav-links a { text-decoration: none; color: var(--text-secondary); font-size: 0.95rem; font-weight: 600; transition: var(--transition); }
+        .nav-links a:hover { color: var(--primary-dark); }
+        .nav-links a.active-nav { color: var(--primary-dark); font-weight: 700; }
+
+        /* ========================================
+           WORKSPACE LAYOUT
+           ========================================
+        */
+        .workspace {
+            display: flex;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+        
+        /* Left Sidebar - Node Library (n8n style) */
+        .node-library {
+            width: 320px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        
+        .library-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .library-header h2 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+        }
+        
+        .library-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+        
+        .node-category {
+            margin-bottom: 8px;
+        }
+        
+        .node-category-header {
+            padding: 12px 16px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--light-gray);
+            border-radius: 8px;
+            margin: 4px 8px;
+        }
+        
+        .node-category-items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px 12px;
+        }
+        
+        .node-category-items.collapsed { display: none; }
+        
+        /* n8n style node items */
+        .node-item {
+            padding: 10px 12px;
+            background: white;
+            border-radius: 10px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .node-item:hover {
+            border-color: var(--primary);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .node-item i { width: 24px; font-size: 1.1rem; }
+        .node-item.dragging { opacity: 0.5; cursor: grabbing; }
+        
+        /* Main Canvas Area */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #f5f6f8;
+            background-image: 
+                linear-gradient(rgba(212,175,55,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(212,175,55,0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        
+        #canvas {
+            position: absolute;
+            transform-origin: 0 0;
+            width: 10000px;
+            height: 10000px;
+        }
+        
+        /* n8n Style Node Card */
+        .node-card {
+            position: absolute;
+            width: 260px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            cursor: move;
+            transition: box-shadow 0.2s, transform 0.1s;
+            z-index: 10;
+        }
+        
+        .node-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .node-card.selected {
+            border: 2px solid var(--primary);
+            box-shadow: var(--shadow-gold);
+        }
+        
+        .node-card.running {
+            border-left: 3px solid var(--warning);
+            animation: pulseGlow 1s infinite;
+        }
+        
+        .node-card.success {
+            border-left: 3px solid var(--success);
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        }
+        
+        .node-card.error {
+            border-left: 3px solid var(--danger);
+            background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(212,175,55,0.1); }
+        }
+        
+        /* Node Header with colored top border */
+        .node-header {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top-left-radius: 11px;
+            border-top-right-radius: 11px;
+        }
+        
+        .node-header[data-type="trigger"] { background: linear-gradient(to bottom, rgba(16,185,129,0.08), transparent); border-top: 3px solid var(--trigger-color); }
+        .node-header[data-type="action"] { background: linear-gradient(to bottom, rgba(59,130,246,0.08), transparent); border-top: 3px solid var(--action-color); }
+        .node-header[data-type="logic"] { background: linear-gradient(to bottom, rgba(245,158,11,0.08), transparent); border-top: 3px solid var(--logic-color); }
+        .node-header[data-type="app"] { background: linear-gradient(to bottom, rgba(139,92,246,0.08), transparent); border-top: 3px solid var(--app-color); }
+        
+        .node-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+            background: var(--primary-gradient);
+        }
+        
+        .node-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .node-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .node-body {
+            padding: 12px 14px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            background: #fafbfc;
+        }
+        
+        /* n8n Style Ports */
+        .node-ports {
+            position: relative;
+        }
+        
+        .port {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border: 2px solid #94a3b8;
+            border-radius: 50%;
+            cursor: crosshair;
+            transition: all 0.2s;
+            z-index: 15;
+        }
+        
+        .port:hover {
+            transform: scale(1.3);
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: var(--primary-glow);
+        }
+        
+        .port.connected { background: var(--success); border-color: var(--success); }
+        .port-input { left: -7px; top: 50%; transform: translateY(-50%); }
+        .port-output { right: -7px; top: 50%; transform: translateY(-50%); }
+        
+        /* Multi-port support for router nodes */
+        .multi-ports {
+            position: absolute;
+            right: -8px;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 20px 0;
+        }
+        
+        .multi-port {
+            width: 14px;
+            height: 14px;
+            background: white;
+            border: 2px solid #94a3b8;
+            border-radius: 50%;
+            cursor: crosshair;
+            transition: all 0.2s;
+            margin: 8px 0;
+            position: relative;
+        }
+        
+        .multi-port:hover {
+            transform: scale(1.3);
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .port-label {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.6rem;
+            white-space: nowrap;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+        }
+        
+        /* Connection Layer */
+        .connection-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+        
+        .connection-layer svg { width: 100%; height: 100%; }
+        
+        .connection-path {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2.5;
+            pointer-events: stroke;
+            cursor: pointer;
+            transition: stroke 0.2s, stroke-width 0.2s;
+        }
+        
+        .connection-path:hover { stroke: var(--primary); stroke-width: 3.5; }
+        .connection-path.flowing { stroke: var(--primary); stroke-dasharray: 8 6; animation: flowMove 0.5s linear infinite; }
+        
+        @keyframes flowMove { to { stroke-dashoffset: -28; } }
+        
+        .delete-conn-btn {
+            fill: var(--danger);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: auto;
+        }
+        
+        .connection-path:hover + .delete-conn-btn,
+        .delete-conn-btn:hover { opacity: 1; }
+        
+        /* Live wire */
+        .live-wire {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 2.5;
+            stroke-dasharray: 6 4;
+            animation: dashMove 0.3s linear infinite;
+        }
+        
+        @keyframes dashMove { to { stroke-dashoffset: -20; } }
+        
+        /* Right Inspector Panel */
+        .inspector-panel {
+            width: 380px;
+            background: white;
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            z-index: 30;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .inspector-panel.open { transform: translateX(0); }
+        
+        .inspector-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .inspector-header h3 { font-size: 1.1rem; font-weight: 700; }
+        .close-inspector { cursor: pointer; padding: 8px 12px; border-radius: 8px; }
+        .close-inspector:hover { background: var(--light-gray); }
+        
+        .inspector-content { padding: 20px; overflow-y: auto; flex: 1; }
+        
+        .inspector-field { margin-bottom: 24px; }
+        .inspector-field label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .inspector-field input, .inspector-field select, .inspector-field textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+        
+        .inspector-field textarea { min-height: 100px; resize: vertical; }
+        
+        /* Input/Output Data sections */
+        .io-section {
+            background: var(--light-gray);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 16px;
+        }
+        
+        .io-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .io-content {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.7rem;
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        /* Toolbar */
+        .canvas-toolbar {
+            position: absolute;
+            top: 20px;
+            left: 340px;
+            right: 20px;
+            background: white;
+            border-radius: 50px;
+            padding: 8px 16px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            z-index: 25;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+        
+        .canvas-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        
+        .canvas-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .canvas-btn.primary { background: var(--primary-gradient); color: white; border: none; }
+        .canvas-btn.danger { background: var(--danger); color: white; border: none; }
+        
+        /* Execution Panel */
+        .execution-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            color: #94a3b8;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            z-index: 25;
+            font-family: 'Fira Code', monospace;
+            border-top: 1px solid #334155;
+        }
+        
+        .execution-panel.open { max-height: 280px; overflow-y: auto; }
+        
+        .execution-header {
+            padding: 12px 20px;
+            background: #0f172a;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 26;
+        }
+        
+        .execution-content {
+            padding: 12px;
+            max-height: 240px;
+            overflow-y: auto;
+            font-size: 0.7rem;
+        }
+        
+        .execution-item {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #334155;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.7rem;
+        }
+        
+        .status-icon { width: 28px; text-align: center; }
+        .node-name-exec { font-weight: 700; color: #e2e8f0; width: 160px; }
+        .duration { color: #475569; width: 70px; text-align: right; }
+        .output-summary { flex: 1; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Mini-map */
+        .minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 180px;
+            height: 120px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 10px;
+            border: 2px solid var(--primary);
+            z-index: 20;
+            cursor: pointer;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+        }
+        
+        .minimap canvas { width: 100%; height: 100%; }
+        
+        /* Status Bar */
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 20px;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            z-index: 15;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 24px;
+            background: var(--dark);
+            color: white;
+            border-radius: 40px;
+            z-index: 3000;
+            animation: slideIn 0.2s ease;
+            font-size: 0.85rem;
+        }
+        
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(212,175,55,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-container">
+        <a href="#" class="nav-logo">
+            <i class="fas fa-robot"></i>
+            AI Smart Hub
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="smart-tools.html">Smart Tools</a>
+            <a href="customer-insights.html">Customer Insights</a>
+            <a href="#" class="active-nav">Automations</a>
+            <a href="team.html">Team</a>
+        </div>
+    </div>
+</nav>
+
+<div class="workspace">
+    <!-- Left Panel - n8n Style Node Library -->
+    <div class="node-library">
+        <div class="library-header">
+            <h2><i class="fas fa-puzzle-piece"></i> Nodes Library</h2>
+            <input type="text" class="library-search" id="nodeSearch" placeholder="Search nodes... 🔍" oninput="filterNodeLibrary()">
+        </div>
+        <div id="nodeLibraryContainer"></div>
+    </div>
+    
+    <!-- Canvas Container -->
+    <div class="canvas-container" id="canvasContainer">
+        <div class="canvas-toolbar">
+            <button class="canvas-btn primary" onclick="runWorkflow()"><i class="fas fa-play"></i> Run</button>
+            <button class="canvas-btn" onclick="stopWorkflow()" id="stopWorkflowBtn" style="display:none;"><i class="fas fa-stop"></i> Stop</button>
+            <span style="width:1px; height:30px; background:#e9ecef; margin:0 4px;"></span>
+            <button class="canvas-btn" onclick="saveWorkflow()"><i class="fas fa-save"></i> Save</button>
+            <button class="canvas-btn" onclick="showWorkflowsDropdown()"><i class="fas fa-folder-open"></i> Load</button>
+            <span style="width:1px; height:30px; background:#e9ecef; margin:0 4px;"></span>
+            <button class="canvas-btn" onclick="undoCanvas()"><i class="fas fa-undo"></i> Undo</button>
+            <button class="canvas-btn" onclick="redoCanvas()"><i class="fas fa-redo"></i> Redo</button>
+            <span style="width:1px; height:30px; background:#e9ecef; margin:0 4px;"></span>
+            <button class="canvas-btn" onclick="zoomOut()"><i class="fas fa-search-minus"></i></button>
+            <span id="zoomPercent" style="font-size:0.7rem; min-width:45px; text-align:center;">100%</span>
+            <button class="canvas-btn" onclick="zoomIn()"><i class="fas fa-search-plus"></i></button>
+            <button class="canvas-btn" onclick="fitToScreen()"><i class="fas fa-expand"></i> Fit</button>
+            <span style="width:1px; height:30px; background:#e9ecef; margin:0 4px;"></span>
+            <button class="canvas-btn danger" onclick="clearCanvas()"><i class="fas fa-trash"></i> Clear</button>
+        </div>
+        
+        <div id="canvas">
+            <div class="connection-layer" id="connectionLayer"><svg width="100%" height="100%"></svg></div>
+        </div>
+        
+        <div class="minimap" id="minimap"><canvas id="minimapCanvas" width="180" height="120"></canvas></div>
+        
+        <div class="status-bar">
+            <span id="canvasNodeCount">0 nodes</span>
+            <span id="canvasConnectionCount">0 connections</span>
+            <span id="lastSavedStatus">Ready</span>
+            <span id="canvasZoomPercent">Zoom: 100%</span>
+        </div>
+    </div>
+    
+    <!-- Right Inspector Panel -->
+    <div class="inspector-panel" id="inspectorPanel">
+        <div class="inspector-header">
+            <h3><i class="fas fa-sliders-h"></i> Node Inspector</h3>
+            <button class="close-inspector" onclick="closeInspector()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="inspector-content" id="inspectorContent"></div>
+    </div>
+</div>
+
+<!-- Execution Panel -->
+<div class="execution-panel" id="executionPanel">
+    <div class="execution-header" onclick="toggleExecutionPanel()">
+        <span><i class="fas fa-terminal"></i> Execution Log</span>
+        <span id="execSummary">Ready</span>
+    </div>
+    <div class="execution-content" id="executionContent"></div>
+</div>
+
+<script>
+// ================================================
+// COMPLETE ENTERPRISE WORKFLOW BUILDER
+// n8n-style UI with Multi-Port Support
+// SaaS-Ready for Businesses, Schools & Organizations
+// ================================================
+
+// ===== GLOBAL STATE =====
+let canvasNodes = [];
+let canvasConnections = [];
+let canvasSelectedNodeId = null;
+let canvasPanX = 400, canvasPanY = 200, canvasZoom = 0.75;
+let canvasIsPanning = false, canvasPanStartX, canvasPanStartY;
+let liveWire = { active: false, fromNodeId: null, fromPort: null, portLabel: null, mouseX: 0, mouseY: 0 };
+let canvasHistory = [[]], canvasHistoryIndex = 0;
+let nextNodeId = 100;
+let isWorkflowRunning = false;
+let stopWorkflowFlag = false;
+let currentExecution = null;
+let connectionCounter = 1000;
+
+// n8n Style Node Categories with color-coded types
+const nodeCategories = {
+    triggers: { 
+        name: "TRIGGERS", 
+        color: "#10b981", 
+        type: "trigger",
+        icon: "fa-bolt",
+        nodes: [
+            { id: "webhook", name: "Webhook", icon: "fa-globe", desc: "HTTP trigger", category: "triggers", outputPorts: ["main"] },
+            { id: "schedule", name: "Schedule", icon: "fa-clock", desc: "Cron trigger", category: "triggers", outputPorts: ["main"] },
+            { id: "new-lead", name: "New Lead", icon: "fa-user-plus", desc: "CRM lead", category: "triggers", outputPorts: ["main"] },
+            { id: "cart-abandoned", name: "Cart Abandoned", icon: "fa-shopping-cart", desc: "E-commerce", category: "triggers", outputPorts: ["main"] },
+            { id: "form-submit", name: "Form Submit", icon: "fa-wpforms", desc: "Web form", category: "triggers", outputPorts: ["main"] },
+            { id: "email-received", name: "Email Received", icon: "fa-envelope", desc: "Incoming email", category: "triggers", outputPorts: ["main"] },
+            { id: "booking-created", name: "Booking Created", icon: "fa-calendar-plus", desc: "Appointment", category: "triggers", outputPorts: ["main"] }
+        ]
+    },
+    logic: { 
+        name: "LOGIC", 
+        color: "#f59e0b", 
+        type: "logic",
+        icon: "fa-code-branch",
+        nodes: [
+            { id: "if-else", name: "IF / Else", icon: "fa-code-branch", desc: "Branch on condition", category: "logic", outputPorts: ["true", "false"], isRouter: true },
+            { id: "router", name: "Router", icon: "fa-random", desc: "Route to multiple paths", category: "logic", outputPorts: ["A", "B", "C", "D"], isRouter: true },
+            { id: "filter", name: "Filter", icon: "fa-filter", desc: "Keep matching items", category: "logic", outputPorts: ["match", "no-match"], isRouter: true },
+            { id: "delay", name: "Wait / Delay", icon: "fa-hourglass-half", desc: "Pause workflow", category: "logic", outputPorts: ["main"] },
+            { id: "loop", name: "Loop", icon: "fa-redo", desc: "Iterate items", category: "logic", outputPorts: ["item", "done"], isRouter: true },
+            { id: "merge", name: "Merge", icon: "fa-code-merge", desc: "Combine streams", category: "logic", outputPorts: ["main"] }
+        ]
+    },
+    actions: { 
+        name: "ACTIONS", 
+        color: "#3b82f6", 
+        type: "action",
+        icon: "fa-play",
+        nodes: [
+            { id: "send-email", name: "Send Email", icon: "fa-envelope", desc: "SMTP email", category: "actions", outputPorts: ["main"] },
+            { id: "send-sms", name: "Send SMS", icon: "fa-mobile-alt", desc: "Twilio SMS", category: "actions", outputPorts: ["main"] },
+            { id: "slack-notify", name: "Slack", icon: "fa-slack", desc: "Slack message", category: "actions", outputPorts: ["main"] },
+            { id: "http-request", name: "HTTP Request", icon: "fa-link", desc: "API call", category: "actions", outputPorts: ["main"] },
+            { id: "post-crm", name: "CRM Update", icon: "fa-database", desc: "Update CRM", category: "actions", outputPorts: ["main"] },
+            { id: "google-sheets", name: "Google Sheets", icon: "fa-table", desc: "Append row", category: "actions", outputPorts: ["main"] }
+        ]
+    },
+    apps: { 
+        name: "APPS & INTEGRATIONS", 
+        color: "#8b5cf6", 
+        type: "app",
+        icon: "fa-plug",
+        nodes: [
+            { id: "gmail", name: "Gmail", icon: "fa-envelope-open-text", desc: "Send via Gmail", category: "apps", outputPorts: ["main"] },
+            { id: "whatsapp", name: "WhatsApp", icon: "fa-whatsapp", desc: "WhatsApp message", category: "apps", outputPorts: ["main"] },
+            { id: "stripe", name: "Stripe", icon: "fa-credit-card", desc: "Payment webhook", category: "apps", outputPorts: ["main"] },
+            { id: "salesforce", name: "Salesforce", icon: "fa-cloud", desc: "Sync to SFDC", category: "apps", outputPorts: ["main"] },
+            { id: "hubspot", name: "HubSpot", icon: "fa-chart-line", desc: "CRM actions", category: "apps", outputPorts: ["main"] },
+            { id: "calendly", name: "Calendly", icon: "fa-calendar-check", desc: "Booking", category: "apps", outputPorts: ["main"] }
+        ]
+    },
+    ai: { 
+        name: "AI & LLM", 
+        color: "#ec4899", 
+        type: "ai",
+        icon: "fa-brain",
+        nodes: [
+            { id: "openai", name: "OpenAI GPT-4", icon: "fa-microchip", desc: "GPT-4o", category: "ai", outputPorts: ["main"] },
+            { id: "claude", name: "Claude AI", icon: "fa-brain", desc: "Anthropic", category: "ai", outputPorts: ["main"] },
+            { id: "lead-scorer", name: "Lead Scorer", icon: "fa-chart-line", desc: "Score leads", category: "ai", outputPorts: ["main"] },
+            { id: "sentiment", name: "Sentiment", icon: "fa-smile", desc: "Analyze text", category: "ai", outputPorts: ["main"] },
+            { id: "summarizer", name: "Summarizer", icon: "fa-compress", desc: "Summarize", category: "ai", outputPorts: ["main"] }
+        ]
+    }
+};
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("🚀 Enterprise Workflow Builder Starting...");
+    renderNodeLibrary();
+    setupCanvasEvents();
+    updateCanvasStats();
+    loadSampleWorkflow();
+});
+
+function renderNodeLibrary() {
+    const container = document.getElementById('nodeLibraryContainer');
+    if (!container) return;
+    
+    container.innerHTML = Object.entries(nodeCategories).map(([key, cat]) => `
+        <div class="node-category">
+            <div class="node-category-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed')">
+                <span><i class="fas ${cat.icon}" style="color:${cat.color}; margin-right:8px;"></i>${cat.name}</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="node-category-items">
+                ${cat.nodes.map(node => `
+                    <div class="node-item" draggable="true" data-node-id="${node.id}" data-node-name="${node.name}" data-node-category="${key}" data-node-type="${cat.type}"
+                         ondragstart="dragCanvasNode(event)" ondragend="dragCanvasEnd(event)">
+                        <div style="width:32px; height:32px; background:${cat.color}; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white;">
+                            <i class="fas ${node.icon}"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:0.8rem;">${node.name}</div>
+                            <div style="font-size:0.65rem; color:#94a3b8;">${node.desc}</div>
+                        </div>
+                        <i class="fas fa-grip-vertical" style="color:#cbd5e1;"></i>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterNodeLibrary() {
+    const search = document.getElementById('nodeSearch').value.toLowerCase();
+    document.querySelectorAll('.node-category').forEach(cat => {
+        let visible = false;
+        cat.querySelectorAll('.node-item').forEach(item => {
+            const text = item.innerText.toLowerCase();
+            if (text.includes(search)) {
+                item.style.display = 'flex';
+                visible = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        cat.style.display = visible ? 'block' : 'none';
+    });
+}
+
+function dragCanvasNode(e) {
+    const item = e.target.closest('.node-item');
+    if (!item) return;
+    const nodeId = item.dataset.nodeId;
+    const nodeName = item.dataset.nodeName;
+    const nodeCategory = item.dataset.nodeCategory;
+    const nodeType = item.dataset.nodeType;
+    const nodeDef = nodeCategories[nodeCategory]?.nodes.find(n => n.id === nodeId);
+    
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+        id: nodeId,
+        name: nodeName,
+        category: nodeCategory,
+        type: nodeType,
+        outputPorts: nodeDef?.outputPorts || ["main"],
+        isRouter: nodeDef?.isRouter || false
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+    item.classList.add('dragging');
+}
+
+function dragCanvasEnd(e) {
+    if (e.target) e.target.classList.remove('dragging');
+}
+
+function setupCanvasEvents() {
+    const canvasContainer = document.getElementById('canvasContainer');
+    const canvas = document.getElementById('canvas');
+    if (!canvasContainer) return;
+    
+    canvasContainer.addEventListener('dragover', (e) => e.preventDefault());
+    canvasContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const rect = canvasContainer.getBoundingClientRect();
+        const x = (e.clientX - rect.left - canvasPanX) / canvasZoom;
+        const y = (e.clientY - rect.top - canvasPanY) / canvasZoom;
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        addCanvasNode(data.id, data.name, data.category, data.type, data.outputPorts, data.isRouter, x - 130, y - 40);
+        updateCanvasStats();
+        showEmptyCanvasState();
+    });
+    
+    canvasContainer.addEventListener('mousedown', (e) => {
+        if (e.target === canvasContainer || e.target.classList.contains('canvas-container')) {
+            canvasIsPanning = true;
+            canvasPanStartX = e.clientX - canvasPanX;
+            canvasPanStartY = e.clientY - canvasPanY;
+            canvasContainer.style.cursor = 'grabbing';
+        }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+        if (canvasIsPanning) {
+            canvasPanX = e.clientX - canvasPanStartX;
+            canvasPanY = e.clientY - canvasPanStartY;
+            renderCanvas();
+            updateMinimap();
+        }
+        if (liveWire.active) {
+            const rect = canvasContainer.getBoundingClientRect();
+            liveWire.mouseX = (e.clientX - rect.left - canvasPanX) / canvasZoom;
+            liveWire.mouseY = (e.clientY - rect.top - canvasPanY) / canvasZoom;
+            renderCanvas();
+        }
+    });
+    
+    window.addEventListener('mouseup', () => {
+        canvasIsPanning = false;
+        if (canvasContainer) canvasContainer.style.cursor = 'grab';
+    });
+    
+    canvasContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        const newZoom = Math.min(2, Math.max(0.3, canvasZoom + delta));
+        if (newZoom !== canvasZoom) {
+            canvasZoom = newZoom;
+            document.getElementById('zoomPercent').innerHTML = `${Math.round(canvasZoom * 100)}%`;
+            document.getElementById('canvasZoomPercent').innerHTML = `Zoom: ${Math.round(canvasZoom * 100)}%`;
+            renderCanvas();
+            updateMinimap();
+        }
+    });
+}
+
+function addCanvasNode(type, name, category, nodeType, outputPorts, isRouter, x, y) {
+    const newNode = {
+        id: nextNodeId++,
+        type: type,
+        name: name,
+        category: category,
+        nodeType: nodeType,
+        outputPorts: outputPorts || ["main"],
+        isRouter: isRouter || false,
+        x: x,
+        y: y,
+        config: {},
+        enabled: true,
+        inputData: null,
+        outputData: null
+    };
+    canvasNodes.push(newNode);
+    saveCanvasToHistory();
+    renderCanvas();
+    updateCanvasStats();
+    showEmptyCanvasState();
+    showToast(`Added "${name}" node`, 'success');
+}
+
+function renderCanvas() {
+    const canvas = document.getElementById('canvas');
+    const svgLayer = document.querySelector('#connectionLayer svg');
+    if (!canvas) return;
+    
+    canvas.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
+    canvas.style.width = '10000px';
+    canvas.style.height = '10000px';
+    
+    // Render nodes with n8n style
+    canvas.innerHTML = canvasNodes.map(node => {
+        const isRunning = currentExecution && currentExecution.runningNodes?.has(node.id);
+        const isSuccess = currentExecution && currentExecution.completedNodes?.has(node.id);
+        const isError = currentExecution && currentExecution.failedNodes?.has(node.id);
+        let statusClass = '';
+        if (isRunning) statusClass = 'running';
+        else if (isSuccess) statusClass = 'success';
+        else if (isError) statusClass = 'error';
+        
+        const categoryColor = getCategoryColor(node.category);
+        
+        // Generate ports HTML - multiple outputs for router nodes
+        let portsHtml = `<div class="port port-input" data-node="${node.id}" data-port="input" onclick="startCanvasConnection(event, ${node.id}, 'input', null)"></div>`;
+        
+        if (node.isRouter && node.outputPorts && node.outputPorts.length > 1) {
+            portsHtml += `<div class="multi-ports">`;
+            node.outputPorts.forEach((port, idx) => {
+                const yPos = 30 + (idx * 25);
+                portsHtml += `
+                    <div class="multi-port" data-node="${node.id}" data-port="${port}" style="position:relative; margin:${idx === 0 ? '0' : '12px 0'} 0 0;" onclick="startCanvasConnection(event, ${node.id}, 'output', '${port}')">
+                        <span class="port-label">${port}</span>
+                    </div>
+                `;
+            });
+            portsHtml += `</div>`;
+        } else {
+            portsHtml += `<div class="port port-output" data-node="${node.id}" data-port="main" onclick="startCanvasConnection(event, ${node.id}, 'output', 'main')"></div>`;
+        }
+        
+        return `
+            <div class="node-card ${canvasSelectedNodeId === node.id ? 'selected' : ''} ${statusClass} ${!node.enabled ? 'disabled' : ''}" 
+                 style="left: ${node.x}px; top: ${node.y}px;"
+                 data-node-id="${node.id}" 
+                 onclick="selectCanvasNode(${node.id}, event)" 
+                 ondblclick="openCanvasInspector(${node.id})"
+                 onmousedown="startNodeDrag(event, ${node.id})">
+                <div class="node-header" data-type="${node.nodeType}">
+                    <div class="node-icon" style="background: ${categoryColor}">
+                        <i class="fas ${getNodeIcon(node.type)}"></i>
+                    </div>
+                    <div class="node-title">
+                        ${escapeHtml(node.name)}
+                        ${isRunning ? '<div class="running-spinner" style="display:inline-block; width:12px; height:12px; border:2px solid var(--warning); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-left:8px;"></div>' : ''}
+                        <div class="node-subtitle">${getNodeSubtitle(node)}</div>
+                    </div>
+                </div>
+                <div class="node-body">
+                    ${node.config && Object.keys(node.config).length > 0 ? getConfigSummary(node) : 'Click to configure...'}
+                </div>
+                <div class="node-ports">
+                    ${portsHtml}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Render connections with bezier curves
+    svgLayer.innerHTML = canvasConnections.map(conn => {
+        const fromNode = canvasNodes.find(n => n.id === conn.fromNode);
+        const toNode = canvasNodes.find(n => n.id === conn.toNode);
+        if (!fromNode || !toNode) return '';
+        
+        const fromX = fromNode.x + 260;
+        const fromY = fromNode.y + 50;
+        const toX = toNode.x;
+        const toY = toNode.y + 50;
+        
+        // Bezier curve control points
+        const midX = (fromX + toX) / 2;
+        const isFlowing = currentExecution && currentExecution.activeConnections?.has(conn.id);
+        const pathColor = isFlowing ? 'var(--primary)' : '#94a3b8';
+        
+        return `
+            <path class="connection-path ${isFlowing ? 'flowing' : ''}" 
+                  d="M ${fromX} ${fromY} C ${midX + 30} ${fromY}, ${midX - 30} ${toY}, ${toX} ${toY}" 
+                  data-conn-id="${conn.id}"
+                  style="stroke:${pathColor}"></path>
+            <circle class="delete-conn-btn" 
+                    data-conn-id="${conn.id}" 
+                    cx="${midX}" 
+                    cy="${(fromY + toY) / 2}" 
+                    r="8" 
+                    fill="#ef4444" 
+                    onclick="deleteCanvasConnection(${conn.id})" 
+                    style="cursor:pointer;">
+            </circle>
+        `;
+    }).join('');
+    
+    // Draw live wire
+    if (liveWire.active) {
+        const fromNode = canvasNodes.find(n => n.id === liveWire.fromNodeId);
+        if (fromNode) {
+            const fromX = fromNode.x + 260;
+            const fromY = fromNode.y + 50;
+            svgLayer.innerHTML += `
+                <path class="live-wire" 
+                      d="M ${fromX} ${fromY} L ${liveWire.mouseX} ${liveWire.mouseY}"
+                      style="fill:none; stroke:var(--primary); stroke-width:2.5; stroke-dasharray:6 4;">
+                </path>
+            `;
+        }
+    }
+}
+
+function getCategoryColor(category) {
+    const colors = { triggers: "#10b981", logic: "#f59e0b", actions: "#3b82f6", apps: "#8b5cf6", ai: "#ec4899" };
+    return colors[category] || "#64748b";
+}
+
+function getNodeIcon(type) {
+    const icons = {
+        'webhook': 'fa-globe', 'schedule': 'fa-clock', 'new-lead': 'fa-user-plus',
+        'send-email': 'fa-envelope', 'if-else': 'fa-code-branch', 'router': 'fa-random',
+        'openai': 'fa-microchip', 'lead-scorer': 'fa-chart-line', 'slack-notify': 'fa-slack',
+        'google-sheets': 'fa-table', 'http-request': 'fa-link'
+    };
+    return icons[type] || 'fa-cube';
+}
+
+function getNodeSubtitle(node) {
+    if (node.config?.condition) return `Condition: ${node.config.condition.substring(0, 30)}...`;
+    if (node.config?.email) return `To: ${node.config.email}`;
+    if (node.config?.webhookUrl) return `URL: ${node.config.webhookUrl.substring(0, 30)}...`;
+    if (node.type === 'delay' && node.config?.duration) return `Wait: ${node.config.duration} ${node.config.unit || 'minutes'}`;
+    return node.nodeType?.toUpperCase() || 'Ready';
+}
+
+function getConfigSummary(node) {
+    if (node.type === 'if-else' && node.config?.condition) return `⚡ ${node.config.condition.substring(0, 50)}`;
+    if (node.type === 'send-email' && node.config?.to) return `📧 → ${node.config.to}`;
+    if (node.type === 'delay') return `⏱️ ${node.config?.duration || 1} ${node.config?.unit || 'minutes'}`;
+    if (node.type === 'lead-scorer') return `📊 Score threshold: ${node.config?.threshold || 50}`;
+    if (node.type === 'router') return `🔀 ${node.outputPorts?.length || 4} output paths`;
+    return `⚙️ ${Object.keys(node.config || {}).length} config items`;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function selectCanvasNode(id, event) {
+    canvasSelectedNodeId = id;
+    renderCanvas();
+    event.stopPropagation();
+}
+
+function startNodeDrag(event, id) {
+    const node = canvasNodes.find(n => n.id === id);
+    if (!node) return;
+    const startX = event.clientX, startY = event.clientY;
+    const origX = node.x, origY = node.y;
+    
+    const onMouseMove = (e) => {
+        node.x = origX + (e.clientX - startX) / canvasZoom;
+        node.y = origY + (e.clientY - startY) / canvasZoom;
+        renderCanvas();
+        updateMinimap();
+    };
+    const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        saveCanvasToHistory();
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    event.stopPropagation();
+}
+
+function startCanvasConnection(event, nodeId, portType, portLabel) {
+    event.stopPropagation();
+    if (portType === 'output') {
+        liveWire = { active: true, fromNodeId: nodeId, fromPort: portLabel || 'main', mouseX: 0, mouseY: 0 };
+    } else if (portType === 'input' && liveWire.active) {
+        // Complete connection
+        const newConnection = {
+            id: connectionCounter++,
+            fromNode: liveWire.fromNodeId,
+            fromPort: liveWire.fromPort,
+            toNode: nodeId,
+            toPort: 'input'
+        };
+        
+        // Check if connection already exists
+        const exists = canvasConnections.some(c => c.fromNode === newConnection.fromNode && c.toNode === newConnection.toNode);
+        if (!exists && newConnection.fromNode !== newConnection.toNode) {
+            canvasConnections.push(newConnection);
+            saveCanvasToHistory();
+            renderCanvas();
+            updateCanvasStats();
+            showToast('Connection created', 'success');
+        } else if (newConnection.fromNode === newConnection.toNode) {
+            showToast('Cannot connect node to itself', 'warning');
+        } else {
+            showToast('Connection already exists', 'warning');
+        }
+        liveWire.active = false;
+    }
+    renderCanvas();
+}
+
+function deleteCanvasConnection(id) {
+    canvasConnections = canvasConnections.filter(c => c.id !== id);
+    saveCanvasToHistory();
+    renderCanvas();
+    updateCanvasStats();
+    showToast('Connection removed', 'info');
+}
+
+function openCanvasInspector(nodeId) {
+    const node = canvasNodes.find(n => n.id === nodeId);
+    if (!node) return;
+    canvasSelectedNodeId = nodeId;
+    const panel = document.getElementById('inspectorPanel');
+    const content = document.getElementById('inspectorContent');
+    
+    content.innerHTML = `
+        <div class="inspector-field">
+            <label><i class="fas fa-tag"></i> Node Name</label>
+            <input type="text" value="${escapeHtml(node.name)}" onchange="updateCanvasNodeName(${node.id}, this.value)">
+        </div>
+        <div class="inspector-field">
+            <label><i class="fas fa-power-off"></i> Enabled</label>
+            <label class="toggle-switch" style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" ${node.enabled !== false ? 'checked' : ''} onchange="updateCanvasNodeEnabled(${node.id}, this.checked)">
+                <span class="slider" style="position:relative; display:inline-block;"></span>
+            </label>
+        </div>
+        <div class="inspector-field">
+            <label><i class="fas fa-cog"></i> Configuration (JSON)</label>
+            <textarea id="nodeConfigTextarea" rows="8" style="width:100%; padding:10px; border:1px solid var(--border-color); border-radius:10px; font-family:monospace;">${JSON.stringify(node.config || {}, null, 2)}</textarea>
+        </div>
+        <button class="canvas-btn primary" style="width:100%; margin-bottom:12px;" onclick="saveNodeConfig(${node.id})"><i class="fas fa-save"></i> Save Configuration</button>
+        
+        <div class="io-section">
+            <div class="io-title"><i class="fas fa-arrow-down"></i> Input Data (Last Run)</div>
+            <div class="io-content">${node.inputData ? escapeHtml(JSON.stringify(node.inputData, null, 2)) : '<span style="color:#64748b;">No data yet. Run the workflow to see input.</span>'}</div>
+        </div>
+        
+        <div class="io-section">
+            <div class="io-title"><i class="fas fa-arrow-up"></i> Output Data (Last Run)</div>
+            <div class="io-content">${node.outputData ? escapeHtml(JSON.stringify(node.outputData, null, 2)) : '<span style="color:#64748b;">No data yet. Run the workflow to see output.</span>'}</div>
+        </div>
+        
+        <button class="canvas-btn" style="width:100%; margin-top:12px;" onclick="deleteCanvasNode(${node.id})"><i class="fas fa-trash"></i> Delete Node</button>
+    `;
+    panel.classList.add('open');
+    renderCanvas();
+}
+
+function saveNodeConfig(nodeId) {
+    const node = canvasNodes.find(n => n.id === nodeId);
+    if (!node) return;
+    const configText = document.getElementById('nodeConfigTextarea')?.value;
+    if (configText) {
+        try {
+            node.config = JSON.parse(configText);
+            showToast(`Configuration saved for "${node.name}"`, 'success');
+            renderCanvas();
+        } catch(e) {
+            showToast('Invalid JSON configuration', 'error');
+        }
+    }
+}
+
+function closeInspector() {
+    document.getElementById('inspectorPanel').classList.remove('open');
+    canvasSelectedNodeId = null;
+    renderCanvas();
+}
+
+function updateCanvasNodeName(id, name) {
+    const node = canvasNodes.find(n => n.id === id);
+    if (node) node.name = name;
+    renderCanvas();
+}
+
+function updateCanvasNodeEnabled(id, enabled) {
+    const node = canvasNodes.find(n => n.id === id);
+    if (node) node.enabled = enabled;
+    renderCanvas();
+}
+
+function deleteCanvasNode(id) {
+    if (!confirm('Delete this node and all its connections?')) return;
+    canvasNodes = canvasNodes.filter(n => n.id !== id);
+    canvasConnections = canvasConnections.filter(c => c.fromNode !== id && c.toNode !== id);
+    if (canvasSelectedNodeId === id) closeInspector();
+    saveCanvasToHistory();
+    renderCanvas();
+    updateCanvasStats();
+    showEmptyCanvasState();
+    showToast('Node deleted', 'info');
+}
+
+function saveCanvasToHistory() {
+    canvasHistory = canvasHistory.slice(0, canvasHistoryIndex + 1);
+    canvasHistory.push(JSON.parse(JSON.stringify({ nodes: canvasNodes, connections: canvasConnections })));
+    canvasHistoryIndex++;
+    if (canvasHistory.length > 50) canvasHistory.shift();
+}
+
+function undoCanvas() {
+    if (canvasHistoryIndex > 0) {
+        canvasHistoryIndex--;
+        const state = canvasHistory[canvasHistoryIndex];
+        canvasNodes = state.nodes;
+        canvasConnections = state.connections;
+        renderCanvas();
+        updateCanvasStats();
+        showToast('Undo', 'info');
+    } else {
+        showToast('Nothing to undo', 'info');
+    }
+}
+
+function redoCanvas() {
+    if (canvasHistoryIndex < canvasHistory.length - 1) {
+        canvasHistoryIndex++;
+        const state = canvasHistory[canvasHistoryIndex];
+        canvasNodes = state.nodes;
+        canvasConnections = state.connections;
+        renderCanvas();
+        updateCanvasStats();
+        showToast('Redo', 'info');
+    } else {
+        showToast('Nothing to redo', 'info');
+    }
+}
+
+function clearCanvas() {
+    if (confirm('Clear entire canvas? This cannot be undone.')) {
+        canvasNodes = [];
+        canvasConnections = [];
+        saveCanvasToHistory();
+        renderCanvas();
+        updateCanvasStats();
+        showToast('Canvas cleared', 'info');
+        showEmptyCanvasState();
+    }
+}
+
+function updateCanvasStats() {
+    document.getElementById('canvasNodeCount').innerHTML = `${canvasNodes.length} nodes`;
+    document.getElementById('canvasConnectionCount').innerHTML = `${canvasConnections.length} connections`;
+}
+
+function zoomIn() { 
+    canvasZoom = Math.min(2, canvasZoom + 0.1); 
+    updateZoomDisplay();
+    renderCanvas(); 
+    updateMinimap(); 
+}
+
+function zoomOut() { 
+    canvasZoom = Math.max(0.3, canvasZoom - 0.1); 
+    updateZoomDisplay();
+    renderCanvas(); 
+    updateMinimap(); 
+}
+
+function updateZoomDisplay() {
+    const percent = Math.round(canvasZoom * 100);
+    document.getElementById('zoomPercent').innerHTML = `${percent}%`;
+    document.getElementById('canvasZoomPercent').innerHTML = `Zoom: ${percent}%`;
+}
+
+function fitToScreen() { 
+    if (canvasNodes.length === 0) return; 
+    let minX = Math.min(...canvasNodes.map(n => n.x)); 
+    let maxX = Math.max(...canvasNodes.map(n => n.x + 260)); 
+    let minY = Math.min(...canvasNodes.map(n => n.y)); 
+    let maxY = Math.max(...canvasNodes.map(n => n.y + 80)); 
+    let width = maxX - minX, height = maxY - minY; 
+    const container = document.getElementById('canvasContainer');
+    if (container) {
+        canvasZoom = Math.min(1.2, (container.clientWidth - 400) / width, (container.clientHeight - 150) / height); 
+        canvasPanX = (container.clientWidth / 2) - ((minX + width/2) * canvasZoom); 
+        canvasPanY = (container.clientHeight / 2 - 80) - ((minY + height/2) * canvasZoom); 
+        updateZoomDisplay();
+        renderCanvas(); 
+        updateMinimap(); 
+        showToast('Fit to screen', 'info');
+    }
+}
+
+function updateMinimap() {
+    const canvas = document.getElementById('minimapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, 0, 180, 120);
+    
+    canvasNodes.forEach(node => {
+        ctx.fillStyle = getCategoryColor(node.category);
+        ctx.fillRect(node.x / 35 + 10, node.y / 35 + 10, 6, 4);
+    });
+    
+    // Draw viewport rectangle
+    const container = document.getElementById('canvasContainer');
+    if (container) {
+        const viewX = -canvasPanX / canvasZoom / 35 + 10;
+        const viewY = -canvasPanY / canvasZoom / 35 + 10;
+        const viewW = container.clientWidth / canvasZoom / 35;
+        const viewH = container.clientHeight / canvasZoom / 35;
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(viewX, viewY, viewW, viewH);
+    }
+}
+
+function showEmptyCanvasState() {
+    const canvas = document.getElementById('canvas');
+    if (canvasNodes.length === 0 && canvas && !canvas.querySelector('.empty-canvas-state')) {
+        canvas.innerHTML = `
+            <div class="empty-canvas-state" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; width:400px;">
+                <i class="fas fa-project-diagram" style="font-size:60px; color:var(--primary); opacity:0.5; margin-bottom:20px;"></i>
+                <h3 style="margin-bottom:10px;">Build Your First Workflow</h3>
+                <p style="color:var(--text-secondary); margin-bottom:20px;">Drag nodes from the left panel to create powerful automations</p>
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button class="canvas-btn primary" onclick="loadTemplate('lead-capture')"><i class="fas fa-user-plus"></i> Lead Capture</button>
+                    <button class="canvas-btn" onclick="loadTemplate('cart-recovery')"><i class="fas fa-shopping-cart"></i> Cart Recovery</button>
+                    <button class="canvas-btn" onclick="loadTemplate('approval-flow')"><i class="fas fa-check-double"></i> Approval Flow</button>
+                </div>
+            </div>
+        `;
+    } else {
+        const emptyState = document.querySelector('.empty-canvas-state');
+        if (emptyState) emptyState.remove();
+    }
+}
+
+function loadSampleWorkflow() {
+    // Load a sample workflow with IF/Else router to demonstrate multi-port functionality
+    canvasNodes = [];
+    canvasConnections = [];
+    
+    addCanvasNode('webhook', 'Webhook Trigger', 'triggers', 'trigger', ['main'], false, 100, 200);
+    addCanvasNode('lead-scorer', 'Lead Scorer', 'ai', 'ai', ['main'], false, 400, 200);
+    addCanvasNode('if-else', 'Score > 70?', 'logic', 'logic', ['true', 'false'], true, 700, 200);
+    addCanvasNode('send-email', 'Send Welcome Email', 'actions', 'action', ['main'], false, 1000, 120);
+    addCanvasNode('post-crm', 'Add to CRM', 'actions', 'action', ['main'], false, 1000, 280);
+    
+    // Configure the nodes
+    const webhookNode = canvasNodes.find(n => n.type === 'webhook');
+    if (webhookNode) webhookNode.config = { method: 'POST', path: '/leads' };
+    
+    const scorerNode = canvasNodes.find(n => n.type === 'lead-scorer');
+    if (scorerNode) scorerNode.config = { threshold: 70, model: 'gpt-4o' };
+    
+    const ifNode = canvasNodes.find(n => n.type === 'if-else');
+    if (ifNode) ifNode.config = { condition: 'score > 70', field: 'score', operator: '>' };
+    
+    const emailNode = canvasNodes.find(n => n.type === 'send-email');
+    if (emailNode) emailNode.config = { to: '{{lead.email}}', subject: 'Welcome!', template: 'welcome' };
+    
+    const crmNode = canvasNodes.find(n => n.type === 'post-crm');
+    if (crmNode) crmNode.config = { endpoint: '/contacts', fields: ['name', 'email', 'score'] };
+    
+    // Create connections
+    canvasConnections.push({ id: connectionCounter++, fromNode: 100, fromPort: 'main', toNode: 101, toPort: 'input' });
+    canvasConnections.push({ id: connectionCounter++, fromNode: 101, fromPort: 'main', toNode: 102, toPort: 'input' });
+    canvasConnections.push({ id: connectionCounter++, fromNode: 102, fromPort: 'true', toNode: 103, toPort: 'input' });
+    canvasConnections.push({ id: connectionCounter++, fromNode: 102, fromPort: 'false', toNode: 104, toPort: 'input' });
+    
+    renderCanvas();
+    updateCanvasStats();
+    showToast('Sample workflow loaded. Try running it!', 'success');
+}
+
+function loadTemplate(templateType) {
+    canvasNodes = [];
+    canvasConnections = [];
+    
+    if (templateType === 'lead-capture') {
+        addCanvasNode('webhook', 'Webhook', 'triggers', 'trigger', ['main'], false, 100, 200);
+        addCanvasNode('lead-scorer', 'Lead Scorer', 'ai', 'ai', ['main'], false, 400, 200);
+        addCanvasNode('if-else', 'Score > 70?', 'logic', 'logic', ['true', 'false'], true, 700, 200);
+        addCanvasNode('send-email', 'Send Email', 'actions', 'action', ['main'], false, 1000, 120);
+        addCanvasNode('post-crm', 'Post to CRM', 'actions', 'action', ['main'], false, 1000, 280);
+        
+        canvasConnections.push({ id: connectionCounter++, fromNode: 100, fromPort: 'main', toNode: 101, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 101, fromPort: 'main', toNode: 102, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 102, fromPort: 'true', toNode: 103, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 102, fromPort: 'false', toNode: 104, toPort: 'input' });
+        
+        // Configure nodes
+        const scorer = canvasNodes.find(n => n.type === 'lead-scorer');
+        if (scorer) scorer.config = { threshold: 70 };
+        const ifNode = canvasNodes.find(n => n.type === 'if-else');
+        if (ifNode) ifNode.config = { condition: 'score > 70' };
+        const email = canvasNodes.find(n => n.type === 'send-email');
+        if (email) email.config = { subject: 'Welcome!', template: 'welcome' };
+        
+    } else if (templateType === 'cart-recovery') {
+        addCanvasNode('cart-abandoned', 'Cart Abandoned', 'triggers', 'trigger', ['main'], false, 100, 200);
+        addCanvasNode('delay', 'Wait 1 Hour', 'logic', 'logic', ['main'], false, 400, 200);
+        addCanvasNode('send-email', 'Send Recovery Email', 'actions', 'action', ['main'], false, 700, 200);
+        
+        const delayNode = canvasNodes.find(n => n.type === 'delay');
+        if (delayNode) delayNode.config = { duration: 60, unit: 'minutes' };
+        
+        canvasConnections.push({ id: connectionCounter++, fromNode: 100, fromPort: 'main', toNode: 101, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 101, fromPort: 'main', toNode: 102, toPort: 'input' });
+        
+    } else if (templateType === 'approval-flow') {
+        addCanvasNode('new-lead', 'New Lead', 'triggers', 'trigger', ['main'], false, 100, 200);
+        addCanvasNode('router', 'Route by Score', 'logic', 'logic', ['high', 'medium', 'low'], true, 400, 200);
+        addCanvasNode('slack-notify', 'Notify Sales', 'apps', 'app', ['main'], false, 800, 100);
+        addCanvasNode('send-email', 'Send Nurture', 'actions', 'action', ['main'], false, 800, 200);
+        addCanvasNode('post-crm', 'Log Lead', 'actions', 'action', ['main'], false, 800, 300);
+        
+        const router = canvasNodes.find(n => n.type === 'router');
+        if (router) router.config = { field: 'score', mapping: { high: '>80', medium: '50-80', low: '<50' } };
+        
+        canvasConnections.push({ id: connectionCounter++, fromNode: 100, fromPort: 'main', toNode: 101, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 101, fromPort: 'high', toNode: 102, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 101, fromPort: 'medium', toNode: 103, toPort: 'input' });
+        canvasConnections.push({ id: connectionCounter++, fromNode: 101, fromPort: 'low', toNode: 104, toPort: 'input' });
+    }
+    
+    renderCanvas();
+    updateCanvasStats();
+    showEmptyCanvasState();
+    showToast(`Template "${templateType}" loaded`, 'success');
+    saveCanvasToHistory();
+}
+
+function saveWorkflow() {
+    if (canvasNodes.length === 0) { showToast('No nodes to save', 'warning'); return; }
+    const name = prompt('Workflow name:', `Workflow_${Date.now()}`);
+    if (!name) return;
+    const workflow = { 
+        id: Date.now(), 
+        name, 
+        nodes: canvasNodes, 
+        connections: canvasConnections, 
+        canvas: { panX: canvasPanX, panY: canvasPanY, zoom: canvasZoom },
+        version: '2.0',
+        created: new Date().toISOString()
+    };
+    let saved = JSON.parse(localStorage.getItem('canvas_workflows') || '[]');
+    saved = saved.filter(w => w.name !== name);
+    saved.push(workflow);
+    localStorage.setItem('canvas_workflows', JSON.stringify(saved));
+    document.getElementById('lastSavedStatus').innerHTML = `Saved: ${new Date().toLocaleTimeString()}`;
+    showToast(`Workflow "${name}" saved!`, 'success');
+}
+
+function showWorkflowsDropdown() {
+    const saved = JSON.parse(localStorage.getItem('canvas_workflows') || '[]');
+    if (saved.length === 0) { showToast('No saved workflows', 'info'); return; }
+    const workflowList = saved.map((w, i) => `${i+1}. ${w.name} (${w.nodes?.length || 0} nodes)`).join('\n');
+    const idx = prompt(`Select workflow to load:\n${workflowList}\n\nEnter number:`, '1');
+    if (idx && saved[parseInt(idx)-1]) {
+        const w = saved[parseInt(idx)-1];
+        canvasNodes = w.nodes || [];
+        canvasConnections = w.connections || [];
+        canvasPanX = w.canvas?.panX || 200;
+        canvasPanY = w.canvas?.panY || 100;
+        canvasZoom = w.canvas?.zoom || 0.75;
+        updateZoomDisplay();
+        nextNodeId = Math.max(...canvasNodes.map(n => n.id), 0) + 100;
+        renderCanvas();
+        updateCanvasStats();
+        showToast(`Loaded: ${w.name}`, 'success');
+        saveCanvasToHistory();
+    }
+}
+
+async function runWorkflow() {
+    if (isWorkflowRunning) { showToast('Workflow already running', 'warning'); return; }
+    if (canvasNodes.length === 0) { showToast('No nodes to execute', 'error'); return; }
+    
+    isWorkflowRunning = true;
+    stopWorkflowFlag = false;
+    document.getElementById('stopWorkflowBtn').style.display = 'inline-flex';
+    document.getElementById('executionPanel').classList.add('open');
+    
+    const execContent = document.getElementById('executionContent');
+    execContent.innerHTML = '';
+    document.getElementById('execSummary').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+    
+    currentExecution = {
+        runningNodes: new Set(),
+        completedNodes: new Set(),
+        failedNodes: new Set(),
+        activeConnections: new Set(),
+        startTime: Date.now(),
+        nodeOutputs: new Map()
+    };
+    
+    // Find trigger nodes (nodes with no incoming connections)
+    const hasIncoming = (nodeId) => canvasConnections.some(c => c.toNode === nodeId);
+    const triggerNodes = canvasNodes.filter(n => !hasIncoming(n.id) && n.enabled);
+    
+    if (triggerNodes.length === 0) {
+        showToast('No trigger nodes found. Add a trigger node to start.', 'error');
+        finishWorkflow();
+        return;
+    }
+    
+    // Build execution order (simple BFS)
+    const executionOrder = [];
+    const visited = new Set();
+    const queue = [...triggerNodes];
+    
+    while (queue.length > 0) {
+        const node = queue.shift();
+        if (visited.has(node.id)) continue;
+        visited.add(node.id);
+        executionOrder.push(node);
+        
+        const outgoing = canvasConnections.filter(c => c.fromNode === node.id);
+        for (const conn of outgoing) {
+            const nextNode = canvasNodes.find(n => n.id === conn.toNode);
+            if (nextNode && !visited.has(nextNode.id) && nextNode.enabled) {
+                queue.push(nextNode);
+            }
+        }
+    }
+    
+    let nodeIndex = 0;
+    let previousOutput = { lead: { id: 123, name: "Demo Lead", email: "demo@example.com", score: 85 }, timestamp: new Date().toISOString() };
+    
+    const runNextNode = async () => {
+        if (stopWorkflowFlag || nodeIndex >= executionOrder.length) {
+            finishWorkflow();
+            return;
+        }
+        
+        const node = executionOrder[nodeIndex];
+        if (!node.enabled) {
+            addExecutionLog(node.id, node.name, 'skipped', 0, 'Skipped (disabled)');
+            nodeIndex++;
+            runNextNode();
+            return;
+        }
+        
+        // Activate node and its incoming connections
+        currentExecution.runningNodes.add(node.id);
+        const incomingConns = canvasConnections.filter(c => c.toNode === node.id);
+        incomingConns.forEach(conn => currentExecution.activeConnections.add(conn.id));
+        renderCanvas();
+        
+        addExecutionLog(node.id, node.name, 'running', 0, 'Executing...');
+        
+        // Simulate node execution with realistic delays
+        const execTime = getNodeExecutionTime(node);
+        await new Promise(r => setTimeout(r, execTime));
+        
+        // Generate output data based on node type
+        const output = await executeNodeLogic(node, previousOutput);
+        currentExecution.nodeOutputs.set(node.id, output);
+        previousOutput = output;
+        
+        // Store data in node for inspector
+        node.inputData = previousOutput;
+        node.outputData = output;
+        
+        // Mark as completed
+        currentExecution.runningNodes.delete(node.id);
+        currentExecution.completedNodes.add(node.id);
+        incomingConns.forEach(conn => currentExecution.activeConnections.delete(conn.id));
+        renderCanvas();
+        
+        // Determine which output port to follow for router nodes
+        let nextNodeId = null;
+        let nextPort = null;
+        
+        if (node.isRouter && output.selectedPort) {
+            const matchingConn = canvasConnections.find(c => c.fromNode === node.id && c.fromPort === output.selectedPort);
+            if (matchingConn) {
+                nextNodeId = matchingConn.toNode;
+                nextPort = matchingConn.fromPort;
+            }
+        } else {
+            const defaultConn = canvasConnections.find(c => c.fromNode === node.id);
+            if (defaultConn) {
+                nextNodeId = defaultConn.toNode;
+                nextPort = defaultConn.fromPort;
+            }
+        }
+        
+        // Animate the active connection
+        if (nextNodeId) {
+            const activeConn = canvasConnections.find(c => c.fromNode === node.id && c.toNode === nextNodeId);
+            if (activeConn) {
+                currentExecution.activeConnections.add(activeConn.id);
+                renderCanvas();
+                await new Promise(r => setTimeout(r, 200));
+                currentExecution.activeConnections.delete(activeConn.id);
+                renderCanvas();
+            }
+        }
+        
+        const outputSummary = getOutputSummary(node, output);
+        addExecutionLog(node.id, node.name, 'success', execTime, outputSummary);
+        
+        nodeIndex++;
+        
+        // Find next node index (if specific port routing)
+        if (nextNodeId) {
+            const nextIndex = executionOrder.findIndex(n => n.id === nextNodeId);
+            if (nextIndex !== -1 && nextIndex > nodeIndex) {
+                // Reorder to execute the targeted node next
+                const targetNode = executionOrder[nextIndex];
+                executionOrder.splice(nextIndex, 1);
+                executionOrder.splice(nodeIndex, 0, targetNode);
+            }
+        }
+        
+        runNextNode();
+    };
+    
+    runNextNode();
+}
+
+function getNodeExecutionTime(node) {
+    if (node.type === 'openai' || node.type === 'claude') return 1500;
+    if (node.type === 'lead-scorer' || node.type === 'sentiment') return 800;
+    if (node.type === 'delay' && node.config?.duration) {
+        return Math.min(node.config.duration * 1000, 3000); // Cap at 3 seconds for demo
+    }
+    if (node.type === 'send-email' || node.type === 'slack-notify') return 600;
+    if (node.type === 'if-else' || node.type === 'router') return 100;
+    return 400;
+}
+
+async function executeNodeLogic(node, inputData) {
+    // Simulate node execution based on type
+    const baseOutput = { ...inputData, nodeId: node.id, nodeType: node.type, executedAt: new Date().toISOString() };
+    
+    switch(node.type) {
+        case 'lead-scorer':
+            const score = Math.floor(Math.random() * 100);
+            return { ...baseOutput, score, rating: score >= 70 ? 'hot' : (score >= 40 ? 'warm' : 'cold') };
+        
+        case 'if-else':
+            const condition = node.config?.condition || 'score > 70';
+            const field = node.config?.field || 'score';
+            const scoreValue = inputData?.score || 0;
+            const result = condition.includes('> 70') ? scoreValue > 70 : (condition.includes('<') ? scoreValue < 70 : true);
+            return { ...baseOutput, conditionMet: result, selectedPort: result ? 'true' : 'false' };
+        
+        case 'router':
+            const leadScore = inputData?.score || 50;
+            let selected = 'low';
+            if (leadScore >= 80) selected = 'high';
+            else if (leadScore >= 50) selected = 'medium';
+            return { ...baseOutput, selectedPort: selected, score: leadScore };
+        
+        case 'send-email':
+            return { ...baseOutput, emailSent: true, to: node.config?.to || 'demo@example.com', subject: node.config?.subject || 'Automated Email' };
+        
+        case 'slack-notify':
+            return { ...baseOutput, slackSent: true, channel: node.config?.channel || '#general' };
+        
+        case 'post-crm':
+            return { ...baseOutput, crmUpdated: true, contactId: Math.floor(Math.random() * 10000) };
+        
+        case 'delay':
+            return { ...baseOutput, delayed: true, duration: node.config?.duration || 1 };
+        
+        default:
+            return { ...baseOutput, processed: true };
+    }
+}
+
+function getOutputSummary(node, output) {
+    if (node.type === 'lead-scorer') return `Score: ${output.score} (${output.rating})`;
+    if (node.type === 'if-else') return `Condition: ${output.conditionMet ? 'TRUE → True branch' : 'FALSE → False branch'}`;
+    if (node.type === 'router') return `Routed to: ${output.selectedPort}`;
+    if (node.type === 'send-email') return `Email sent to ${output.to}`;
+    if (node.type === 'slack-notify') return `Message posted to ${output.channel}`;
+    if (node.type === 'post-crm') return `CRM contact #${output.contactId} created`;
+    if (node.type === 'delay') return `Waited ${output.duration} minute(s)`;
+    return `Output ready`;
+}
+
+function addExecutionLog(nodeId, nodeName, status, duration, output) {
+    const execContent = document.getElementById('executionContent');
+    if (!execContent) return;
+    
+    const statusIcon = status === 'success' ? '✅' : status === 'running' ? '🔄' : status === 'skipped' ? '⏭️' : '❌';
+    const logEntry = document.createElement('div');
+    logEntry.className = 'execution-item';
+    logEntry.innerHTML = `
+        <span class="status-icon">${statusIcon}</span>
+        <span class="node-name-exec">${escapeHtml(nodeName)}</span>
+        <span class="duration">${duration}ms</span>
+        <span class="output-summary">${escapeHtml(output)}</span>
+    `;
+    execContent.appendChild(logEntry);
+    execContent.scrollTop = execContent.scrollHeight;
+}
+
+function finishWorkflow() {
+    const totalDuration = Date.now() - currentExecution.startTime;
+    document.getElementById('execSummary').innerHTML = stopWorkflowFlag ? '<i class="fas fa-stop"></i> Stopped' : '<i class="fas fa-check-circle"></i> Completed';
+    document.getElementById('stopWorkflowBtn').style.display = 'none';
+    isWorkflowRunning = false;
+    
+    if (!stopWorkflowFlag) {
+        showToast(`Workflow completed in ${totalDuration}ms`, 'success');
+    }
+    
+    currentExecution = null;
+    renderCanvas();
+}
+
+function stopWorkflow() { 
+    stopWorkflowFlag = true; 
+    if (currentExecution) {
+        currentExecution.runningNodes.clear();
+        document.getElementById('execSummary').innerHTML = '<i class="fas fa-stop"></i> Stopped';
+        showToast('Workflow stopped', 'info');
+        renderCanvas();
+    }
+}
+
+function toggleExecutionPanel() { 
+    document.getElementById('executionPanel').classList.toggle('open'); 
+}
+
+function showToast(msg, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Make functions globally available
+window.undoCanvas = undoCanvas;
+window.redoCanvas = redoCanvas;
+window.clearCanvas = clearCanvas;
+window.zoomIn = zoomIn;
+window.zoomOut = zoomOut;
+window.fitToScreen = fitToScreen;
+window.saveWorkflow = saveWorkflow;
+window.showWorkflowsDropdown = showWorkflowsDropdown;
+window.runWorkflow = runWorkflow;
+window.stopWorkflow = stopWorkflow;
+window.toggleExecutionPanel = toggleExecutionPanel;
+window.closeInspector = closeInspector;
+window.filterNodeLibrary = filterNodeLibrary;
+window.loadTemplate = loadTemplate;
+window.deleteCanvasNode = deleteCanvasNode;
+window.saveNodeConfig = saveNodeConfig;
+window.updateCanvasNodeName = updateCanvasNodeName;
+window.updateCanvasNodeEnabled = updateCanvasNodeEnabled;
+window.startCanvasConnection = startCanvasConnection;
+window.deleteCanvasConnection = deleteCanvasConnection;
+window.selectCanvasNode = selectCanvasNode;
+window.startNodeDrag = startNodeDrag;
+</script>
+</body>
+</html>

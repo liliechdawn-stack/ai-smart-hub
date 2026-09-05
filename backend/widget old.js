@@ -1,5 +1,6 @@
-// widget.js - Professional SaaS AI Chat Widget (UPDATED: All new features + Business Identity + Automations)
-// Features: Business Identity Integration, Proper Conversation Memory, Professional AI Responses, Apollo Enrichment, Follow-ups
+// widget.js - Professional SaaS AI Chat Widget (FULLY UPDATED)
+// Features: Business Identity Integration, Proper Conversation Memory, Professional AI Responses, 
+// Apollo Enrichment, Follow-ups, IMAGE ATTACHMENT FROM SMART TOOLS, CUSTOM LINKS INTEGRATION
 (function () {
   if (document.getElementById("ai-widget-container")) return;
 
@@ -23,6 +24,8 @@
   let activeSessionId = localStorage.getItem(`ai_widget_session_${WIDGET_KEY}`) || null;
   let smartSettings = {};
   let businessIdentity = {};
+  let customLinks = [];
+  let proofImages = [];
   let isLiveMode = false;
   let customBgColor = localStorage.getItem(`ai_widget_bg_color_${WIDGET_KEY}`) || "#1a1a1a";
   let isProcessing = false;
@@ -48,7 +51,13 @@
   // Track captured emails
   let capturedEmails = new Set(JSON.parse(localStorage.getItem(`ai_captured_emails_${WIDGET_KEY}`) || '[]'));
 
-  // ===== FETCH WIDGET CONFIG & BUSINESS IDENTITY =====
+  // Widget capabilities
+  let widgetCapabilities = {
+    imageSupport: false,
+    reviewCollection: false
+  };
+
+  // ===== FETCH WIDGET CONFIG & BUSINESS IDENTITY & CUSTOM LINKS & PROOF IMAGES =====
   fetch(`${SERVER_URL}/api/public/widget-config/${WIDGET_KEY}`)
     .then(res => res.json())
     .then(async dbConfig => {
@@ -73,9 +82,22 @@
         ...(dbConfig.smart_hub || {})
       };
       
+      // Load widget capabilities from localStorage (set via smart-tools.html)
+      const savedCapabilities = localStorage.getItem('widgetCapabilities');
+      if (savedCapabilities) {
+        widgetCapabilities = JSON.parse(savedCapabilities);
+      }
+      
       console.log("[WIDGET] Business Name:", businessName);
       console.log("[WIDGET] Smart Hub settings:", smartSettings);
       console.log("[WIDGET] Business Identity:", businessIdentity);
+      console.log("[WIDGET] Widget Capabilities:", widgetCapabilities);
+      
+      // Load custom links from backend
+      await loadCustomLinksForWidget();
+      
+      // Load proof images from backend
+      await loadProofImagesForWidget();
       
       initWidget(dbConfig);
     })
@@ -90,6 +112,81 @@
       };
       initWidget({});
     });
+
+  // ===== LOAD CUSTOM LINKS FROM BACKEND =====
+  async function loadCustomLinksForWidget() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${SERVER_URL}/api/smart-hub/custom-links`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        customLinks = await response.json();
+        console.log("[WIDGET] Loaded custom links:", customLinks.length);
+      }
+    } catch (err) {
+      console.warn("[WIDGET] Failed to load custom links:", err);
+    }
+  }
+
+  // ===== LOAD PROOF IMAGES FROM BACKEND =====
+  async function loadProofImagesForWidget() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`${SERVER_URL}/api/smart-hub/proof-images`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        proofImages = await response.json();
+        console.log("[WIDGET] Loaded proof images:", proofImages.length);
+      }
+    } catch (err) {
+      console.warn("[WIDGET] Failed to load proof images:", err);
+    }
+  }
+
+  // ===== GET CUSTOM LINKS FOR DISPLAY =====
+  function getCustomLinksMessage() {
+    if (!customLinks || customLinks.length === 0) return '';
+    
+    const linksHtml = customLinks.map(link => `
+      <a href="${link.url}" target="_blank" style="display: inline-block; margin: 5px; padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 20px; text-decoration: none; font-size: 12px;">
+        🔗 ${escapeHtml(link.name)}
+      </a>
+    `).join('');
+    
+    return `<div style="margin-top: 10px;"><strong>Useful Links:</strong><br>${linksHtml}</div>`;
+  }
+
+  // ===== GET PROOF IMAGES FOR DISPLAY (when customer asks for proof) =====
+  function getProofImagesMessage() {
+    if (!proofImages || proofImages.length === 0) return '';
+    
+    const imagesHtml = proofImages.map(img => `
+      <img src="${img.imageUrl}" alt="Proof" style="max-width: 100%; border-radius: 12px; margin: 5px 0; border: 1px solid #e5e7eb;">
+    `).join('');
+    
+    return `<div style="margin-top: 10px; background: #f9fafb; padding: 12px; border-radius: 12px;">
+      <strong>📸 Here are the proof images you requested:</strong><br>
+      ${imagesHtml}
+      <small style="color: #6b7280; display: block; margin-top: 8px;">These were uploaded from your admin panel as proof of delivery/service.</small>
+    </div>`;
+  }
+
+  // Helper to get proof images array
+  function hasProofImages() {
+    return proofImages && proofImages.length > 0;
+  }
+
+  function getProofImagesArray() {
+    return proofImages;
+  }
 
   function initWidget(dbConfig) {
     // Determine welcome message
@@ -657,6 +754,27 @@
         70% { box-shadow: 0 0 0 10px rgba(217,48,37,0); }
         100% { box-shadow: 0 0 0 0 rgba(217,48,37,0); }
       }
+      
+      .proof-images-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      
+      .proof-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        object-fit: cover;
+        cursor: pointer;
+        border: 2px solid var(--primary-color);
+        transition: transform 0.2s;
+      }
+      
+      .proof-image:hover {
+        transform: scale(1.05);
+      }
     `;
     document.head.appendChild(style);
 
@@ -683,6 +801,7 @@
         <div class="header-actions">
           <button class="circle-btn" id="widget-live-btn" title="Live Chat Mode">🎥</button>
           <button class="circle-btn" id="widget-mute-btn" title="Toggle Sound">${isMuted ? '🔇' : '🔊'}</button>
+          <button class="circle-btn" id="widget-proof-btn" title="View Proof Images" style="display: ${hasProofImages() ? 'flex' : 'none'}">📸</button>
           <button class="circle-btn close-btn" title="Close Chat">✕</button>
         </div>
       </div>
@@ -746,6 +865,14 @@
           </button>
         </div>
       </div>
+      
+      <div id="proof-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:100002; align-items:center; justify-content:center; flex-direction:column;">
+        <div style="background:white; border-radius:20px; padding:20px; max-width:90vw; max-height:80vh; overflow:auto;">
+          <button id="close-proof-modal" style="float:right; background:none; border:none; font-size:24px; cursor:pointer;">×</button>
+          <h3 style="margin-bottom:15px;">📸 Proof Images</h3>
+          <div id="proof-images-gallery" class="proof-images-gallery"></div>
+        </div>
+      </div>
     `;
     container.appendChild(win);
 
@@ -757,6 +884,7 @@
     const fileInput = win.querySelector("#widget-file-input");
     const muteBtn = win.querySelector("#widget-mute-btn");
     const liveBtn = win.querySelector("#widget-live-btn");
+    const proofBtn = win.querySelector("#widget-proof-btn");
     const typingInd = win.querySelector("#widget-typing");
     const leadForm = win.querySelector("#lead-form");
     const previewBar = win.querySelector("#file-preview-bar");
@@ -768,6 +896,41 @@
     const aiStatus = win.querySelector("#ai-status");
     const voiceStatus = win.querySelector("#voice-status");
     const voiceWave = win.querySelector("#voice-wave");
+    const proofModal = win.querySelector("#proof-modal");
+    const proofGallery = win.querySelector("#proof-images-gallery");
+    const closeProofModal = win.querySelector("#close-proof-modal");
+
+    // ===== PROOF IMAGES MODAL =====
+    if (proofBtn) {
+      if (hasProofImages()) {
+        proofBtn.style.display = "flex";
+      } else {
+        proofBtn.style.display = "none";
+      }
+      
+      proofBtn.onclick = () => {
+        if (proofGallery && proofImages.length > 0) {
+          proofGallery.innerHTML = proofImages.map(img => `
+            <img src="${img.imageUrl}" alt="Proof" class="proof-image" onclick="window.open('${img.imageUrl}', '_blank')">
+          `).join('');
+          proofModal.style.display = "flex";
+        } else {
+          appendMessage("No proof images have been uploaded yet. Please check back later.", "bot");
+        }
+      };
+    }
+    
+    if (closeProofModal) {
+      closeProofModal.onclick = () => {
+        proofModal.style.display = "none";
+      };
+    }
+    
+    if (proofModal) {
+      proofModal.onclick = (e) => {
+        if (e.target === proofModal) proofModal.style.display = "none";
+      };
+    }
 
     // ===== SPEECH RECOGNITION SETUP =====
     function initSpeechRecognition() {
@@ -901,6 +1064,38 @@
       pixelFace.classList.add(expression);
     }
 
+    function checkForProofRequest(text) {
+      const lowerText = text.toLowerCase();
+      const proofKeywords = ['proof', 'image', 'photo', 'picture', 'evidence', 'show me', 'delivery proof', 'service proof', 'can you show', 'proof images', 'uploaded images'];
+      
+      for (const keyword of proofKeywords) {
+        if (lowerText.includes(keyword)) {
+          if (hasProofImages()) {
+            const imagesHtml = getProofImagesMessage();
+            appendMessage(imagesHtml, "bot");
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    
+    function checkForLinksRequest(text) {
+      const lowerText = text.toLowerCase();
+      const linkKeywords = ['links', 'useful links', 'helpful links', 'resources', 'booking link', 'appointment link', 'schedule link', 'external links'];
+      
+      for (const keyword of linkKeywords) {
+        if (lowerText.includes(keyword)) {
+          if (customLinks && customLinks.length > 0) {
+            const linksHtml = getCustomLinksMessage();
+            appendMessage(linksHtml, "bot");
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     bubble.onclick = async () => {
       win.classList.toggle("open");
       if (win.classList.contains("open")) {
@@ -980,7 +1175,6 @@
           
           hasIntroduced = true;
           
-          // Trigger AI Automations - send event to backend
           fetch(`${SERVER_URL}/api/automations/trigger`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1011,7 +1205,6 @@
         }
       } catch (e) {
         console.error("Lead submission error:", e);
-        // Still allow chat even if lead save fails
         leadCaptured = true;
         localStorage.setItem(`ai_lead_captured_${WIDGET_KEY}`, "true");
         leadForm.style.display = "none";
@@ -1138,12 +1331,18 @@
         .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit;text-decoration:underline;">$1</a>')
         .replace(/(^|\s)(www\.[^\s]+)/g, (m, s, url) => `${s}<a href="https://${url}" target="_blank" style="color:inherit;text-decoration:underline;">${url}</a>`);
 
-      // Add booking link if applicable
       const bookingUrl = smartSettings?.booking_url || '';
       if (bookingUrl && smartSettings?.booking_active) {
         const bookingKeywords = /book|appointment|schedule|meeting|calendly|reserve|consultation|demo/i;
         if (bookingKeywords.test(text)) {
           linkedText += `<br><br>📅 <a href="${bookingUrl}" target="_blank" style="color:#1a73e8; font-weight:600; text-decoration:underline;">Click here to book</a>`;
+        }
+      }
+      
+      if (role === 'bot' && customLinks && customLinks.length > 0) {
+        const linkKeywords = /links|useful links|resources|helpful links/i;
+        if (!linkKeywords.test(text) && !text.includes('Useful Links')) {
+          // Don't auto-add links - they should be requested
         }
       }
 
@@ -1191,6 +1390,28 @@
       let text = voiceText || inputField.value.trim();
 
       if (!text && !pendingFileData) return;
+      
+      if (checkForProofRequest(text)) {
+        inputField.value = "";
+        if (pendingFileData) {
+          pendingFileData = null;
+          pendingFileName = '';
+          previewBar.style.display = "none";
+          fileInput.value = "";
+        }
+        return;
+      }
+      
+      if (checkForLinksRequest(text)) {
+        inputField.value = "";
+        if (pendingFileData) {
+          pendingFileData = null;
+          pendingFileName = '';
+          previewBar.style.display = "none";
+          fileInput.value = "";
+        }
+        return;
+      }
 
       if (isLiveMode) {
         updateCatExpression('thinking');
@@ -1229,7 +1450,11 @@
           business_name: businessName,
           ai_name: aiName,
           has_introduced: hasIntroduced,
-          message_count: messageCount
+          message_count: messageCount,
+          widget_image_support: widgetCapabilities.imageSupport,
+          widget_review_collection: widgetCapabilities.reviewCollection,
+          custom_links: customLinks,
+          has_proof_images: hasProofImages()
         };
 
         if (currentFile) {
@@ -1241,7 +1466,7 @@
           }
         }
 
-        console.log("[WIDGET → SERVER] Sending request:", body);
+        console.log("[WIDGET → SERVER] Sending request with capabilities");
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -1281,7 +1506,6 @@
           
           messageCount++;
           
-          // Remove any accidental introductions in follow-up messages
           let cleanReply = data.reply;
           if (messageCount > 1 || hasIntroduced) {
             cleanReply = cleanReply
@@ -1448,5 +1672,16 @@
     } catch (err) {
       console.warn("[WIDGET] Follow-up scheduling failed:", err);
     }
+  }
+  
+  // Helper function
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
   }
 })();
