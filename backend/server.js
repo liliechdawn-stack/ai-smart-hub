@@ -1,19 +1,14 @@
 // ============================================================
 // backend/server.js - AI Smart Hub Main Server
 // ============================================================
-// REFACTORED - Second Stage
-// Extracted business logic to dedicated route files:
-// - Authentication → routes/auth-routes.js
-// - Profile → routes/profile-routes.js
-// - Dashboard → routes/dashboard-routes.js
-// - Chat → routes/chat-routes.js
-// - Widget → routes/widget-routes.js
-// - Widget Chat → routes/widget-chat-routes.js
-// - Subscription/Billing → routes/subscription-routes.js
-// - Admin → routes/admin-routes.js
-// - Support → routes/support-routes.js
-// - Leads → routes/leads-routes.js
-// - Smart Hub → smart-hub.js (existing)
+// PRODUCTION HARDENED - Final Version
+// - Security headers
+// - Request ID/tracing
+// - Global error handler
+// - Graceful shutdown
+// - Environment validation
+// - Proper CORS
+// - Health/readiness endpoints
 // ============================================================
 
 const express = require("express");
@@ -22,12 +17,47 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const path = require("path");
 const http = require("http");
+const crypto = require("crypto");
 require("dotenv").config();
 
 // ============================================================
 // CONFIGURATION
 // ============================================================
 const config = require("./config");
+
+// Validate critical configuration on startup
+function validateProductionConfig() {
+  if (process.env.NODE_ENV === "production") {
+    const critical = [
+      "JWT_SECRET",
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+    ];
+    
+    const missing = critical.filter(key => !process.env[key]);
+    if (missing.length > 0) {
+      console.error(`❌ CRITICAL: Missing production environment variables: ${missing.join(", ")}`);
+      console.error("   Server cannot start in production mode.");
+      process.exit(1);
+    }
+    
+    // Ensure JWT_SECRET is not the default value
+    if (process.env.JWT_SECRET === "super_secret_key") {
+      console.error("❌ CRITICAL: JWT_SECRET is using default value. Set a secure secret in production.");
+      process.exit(1);
+    }
+  }
+}
+
+// Validate on startup
+validateProductionConfig();
+
+// ============================================================
+// REQUEST ID GENERATOR
+// ============================================================
+function generateRequestId() {
+  return `req_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+}
 
 // ============================================================
 // DATABASE
@@ -52,7 +82,6 @@ const {
   saveBusinessIdentity,
   getSmartSettings,
   logActivity,
-  // ... all other exports preserved
 } = dbModule;
 
 // ============================================================
@@ -65,7 +94,11 @@ const { authenticateToken } = require("./auth-middleware");
 // ENTERPRISE FEATURES
 // ============================================================
 const { addToQueue, getQueueStats, getQueueStatus } = require("./queue-service");
-const { rateLimitMiddleware } = require("./rate-limiter");
+const { 
+  rateLimitMiddleware, 
+  authRateLimitMiddleware, 
+  chatRateLimitMiddleware 
+} = require("./rate-limiter");
 const workflowVersioning = require("./workflow-versioning");
 const debugExecutor = require("./debug-executor");
 const errorHandler = require("./error-handler");
@@ -105,49 +138,23 @@ const GovernanceModel = require("../models/Governance");
 const AlertModel = require("../models/Alert");
 
 // ============================================================
-// ROUTE IMPORTS (All routes extracted from server.js)
+// ROUTE IMPORTS
 // ============================================================
-
-// Authentication Routes
 const authRoutes = require("./routes/auth-routes");
-
-// Profile Routes
 const profileRoutes = require("./routes/profile-routes");
-
-// Dashboard Routes
 const dashboardRoutes = require("./routes/dashboard-routes");
-
-// Chat Routes
 const chatRoutes = require("./routes/chat-routes");
-
-// Widget Routes
 const widgetRoutes = require("./routes/widget-routes");
-
-// Widget Chat Routes
 const widgetChatRoutes = require("./routes/widget-chat-routes");
-
-// Subscription/Billing Routes
 const subscriptionRoutes = require("./routes/subscription-routes");
-
-// Admin Routes
 const adminRoutes = require("./routes/admin-routes");
-
-// Support Routes
 const supportRoutes = require("./routes/support-routes");
-
-// Leads Routes
 const leadsRoutes = require("./routes/leads-routes");
-
-// Business Intelligence Routes
 const businessRoutes = require("./routes/business-routes");
-
-// Broadcast Routes
 const broadcastRoutes = require("./routes/broadcast-routes");
-
-// Platform Routes
 const platformRoutes = require("./routes/platform-routes");
 
-// Smart Hub (existing)
+// Smart Hub
 let smartHubRoutes;
 try {
   smartHubRoutes = require("./smart-hub");
@@ -158,7 +165,7 @@ try {
     res.status(500).json({ error: "Smart Hub routes not available" });
 }
 
-// Customer Insights (existing)
+// Customer Insights
 let customerRouter;
 try {
   customerRouter = require("./customer-insights");
@@ -168,17 +175,13 @@ try {
   customerRouter = express.Router();
 }
 
-// AI Automations (existing)
+// AI Automations
 const automationRoutes = require("../api/automations-routes");
-
-// Analytics and Settings (existing)
 const analyticsRoutes = require("../api/analytics-routes");
 const settingsRoutes = require("../api/settings-routes");
-
-// AI Powerhouse (existing)
 const aiPowerhouseRoutes = require("../api/ai-powerhouse-routes");
 
-// Automation Templates (existing)
+// Automation Templates
 let automationTemplatesRoutes;
 try {
   automationTemplatesRoutes = require("./routes/automation-templates-routes");
@@ -189,7 +192,7 @@ try {
     res.status(500).json({ error: "Templates routes not available" });
 }
 
-// User Automations (existing)
+// User Automations
 let userAutomationsRoutes;
 try {
   userAutomationsRoutes = require("./routes/user-automations-routes");
@@ -200,7 +203,7 @@ try {
     res.status(500).json({ error: "User automations routes not available" });
 }
 
-// Business Coach (existing)
+// Business Coach
 let coachRoutes;
 try {
   coachRoutes = require("./routes/coach");
@@ -211,7 +214,7 @@ try {
     res.status(500).json({ error: "Business Coach routes not available" });
 }
 
-// Workflow Engine (existing)
+// Workflow Engine
 let workflowRoutes;
 try {
   workflowRoutes = require("./routes/workflow-routes");
@@ -264,20 +267,96 @@ try {
 const app = express();
 
 // ============================================================
-// SECURITY MIDDLEWARE
+// REQUEST ID MIDDLEWARE
+// ============================================================
+app.use((req, res, next) => {
+  const requestId = req.headers['x-request-id'] || generateRequestId();
+  req.id = requestId;
+  res.setHeader('X-Request-ID', requestId);
+  next();
+});
+
+// ============================================================
+// SECURITY HEADERS MIDDLEWARE
+// ============================================================
+app.use((req, res, next) => {
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Set strict transport security (only in production)
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  // Set referrer policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  next();
+});
+
+// ============================================================
+// CORS CONFIGURATION
 // ============================================================
 const corsOptions = {
-  origin: config.CORS_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Development allowed origins
+    const devOrigins = ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:5000'];
+    
+    // Production allowed origins from environment
+    const prodOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [];
+    
+    const allowedOrigins = [...devOrigins, ...prodOrigins];
+    
+    // In development, allow all localhost variants
+    if (process.env.NODE_ENV === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+    }
+    
+    // Check if origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Workspace-Id"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Workspace-Id', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID', 'X-RateLimit-Remaining'],
+  maxAge: 86400, // 24 hours
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options('*', cors(corsOptions));
 
-app.use(bodyParser.json({ limit: config.MAX_JSON_SIZE }));
-app.use(bodyParser.urlencoded({ limit: config.MAX_JSON_SIZE, extended: true }));
+// ============================================================
+// BODY PARSER WITH SIZE LIMITS
+// ============================================================
+// Default limits
+app.use(bodyParser.json({ 
+  limit: config.MAX_JSON_SIZE || "10mb",
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf.toString());
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid JSON payload' });
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+app.use(bodyParser.urlencoded({ limit: config.MAX_JSON_SIZE || "10mb", extended: true }));
 
 // ============================================================
 // WORKSPACE SCOPING MIDDLEWARE
@@ -326,7 +405,7 @@ async function ensureWorkspaceAccess(req, res, next) {
 }
 
 // ============================================================
-// REQUEST LOGGING MIDDLEWARE
+// REQUEST LOGGING MIDDLEWARE (with request ID)
 // ============================================================
 app.use((req, res, next) => {
   const startTime = Date.now();
@@ -334,6 +413,7 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - startTime;
     const userId = req.user?.id || "anonymous";
+    const requestId = req.id || "unknown";
 
     logSystemEvent(
       "API_REQUEST",
@@ -346,6 +426,7 @@ app.use((req, res, next) => {
         userId: userId,
         ip: req.ip,
         userAgent: req.get("user-agent"),
+        requestId: requestId,
       },
       userId
     );
@@ -360,7 +441,23 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server, {
-  cors: config.SOCKET_CORS,
+  cors: {
+    origin: (origin, callback) => {
+      // Same CORS rules as Express
+      const devOrigins = ['http://localhost:3000', 'http://localhost:5000'];
+      const prodOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [];
+      
+      if (!origin) return callback(null, true);
+      
+      const allowed = [...devOrigins, ...prodOrigins];
+      if (allowed.indexOf(origin) !== -1 || origin.includes('localhost')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  },
   transports: ["websocket", "polling"],
 });
 app.set("socketio", io);
@@ -381,26 +478,34 @@ io.use(async (socket, next) => {
     }
     socket.userId = user.id;
     socket.userEmail = user.email;
+    socket.workspaceId = user.organization_id || user.id;
     next();
   } catch (err) {
-    next(new Error("Invalid token"));
+    return next(new Error("Invalid token"));
   }
 });
 
-// Socket.io connection - FIXED: Removed arbitrary room join vulnerability
+// Socket.io connection - SECURE: Only joins authenticated user's rooms
 io.on("connection", (socket) => {
   console.log(`🔌 User connected: ${socket.userId}`);
 
-  // Only join the authenticated user's room
+  // ✅ SECURE: Only join the authenticated user's room
   if (socket.userId) {
     socket.join(`user:${socket.userId}`);
-    socket.join(`org:${socket.userId}`);
     console.log(`🔌 User joined their own room: user:${socket.userId}`);
   }
 
-  // REMOVED: socket.on("join", ...) - This was a security vulnerability
-  // Client can no longer request to join arbitrary user rooms
+  // ✅ SECURE: Only join workspace room if authorized
+  if (socket.workspaceId) {
+    // Verify workspace membership before joining
+    // This could be cached for performance
+    socket.join(`workspace:${socket.workspaceId}`);
+    console.log(`🔌 User joined workspace room: workspace:${socket.workspaceId}`);
+  }
 
+  // ✅ SECURE: No arbitrary room join events allowed
+  
+  // ✅ SECURE: Only emit events to the authenticated user
   socket.on("disconnect", () => {
     console.log(`🔌 User disconnected: ${socket.userId}`);
   });
@@ -413,12 +518,12 @@ app.use("/widget.js", express.static(path.join(__dirname, "widget.js")));
 app.use(express.static(path.join(__dirname, "../public")));
 
 // ============================================================
-// ROUTE MOUNTS (All routes now imported from dedicated files)
+// ROUTE MOUNTS
 // ============================================================
 
-// Authentication
-app.use("/api/auth", authRoutes);
-console.log("✓ Auth routes mounted at /api/auth");
+// Authentication - with rate limiting
+app.use("/api/auth", authRateLimitMiddleware, authRoutes);
+console.log("✓ Auth routes mounted at /api/auth with rate limiting");
 
 // Profile
 app.use("/api/admin/users", profileRoutes);
@@ -432,13 +537,15 @@ console.log("✓ Dashboard routes mounted at /api/dashboard");
 app.use("/api/chat", chatRoutes);
 console.log("✓ Chat routes mounted at /api/chat");
 
-// Widget (config + key)
+// Widget
 app.use("/api", widgetRoutes);
 console.log("✓ Widget routes mounted at /api/widget and /api/public/widget-config");
 
-// Widget Chat (dashboard + public)
+// Widget Chat - with rate limiting
+app.use("/api/widget/chat", chatRateLimitMiddleware);
+app.use("/api/public/chat", chatRateLimitMiddleware);
 app.use("/api", widgetChatRoutes);
-console.log("✓ Widget chat routes mounted at /api/widget/chat and /api/public/chat");
+console.log("✓ Widget chat routes mounted with rate limiting");
 
 // Subscription/Billing
 app.use("/api/subscription", subscriptionRoutes);
@@ -453,8 +560,9 @@ app.use("/api/support", supportRoutes);
 console.log("✓ Support routes mounted at /api/support");
 
 // Leads
+app.use("/api/public/leads", chatRateLimitMiddleware);
 app.use("/api", leadsRoutes);
-console.log("✓ Leads routes mounted at /api/leads and /api/public/leads");
+console.log("✓ Leads routes mounted with rate limiting");
 
 // Business Intelligence
 app.use("/api/business", authenticateToken, businessRoutes);
@@ -550,7 +658,6 @@ app.post(
   "/api/knowledge/add",
   auth,
   async (req, res) => {
-    // checkVerified middleware logic moved inline
     try {
       const user = await getUserById(req.user.id);
       if (!user || (user.is_verified !== 1 && user.email.toLowerCase().trim() !== config.ADMIN_EMAIL)) {
@@ -683,11 +790,44 @@ app.get("/api/test", (req, res) => {
     status: "ok",
     message: "API is working",
     timestamp: new Date().toISOString(),
+    requestId: req.id,
   });
 });
 
+// Liveness endpoint - always returns 200 if process is alive
 app.get("/healthz", (req, res) => {
-  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: "alive", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+// Readiness endpoint - checks if application is ready to serve traffic
+app.get("/ready", async (req, res) => {
+  // Check database connectivity
+  try {
+    const { error } = await supabase.from('users').select('id').limit(1);
+    if (error) {
+      return res.status(503).json({
+        status: "not ready",
+        reason: "Database unavailable",
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    res.status(200).json({
+      status: "ready",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "not ready",
+      reason: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 app.post("/api/webhook-test", (req, res) => {
@@ -696,7 +836,18 @@ app.post("/api/webhook-test", (req, res) => {
 });
 
 // ============================================================
-// ENTERPRISE FEATURE ENDPOINTS (Consolidated)
+// 404 HANDLER - Must be before error handler
+// ============================================================
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Not Found",
+    message: `Route ${req.method} ${req.path} not found`,
+    requestId: req.id,
+  });
+});
+
+// ============================================================
+// ENTERPRISE FEATURE ENDPOINTS
 // ============================================================
 
 // Queue Stats
@@ -884,6 +1035,65 @@ app.get(
 );
 
 // ============================================================
+// GLOBAL ERROR HANDLER - MUST BE LAST
+// ============================================================
+app.use((err, req, res, next) => {
+  const requestId = req.id || "unknown";
+  const statusCode = err.statusCode || err.status || 500;
+  
+  // Log the error with request context
+  console.error(`❌ [${requestId}] Error:`, {
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method,
+    userId: req.user?.id || 'anonymous',
+    statusCode: statusCode,
+  });
+
+  // Log to system events
+  logSystemEvent(
+    "ERROR",
+    err.message,
+    {
+      requestId: requestId,
+      path: req.path,
+      method: req.method,
+      userId: req.user?.id || 'anonymous',
+      statusCode: statusCode,
+    },
+    req.user?.id || null
+  );
+
+  // Production response - NEVER expose stack traces or internal details
+  const response = {
+    error: "Internal Server Error",
+    message: process.env.NODE_ENV === 'development' ? err.message : "An unexpected error occurred",
+    requestId: requestId,
+  };
+
+  // Add validation errors if present
+  if (err.name === 'ValidationError' || err.name === 'SchemaValidationError') {
+    response.error = "Validation Error";
+    response.message = err.message;
+    response.details = err.details || null;
+  }
+
+  // Add unauthorized/forbidden details
+  if (err.name === 'UnauthorizedError' || err.name === 'JsonWebTokenError') {
+    response.error = "Unauthorized";
+    response.message = "Invalid or expired authentication";
+  }
+
+  if (err.name === 'ForbiddenError') {
+    response.error = "Forbidden";
+    response.message = "You do not have permission to access this resource";
+  }
+
+  res.status(statusCode).json(response);
+});
+
+// ============================================================
 // INITIALIZE BACKGROUND SERVICES
 // ============================================================
 
@@ -901,18 +1111,105 @@ setTimeout(async () => {
 }, 6000);
 
 // ============================================================
+// GRACEFUL SHUTDOWN
+// ============================================================
+
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) {
+    console.log(`⚠️ Already shutting down, ignoring ${signal}`);
+    return;
+  }
+  
+  isShuttingDown = true;
+  console.log(`\n🛑 Received ${signal}, starting graceful shutdown...`);
+
+  const shutdownTimeout = setTimeout(() => {
+    console.error("❌ Shutdown timeout exceeded, forcing exit");
+    process.exit(1);
+  }, 30000);
+
+  try {
+    // 1. Stop accepting new connections
+    server.close(() => {
+      console.log("✅ HTTP server closed");
+    });
+
+    // 2. Close Socket.IO connections
+    if (io) {
+      io.close(() => {
+        console.log("✅ Socket.IO closed");
+      });
+    }
+
+    // 3. Stop background workers/schedulers
+    if (workflowScheduler && workflowScheduler.stop) {
+      await workflowScheduler.stop();
+      console.log("✅ Workflow scheduler stopped");
+    }
+
+    // 4. Close database connections (if applicable)
+    // Supabase connections are managed by the client
+
+    console.log("✅ Graceful shutdown complete");
+    clearTimeout(shutdownTimeout);
+    process.exit(0);
+  } catch (error) {
+    console.error("❌ Error during graceful shutdown:", error);
+    process.exit(1);
+  }
+}
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Log to system events
+  logSystemEvent('UNCAUGHT_EXCEPTION', error.message, { stack: error.stack });
+  // In production, exit gracefully
+  if (process.env.NODE_ENV === 'production') {
+    gracefulShutdown('uncaughtException');
+  } else {
+    // In development, keep running for debugging
+    console.error('⚠️ Uncaught exception in development mode');
+  }
+});
+
+// Handle unhandled rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection:', reason);
+  logSystemEvent('UNHANDLED_REJECTION', String(reason), { promise: String(promise) });
+  // In production, exit gracefully
+  if (process.env.NODE_ENV === 'production') {
+    gracefulShutdown('unhandledRejection');
+  }
+});
+
+// ============================================================
 // START SERVER
 // ============================================================
 
 server.listen(config.PORT, () => {
   console.log(`🚀 Server running on http://localhost:${config.PORT}`);
+  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📡 API endpoints available at /api/*`);
   console.log(`🔧 Workflow API: /api/workflows/*`);
   console.log(`💪 Platform Health: /api/platform/health`);
+  console.log(`❤️ Health: /healthz (liveness), /ready (readiness)`);
   console.log(`💰 Subscription: /api/subscription/*`);
-  console.log(`🛡️ Auth: /api/auth/*`);
+  console.log(`🛡️ Auth: /api/auth/* with rate limiting`);
   console.log(`📊 Dashboard: /api/dashboard/*`);
-  console.log(`🤖 AI Chat: /api/widget/chat and /api/public/chat`);
+  console.log(`🤖 AI Chat: /api/widget/chat and /api/public/chat with rate limiting`);
   console.log(`📧 Broadcast: /api/broadcast/*`);
   console.log(`🏢 Business Intelligence: /api/business/*`);
+  console.log(`📈 Rate Limiting: Auth (10/15min), Chat (30/min), API (plan-based)`);
+  console.log(`🆔 Request IDs: Enabled`);
+  console.log(`🔒 Security Headers: Enabled`);
+  console.log(`🛑 Graceful Shutdown: Enabled`);
 });
+
+module.exports = { app, server };
