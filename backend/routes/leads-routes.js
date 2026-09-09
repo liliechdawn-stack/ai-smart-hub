@@ -1,89 +1,311 @@
 // ================================================
-// LEADS MANAGEMENT ROUTES - REAL PRODUCTION CODE
+// LEADS MANAGEMENT ROUTES - PRODUCTION HARDENED
 // Track and manage leads from all sources
 // ================================================
 
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const { supabase } = require('../database-supabase');  // FIXED: Destructure supabase
+const { supabase } = require('../database-supabase');
 const { authenticateToken } = require('../auth-middleware');
 
 console.log('📋 LEADS MANAGEMENT ROUTES: Loading...');
 
 // ================================================
+// CONSTANTS
+// ================================================
+
+const MAX_LIMIT = 100;
+const DEFAULT_LIMIT = 50;
+const MAX_BULK_IDS = 100;
+const MAX_SEARCH_LENGTH = 100;
+const MAX_NAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 255;
+const MAX_PHONE_LENGTH = 30;
+const MAX_COMPANY_LENGTH = 100;
+const MAX_JOB_TITLE_LENGTH = 100;
+const MAX_MESSAGE_LENGTH = 5000;
+const MAX_NOTES_LENGTH = 1000;
+const MAX_METADATA_SIZE = 1024 * 10; // 10KB
+const MAX_METADATA_KEYS = 50;
+const MAX_METADATA_DEPTH = 5;
+const MAX_DATE_RANGE_DAYS = 365;
+
+const VALID_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'lost'];
+const VALID_SOURCES = ['widget', 'form', 'chat', 'referral', 'api', 'manual', 'automation', 'email', 'social'];
+const VALID_SORT_FIELDS = ['created_at', 'updated_at', 'name', 'email', 'status', 'source', 'lead_score'];
+const VALID_SORT_ORDERS = ['asc', 'desc'];
+const VALID_BULK_ACTIONS = ['delete', 'update_status', 'export'];
+
+// Dangerous metadata keys to reject
+const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype', 'toString', 'valueOf', 'hasOwnProperty'];
+
+// ================================================
+// STRUCTURED VALIDATION ERROR
+// ================================================
+
+class ValidationError extends Error {
+    constructor(message, field = null) {
+        super(message);
+        this.name = 'ValidationError';
+        this.field = field;
+        this.code = 'VALIDATION_ERROR';
+    }
+}
+
+// ================================================
+// VALIDATION HELPERS
+// ================================================
+
+function validateId(id) {
+    if (!id || typeof id !== 'string') {
+        throw new ValidationError('Invalid ID format', 'id');
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        throw new ValidationError('Invalid ID format', 'id');
+    }
+    return id;
+}
+
+function validateEmail(email) {
+    if (!email) return null;
+    if (typeof email !== 'string') {
+        throw new ValidationError('Email must be a string', 'email');
+    }
+    const trimmed = email.trim().toLowerCase();
+    if (trimmed.length > MAX_EMAIL_LENGTH) {
+        throw new ValidationError(`Email exceeds maximum length of ${MAX_EMAIL_LENGTH}`, 'email');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        throw new ValidationError('Invalid email format', 'email');
+    }
+    return trimmed;
+}
+
+function validateString(value, fieldName, maxLength, required = false) {
+    if (value === null || value === undefined) {
+        if (required) throw new ValidationError(`${fieldName} is required`, fieldName);
+        return null;
+    }
+    if (typeof value !== 'string') {
+        throw new ValidationError(`${fieldName} must be a string`, fieldName);
+    }
+    const trimmed = value.trim();
+    if (required && trimmed.length === 0) {
+        throw new ValidationError(`${fieldName} cannot be empty`, fieldName);
+    }
+    if (trimmed.length > maxLength) {
+        throw new ValidationError(`${fieldName} exceeds maximum length of ${maxLength}`, fieldName);
+    }
+    return trimmed;
+}
+
+function validateStatus(status) {
+    if (!status) return null;
+    if (typeof status !== 'string') {
+        throw new ValidationError('Status must be a string', 'status');
+    }
+    const normalized = status.toLowerCase();
+    if (!VALID_STATUSES.includes(normalized)) {
+        throw new ValidationError(`Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`, 'status');
+    }
+    return normalized;
+}
+
+function validateSource(source) {
+    if (!source) return null;
+    if (typeof source !== 'string') {
+        throw new ValidationError('Source must be a string', 'source');
+    }
+    const normalized = source.toLowerCase();
+    if (!VALID_SOURCES.includes(normalized)) {
+        throw new ValidationError(`Invalid source. Must be one of: ${VALID_SOURCES.join(', ')}`, 'source');
+    }
+    return normalized;
+}
+
+function validateLimit(limit) {
+    const parsed = parseInt(limit);
+    if (isNaN(parsed) || parsed < 1) return DEFAULT_LIMIT;
+    return Math.min(parsed, MAX_LIMIT);
+}
+
+function validateOffset(offset) {
+    const parsed = parseInt(offset);
+    if (isNaN(parsed) || parsed < 0) return 0;
+    return parsed;
+}
+
+function validateSortField(field) {
+    if (!field) return 'created_at';
+    if (typeof field !== 'string') {
+        throw new ValidationError('Sort field must be a string', 'sort_by');
+    }
+    if (!VALID_SORT_FIELDS.includes(field)) {
+        throw new ValidationError(`Invalid sort field. Must be one of: ${VALID_SORT_FIELDS.join(', ')}`, 'sort_by');
+    }
+    return field;
+}
+
+function validateSortOrder(order) {
+    if (!order) return 'desc';
+    if (typeof order !== 'string') {
+        throw new ValidationError('Sort order must be a string', 'sort_order');
+    }
+    const normalized = order.toLowerCase();
+    if (!VALID_SORT_ORDERS.includes(normalized)) {
+        throw new ValidationError(`Invalid sort order. Must be one of: ${VALID_SORT_ORDERS.join(', ')}`, 'sort_order');
+    }
+    return normalized;
+}
+
+function validateSearch(search) {
+    if (!search) return null;
+    if (typeof search !== 'string') {
+        throw new ValidationError('Search term must be a string', 'search');
+    }
+    if (search.length > MAX_SEARCH_LENGTH) {
+        throw new ValidationError(`Search term exceeds maximum length of ${MAX_SEARCH_LENGTH}`, 'search');
+    }
+    // Remove potentially dangerous characters
+    return search.trim().replace(/[%_]/g, '\\$&');
+}
+
+function validateDate(dateStr, fieldName) {
+    if (!dateStr) return null;
+    if (typeof dateStr !== 'string') {
+        throw new ValidationError(`${fieldName} must be a string`, fieldName);
+    }
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+        throw new ValidationError(`Invalid date format for ${fieldName}`, fieldName);
+    }
+    // Check if date is within reasonable range
+    const now = new Date();
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 10);
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 10);
+    if (date < minDate || date > maxDate) {
+        throw new ValidationError(`${fieldName} is outside acceptable date range`, fieldName);
+    }
+    return dateStr;
+}
+
+function validateBulkIds(ids) {
+    if (!Array.isArray(ids)) {
+        throw new ValidationError('lead_ids must be an array', 'lead_ids');
+    }
+    if (ids.length === 0) {
+        throw new ValidationError('No lead IDs provided', 'lead_ids');
+    }
+    if (ids.length > MAX_BULK_IDS) {
+        throw new ValidationError(`Maximum ${MAX_BULK_IDS} IDs allowed per request`, 'lead_ids');
+    }
+    const uniqueIds = [...new Set(ids)];
+    uniqueIds.forEach(id => validateId(id));
+    return uniqueIds;
+}
+
+function validateMetadata(metadata) {
+    if (!metadata) return {};
+    if (typeof metadata !== 'object' || Array.isArray(metadata)) {
+        throw new ValidationError('Metadata must be an object', 'metadata');
+    }
+
+    // Check size
+    const jsonStr = JSON.stringify(metadata);
+    if (jsonStr.length > MAX_METADATA_SIZE) {
+        throw new ValidationError(`Metadata exceeds maximum size of ${MAX_METADATA_SIZE} bytes`, 'metadata');
+    }
+
+    // Check key count
+    const keys = Object.keys(metadata);
+    if (keys.length > MAX_METADATA_KEYS) {
+        throw new ValidationError(`Metadata exceeds maximum of ${MAX_METADATA_KEYS} keys`, 'metadata');
+    }
+
+    // Check for dangerous keys and prototype pollution
+    function safeWalk(obj, currentDepth, path) {
+        if (currentDepth > MAX_METADATA_DEPTH) {
+            throw new ValidationError(`Metadata exceeds maximum depth of ${MAX_METADATA_DEPTH}`, 'metadata');
+        }
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                // Check for dangerous keys
+                if (DANGEROUS_KEYS.includes(key)) {
+                    throw new ValidationError(`Metadata contains unsafe key: ${key}`, 'metadata');
+                }
+                const value = obj[key];
+                if (value && typeof value === 'object') {
+                    safeWalk(value, currentDepth + 1, path + '.' + key);
+                }
+            }
+        }
+    }
+
+    safeWalk(metadata, 0, '');
+    return metadata;
+}
+
+// ================================================
+// CSV SAFE ESCAPE
+// ================================================
+
+function escapeCsvValue(value) {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    // Prevent CSV/Excel formula injection
+    if (str.match(/^[=+\-@]/)) {
+        return `'${str}`;
+    }
+    if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+}
+
+// ================================================
 // HELPER FUNCTION - Calculate lead score
 // ================================================
 function calculateLeadScore(lead, triggerData = {}) {
-    let score = 50; // Base score
+    let score = 50;
 
-    // Email quality scoring
     if (lead.email) {
         const domain = lead.email.split('@')[1];
-        // Business email gets higher score
         if (domain && !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'].includes(domain)) {
             score += 15;
-            console.log(`   +15: Business email domain (${domain})`);
         } else if (domain) {
             score += 5;
-            console.log(`   +5: Personal email domain`);
         }
     }
 
-    // Phone number scoring
-    if (lead.phone) {
-        score += 10;
-        console.log(`   +10: Phone number provided`);
-    }
-
-    // Company scoring
-    if (lead.company) {
-        score += 10;
-        console.log(`   +10: Company provided`);
-    }
+    if (lead.phone) score += 10;
+    if (lead.company) score += 10;
     
-    // Message content scoring
     if (lead.message) {
         score += 10;
         const message = lead.message.toLowerCase();
-        
         if (message.includes('urgent') || message.includes('asap') || message.includes('immediately')) {
             score += 15;
-            console.log(`   +15: Urgent request detected`);
         }
         if (message.includes('pricing') || message.includes('cost') || message.includes('price')) {
             score += 10;
-            console.log(`   +10: Pricing inquiry`);
         }
         if (message.includes('demo') || message.includes('meeting') || message.includes('call')) {
             score += 15;
-            console.log(`   +15: Demo/meeting request`);
         }
         if (message.includes('buy') || message.includes('purchase') || message.includes('order')) {
             score += 20;
-            console.log(`   +20: Purchase intent detected`);
         }
     }
 
-    // Source-based scoring
     const sourceScores = {
-        'widget': 5,
-        'form': 10,
-        'chat': 15,
-        'referral': 20,
-        'api': 10,
-        'manual': 5,
-        'automation': 8,
-        'email': 8,
-        'social': 6
+        'widget': 5, 'form': 10, 'chat': 15, 'referral': 20,
+        'api': 10, 'manual': 5, 'automation': 8, 'email': 8, 'social': 6
     };
-    const sourceScore = sourceScores[lead.source] || 0;
-    score += sourceScore;
-    if (sourceScore > 0) {
-        console.log(`   +${sourceScore}: Source: ${lead.source}`);
-    }
+    score += sourceScores[lead.source] || 0;
 
-    // Trigger data bonus
     if (triggerData.message) {
         const message = triggerData.message.toLowerCase();
         if (message.includes('urgent')) score += 10;
@@ -91,10 +313,44 @@ function calculateLeadScore(lead, triggerData = {}) {
         if (message.includes('timeline')) score += 5;
     }
 
-    const finalScore = Math.min(100, score);
-    console.log(`   Total score: ${finalScore}/100`);
-    
-    return finalScore;
+    return Math.min(100, score);
+}
+
+// ================================================
+// ERROR HANDLER - STRUCTURED
+// ================================================
+
+function handleError(error, res, context = {}) {
+    // Log internally with safe context
+    console.error('Error in leads operation:', {
+        message: error.message,
+        code: error.code,
+        field: error.field,
+        name: error.name,
+        ...context
+    });
+
+    // Validation errors - structured
+    if (error instanceof ValidationError || error.name === 'ValidationError') {
+        return res.status(400).json({
+            error: error.message,
+            code: 'VALIDATION_ERROR',
+            field: error.field || null
+        });
+    }
+
+    // Supabase not found
+    if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    // Supabase duplicate key
+    if (error.code === '23505') {
+        return res.status(409).json({ error: 'Duplicate record exists' });
+    }
+
+    // Default internal error - safe message
+    return res.status(500).json({ error: 'An unexpected error occurred' });
 }
 
 // ================================================
@@ -108,62 +364,51 @@ router.get('/leads', authenticateToken, async (req, res) => {
         from, 
         to, 
         search,
-        limit = 50, 
+        limit = DEFAULT_LIMIT, 
         offset = 0,
         sort_by = 'created_at',
         sort_order = 'desc'
     } = req.query;
 
-    console.log(`📊 GET /leads - User: ${userId}, Filters: status=${status}, source=${source}`);
-
     try {
+        const validatedLimit = validateLimit(limit);
+        const validatedOffset = validateOffset(offset);
+        const validatedStatus = status && status !== 'all' ? validateStatus(status) : null;
+        const validatedSource = source && source !== 'all' ? validateSource(source) : null;
+        const validatedSortField = validateSortField(sort_by);
+        const validatedSortOrder = validateSortOrder(sort_order);
+        const validatedSearch = validateSearch(search);
+        
+        // Validate date ranges
+        const validatedFrom = validateDate(from, 'from');
+        const validatedTo = validateDate(to, 'to');
+
         let query = supabase
             .from('leads')
             .select(`
-                *,
-                automation:user_automations (
-                    id,
-                    name
-                ),
-                lead_scores (
-                    score,
-                    scored_at
-                )
+                id, user_id, automation_id, name, email, phone, company, 
+                job_title, message, source, status, metadata, 
+                created_at, updated_at, last_contact, notes,
+                automation:user_automations (id, name),
+                lead_scores (score, scored_at)
             `, { count: 'exact' })
             .eq('user_id', userId);
 
-        // Apply filters
-        if (status && status !== 'all') {
-            query = query.eq('status', status);
+        if (validatedStatus) query = query.eq('status', validatedStatus);
+        if (validatedSource) query = query.eq('source', validatedSource);
+        if (validatedFrom) query = query.gte('created_at', validatedFrom);
+        if (validatedTo) query = query.lte('created_at', validatedTo);
+        if (validatedSearch) {
+            query = query.or(`name.ilike.%${validatedSearch}%,email.ilike.%${validatedSearch}%,phone.ilike.%${validatedSearch}%`);
         }
 
-        if (source && source !== 'all') {
-            query = query.eq('source', source);
-        }
-
-        if (from) {
-            query = query.gte('created_at', from);
-        }
-
-        if (to) {
-            query = query.lte('created_at', to);
-        }
-
-        if (search) {
-            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
-        }
-
-        // Apply sorting
-        query = query.order(sort_by, { ascending: sort_order === 'asc' });
-
-        // Apply pagination
-        query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+        query = query.order(validatedSortField, { ascending: validatedSortOrder === 'asc' });
+        query = query.range(validatedOffset, validatedOffset + validatedLimit - 1);
 
         const { data: leads, error, count } = await query;
 
         if (error) throw error;
 
-        // Get latest score for each lead
         const leadsWithScores = (leads || []).map(lead => {
             const scores = lead.lead_scores || [];
             const latestScore = scores.sort((a, b) => 
@@ -177,19 +422,16 @@ router.get('/leads', authenticateToken, async (req, res) => {
             };
         });
 
-        console.log(`✅ Found ${leadsWithScores.length} leads (total: ${count || 0})`);
-
         res.json({
             success: true,
             leads: leadsWithScores,
             total: count || 0,
-            limit: parseInt(limit),
-            offset: parseInt(offset)
+            limit: validatedLimit,
+            offset: validatedOffset
         });
 
     } catch (error) {
-        console.error('Error fetching leads:', error);
-        res.status(500).json({ error: 'Failed to fetch leads', details: error.message });
+        handleError(error, res, { route: 'GET /leads', userId });
     }
 });
 
@@ -198,10 +440,8 @@ router.get('/leads', authenticateToken, async (req, res) => {
 // ================================================
 router.get('/leads/stats', authenticateToken, async (req, res) => {
     const userId = req.user.id;
-    console.log(`📊 GET /leads/stats - User: ${userId}`);
 
     try {
-        // Get total leads
         const { count: total, error: totalError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
@@ -209,39 +449,30 @@ router.get('/leads/stats', authenticateToken, async (req, res) => {
 
         if (totalError) throw totalError;
 
-        // Get leads by status using individual queries (since group by may not work)
-        const statuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
         const statusCounts = [];
-        
-        for (const status of statuses) {
+        for (const status of VALID_STATUSES) {
             const { count, error } = await supabase
                 .from('leads')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('status', status);
-            
             if (!error && count > 0) {
                 statusCounts.push({ status, count });
             }
         }
 
-        // Get leads by source
-        const sources = ['widget', 'form', 'chat', 'email', 'social', 'api', 'manual', 'automation', 'referral'];
         const sourceCounts = [];
-        
-        for (const source of sources) {
+        for (const source of VALID_SOURCES) {
             const { count, error } = await supabase
                 .from('leads')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('source', source);
-            
             if (!error && count > 0) {
                 sourceCounts.push({ source, count });
             }
         }
 
-        // Get leads this month
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
@@ -254,7 +485,6 @@ router.get('/leads/stats', authenticateToken, async (req, res) => {
 
         if (monthError) throw monthError;
 
-        // Get conversion rate (leads that became customers)
         const { count: converted, error: convertedError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
@@ -265,7 +495,6 @@ router.get('/leads/stats', authenticateToken, async (req, res) => {
 
         const conversionRate = total > 0 ? ((converted / total) * 100).toFixed(1) : 0;
 
-        // Get leads by day for last 7 days
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -291,8 +520,6 @@ router.get('/leads/stats', authenticateToken, async (req, res) => {
             }
         });
 
-        console.log(`✅ Stats: ${total} total leads, ${thisMonth} this month, ${conversionRate}% conversion`);
-
         res.json({
             success: true,
             stats: {
@@ -307,8 +534,7 @@ router.get('/leads/stats', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching lead stats:', error);
-        res.status(500).json({ error: 'Failed to fetch lead stats', details: error.message });
+        handleError(error, res, { route: 'GET /leads/stats', userId });
     }
 });
 
@@ -329,37 +555,55 @@ router.post('/leads', authenticateToken, async (req, res) => {
         metadata 
     } = req.body;
 
-    console.log(`📝 CREATE LEAD - User: ${userId}, Name: ${name}, Email: ${email}`);
-
-    if (!name && !email) {
-        return res.status(400).json({ error: 'Name or email is required' });
-    }
-
     try {
+        const validatedName = validateString(name, 'Name', MAX_NAME_LENGTH);
+        const validatedEmail = validateEmail(email);
+        const validatedPhone = validateString(phone, 'Phone', MAX_PHONE_LENGTH);
+        const validatedCompany = validateString(company, 'Company', MAX_COMPANY_LENGTH);
+        const validatedJobTitle = validateString(job_title, 'Job title', MAX_JOB_TITLE_LENGTH);
+        const validatedMessage = validateString(message, 'Message', MAX_MESSAGE_LENGTH);
+        const validatedSource = validateSource(source) || 'manual';
+        const validatedMetadata = validateMetadata(metadata);
+
+        if (!validatedName && !validatedEmail) {
+            throw new ValidationError('Name or email is required');
+        }
+
+        let validatedAutomationId = null;
+        if (automation_id) {
+            validatedAutomationId = validateId(automation_id);
+            const { data: automation, error: autoError } = await supabase
+                .from('user_automations')
+                .select('id')
+                .eq('id', validatedAutomationId)
+                .eq('user_id', userId)
+                .single();
+            if (autoError || !automation) {
+                throw new ValidationError('Invalid automation ID', 'automation_id');
+            }
+        }
+
         const leadId = uuidv4();
         const now = new Date().toISOString();
 
-        // Check if lead already exists (by email)
-        if (email) {
+        // Check for duplicate lead
+        if (validatedEmail) {
             const { data: existing } = await supabase
                 .from('leads')
                 .select('id, name, email, phone, company')
                 .eq('user_id', userId)
-                .eq('email', email.toLowerCase().trim())
+                .eq('email', validatedEmail)
                 .maybeSingle();
 
             if (existing) {
-                console.log(`📝 Lead already exists: ${email}, updating...`);
-                
-                // Update existing lead
                 const { data: updated, error } = await supabase
                     .from('leads')
                     .update({
-                        name: name || existing.name,
-                        phone: phone || existing.phone,
-                        company: company || existing.company,
-                        job_title: job_title || existing.job_title,
-                        message: message || existing.message,
+                        name: validatedName || existing.name,
+                        phone: validatedPhone || existing.phone,
+                        company: validatedCompany || existing.company,
+                        job_title: validatedJobTitle || existing.job_title,
+                        message: validatedMessage || existing.message,
                         last_contact: now,
                         updated_at: now
                     })
@@ -368,7 +612,6 @@ router.post('/leads', authenticateToken, async (req, res) => {
                     .single();
 
                 if (error) throw error;
-
                 return res.json({
                     success: true,
                     lead: updated,
@@ -382,16 +625,16 @@ router.post('/leads', authenticateToken, async (req, res) => {
         const leadData = {
             id: leadId,
             user_id: userId,
-            automation_id: automation_id || null,
-            name: name || null,
-            email: email ? email.toLowerCase().trim() : null,
-            phone: phone || null,
-            company: company || null,
-            job_title: job_title || null,
-            message: message || null,
-            source: source || 'manual',
+            automation_id: validatedAutomationId,
+            name: validatedName,
+            email: validatedEmail,
+            phone: validatedPhone,
+            company: validatedCompany,
+            job_title: validatedJobTitle,
+            message: validatedMessage,
+            source: validatedSource,
             status: 'new',
-            metadata: metadata || {},
+            metadata: validatedMetadata,
             created_at: now,
             updated_at: now
         };
@@ -405,7 +648,7 @@ router.post('/leads', authenticateToken, async (req, res) => {
         if (error) throw error;
 
         // Auto-score the lead
-        const score = calculateLeadScore(lead, { message });
+        const score = calculateLeadScore(lead, { message: validatedMessage });
         
         await supabase
             .from('lead_scores')
@@ -415,30 +658,38 @@ router.post('/leads', authenticateToken, async (req, res) => {
                 lead_id: leadId,
                 score: score,
                 criteria: {
-                    has_email: !!email,
-                    has_phone: !!phone,
-                    has_company: !!company,
-                    has_job_title: !!job_title,
-                    has_message: !!message,
-                    source: source || 'manual'
+                    has_email: !!validatedEmail,
+                    has_phone: !!validatedPhone,
+                    has_company: !!validatedCompany,
+                    has_job_title: !!validatedJobTitle,
+                    has_message: !!validatedMessage,
+                    source: validatedSource
                 },
                 scored_at: now
             }]);
 
-        // If automation_id provided, increment its lead count
-        if (automation_id) {
-            await supabase
+        // FIXED: Use proper increment with raw only if supported
+        if (validatedAutomationId) {
+            // Use a safer approach - get current value and update
+            const { data: current } = await supabase
                 .from('user_automations')
-                .update({
-                    leads_generated: supabase.raw('leads_generated + 1')
-                })
-                .eq('id', automation_id)
-                .eq('user_id', userId);
+                .select('leads_generated')
+                .eq('id', validatedAutomationId)
+                .eq('user_id', userId)
+                .single();
+            
+            if (current) {
+                await supabase
+                    .from('user_automations')
+                    .update({
+                        leads_generated: (current.leads_generated || 0) + 1
+                    })
+                    .eq('id', validatedAutomationId)
+                    .eq('user_id', userId);
+            }
         }
 
-        // Check if this is a hot lead (score > 80)
         if (score > 80) {
-            // Create alert for hot lead
             await supabase
                 .from('alerts')
                 .insert([{
@@ -452,28 +703,23 @@ router.post('/leads', authenticateToken, async (req, res) => {
                     created_at: now
                 }]);
 
-            // Send real-time notification
             if (global.io) {
                 global.io.to(`user:${userId}`).emit('hot_lead', {
                     lead: lead,
                     score: score
                 });
-                console.log(`🔥 HOT LEAD ALERT sent to user ${userId}`);
             }
         }
 
-        // Log activity
         await supabase
             .from('activity_log')
             .insert([{
                 user_id: userId,
                 action: 'lead_created',
-                details: `New lead from ${source || 'manual'}: ${lead.name || lead.email}`,
+                details: `New lead from ${validatedSource}: ${lead.name || lead.email}`,
                 type: 'lead',
                 timestamp: now
             }]);
-
-        console.log(`✅ Lead created: ${lead.name || lead.email} (Score: ${score})`);
 
         res.json({
             success: true,
@@ -483,8 +729,7 @@ router.post('/leads', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error creating lead:', error);
-        res.status(500).json({ error: 'Failed to create lead', details: error.message });
+        handleError(error, res, { route: 'POST /leads', userId });
     }
 });
 
@@ -496,18 +741,19 @@ router.put('/leads/:id/status', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { status, notes } = req.body;
 
-    const validStatuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
-    if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: 'Invalid status. Must be one of: ' + validStatuses.join(', ') });
-    }
-
-    console.log(`📝 UPDATE LEAD STATUS - User: ${userId}, Lead: ${id}, Status: ${status}`);
-
     try {
+        const validatedId = validateId(id);
+        const validatedStatus = validateStatus(status);
+        if (!validatedStatus) {
+            throw new ValidationError('Status is required', 'status');
+        }
+
+        const validatedNotes = validateString(notes, 'Notes', MAX_NOTES_LENGTH);
+
         const { data: lead, error: fetchError } = await supabase
             .from('leads')
             .select('*')
-            .eq('id', id)
+            .eq('id', validatedId)
             .eq('user_id', userId)
             .single();
 
@@ -518,18 +764,16 @@ router.put('/leads/:id/status', authenticateToken, async (req, res) => {
             throw fetchError;
         }
 
-        // Prepare update data
         const updateData = {
-            status: status,
+            status: validatedStatus,
             last_contact: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
 
-        // Add notes if provided
-        if (notes) {
+        if (validatedNotes) {
             const existingNotes = lead.notes || [];
             updateData.notes = [...existingNotes, {
-                text: notes,
+                text: validatedNotes,
                 timestamp: new Date().toISOString(),
                 user: userId
             }];
@@ -538,44 +782,39 @@ router.put('/leads/:id/status', authenticateToken, async (req, res) => {
         const { data, error } = await supabase
             .from('leads')
             .update(updateData)
-            .eq('id', id)
+            .eq('id', validatedId)
             .eq('user_id', userId)
             .select()
             .single();
 
         if (error) throw error;
 
-        // Log activity
         await supabase
             .from('activity_log')
             .insert([{
                 user_id: userId,
                 action: 'lead_status_updated',
-                details: `Lead ${data.name || data.email} marked as ${status}`,
+                details: `Lead ${data.name || data.email} marked as ${validatedStatus}`,
                 type: 'lead',
                 timestamp: new Date().toISOString()
             }]);
 
-        // Broadcast update
         if (global.io) {
             global.io.to(`user:${userId}`).emit('lead_updated', {
                 lead_id: id,
-                status: status,
+                status: validatedStatus,
                 lead: data
             });
         }
 
-        console.log(`✅ Lead ${id} status updated to ${status}`);
-
         res.json({
             success: true,
             lead: data,
-            message: `Lead marked as ${status}`
+            message: `Lead marked as ${validatedStatus}`
         });
 
     } catch (error) {
-        console.error('Error updating lead status:', error);
-        res.status(500).json({ error: 'Failed to update lead status', details: error.message });
+        handleError(error, res, { route: 'PUT /leads/:id/status', userId });
     }
 });
 
@@ -586,24 +825,19 @@ router.get('/leads/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    console.log(`📊 GET /leads/${id} - User: ${userId}`);
-
     try {
+        const validatedId = validateId(id);
+
         const { data: lead, error } = await supabase
             .from('leads')
             .select(`
-                *,
-                automation:user_automations (
-                    id,
-                    name
-                ),
-                lead_scores (
-                    score,
-                    scored_at,
-                    criteria
-                )
+                id, user_id, automation_id, name, email, phone, company,
+                job_title, message, source, status, metadata,
+                created_at, updated_at, last_contact, notes,
+                automation:user_automations (id, name),
+                lead_scores (score, scored_at, criteria)
             `)
-            .eq('id', id)
+            .eq('id', validatedId)
             .eq('user_id', userId)
             .single();
 
@@ -614,7 +848,6 @@ router.get('/leads/:id', authenticateToken, async (req, res) => {
             throw error;
         }
 
-        // Get scores in order
         const scores = lead.lead_scores || [];
         scores.sort((a, b) => new Date(b.scored_at) - new Date(a.scored_at));
 
@@ -628,8 +861,7 @@ router.get('/leads/:id', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching lead:', error);
-        res.status(500).json({ error: 'Failed to fetch lead', details: error.message });
+        handleError(error, res, { route: 'GET /leads/:id', userId });
     }
 });
 
@@ -640,14 +872,13 @@ router.delete('/leads/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    console.log(`🗑️ DELETE /leads/${id} - User: ${userId}`);
-
     try {
-        // Get lead info for logging
+        const validatedId = validateId(id);
+
         const { data: lead, error: fetchError } = await supabase
             .from('leads')
             .select('name, email')
-            .eq('id', id)
+            .eq('id', validatedId)
             .eq('user_id', userId)
             .single();
 
@@ -658,22 +889,20 @@ router.delete('/leads/:id', authenticateToken, async (req, res) => {
             throw fetchError;
         }
 
-        // Delete lead scores first (foreign key)
         await supabase
             .from('lead_scores')
             .delete()
-            .eq('lead_id', id);
+            .eq('lead_id', validatedId)
+            .eq('user_id', userId);
 
-        // Delete lead
         const { error } = await supabase
             .from('leads')
             .delete()
-            .eq('id', id)
+            .eq('id', validatedId)
             .eq('user_id', userId);
 
         if (error) throw error;
 
-        // Log activity
         await supabase
             .from('activity_log')
             .insert([{
@@ -684,16 +913,13 @@ router.delete('/leads/:id', authenticateToken, async (req, res) => {
                 timestamp: new Date().toISOString()
             }]);
 
-        console.log(`✅ Lead ${id} deleted successfully`);
-
         res.json({
             success: true,
             message: 'Lead deleted successfully'
         });
 
     } catch (error) {
-        console.error('Error deleting lead:', error);
-        res.status(500).json({ error: 'Failed to delete lead', details: error.message });
+        handleError(error, res, { route: 'DELETE /leads/:id', userId });
     }
 });
 
@@ -704,49 +930,66 @@ router.post('/leads/bulk', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { action, lead_ids, data } = req.body;
 
-    console.log(`📦 BULK LEAD OPERATION - User: ${userId}, Action: ${action}, Count: ${lead_ids?.length || 0}`);
-
-    if (!lead_ids || !lead_ids.length) {
-        return res.status(400).json({ error: 'No lead IDs provided' });
-    }
-
     try {
+        if (!action || !VALID_BULK_ACTIONS.includes(action)) {
+            throw new ValidationError(`Invalid bulk action. Must be one of: ${VALID_BULK_ACTIONS.join(', ')}`, 'action');
+        }
+
+        const validatedIds = validateBulkIds(lead_ids);
+
+        const { data: validLeads, error: verifyError } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('user_id', userId)
+            .in('id', validatedIds);
+
+        if (verifyError) throw verifyError;
+
+        const validLeadIds = (validLeads || []).map(l => l.id);
+        if (validLeadIds.length === 0) {
+            return res.status(404).json({ error: 'No valid leads found' });
+        }
+
         let result;
 
         switch (action) {
             case 'delete':
-                // Delete lead scores first
                 await supabase
                     .from('lead_scores')
                     .delete()
-                    .in('lead_id', lead_ids);
+                    .eq('user_id', userId)
+                    .in('lead_id', validLeadIds);
 
                 const { error: deleteError } = await supabase
                     .from('leads')
                     .delete()
                     .eq('user_id', userId)
-                    .in('id', lead_ids);
+                    .in('id', validLeadIds);
 
                 if (deleteError) throw deleteError;
-                result = { message: `Deleted ${lead_ids.length} leads` };
+                result = { message: `Deleted ${validLeadIds.length} leads` };
                 break;
 
             case 'update_status':
                 if (!data?.status) {
-                    return res.status(400).json({ error: 'Status required for update_status action' });
+                    throw new ValidationError('Status required for update_status action', 'status');
                 }
-                
+                const validatedStatus = validateStatus(data.status);
+                if (!validatedStatus) {
+                    throw new ValidationError('Invalid status', 'status');
+                }
+
                 const { error: updateError } = await supabase
                     .from('leads')
                     .update({
-                        status: data.status,
+                        status: validatedStatus,
                         updated_at: new Date().toISOString()
                     })
                     .eq('user_id', userId)
-                    .in('id', lead_ids);
+                    .in('id', validLeadIds);
 
                 if (updateError) throw updateError;
-                result = { message: `Updated ${lead_ids.length} leads to ${data.status}` };
+                result = { message: `Updated ${validLeadIds.length} leads to ${validatedStatus}` };
                 break;
 
             case 'export':
@@ -754,28 +997,25 @@ router.post('/leads/bulk', authenticateToken, async (req, res) => {
                     .from('leads')
                     .select('*')
                     .eq('user_id', userId)
-                    .in('id', lead_ids);
+                    .in('id', validLeadIds);
 
                 if (exportError) throw exportError;
                 result = { leads: leads };
                 break;
 
             default:
-                return res.status(400).json({ error: 'Invalid bulk action. Use: delete, update_status, or export' });
+                throw new ValidationError('Invalid bulk action', 'action');
         }
 
-        // Log bulk activity
         await supabase
             .from('activity_log')
             .insert([{
                 user_id: userId,
                 action: 'bulk_lead_operation',
-                details: `${action} performed on ${lead_ids.length} leads`,
+                details: `${action} performed on ${validLeadIds.length} leads`,
                 type: 'lead',
                 timestamp: new Date().toISOString()
             }]);
-
-        console.log(`✅ Bulk operation ${action} completed on ${lead_ids.length} leads`);
 
         res.json({
             success: true,
@@ -783,69 +1023,69 @@ router.post('/leads/bulk', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error in bulk operation:', error);
-        res.status(500).json({ error: 'Failed to perform bulk operation', details: error.message });
+        handleError(error, res, { route: 'POST /leads/bulk', userId });
     }
 });
 
 // ================================================
-// EXPORT LEADS (CSV)
+// EXPORT LEADS (CSV) - WITH INJECTION PROTECTION
 // ================================================
 router.get('/leads/export/csv', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { status, source, from, to } = req.query;
 
-    console.log(`📊 EXPORT LEADS CSV - User: ${userId}`);
-
     try {
+        const validatedStatus = status && status !== 'all' ? validateStatus(status) : null;
+        const validatedSource = source && source !== 'all' ? validateSource(source) : null;
+        const validatedFrom = validateDate(from, 'from');
+        const validatedTo = validateDate(to, 'to');
+
         let query = supabase
             .from('leads')
-            .select('*')
-            .eq('user_id', userId);
+            .select('id, name, email, phone, company, job_title, source, status, message, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
 
-        if (status && status !== 'all') query = query.eq('status', status);
-        if (source && source !== 'all') query = query.eq('source', source);
-        if (from) query = query.gte('created_at', from);
-        if (to) query = query.lte('created_at', to);
+        if (validatedStatus) query = query.eq('status', validatedStatus);
+        if (validatedSource) query = query.eq('source', validatedSource);
+        if (validatedFrom) query = query.gte('created_at', validatedFrom);
+        if (validatedTo) query = query.lte('created_at', validatedTo);
 
-        const { data: leads, error } = await query.order('created_at', { ascending: false });
+        const { data: leads, error } = await query.limit(10000);
 
         if (error) throw error;
 
-        // Generate CSV
         const headers = ['ID', 'Name', 'Email', 'Phone', 'Company', 'Job Title', 'Source', 'Status', 'Message', 'Created At'];
-        const csvRows = [headers];
+        const csvRows = [headers.join(',')];
 
         for (const lead of leads || []) {
-            csvRows.push([
+            const row = [
                 lead.id,
-                lead.name || '',
-                lead.email || '',
-                lead.phone || '',
-                lead.company || '',
-                lead.job_title || '',
-                lead.source || '',
-                lead.status || '',
-                (lead.message || '').replace(/,/g, ';'),
-                lead.created_at
-            ]);
+                escapeCsvValue(lead.name || ''),
+                escapeCsvValue(lead.email || ''),
+                escapeCsvValue(lead.phone || ''),
+                escapeCsvValue(lead.company || ''),
+                escapeCsvValue(lead.job_title || ''),
+                escapeCsvValue(lead.source || ''),
+                escapeCsvValue(lead.status || ''),
+                escapeCsvValue((lead.message || '').substring(0, 1000)),
+                escapeCsvValue(lead.created_at)
+            ];
+            csvRows.push(row.join(','));
         }
 
-        const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        const csvContent = csvRows.join('\n');
 
-        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename=leads_${new Date().toISOString().split('T')[0]}.csv`);
         res.send(csvContent);
 
-        console.log(`✅ Exported ${leads?.length || 0} leads to CSV`);
-
     } catch (error) {
-        console.error('Error exporting leads:', error);
-        res.status(500).json({ error: 'Failed to export leads', details: error.message });
+        handleError(error, res, { route: 'GET /leads/export/csv', userId });
     }
 });
 
-console.log('✅ LEADS MANAGEMENT ROUTES: All routes registered');
+console.log('✅ LEADS MANAGEMENT ROUTES: All routes registered (Production Hardened)');
 console.log('   - GET /leads');
 console.log('   - GET /leads/stats');
 console.log('   - GET /leads/:id');
