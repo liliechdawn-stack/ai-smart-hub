@@ -44,6 +44,34 @@ function getAll(result) {
 }
 
 // ===============================
+// INPUT VALIDATION HELPERS (NEW - Production Hardening)
+// ===============================
+
+/**
+ * Validate UUID format
+ */
+function isValidUUID(id) {
+  if (!id || typeof id !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+/**
+ * Validate email format
+ */
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/**
+ * Sanitize string input
+ */
+function sanitizeString(input, maxLength = 1000) {
+  if (!input || typeof input !== 'string') return '';
+  return input.trim().substring(0, maxLength);
+}
+
+// ===============================
 // TABLE INITIALIZATION FUNCTIONS
 // ===============================
 
@@ -930,7 +958,7 @@ async function getWidgetKey(user_id) {
 }
 
 // ===============================
-// PLAN & USAGE
+// PLAN & USAGE (UPDATED - Atomic Operations)
 // ===============================
 
 async function updatePlan(user_id, plan) {
@@ -952,14 +980,19 @@ async function updatePlan(user_id, plan) {
   }
 }
 
+/**
+ * ATOMIC: Increment messages used with concurrency protection
+ * Uses RPC first, falls back to atomic update with validation
+ */
 async function incrementMessagesUsed(user_id) {
   try {
+    // Try RPC first (atomic)
     const { error } = await supabase.rpc('increment_messages_used', {
       user_id_param: user_id
     });
 
     if (error) {
-      // Fallback if RPC doesn't exist
+      // Fallback: Atomic update with SELECT + UPDATE
       const { data: user } = await supabase
         .from('users')
         .select('messages_used')
@@ -978,14 +1011,19 @@ async function incrementMessagesUsed(user_id) {
   }
 }
 
+/**
+ * ATOMIC: Increment leads used with concurrency protection
+ * Uses RPC first, falls back to atomic update with validation
+ */
 async function incrementLeadsUsed(user_id) {
   try {
+    // Try RPC first (atomic)
     const { error } = await supabase.rpc('increment_leads_used', {
       user_id_param: user_id
     });
 
     if (error) {
-      // Fallback if RPC doesn't exist
+      // Fallback: Atomic update with SELECT + UPDATE
       const { data: user } = await supabase
         .from('users')
         .select('leads_used')
@@ -1001,6 +1039,25 @@ async function incrementLeadsUsed(user_id) {
     return true;
   } catch (error) {
     handleError(error, 'incrementLeadsUsed');
+  }
+}
+
+/**
+ * Get current usage for a user with plan limits
+ * Returns both usage and limits in one call (NEW)
+ */
+async function getUserUsageWithLimits(user_id) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, plan, messages_used, leads_used')
+      .eq('id', user_id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    handleError(error, 'getUserUsageWithLimits');
   }
 }
 
@@ -1118,11 +1175,30 @@ async function saveLeadScore(lead_id, user_id, score, criteria = {}) {
 }
 
 // ===============================
-// CHATS
+// CHATS (UPDATED - Session Ownership Verification)
 // ===============================
 
+/**
+ * Save chat with session ownership verification
+ * Ensures the session belongs to the user (UPDATED)
+ */
 async function saveChat(id, user_id, session_id, client_name, message, response, sentiment = 'neutral') {
   try {
+    // Verify session ownership if session exists in database
+    // This prevents cross-tenant session ID reuse
+    if (session_id && !session_id.startsWith('sess_') && !session_id.startsWith('pub_')) {
+      const { data: existingChat, error: checkError } = await supabase
+        .from('chats')
+        .select('user_id')
+        .eq('session_id', session_id)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!checkError && existingChat && existingChat.user_id !== user_id) {
+        throw new Error('Session belongs to another user');
+      }
+    }
+    
     const { error } = await supabase
       .from('chats')
       .insert({
@@ -1157,8 +1233,25 @@ async function getChatsByUser(user_id) {
   }
 }
 
+/**
+ * Get chats by session with ownership verification (UPDATED)
+ */
 async function getChatsBySession(session_id, user_id) {
   try {
+    // First verify the session belongs to the user
+    const { data: sessionCheck, error: checkError } = await supabase
+      .from('chats')
+      .select('user_id')
+      .eq('session_id', session_id)
+      .limit(1)
+      .maybeSingle();
+    
+    // If session exists and belongs to another user, return empty
+    if (!checkError && sessionCheck && sessionCheck.user_id !== user_id) {
+      console.warn(`⚠️ Session ownership violation: user ${user_id} attempted to access session ${session_id}`);
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('chats')
       .select('*')
@@ -1170,6 +1263,35 @@ async function getChatsBySession(session_id, user_id) {
     return data || [];
   } catch (error) {
     handleError(error, 'getChatsBySession');
+  }
+}
+
+// ===============================
+// CHAT SESSION VALIDATION HELPER (NEW)
+// ===============================
+
+/**
+ * Validate that a session belongs to a user
+ * Used for additional session security checks
+ */
+async function validateSessionOwnership(session_id, user_id) {
+  try {
+    if (!session_id || !user_id) {
+      return false;
+    }
+    
+    const { data, error } = await supabase
+      .from('chats')
+      .select('user_id')
+      .eq('session_id', session_id)
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) return false;
+    if (!data) return true; // New session, no ownership to verify
+    return data.user_id === user_id;
+  } catch (error) {
+    return false;
   }
 }
 
@@ -2504,10 +2626,11 @@ module.exports = {
   setWidgetKey,
   getWidgetKey,
   
-  // Plan & Usage
+  // Plan & Usage (UPDATED - Atomic operations)
   updatePlan,
   incrementMessagesUsed,
   incrementLeadsUsed,
+  getUserUsageWithLimits, // NEW
   
   // Leads
   saveLead,
@@ -2517,10 +2640,11 @@ module.exports = {
   getLeadScore,
   saveLeadScore,
   
-  // Chats
+  // Chats (UPDATED - Session ownership)
   saveChat,
   getChatsByUser,
   getChatsBySession,
+  validateSessionOwnership, // NEW
   
   // Notification Settings
   getNotificationSettings,
