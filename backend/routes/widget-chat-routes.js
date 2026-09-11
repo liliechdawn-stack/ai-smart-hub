@@ -13,6 +13,7 @@
 // ============================================================
 
 const express = require("express");
+const bodyParser = require("body-parser"); // ✅ FIXED: was missing, caused undefined middleware
 const router = express.Router();
 
 const { auth, checkVerified } = require("../auth");
@@ -55,25 +56,25 @@ function classifyError(err) {
   switch (err.code) {
     case ERROR_CODES.VALIDATION_ERROR:
       return { status: 400, message: 'Invalid request data' };
-    
+
     case ERROR_CODES.INVALID_WIDGET_KEY:
       return { status: 400, message: 'Invalid widget key' };
-    
+
     case ERROR_CODES.QUOTA_EXCEEDED:
       return { status: 403, message: 'Message limit reached for your plan' };
-    
+
     case ERROR_CODES.USER_NOT_FOUND:
       return { status: 404, message: 'User not found' };
-    
+
     case ERROR_CODES.SESSION_OWNERSHIP_ERROR:
       return { status: 403, message: 'Session access denied' };
-    
+
     case ERROR_CODES.RATE_LIMIT_EXCEEDED:
       return { status: 429, message: 'Too many requests. Please try again later.' };
-    
+
     case ERROR_CODES.AI_TIMEOUT:
       return { status: 504, message: 'AI service timed out. Please try again.' };
-    
+
     case ERROR_CODES.AI_PROVIDER_ERROR:
       return { status: 503, message: 'AI service temporarily unavailable. Please try again.' };
   }
@@ -203,12 +204,12 @@ router.post("/widget/chat", auth, checkVerified, async (req, res) => {
     // Classify error and return safe response
     const { status, message } = classifyError(err);
     const response = { error: message };
-    
+
     // Include request ID only if available and helpful
     if (req.id) {
       response.requestId = req.id;
     }
-    
+
     res.status(status).json(response);
   }
 });
@@ -230,7 +231,7 @@ router.post("/public/chat", async (req, res) => {
     if (!widgetKey) {
       return res.status(400).json({ error: 'Widget key is required' });
     }
-    
+
     // Basic format validation before passing to service
     if (typeof widgetKey !== 'string' || widgetKey.length > MAX_WIDGET_KEY_LENGTH) {
       return res.status(400).json({ error: 'Invalid widget key format' });
@@ -256,10 +257,10 @@ router.post("/public/chat", async (req, res) => {
   } catch (err) {
     // Log internally with safe context - NEVER log full widget keys
     const widgetKey = req.body?.widget_key || 'unknown';
-    const truncatedKey = widgetKey !== 'unknown' && typeof widgetKey === 'string' 
-      ? widgetKey.substring(0, 8) + '...' 
+    const truncatedKey = widgetKey !== 'unknown' && typeof widgetKey === 'string'
+      ? widgetKey.substring(0, 8) + '...'
       : 'unknown';
-    
+
     console.error(`❌ Public Chat Error [Widget: ${truncatedKey}]:`, {
       message: err.message,
       code: err.code,
@@ -270,12 +271,12 @@ router.post("/public/chat", async (req, res) => {
     // Classify error and return safe response
     const { status, message } = classifyError(err);
     const response = { error: message };
-    
+
     // Include request ID only if available and helpful
     if (req.id) {
       response.requestId = req.id;
     }
-    
+
     res.status(status).json(response);
   }
 });
