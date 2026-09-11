@@ -1,174 +1,397 @@
-cat > backend/workflow-templates.js << 'EOF'
+// ================================================
+// WORKFLOW TEMPLATES - PRODUCTION SaaS
+// Prebuilt workflow templates users can apply to their account.
+// ================================================
+
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { supabase } = require('./database-supabase');
+const { authenticateToken } = require('./auth-middleware');
 
 const router = express.Router();
+
+// ================================================
+// TEMPLATE DEFINITIONS
+// ================================================
+//
+// IMPORTANT: These templates reference node types that must exist in the
+// workflow executor. If a node type is not supported by the executor, the
+// workflow will fail explicitly rather than simulate success.
+//
+// Only node types that are currently SUPPORTED by the executor should be used:
+//   - trigger, schedule, manual_trigger, webhook_custom
+//   - ai_content, ai_summarize, ai_chat, ai_agent, ai_lead_scoring, basic_llm_chain
+//   - condition, enhanced_condition, switch
+//   - wait, loop, loop_items
+//   - filter, sort, transform, split, aggregate, limit_node, deduplicate
+//   - set_variable, get_variable, pass_through
+//   - http_request, webhook, graphql, api_fetcher
+//   - json_parse, json_stringify, data_mapper
+//   - create_lead, insert_row, knowledge_base
+//
+// Node types that are NOT yet supported by the executor (email, slack, social,
+// shopify, stripe, etc.) must NOT be used in templates until real integrations
+// are connected. Using them would cause the workflow to fail at runtime with
+// INTEGRATION_NOT_CONFIGURED.
+// ================================================
 
 const templates = {
   'lead-scoring': {
     name: 'Lead Scoring & Routing',
-    description: 'Automatically score leads and route hot leads to sales team',
+    description: 'Automatically score incoming leads using AI and route them based on quality.',
     category: 'Sales',
     icon: '🎯',
     nodes: [
-      { id: 'webhook', type: 'trigger', name: 'Webhook Trigger', config: {} },
-      { id: 'score', type: 'ai_lead_scoring', name: 'Score Lead', config: { max_score: 100 } },
-      { id: 'condition', type: 'condition', name: 'Is Hot Lead?', config: { condition: 'return data.lead_score > 70;' } },
-      { id: 'slack', type: 'send_slack', name: 'Notify Sales', config: { channel: '#sales-leads', message: '🔥 Hot lead! Score: {{lead_score}}\nName: {{name}}\nEmail: {{email}}' } },
-      { id: 'email', type: 'send_email', name: 'Send Auto-Reply', config: { subject: 'Thanks for your interest!', body: 'We will contact you soon.' } },
-      { id: 'crm', type: 'create_lead', name: 'Save to CRM', config: { source: 'webhook' } }
+      {
+        id: 'trigger',
+        type: 'trigger',
+        name: 'Webhook Trigger',
+        config: {},
+      },
+      {
+        id: 'score',
+        type: 'ai_lead_scoring',
+        name: 'Score Lead',
+        config: {},
+      },
+      {
+        id: 'condition',
+        type: 'condition',
+        name: 'Is Hot Lead?',
+        config: {
+          field: 'lead_score',
+          operator: 'gte',
+          value: 70,
+        },
+      },
+      {
+        id: 'hot_branch',
+        type: 'set_variable',
+        name: 'Mark as Hot Lead',
+        config: {
+          variable_name: 'lead_tier',
+          variable_value: 'hot',
+        },
+      },
+      {
+        id: 'warm_branch',
+        type: 'set_variable',
+        name: 'Mark as Warm Lead',
+        config: {
+          variable_name: 'lead_tier',
+          variable_value: 'warm',
+        },
+      },
+      {
+        id: 'save',
+        type: 'create_lead',
+        name: 'Save Lead',
+        config: { source: 'webhook' },
+      },
     ],
     edges: [
-      { source: 'webhook', target: 'score' },
+      { source: 'trigger', target: 'score' },
       { source: 'score', target: 'condition' },
-      { source: 'condition', target: 'slack', sourceHandle: 'true' },
-      { source: 'condition', target: 'email', sourceHandle: 'false' },
-      { source: 'email', target: 'crm' },
-      { source: 'slack', target: 'crm' }
-    ]
+      { source: 'condition', target: 'hot_branch', sourceHandle: 'true' },
+      { source: 'condition', target: 'warm_branch', sourceHandle: 'false' },
+      { source: 'hot_branch', target: 'save' },
+      { source: 'warm_branch', target: 'save' },
+    ],
   },
-  
-  'social-media-auto': {
-    name: 'Social Media Auto-Poster',
-    description: 'Generate and post content to social media daily',
+
+  'ai-content-pipeline': {
+    name: 'AI Content Pipeline',
+    description: 'Generate AI content on a schedule and save it for review.',
     category: 'Marketing',
-    icon: '📱',
+    icon: '✍️',
     nodes: [
-      { id: 'schedule', type: 'schedule', name: 'Daily at 9 AM', config: { cron: '0 9 * * *', unit: 'cron' } },
-      { id: 'ai', type: 'ai_content', name: 'Generate Content', config: { type: 'social', tone: 'professional', prompt: 'Generate engaging social media post about {{topic}}' } },
-      { id: 'linkedin', type: 'post_social', name: 'Post to LinkedIn', config: { platform: 'linkedin' } },
-      { id: 'twitter', type: 'post_social', name: 'Post to Twitter', config: { platform: 'twitter' } },
-      { id: 'log', type: 'http_request', name: 'Log to Analytics', config: { url: 'https://analytics.example.com/log', method: 'POST' } }
+      {
+        id: 'schedule',
+        type: 'schedule',
+        name: 'Daily Trigger',
+        config: { cron: '0 9 * * *' },
+      },
+      {
+        id: 'generate',
+        type: 'ai_content',
+        name: 'Generate Content',
+        config: {
+          type: 'blog',
+          tone: 'professional',
+          prompt: 'Write a short blog post about a trending topic in our industry.',
+        },
+      },
+      {
+        id: 'save',
+        type: 'insert_row',
+        name: 'Save to Content Library',
+        config: {
+          table: 'gallery',
+          data: {
+            type: 'content',
+            title: 'Daily AI Draft',
+          },
+        },
+      },
     ],
     edges: [
-      { source: 'schedule', target: 'ai' },
-      { source: 'ai', target: 'linkedin' },
-      { source: 'ai', target: 'twitter' },
-      { source: 'linkedin', target: 'log' },
-      { source: 'twitter', target: 'log' }
-    ]
-  },
-  
-  'cart-recovery': {
-    name: 'Abandoned Cart Recovery',
-    description: 'Recover lost sales from abandoned carts',
-    category: 'E-commerce',
-    icon: '🛒',
-    nodes: [
-      { id: 'webhook', type: 'trigger', name: 'Cart Abandoned', config: {} },
-      { id: 'wait1', type: 'wait', name: 'Wait 1 Hour', config: { duration: 1, unit: 'hours' } },
-      { id: 'email1', type: 'send_email', name: 'First Reminder', config: { subject: 'Forgot something?', body: 'Your cart is waiting!' } },
-      { id: 'wait2', type: 'wait', name: 'Wait 24 Hours', config: { duration: 24, unit: 'hours' } },
-      { id: 'discount', type: 'cart_recovery', name: 'Apply 10% Discount', config: { discount_percent: 10, platform: 'shopify' } },
-      { id: 'email2', type: 'send_email', name: 'Discount Offer', config: { subject: '10% off your cart!', body: 'Use code SAVE10' } }
+      { source: 'schedule', target: 'generate' },
+      { source: 'generate', target: 'save' },
     ],
-    edges: [
-      { source: 'webhook', target: 'wait1' },
-      { source: 'wait1', target: 'email1' },
-      { source: 'email1', target: 'wait2' },
-      { source: 'wait2', target: 'discount' },
-      { source: 'discount', target: 'email2' }
-    ]
   },
-  
-  'inventory-alert': {
-    name: 'Low Inventory Alert',
-    description: 'Get alerted when inventory is low',
-    category: 'E-commerce',
-    icon: '⚠️',
+
+  'lead-intake-pipeline': {
+    name: 'Lead Intake Pipeline',
+    description: 'Receive a lead from an external system, enrich it, and store it.',
+    category: 'Sales',
+    icon: '📥',
     nodes: [
-      { id: 'schedule', type: 'schedule', name: 'Check every hour', config: { cron: '0 * * * *' } },
-      { id: 'inventory', type: 'inventory_check', name: 'Check Inventory', config: { platform: 'shopify' } },
-      { id: 'condition', type: 'condition', name: 'Low Stock?', config: { condition: 'return data.low_stock_items > 0;' } },
-      { id: 'slack', type: 'send_slack', name: 'Alert Team', config: { channel: '#inventory', message: '⚠️ Low inventory alert! {{low_stock_items}} items need reordering.' } },
-      { id: 'email', type: 'send_email', name: 'Email Report', config: { to: 'purchasing@example.com', subject: 'Low Inventory Report', body: 'Items below threshold: {{low_stock_items}}' } }
-    ],
-    edges: [
-      { source: 'schedule', target: 'inventory' },
-      { source: 'inventory', target: 'condition' },
-      { source: 'condition', target: 'slack', sourceHandle: 'true' },
-      { source: 'condition', target: 'email', sourceHandle: 'true' }
-    ]
-  },
-  
-  'webhook-to-email': {
-    name: 'Webhook to Email Forwarder',
-    description: 'Forward any webhook to email',
-    category: 'Integration',
-    icon: '📧',
-    nodes: [
-      { id: 'webhook', type: 'trigger', name: 'Webhook Receiver', config: {} },
-      { id: 'transform', type: 'http_request', name: 'Transform Data', config: { url: 'https://api.example.com/transform', method: 'POST' } },
-      { id: 'email', type: 'send_email', name: 'Send Email', config: { subject: 'Webhook Received: {{event_type}}', body: 'Data: {{JSON.stringify(data)}}' } }
+      {
+        id: 'webhook',
+        type: 'webhook_custom',
+        name: 'Incoming Lead Webhook',
+        config: {},
+      },
+      {
+        id: 'transform',
+        type: 'transform',
+        name: 'Normalize Fields',
+        config: {
+          mapping: {
+            full_name: 'name',
+            contact_email: 'email',
+            contact_phone: 'phone',
+          },
+        },
+      },
+      {
+        id: 'dedupe_check',
+        type: 'condition',
+        name: 'Has Email?',
+        config: {
+          field: 'email',
+          operator: 'exists',
+        },
+      },
+      {
+        id: 'save',
+        type: 'create_lead',
+        name: 'Create Lead',
+        config: { source: 'api' },
+      },
+      {
+        id: 'skip',
+        type: 'pass_through',
+        name: 'Skip (no email)',
+        config: {},
+      },
     ],
     edges: [
       { source: 'webhook', target: 'transform' },
-      { source: 'transform', target: 'email' }
-    ]
-  }
+      { source: 'transform', target: 'dedupe_check' },
+      { source: 'dedupe_check', target: 'save', sourceHandle: 'true' },
+      { source: 'dedupe_check', target: 'skip', sourceHandle: 'false' },
+    ],
+  },
+
+  'http-poller': {
+    name: 'HTTP Poller with Filtering',
+    description: 'Poll an external API on a schedule and store matching records.',
+    category: 'Integration',
+    icon: '🌐',
+    nodes: [
+      {
+        id: 'schedule',
+        type: 'schedule',
+        name: 'Poll Every Hour',
+        config: { cron: '0 * * * *' },
+      },
+      {
+        id: 'fetch',
+        type: 'http_request',
+        name: 'Fetch External Data',
+        config: {
+          url: 'https://api.example.com/items',
+          method: 'GET',
+        },
+      },
+      {
+        id: 'filter',
+        type: 'filter',
+        name: 'Keep Only Active Items',
+        config: {
+          field: 'status',
+          operator: 'equals',
+          value: 'active',
+        },
+      },
+      {
+        id: 'store',
+        type: 'insert_row',
+        name: 'Store Item',
+        config: {
+          table: 'gallery',
+          data: { type: 'external_item' },
+        },
+      },
+    ],
+    edges: [
+      { source: 'schedule', target: 'fetch' },
+      { source: 'fetch', target: 'filter' },
+      { source: 'filter', target: 'store', sourceHandle: 'true' },
+    ],
+  },
+
+  'webhook-to-http': {
+    name: 'Webhook Forwarder',
+    description: 'Receive a webhook and forward the payload to another HTTP endpoint.',
+    category: 'Integration',
+    icon: '📧',
+    nodes: [
+      {
+        id: 'webhook',
+        type: 'webhook_custom',
+        name: 'Webhook Receiver',
+        config: {},
+      },
+      {
+        id: 'forward',
+        type: 'http_request',
+        name: 'Forward Payload',
+        config: {
+          url: 'https://api.example.com/forward',
+          method: 'POST',
+          body: '{}',
+        },
+      },
+    ],
+    edges: [
+      { source: 'webhook', target: 'forward' },
+    ],
+  },
+
+  'ai-summary-pipeline': {
+    name: 'AI Summary Pipeline',
+    description: 'Summarize incoming text using AI and store the summary.',
+    category: 'AI',
+    icon: '📝',
+    nodes: [
+      {
+        id: 'webhook',
+        type: 'webhook_custom',
+        name: 'Text Input',
+        config: {},
+      },
+      {
+        id: 'summarize',
+        type: 'ai_summarize',
+        name: 'Summarize',
+        config: {
+          text: 'Please summarize the incoming content.',
+        },
+      },
+      {
+        id: 'store',
+        type: 'insert_row',
+        name: 'Store Summary',
+        config: {
+          table: 'gallery',
+          data: { type: 'summary' },
+        },
+      },
+    ],
+    edges: [
+      { source: 'webhook', target: 'summarize' },
+      { source: 'summarize', target: 'store' },
+    ],
+  },
 };
 
-// Get all templates
-router.get('/api/workflow-templates', (req, res) => {
-  const templatesList = Object.entries(templates).map(([id, template]) => ({
-    id,
-    ...template,
-    node_count: template.nodes.length
-  }));
-  res.json(templatesList);
-});
-
-// Get specific template
-router.get('/api/workflow-templates/:templateId', (req, res) => {
-  const template = templates[req.params.templateId];
-  if (!template) {
-    return res.status(404).json({ error: 'Template not found' });
+// ================================================
+// GET /api/workflow-templates
+// List all available workflow templates
+// ================================================
+router.get('/api/workflow-templates', authenticateToken, (req, res) => {
+  try {
+    const templatesList = Object.entries(templates).map(([id, template]) => ({
+      id,
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      icon: template.icon,
+      node_count: template.nodes.length,
+    }));
+    res.json({ success: true, templates: templatesList, total: templatesList.length });
+  } catch (error) {
+    console.error('Error listing workflow templates:', error);
+    res.status(500).json({ error: 'Failed to list workflow templates' });
   }
-  res.json(template);
 });
 
-// Apply template to create a workflow
-router.post('/api/workflow-templates/:templateId/apply', async (req, res) => {
+// ================================================
+// GET /api/workflow-templates/:templateId
+// Get a specific template by ID
+// ================================================
+router.get('/api/workflow-templates/:templateId', authenticateToken, (req, res) => {
   try {
     const template = templates[req.params.templateId];
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
     }
-    
-    const userId = req.user?.id;
+    res.json({ success: true, template });
+  } catch (error) {
+    console.error('Error fetching workflow template:', error);
+    res.status(500).json({ error: 'Failed to fetch workflow template' });
+  }
+});
+
+// ================================================
+// POST /api/workflow-templates/:templateId/apply
+// Apply a template to create a new workflow for the authenticated user
+// ================================================
+router.post('/api/workflow-templates/:templateId/apply', authenticateToken, async (req, res) => {
+  try {
+    const template = templates[req.params.templateId];
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // TENANT ISOLATION: userId always comes from authenticated token, never from body
+    const userId = req.user.id;
     const { name } = req.body;
-    
+
     const workflowId = uuidv4();
+    const now = new Date().toISOString();
+
     const { data, error } = await supabase
       .from('workflows')
       .insert({
         id: workflowId,
         user_id: userId,
         name: name || template.name,
+        description: template.description,
         nodes: template.nodes,
         edges: template.edges,
         execution_mode: 'sequential',
         status: 'inactive',
         run_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: now,
+        updated_at: now,
       })
       .select()
       .single();
-    
+
     if (error) throw error;
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       workflow: data,
-      message: `Template "${template.name}" applied successfully`
+      message: `Template "${template.name}" applied successfully`,
     });
   } catch (error) {
-    console.error('Error applying template:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error applying workflow template:', error);
+    res.status(500).json({ error: 'Failed to apply workflow template' });
   }
 });
 
 module.exports = router;
-EOF
