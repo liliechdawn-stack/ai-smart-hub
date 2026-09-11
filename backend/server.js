@@ -28,19 +28,23 @@ const config = require("./config");
 // Validate critical configuration on startup
 function validateProductionConfig() {
   if (process.env.NODE_ENV === "production") {
-    const critical = [
-      "JWT_SECRET",
-      "SUPABASE_URL",
-      "SUPABASE_SERVICE_ROLE_KEY",
-    ];
-    
+    // Accept either the preferred production name OR the legacy SUPABASE_KEY name.
+    const supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+
+    const critical = ["JWT_SECRET", "SUPABASE_URL"];
     const missing = critical.filter(key => !process.env[key]);
+
+    if (!supabaseKey) {
+      missing.push("SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_KEY)");
+    }
+
     if (missing.length > 0) {
       console.error(`❌ CRITICAL: Missing production environment variables: ${missing.join(", ")}`);
       console.error("   Server cannot start in production mode.");
       process.exit(1);
     }
-    
+
     // Ensure JWT_SECRET is not the default value
     if (process.env.JWT_SECRET === "super_secret_key") {
       console.error("❌ CRITICAL: JWT_SECRET is using default value. Set a secure secret in production.");
