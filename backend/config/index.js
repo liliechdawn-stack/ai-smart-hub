@@ -8,9 +8,19 @@ require("dotenv").config();
 // VALIDATION
 // ============================================================
 
+// Supabase service-role key can be provided under either name.
+// - SUPABASE_SERVICE_ROLE_KEY  → preferred / production-correct name
+// - SUPABASE_KEY               → legacy name (still supported)
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+
 function validateConfig() {
-  const required = ["JWT_SECRET", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
+  const required = ["JWT_SECRET", "SUPABASE_URL"];
   const missing = required.filter((key) => !process.env[key]);
+
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    missing.push("SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_KEY)");
+  }
 
   if (missing.length > 0) {
     throw new Error(
@@ -258,102 +268,50 @@ const FEATURES = {
 // PLAN HELPER FUNCTIONS
 // ============================================================
 
-/**
- * Get plan by ID
- * @param {string} planId - Plan ID (free, basic, pro, agency, enterprise)
- * @returns {object|null} Plan object or null if not found
- */
 function getPlan(planId) {
   return PLANS[planId] || null;
 }
 
-/**
- * Get plan limits
- * @param {string} planId - Plan ID
- * @returns {object} Plan limits
- */
 function getPlanLimits(planId) {
   const plan = getPlan(planId);
   if (!plan) return PLANS.free.limits;
   return { ...plan.limits };
 }
 
-/**
- * Get plan features
- * @param {string} planId - Plan ID
- * @returns {string[]} Array of feature keys
- */
 function getPlanFeatures(planId) {
   const plan = getPlan(planId);
   if (!plan) return PLANS.free.features;
   return [...plan.features];
 }
 
-/**
- * Check if a plan has a specific feature
- * @param {string} planId - Plan ID
- * @param {string} featureKey - Feature key to check
- * @returns {boolean} True if plan has the feature
- */
 function hasFeature(planId, featureKey) {
   const features = getPlanFeatures(planId);
   return features.includes(featureKey);
 }
 
-/**
- * Get plan price in USD
- * @param {string} planId - Plan ID
- * @param {boolean} isAnnual - Whether to get annual price
- * @returns {number} Price in USD
- */
 function getPlanPrice(planId, isAnnual = false) {
   const plan = getPlan(planId);
   if (!plan) return 0;
   return isAnnual ? plan.price_usd_annual : plan.price_usd;
 }
 
-/**
- * Get plan price in NGN (for Paystack)
- * @param {string} planId - Plan ID
- * @param {boolean} isAnnual - Whether to get annual price
- * @param {number} rate - USD to NGN conversion rate
- * @returns {number} Price in NGN
- */
 function getPlanPriceNGN(planId, isAnnual = false, rate = 1500) {
   const usd = getPlanPrice(planId, isAnnual);
   return usd * rate;
 }
 
-/**
- * Get all plans
- * @returns {object[]} Array of all plan objects
- */
 function getAllPlans() {
   return Object.values(PLANS);
 }
 
-/**
- * Get all plan IDs
- * @returns {string[]} Array of plan IDs
- */
 function getAllPlanIds() {
   return Object.keys(PLANS);
 }
 
-/**
- * Check if a plan ID is valid
- * @param {string} planId - Plan ID to check
- * @returns {boolean} True if plan exists
- */
 function isValidPlan(planId) {
   return !!PLANS[planId];
 }
 
-/**
- * Get the next tier plan (for upgrades)
- * @param {string} planId - Current plan ID
- * @returns {string|null} Next plan ID or null if at highest tier
- */
 function getNextPlanTier(planId) {
   const tiers = getAllPlans().sort((a, b) => a.tier - b.tier);
   const currentIndex = tiers.findIndex(p => p.id === planId);
@@ -361,11 +319,6 @@ function getNextPlanTier(planId) {
   return tiers[currentIndex + 1].id;
 }
 
-/**
- * Get the previous tier plan (for downgrades)
- * @param {string} planId - Current plan ID
- * @returns {string|null} Previous plan ID or null if at lowest tier
- */
 function getPreviousPlanTier(planId) {
   const tiers = getAllPlans().sort((a, b) => a.tier - b.tier);
   const currentIndex = tiers.findIndex(p => p.id === planId);
@@ -373,13 +326,6 @@ function getPreviousPlanTier(planId) {
   return tiers[currentIndex - 1].id;
 }
 
-/**
- * Check if a plan has reached its limit for a specific resource
- * @param {string} planId - Plan ID
- * @param {string} resource - Resource key (messages, leads, etc.)
- * @param {number} used - Current usage
- * @returns {boolean} True if limit is reached or exceeded
- */
 function isLimitReached(planId, resource, used) {
   const limits = getPlanLimits(planId);
   const limit = limits[resource];
@@ -387,13 +333,6 @@ function isLimitReached(planId, resource, used) {
   return used >= limit;
 }
 
-/**
- * Get remaining allowance for a resource
- * @param {string} planId - Plan ID
- * @param {string} resource - Resource key
- * @param {number} used - Current usage
- * @returns {number} Remaining allowance (Infinity if unlimited)
- */
 function getRemainingAllowance(planId, resource, used) {
   const limits = getPlanLimits(planId);
   const limit = limits[resource];
@@ -401,13 +340,6 @@ function getRemainingAllowance(planId, resource, used) {
   return Math.max(0, limit - used);
 }
 
-/**
- * Get usage percentage for a resource
- * @param {string} planId - Plan ID
- * @param {string} resource - Resource key
- * @param {number} used - Current usage
- * @returns {number} Percentage (0-100)
- */
 function getUsagePercentage(planId, resource, used) {
   const limits = getPlanLimits(planId);
   const limit = limits[resource];
@@ -454,7 +386,7 @@ module.exports = {
   // DATABASE
   // ==========================================================
   SUPABASE_URL: process.env.SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_SERVICE_ROLE_KEY,
 
   // ==========================================================
   // CLOUDFLARE AI
